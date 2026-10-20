@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { backupApi, backupExportUrl, backupExportMarkdownUrl, getApiErrorMessage, RestoreTaskHttpError, type RestoreTask } from "@/api";
+import { isAxiosError } from "axios";
+import {
+  backupApi,
+  backupExportUrl,
+  backupExportMarkdownUrl,
+  getApiErrorMessage,
+  RestoreTaskHttpError,
+  type RestoreTask,
+} from "@/api";
 import { formatBytes, formatRelative } from "@/lib/format";
 import { Icon } from "@iconify/vue";
 import {
@@ -231,31 +239,48 @@ async function handleImport(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files?.length) return;
   const file = input.files[0];
-  const legacy = legacyImport.value;
-  Dialog.warning({
-    title: `确定导入「${file.name}」吗？`,
-    description: legacy
-      ? "将按 1.x 格式转换后导入；未指定状态的新文章保存为草稿，明确 published 的文章会公开。同名 Slug 会覆盖现有文章。任一文件无法转换时整批不写入。"
-      : "同名 Slug 的文章将被导入的文件内容直接覆盖。未指定状态的新文章默认发布，请确认后再操作。",
-    confirmType: "danger",
-    onConfirm: async () => {
-      importing.value = true;
-      importResult.value = null;
-      try {
-        const { data } = await backupApi.importMarkdown(file, legacy);
-        importResult.value = data;
-        Toast.success(`成功导入 ${data.imported} 篇文章`);
-      } catch (error) {
-        Toast.error(getApiErrorMessage(error, "Markdown 导入失败，请检查文件格式"));
-      } finally {
-        importing.value = false;
-        input.value = "";
-      }
-    },
-    onCancel: () => {
-      input.value = "";
-    },
+  input.value = "";
+  await confirmMarkdownImport(file, legacyImport.value);
+}
+
+async function confirmMarkdownImport(file: File, legacy: boolean, detectedLegacy = false): Promise<void> {
+  const confirmed = await new Promise<boolean>((resolve) => {
+    Dialog.warning({
+      title: detectedLegacy ? "检测到 1.x 格式文章" : `确定导入「${file.name}」吗？`,
+      description: legacy
+        ? `将「${file.name}」按 1.x 格式转换后导入；未指定状态的新文章保存为草稿，明确 published 的文章会公开。同名 Slug 会覆盖现有文章。任一文件无法转换时整批不写入。`
+        : "同名 Slug 的文章将被导入的文件内容直接覆盖。未指定状态的新文章默认发布，请确认后再操作。",
+      confirmText: detectedLegacy ? "转换并导入" : "确定",
+      confirmType: "danger",
+      onConfirm: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
   });
+  if (!confirmed || componentUnmounted.value) return;
+  if (legacy) legacyImport.value = true;
+  importing.value = true;
+  importResult.value = null;
+  let conversionRequired = false;
+  try {
+    const { data } = await backupApi.importMarkdown(file, legacy);
+    if (componentUnmounted.value) return;
+    importResult.value = data;
+    Toast.success(`成功导入 ${data.imported} 篇文章`);
+  } catch (error) {
+    if (componentUnmounted.value) return;
+    if (
+      !legacy &&
+      isAxiosError<{ type?: string }>(error) &&
+      error.response?.data.type === "legacy_markdown_requires_conversion"
+    ) {
+      conversionRequired = true;
+    } else {
+      Toast.error(getApiErrorMessage(error, "Markdown 导入失败，请检查文件格式"));
+    }
+  } finally {
+    importing.value = false;
+  }
+  if (conversionRequired) await confirmMarkdownImport(file, true, true);
 }
 
 // ---------- 统计数据 ----------

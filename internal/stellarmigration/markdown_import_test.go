@@ -2,6 +2,7 @@ package stellarmigration
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -95,5 +96,85 @@ func TestLegacyMarkdownImageDefaultDoesNotDependOnOtherTags(t *testing.T) {
 		if err != nil || !legacy.LegacyConverted || !strings.Contains(legacy.Document.Body, "fancybox:false") {
 			t.Fatalf("legacy image lost default with suffix %q: %+v %v", suffix, legacy, err)
 		}
+	}
+}
+
+func TestLegacyMarkdownRenderAndStyleFieldsPreserveExistingContent(t *testing.T) {
+	for _, test := range []struct {
+		name, flags, style string
+		math, diagrams     any
+	}{
+		{"enabled-tech", "mathjax: true\nmermaid: true", "tech", "mathjax", "mermaid"},
+		{"disabled-story", "mathjax: false\nmermaid: false", "story", false, false},
+		{"math-only", "mathjax: true\nmermaid: false", "tech", "mathjax", false},
+		{"diagrams-only", "mathjax: false\nmermaid: true", "story", false, "mermaid"},
+		{"existing-diagrams", "mathjax: true\nrender: {diagrams: mermaid}", "tech", "mathjax", "mermaid"},
+		{"existing-math", "mermaid: true\nrender: {math: katex}", "story", "katex", "mermaid"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			body := "正文\r\n\n```mermaid\ngraph LR\n A --> B\n```\n\n$a+b$\n"
+			source := "---\ntitle: Old\n" + test.flags + "\ntype: " + test.style + "\nreferences: [https://example.com/ref, '42']\ntopic: Series\nbanner: /old.jpg\narticle: {author: Alice}\n---\n" + body
+			if _, err := post.ParseStellarDocument([]byte(source), post.StellarDocumentOptions{}); err == nil {
+				t.Fatal("strict parsing accepted legacy fields")
+			}
+			result, err := ConvertLegacyMarkdown([]byte(source), "old.md", "post", []*store.Topic{{Slug: "series", Name: "Series"}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for path, want := range map[string]any{
+				"render.math": test.math, "render.diagrams": test.diagrams,
+				"article.style": test.style, "article.author": "Alice", "collection.id": "series",
+				"footer.references": []any{"https://example.com/ref", "42"},
+			} {
+				got, exists := get(result.Document.Raw, path)
+				if !exists || !reflect.DeepEqual(got, want) {
+					t.Errorf("%s=%#v, want %#v", path, got, want)
+				}
+			}
+			if got, _ := get(result.Document.Blog, "content.banner_image"); got != "/old.jpg" {
+				t.Fatalf("banner changed: %#v", got)
+			}
+			if !result.LegacyConverted || result.Document.Body != body {
+				t.Fatalf("conversion metadata or Markdown changed: %+v", result)
+			}
+			for _, old := range []string{"mathjax", "mermaid", "type", "references", "topic", "banner"} {
+				if _, exists := result.Document.Raw[old]; exists {
+					t.Errorf("legacy field %s was not removed", old)
+				}
+			}
+		})
+	}
+}
+
+func TestLegacyMarkdownRenderAndStyleRejectInvalidValuesAndConflicts(t *testing.T) {
+	for _, field := range []string{"mathjax", "mermaid"} {
+		for _, value := range []string{`"true"`, `"false"`, "1", "null", "[]", "{}"} {
+			header := field + ": " + value
+			t.Run(header, func(t *testing.T) {
+				if _, err := ConvertLegacyMarkdown([]byte("---\n"+header+"\n---\nbody"), "old.md", "post", nil); err == nil {
+					t.Fatalf("accepted non-boolean %s", header)
+				}
+			})
+		}
+	}
+	for _, value := range []string{"unknown", `""`, "true", "1", "null", "[]", "{}"} {
+		if _, err := ConvertLegacyMarkdown([]byte("---\ntype: "+value+"\n---\nbody"), "old.md", "post", nil); err == nil {
+			t.Errorf("accepted invalid article style %s", value)
+		}
+	}
+	for _, header := range []string{
+		"mathjax: true\nrender: {math: mathjax}", "mathjax: false\nrender: {math: false}", "mathjax: true\nrender: false",
+		"mermaid: true\nrender: {diagrams: mermaid}", "mermaid: false\nrender: {diagrams: false}", "mermaid: true\nrender: false",
+		"type: tech\narticle: {style: tech}", "type: story\narticle: false",
+		"references: []\nfooter: {references: []}", "references: []\nfooter: false",
+		"topic: Series\ncollection: {profile: topic, id: series}", "topic: Series\ncollection: false",
+		"banner: /old.jpg\nblog: false", "banner: /old.jpg\nblog: {content: false}",
+	} {
+		t.Run(header, func(t *testing.T) {
+			_, err := ConvertLegacyMarkdown([]byte("---\n"+header+"\n---\nbody"), "old.md", "post", []*store.Topic{{Slug: "series", Name: "Series"}})
+			if err == nil || !strings.Contains(err.Error(), "conflicts with") {
+				t.Fatalf("expected explicit conflict for %s, got %v", header, err)
+			}
+		})
 	}
 }

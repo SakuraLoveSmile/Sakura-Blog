@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import path from "node:path";
 
 async function login(page: Page) {
   await page.goto("/console/login");
@@ -97,4 +98,97 @@ test("备份页显式转换 1.x Markdown，未指定状态的新文章作为草�
   expect(saved.created_at).toContain("2021-03-04");
   expect(saved.content_md).toContain("保留历史文章正文。");
   expect((await page.request.get(`/post/${slug}`)).status()).toBe(404);
+});
+
+for (const width of [1280, 390]) {
+  test(`旧版字段导入可取消或确认转换并完整保存（${width}px）`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await login(page);
+    const slug = `legacy-render-${width}-${Date.now()}`;
+    const topicSlug = `import-topic-${slug}`;
+    const topic = await page.request.post("/api/v1/topics", {
+      data: {
+        name: topicSlug,
+        slug: topicSlug,
+        stellar_version: 2,
+        stellar_config: JSON.stringify({ name: topicSlug }),
+        blog_extensions: "{}",
+      },
+    });
+    expect(topic.ok(), await topic.text()).toBeTruthy();
+    await page.goto("/console/backup");
+    const body = "校园网导入回归正文。\r\n\r\n```md\n{% unknown keep %}\n```\n";
+    const file = {
+      name: "基于UA3F的校园网防检测指南.md",
+      mimeType: "text/markdown",
+      buffer: Buffer.from(
+        `---\ntitle: 校园网导入回归\nslug: ${slug}\nmathjax: true\nmermaid: true\ntype: tech\nreferences: [https://example.com/reference]\ntopic: ${topicSlug}\nbanner: /banner.jpg\n---\n${body}`,
+      ),
+    };
+    const input = page.locator('input[type="file"][accept=".md,.zip"]');
+    const legacyCheckbox = page.getByRole("checkbox", { name: /从 1.x 格式转换/ });
+    let requests = 0;
+    page.on("request", (request) => {
+      if (request.url().includes("/backup/import/markdown") && request.method() === "POST") requests++;
+    });
+    const selectAndConfirm = async () => {
+      await input.setInputFiles(file);
+      const response = page.waitForResponse(
+        (r) => r.url().includes("/backup/import/markdown") && r.request().method() === "POST",
+      );
+      await page.getByRole("alertdialog").getByRole("button", { name: "确定", exact: true }).click();
+      const rejected = await response;
+      expect(rejected.status()).toBe(400);
+      expect((await rejected.json()).type).toBe("legacy_markdown_requires_conversion");
+      await expect(page.getByRole("alertdialog", { name: "检测到 1.x 格式文章" })).toBeVisible();
+    };
+
+    await selectAndConfirm();
+    await expect(page.getByText(/Stellar v2 schema validation failed:/)).toHaveCount(0);
+    await page
+      .getByRole("alertdialog", { name: "检测到 1.x 格式文章" })
+      .getByRole("button", { name: "取消", exact: true })
+      .click();
+    await expect(page.getByRole("alertdialog", { name: "检测到 1.x 格式文章" })).toBeHidden();
+    expect(requests).toBe(1);
+    expect((await page.request.get(`/api/v1/posts/${slug}`)).status()).toBe(404);
+    await expect(legacyCheckbox).not.toBeChecked();
+
+    await selectAndConfirm();
+    const conversionDialog = page.getByRole("alertdialog", { name: "检测到 1.x 格式文章" });
+    await expect(conversionDialog).toContainText("未指定状态的新文章保存为草稿");
+    await page.screenshot({ path: path.resolve(`docs/baselines/markdown-import-fix/after-conversion-${width}.png`) });
+    const converted = page.waitForResponse(
+      (r) => r.url().includes("/backup/import/markdown") && r.request().method() === "POST",
+    );
+    await conversionDialog.getByRole("button", { name: "转换并导入", exact: true }).click();
+    const imported = await converted;
+    expect(imported.ok(), await imported.text()).toBeTruthy();
+    await expect(page.locator("#app").getByText("成功导入 1 篇文章", { exact: true })).toBeVisible();
+    expect(requests).toBe(3);
+    const saved = await (await page.request.get(`/api/v1/posts/${slug}`)).json();
+    expect(saved.status).toBe("draft");
+    expect(saved.content_md).toBe(body);
+    const raw = JSON.parse(saved.stellar_config);
+    expect(raw.render).toEqual({ math: "mathjax", diagrams: "mermaid" });
+    expect(raw.article.style).toBe("tech");
+    expect(raw.footer.references).toEqual(["https://example.com/reference"]);
+    expect(raw.collection).toEqual({ profile: "topic", id: topicSlug });
+    expect(JSON.parse(saved.blog_extensions).content.banner_image).toBe("/banner.jpg");
+    expect((await page.request.get(`/post/${slug}`)).status()).toBe(404);
+    await expect(legacyCheckbox).toBeChecked();
+  });
+}
+
+test("普通格式错误只提示一次且不建议旧版转换", async ({ page }) => {
+  await login(page);
+  await page.goto("/console/backup");
+  await page.locator('input[type="file"][accept=".md,.zip"]').setInputFiles({
+    name: "invalid.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from("---\nmystery: true\n---\nbody"),
+  });
+  await page.getByRole("alertdialog").getByRole("button", { name: "确定", exact: true }).click();
+  await expect(page.getByText(/Stellar v2 schema validation failed:/)).toHaveCount(1);
+  await expect(page.getByRole("alertdialog", { name: "检测到 1.x 格式文章" })).toHaveCount(0);
 });

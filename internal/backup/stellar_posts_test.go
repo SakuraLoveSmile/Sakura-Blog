@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -25,7 +26,7 @@ func TestLegacyMarkdownBatchConvertsExplicitlyAndKeepsHistoryAndOwnership(t *tes
 	var packed bytes.Buffer
 	writer := zip.NewWriter(&packed)
 	for name, source := range map[string]string{
-		"filename.md": "---\nslug: historical\ntitle: History\nstatus: published\ndate: 2014-03-02 01:02:03\ntopic: Series\npinned: true\n---\n{% tip old %}\nbody\n{% endtip %}",
+		"filename.md": "---\nslug: historical\ntitle: History\nstatus: published\ndate: 2014-03-02 01:02:03\ntopic: Series\npinned: true\nmathjax: true\nmermaid: true\ntype: tech\nreferences: [https://example.com/ref]\nbanner: /old.jpg\n---\n{% tip old %}\nbody\n{% endtip %}",
 		"draft.md":    "---\ntitle: New\n---\nbody\n{% image /old.jpg %}",
 		"post.md":     ";;;\n{\"title\":\"V2\"}\n;;;\n{% image /same.jpg fancybox:true %}",
 	} {
@@ -40,6 +41,19 @@ func TestLegacyMarkdownBatchConvertsExplicitlyAndKeepsHistoryAndOwnership(t *tes
 	historical, _ := st.GetBySlug("historical")
 	if historical == nil || historical.Status != store.StatusPublished || historical.CreatedAt.Format("2006-01-02 15:04:05") != "2014-03-02 01:02:03" || historical.TopicID == 0 || !strings.Contains(historical.ContentMD, "blog_tip") || !reflect.DeepEqual(historical.AuthorIDs, []int64{admin.ID}) {
 		t.Fatalf("lost history or semantics: %+v", historical)
+	}
+	var raw, blog map[string]any
+	if err := json.Unmarshal([]byte(historical.StellarConfig), &raw); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(historical.BlogExtensions), &blog); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(raw["render"], map[string]any{"math": "mathjax", "diagrams": "mermaid"}) ||
+		!reflect.DeepEqual(raw["article"], map[string]any{"style": "tech"}) ||
+		!reflect.DeepEqual(raw["footer"], map[string]any{"references": []any{"https://example.com/ref"}}) ||
+		!reflect.DeepEqual(blog["content"], map[string]any{"banner_image": "/old.jpg"}) {
+		t.Fatalf("legacy fields did not survive persistence: raw=%#v blog=%#v", raw, blog)
 	}
 	draft, _ := st.GetBySlug("draft")
 	if draft == nil || draft.Status != store.StatusDraft || !strings.Contains(draft.ContentMD, "fancybox:false") {
@@ -56,9 +70,14 @@ func TestLegacyMarkdownBatchConvertsExplicitlyAndKeepsHistoryAndOwnership(t *tes
 
 func TestLegacyMarkdownBatchRejectsDuplicatesAndFailuresAtomically(t *testing.T) {
 	for name, sources := range map[string]map[string]string{
-		"duplicate":    {"a.md": "---\nslug: shared\n---\na", "b.md": "---\nslug: shared\n---\nb"},
-		"unknown":      {"safe.md": "---\npinned: true\n---\nsafe", "bad.md": "---\nmystery: true\n---\nbad"},
-		"invalid-date": {"safe.md": "body", "bad.md": "---\nstatus: published\ndate: never\n---\nbad"},
+		"duplicate":       {"a.md": "---\nslug: shared\n---\na", "b.md": "---\nslug: shared\n---\nb"},
+		"unknown":         {"safe.md": "---\npinned: true\n---\nsafe", "bad.md": "---\nmystery: true\n---\nbad"},
+		"invalid-date":    {"safe.md": "body", "bad.md": "---\nstatus: published\ndate: never\n---\nbad"},
+		"invalid-mathjax": {"post.md": "---\nmathjax: true\n---\nreplacement", "bad.md": "---\nmathjax: 'true'\n---\nbad"},
+		"invalid-mermaid": {"post.md": "---\nmermaid: true\n---\nreplacement", "bad.md": "---\nmermaid: 1\n---\nbad"},
+		"invalid-style":   {"post.md": "---\ntype: story\n---\nreplacement", "bad.md": "---\ntype: other\n---\nbad"},
+		"render-conflict": {"post.md": "---\nmathjax: false\n---\nreplacement", "bad.md": "---\nmermaid: true\nrender: false\n---\nbad"},
+		"style-conflict":  {"post.md": "---\ntype: tech\n---\nreplacement", "bad.md": "---\ntype: story\narticle: {style: tech}\n---\nbad"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			svc, st, _ := newStellarContentFixture(t)

@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"blog/internal/config"
@@ -157,6 +158,14 @@ func TestLegacyMarkdownMultipartRequiresExplicitFlagAndMigration(t *testing.T) {
 	}
 	if w := upload("false", authCookie(user)); w.Code != http.StatusBadRequest {
 		t.Fatalf("strict fell back=%d", w.Code)
+	} else {
+		var problem Problem
+		if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || problem.Type != "legacy_markdown_requires_conversion" || !strings.Contains(problem.Detail, "1.x") {
+			t.Fatalf("missing actionable legacy conversion response: %s (%v)", w.Body.String(), err)
+		}
+		if value, _ := st.GetBySlug("imported"); value != nil {
+			t.Fatal("conversion suggestion wrote a post before confirmation")
+		}
 	}
 	if w := upload("true", authCookie(user)); w.Code != http.StatusOK {
 		t.Fatalf("legacy import=%d %s", w.Code, w.Body.String())
@@ -164,5 +173,36 @@ func TestLegacyMarkdownMultipartRequiresExplicitFlagAndMigration(t *testing.T) {
 	value, _ := st.GetBySlug("imported")
 	if value == nil || value.Status != "draft" || value.StellarVersion != 2 {
 		t.Fatal("legacy multipart did not safely import new draft")
+	}
+}
+
+func TestMarkdownImportConversionHintKeepsStrictErrors(t *testing.T) {
+	for _, test := range []struct {
+		name, header, problemType string
+	}{
+		{"legacy-render", "mathjax: true", "legacy_markdown_requires_conversion"},
+		{"legacy-banner", "banner: /banner.jpg", "legacy_markdown_requires_conversion"},
+		{"unknown-field", "mystery: true", "validation_error"},
+		{"invalid-v2-render", "render: {math: true}", "validation_error"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r, st, user, _ := newFullEnv(t)
+			if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+				t.Fatal(err)
+			}
+			var body bytes.Buffer
+			writer := multipart.NewWriter(&body)
+			entry, _ := writer.CreateFormFile("file", "hint.md")
+			_, _ = entry.Write([]byte("---\n" + test.header + "\n---\nbody"))
+			_ = writer.Close()
+			w := do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, writer.FormDataContentType(), authCookie(user))
+			var problem Problem
+			if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || w.Code != http.StatusBadRequest || problem.Type != test.problemType {
+				t.Fatalf("unexpected conversion hint: %d %s (%v)", w.Code, w.Body.String(), err)
+			}
+			if value, _ := st.GetBySlug("hint"); value != nil {
+				t.Fatal("rejected import wrote data")
+			}
+		})
 	}
 }

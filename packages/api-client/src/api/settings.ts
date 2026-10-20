@@ -42,6 +42,7 @@ export const backupApi = {
     if (legacy) form.append("legacy", "true");
     return http.post("/backup/import/markdown", form, {
       headers: { "Content-Type": "multipart/form-data" },
+      mute: true,
     });
   },
   // 整站恢复（Spec 41）：上传全量备份 zip / 从服务器留存备份还原

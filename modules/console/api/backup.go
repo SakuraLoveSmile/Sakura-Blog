@@ -1,13 +1,17 @@
 package api
 
 import (
+	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/backup"
+	"blog/internal/stellarv2"
+	"blog/internal/store"
 )
 
 // maxImportSize Markdown 导入上限（zip 含多篇文章，比单附件上限放宽到 50MB）。
@@ -115,12 +119,26 @@ func (h *Handler) importPostsMarkdown(c *gin.Context) {
 		return
 	}
 	var res *backup.ImportResult
-	if c.PostForm("legacy") == "true" {
+	legacy := c.PostForm("legacy") == "true"
+	if legacy {
 		res, err = h.backups.ImportLegacyMarkdownContext(c.Request.Context(), header.Filename, data)
 	} else {
 		res, err = h.backups.ImportContext(c.Request.Context(), header.Filename, data)
 	}
 	if err != nil {
+		var schema *stellarv2.SchemaError
+		if !legacy && !errors.Is(err, store.ErrStellarMigrationRequired) && errors.As(err, &schema) {
+			for _, issue := range schema.Issues {
+				if strings.HasPrefix(issue.Source, "posts/") && (issue.Code == "removed_field" || issue.Path == "banner" && issue.ActualType == "string") {
+					message := "检测到 1.x 文章字段，请确认使用“从 1.x 格式转换”后导入。"
+					c.JSON(http.StatusBadRequest, Problem{
+						Type: "legacy_markdown_requires_conversion", Title: "需要转换旧版文章", Status: http.StatusBadRequest,
+						Detail: message, Error: message, Instance: c.Request.URL.Path,
+					})
+					return
+				}
+			}
+		}
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}

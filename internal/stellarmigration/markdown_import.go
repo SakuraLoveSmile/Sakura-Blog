@@ -65,7 +65,7 @@ func ConvertLegacyMarkdown(source []byte, filename, kind string, topics []*store
 			return out, nil
 		}
 	}
-	for old, target := range map[string]string{"topic": "collection", "wiki": "collection", "pin": "listing.priority", "pinned": "listing.priority", "author": "article.author", "ai_label": "article.ai_label", "references": "footer.references", "license": "footer.license", "share": "footer.share", "status": "blog.status", "poster": "blog.content.poster", "poster_headline": "blog.content.poster.headline", "poster_topic": "blog.content.poster.topic", "poster_caption": "blog.content.poster.caption", "poster_color": "blog.content.poster.color"} {
+	for old, target := range map[string]string{"topic": "collection", "wiki": "collection", "pin": "listing.priority", "pinned": "listing.priority", "author": "article.author", "ai_label": "article.ai_label", "type": "article.style", "mathjax": "render.math", "mermaid": "render.diagrams", "references": "footer.references", "license": "footer.license", "share": "footer.share", "status": "blog.status", "poster": "blog.content.poster", "poster_headline": "blog.content.poster.headline", "poster_topic": "blog.content.poster.topic", "poster_caption": "blog.content.poster.caption", "poster_color": "blog.content.poster.color"} {
 		if _, exists := raw[old]; exists {
 			if importTargetExists(raw, target) {
 				return out, fmt.Errorf("%s: %s conflicts with %s", filename, old, target)
@@ -99,6 +99,29 @@ func ConvertLegacyMarkdown(source []byte, filename, kind string, topics []*store
 		if matches != 1 {
 			return out, fmt.Errorf("%s: topic must uniquely match an existing topic slug or name", filename)
 		}
+	}
+	// 仅显式导入接受旧渲染开关；不从字符串、数字或对象猜测启用状态。
+	for _, field := range []struct{ old, target string }{{"mathjax", "render.math"}, {"mermaid", "render.diagrams"}} {
+		if value, exists := raw[field.old]; exists {
+			enabled, ok := value.(bool)
+			if !ok {
+				return out, fmt.Errorf("%s: %s must be a boolean", filename, field.old)
+			}
+			var converted any = false
+			if enabled {
+				converted = field.old
+			}
+			set(raw, field.target, converted)
+			delete(raw, field.old)
+		}
+	}
+	if value, exists := raw["type"]; exists {
+		style, ok := value.(string)
+		if !ok || style != "tech" && style != "story" {
+			return out, fmt.Errorf("%s: type must be tech or story", filename)
+		}
+		set(raw, "article.style", style)
+		delete(raw, "type")
 	}
 	if v, exists := raw["banner"]; exists {
 		if image, ok := v.(string); ok {
