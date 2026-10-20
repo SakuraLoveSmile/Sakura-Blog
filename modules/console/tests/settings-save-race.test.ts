@@ -69,9 +69,9 @@ test("SettingsView.save 与 canonical 原文保存: 维护各分区 JSON 文本�
   assert.match(code, /if\s*\(rawText\.value\[section\]\s*===\s*jsonAtStart\s*&&\s*hadNoIndependentDraft\)/);
 
   // canonical 提交原文且保存期间新草稿不被完成响应覆盖，保留大整数。
-  const canonical = read("modules/console/web/src/modules/settings/Stellar2Tab.vue");
+  const canonical = read("modules/console/web/src/modules/settings/useStellarSettings.ts");
   assert.match(canonical, /const payload = draft\.value/);
-  assert.match(canonical, /stellarSettingsApi\.save\(payload\)/);
+  assert.match(canonical, /api\.save\(payload\)/);
   assert.match(canonical, /if \(draft\.value === payload\) draft\.value = data/);
 });
 

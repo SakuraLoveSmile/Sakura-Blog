@@ -16,7 +16,8 @@ test("settings center exposes one six-tab system settings surface", () => {
   assert.match(view, /settings-tabs/);
   assert.match(view, /settings-basic-panel/);
   assert.match(view, /VTabbar/);
-  assert.match(view, /CanonicalSettingsNotice/);
+  assert.match(view, /CanonicalSettingsForm/);
+  assert.doesNotMatch(view, /CanonicalSettingsNotice/);
   assert.match(view, /<SeoSettings[^>]*host-only/);
   assert.match(read("modules/settings/tabs/SeoSettings.vue"), /<template v-if="!hostOnly">/);
   assert.match(view, /ALL_SETTINGS_SECTIONS/);

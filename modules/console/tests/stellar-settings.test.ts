@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { http } from "../../../packages/api-client/src/transport.ts";
+import { previewApi } from "../../../packages/api-client/src/api/editor.ts";
 import {
   readStellarSettingsProblem,
   stellarSettingsApi,
@@ -51,4 +52,20 @@ test("Stellar settings decodes named diagnostics from raw and parsed error respo
   assert.deepEqual(readStellarSettingsProblem({ response: { data: problem } }), problem);
   assert.equal(readStellarSettingsProblem({ response: { data: "unavailable" } }), undefined);
   assert.equal(readStellarSettingsProblem(undefined), undefined);
+});
+
+test("设置预览原样发送 canonical 分段和开放参数，不重编码大整数", async () => {
+  const sections = '{"site":{"title":"预览"},"stellar_v2":{"version":2,"theme":{"comments":{"giscus":{"large":9007199254740993}}}},"blog_extensions":{"custom":{"nil":null,"flag":false}}}';
+  const previous = http.defaults.adapter;
+  http.defaults.adapter = async (config) => {
+    assert.equal(config.url, "/preview/site");
+    assert.equal(config.data, `{"sections":${sections},"page":"index"}`);
+    assert.equal(config.headers.get("Content-Type"), "application/json");
+    return { config, status: 200, statusText: "OK", headers: {}, data: '{"html":"preview"}' };
+  };
+  try {
+    assert.deepEqual((await previewApi.site(sections, "index")).data, { html: "preview" });
+  } finally {
+    http.defaults.adapter = previous;
+  }
 });

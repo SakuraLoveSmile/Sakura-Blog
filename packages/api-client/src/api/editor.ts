@@ -25,7 +25,14 @@ export const previewApi = {
   /** 发布前预览：提交当前表单拿临时 token，新标签页打开 /preview/draft/:token */
   createPostPreview: (form: PostPayload) => http.post("/preview/post", form),
   /** 站点配置预览（设置页所见即所得）：草稿分段 → 前台整页 HTML */
-  site: (sections: JsonObject, page: string) => http.post<{ html: string }>("/preview/site", { sections, page }),
+  site: (sections: JsonObject | string, page: string) =>
+    typeof sections === "string"
+      ? http.post<{ html: string }>("/preview/site", `{"sections":${sections},"page":${JSON.stringify(page)}}`, {
+          headers: { "Content-Type": "application/json" },
+          transformRequest: [(data: string) => data],
+          mute: true,
+        })
+      : http.post<{ html: string }>("/preview/site", { sections, page }),
 };
 
 // --- Markdown 导入（仅解析，不落库） ---

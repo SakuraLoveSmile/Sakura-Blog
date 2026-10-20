@@ -61,6 +61,10 @@ const WHITELIST: Record<string, { pattern: RegExp; reason: string }[]> = {
     { pattern: /linear-gradient/, reason: "FUNCTIONAL_COLOR_PICKER_SPECTRUM: 调色盘全光谱色相条展示" },
     { pattern: /#ff9800|#2196f3/, reason: "FUNCTIONAL_UPSTREAM_THEME_FALLBACK: Stellar 前台主题默认强调色与链接色默认值" }
   ],
+  "modules/console/web/src/modules/settings/settings-canonical-fields.ts": [
+    { pattern: /default: \{ 探索号: "#f44336" \}/, reason: "FUNCTIONAL_UPSTREAM_CATEGORY_DEFAULT: 严格主题 schema 的分类颜色配置值，不是 Console 样式" },
+    { pattern: /\["(?:manual|reviewed|polished|generated)",.*"#(?:03a9f4|4caf50|ff9800)"/, reason: "FUNCTIONAL_CONTENT_LABEL_DEFAULT: 前台 AI 创作标记的现有配置默认值，不是 Console 样式" }
+  ],
 
   // 前台短代码组件可视化预览与渲染
   "modules/console/web/src/modules/plugins/ShortcodeStudioView.vue": [
