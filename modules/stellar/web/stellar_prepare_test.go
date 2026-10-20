@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"blog/internal/config"
 	"blog/internal/settings"
@@ -79,6 +80,27 @@ func TestPrepareStellarGenericPageAndPostUseDistinctOfficialModels(t *testing.T)
 				t.Fatalf("profile %s", prepared.Stellar.Profile)
 			}
 		})
+	}
+}
+
+func TestPrepareStandaloneDatesKeepPreviewChangesAndSource(t *testing.T) {
+	data := prepareFixture(t, "page")
+	frontMatter := map[string]any{"date": "2026-08-21 23:53:20.894550047 +0000 UTC m=+0.234201557", "updated": "2026-10-20T10:00:00Z"}
+	host := map[string]any{"date": time.Date(2026, 8, 21, 23, 53, 20, 894550047, time.UTC), "updated": time.Date(2026, 8, 21, 23, 53, 20, 894550247, time.UTC)}
+	data.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "page", Input: stellarmodels.Input{Page: host, FrontMatter: frontMatter}}
+	before := prepCloneMap(frontMatter)
+	prepared, err := PrepareStellar(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := prepGet(prepared.Stellar.Data, "page.date"); got != host["date"] {
+		t.Fatalf("legacy visible date = %#v", got)
+	}
+	if got := prepGet(prepared.Stellar.Data, "page.updated"); got != frontMatter["updated"] {
+		t.Fatalf("preview date replaced by older host date: %#v", got)
+	}
+	if !reflect.DeepEqual(frontMatter, before) || !reflect.DeepEqual(data.Stellar.Input.FrontMatter, before) {
+		t.Fatal("preparation mutated source front matter")
 	}
 }
 

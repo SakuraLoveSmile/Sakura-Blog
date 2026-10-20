@@ -289,6 +289,99 @@ func TestWikiCardHrefSemantics(t *testing.T) {
 
 }
 
+func TestWikiCardLinksPreserveCollectionRoutesAndExternalURLs(t *testing.T) {
+	for _, root := range []string{"", "/sub"} {
+		for _, tc := range []struct {
+			name, route, external string
+			published             bool
+		}{
+			{name: "empty"},
+			{name: "custom-empty", route: "/manual/"},
+			{name: "published", route: "/manual/", published: true},
+			{name: "external-empty", external: "https://docs.example.test/guide"},
+			{name: "external-published", published: true, external: "https://docs.example.test/guide"},
+		} {
+			t.Run(root+"/"+tc.name, func(t *testing.T) {
+				ws, st, _, router := stellarRouteFixture(t)
+				site := *ws.site.Load()
+				site.URL = "https://fixture.example" + root
+				ws.site.Store(&site)
+				engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+				if err != nil {
+					t.Fatal(err)
+				}
+				ws.engine = engine
+				project := &store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"Collection link fixture"}`, BlogExtensions: `{}`}
+				if tc.route != "" {
+					project.StellarConfig = `{"name":"Collection link fixture","route":{"path":"` + tc.route + `"}}`
+				}
+				if tc.external != "" {
+					project.BlogExtensions = `{"content":{"wiki_external_url":"` + tc.external + `"}}`
+				}
+				if err := st.CreateWikiProject(project); err != nil {
+					t.Fatal(err)
+				}
+				for _, doc := range []*store.WikiDoc{
+					{ProjectID: "docs", Slug: "private-draft", Title: "PRIVATE_DRAFT_TITLE", ContentMD: "PRIVATE_DRAFT_BODY", Status: store.StatusDraft},
+					{ProjectID: "docs", Slug: "intro", Title: "Introduction", Status: store.StatusPublished},
+				} {
+					if doc.Status == store.StatusPublished && !tc.published {
+						continue
+					}
+					doc.StellarVersion, doc.StellarConfig, doc.BlogExtensions = 2, `{}`, `{}`
+					if err := st.CreateWikidoc(doc); err != nil {
+						t.Fatal(err)
+					}
+				}
+				path := strings.TrimSuffix(tc.route, "/")
+				if path == "" {
+					path = "/wiki/docs"
+				}
+				wantHref := root + path
+				if tc.published {
+					wantHref += "/intro"
+				}
+				if tc.external != "" {
+					wantHref = tc.external
+				}
+				index := stellarRequest(router, root+"/wiki")
+				if index.Code != http.StatusOK || !strings.Contains(index.Body.String(), `class="wiki-card no-cover card-hover card-hover--spotlight card-hover--tilt" href="`+wantHref+`"`) {
+					t.Fatalf("wiki card status=%d, want href=%q", index.Code, wantHref)
+				}
+				entry := stellarRequest(router, root+path)
+				if tc.published {
+					if entry.Code != http.StatusFound || entry.Header().Get("Location") != path+"/intro" {
+						t.Fatalf("published collection entry = %d location=%q", entry.Code, entry.Header().Get("Location"))
+					}
+				} else if entry.Code != http.StatusOK || !strings.Contains(entry.Body.String(), "Collection link fixture") {
+					t.Fatalf("empty collection entry = %d, want 200 collection page", entry.Code)
+				}
+				for _, body := range []string{index.Body.String(), entry.Body.String()} {
+					for _, private := range []string{"private-draft", "PRIVATE_DRAFT_TITLE", "PRIVATE_DRAFT_BODY"} {
+						if strings.Contains(body, private) {
+							t.Fatalf("public collection exposed %q", private)
+						}
+					}
+				}
+				if draft := stellarRequest(router, root+path+"/private-draft"); draft.Code != http.StatusNotFound {
+					t.Fatalf("draft status=%d, want 404", draft.Code)
+				}
+				snap, err := ws.stellarSnapshot(nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !tc.published && stellarString(stellarGet(snap.byCollection["wiki:docs"].model, "route.homepage")) != "" {
+					t.Fatal("empty collection must retain its canonical empty homepage")
+				}
+				stored, err := st.GetWikiProject("docs")
+				if err != nil || stored == nil || stored.StellarConfig != project.StellarConfig || stored.BlogExtensions != project.BlogExtensions {
+					t.Fatalf("public projection changed persisted collection: %v", err)
+				}
+			})
+		}
+	}
+}
+
 func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)

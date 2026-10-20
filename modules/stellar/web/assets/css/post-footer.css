@@ -14,10 +14,26 @@
   object-fit: contain;
 }
 
-/* Spec 32 banner_ratio：main.css 编译期固定 aspect-ratio: 2.5，
-   模板在 .article.banner 上注入 --banner-ratio（site.yml article.banner_ratio）时覆盖。 */
-.article.banner .bg + .content {
+/* 背景头图保留配置比例；文字换行超过比例高度时，让同格内容自然撑开头部。 */
+.article.banner:has(> img.bg) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+.article.banner:has(> img.bg)::before {
+  content: "";
+  grid-area: 1 / 1;
+  width: 100%;
   aspect-ratio: var(--banner-ratio, 2.5);
+  align-self: start;
+  pointer-events: none;
+}
+.article.banner > img.bg + .content {
+  grid-area: 1 / 1;
+  aspect-ratio: auto;
+  height: auto;
+  min-height: 0;
+  align-self: stretch;
 }
 
 /* 打赏：正文结尾居中（模板 .reward-wrap，位于 .article-footer 之外） */

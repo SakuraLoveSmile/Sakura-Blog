@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/url"
 	"strings"
+	"time"
 
 	"blog/internal/settings"
 	"blog/internal/stellarhtml"
@@ -111,7 +112,17 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 		catalog = prepCloneMap(prepMap(runtimeCatalog))
 	}
 	publicData["widgets"] = catalog
-	publicData["page"] = input.FrontMatter
+	page := prepCloneMap(input.FrontMatter)
+	// 独立页面不构建 PageModel；仅在展示副本中兼容旧日期，保留预览新填入的值。
+	for _, key := range []string{"date", "updated"} {
+		if raw, ok := page[key].(string); ok {
+			wallTime, _, _ := strings.Cut(raw, " m=")
+			if date, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", wallTime); err == nil {
+				page[key] = date.UTC()
+			}
+		}
+	}
+	publicData["page"] = page
 	publicData["hostPage"] = input.Page
 	publicData["dateFormat"] = input.SiteConfig["date_format"]
 	publicData["headEnd"] = prepInject(theme, input.FrontMatter, "headEnd")

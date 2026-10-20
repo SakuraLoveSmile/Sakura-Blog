@@ -397,6 +397,10 @@ func (s *webServer) stellarBuildSnapshot(ctx context.Context, site *tmpl.Site, i
 		}
 		if c.profile == "wiki" {
 			c.index = stellarmodels.BuildWikiListingRender(ci, c.model)
+			// 空集合没有官方首页，卡片仍可进入宿主提供的集合页。
+			if stellarString(c.index["href"]) == "" {
+				c.index["href"] = c.path
+			}
 		}
 		if c.profile == "topic" {
 			ci.CollectionModel = c.model
