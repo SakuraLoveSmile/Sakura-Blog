@@ -10,7 +10,12 @@ export const postFields: StellarFormField[] = [
   { form: "excerpt", path: "excerpt", host: true },
   { form: "cover", path: "cover" },
   { form: "banner", path: "content.banner_image", blog: true },
-  { form: "categories", path: "categories", fallback: [] },
+  {
+    form: "categories",
+    path: "categories",
+    // 原文允许单个分类；表单/API 使用列表，名称中的逗号和层级斜杠不拆分。
+    read: (value) => (typeof value === "string" ? (value.trim() ? [value] : []) : (value ?? [])),
+  },
   {
     form: "tags",
     path: "tags",

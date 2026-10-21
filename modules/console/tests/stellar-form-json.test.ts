@@ -107,6 +107,58 @@ test("post and page controls patch strict snake_case, raw edits refill, replacem
     assert.equal(JSON.parse(page.value.stellar_config).leftbar.widgets, undefined);
   }));
 
+test("scalar post categories submit as a list without rewriting raw configuration or splitting category names", () =>
+  inScope(() => {
+    const original =
+      ' { "title": "导入文章", "categories" : "应用,工具，指南/Android", "comments":{"extra":' + bag + "} }";
+    const form = ref<any>({
+      stellar_version: 2,
+      stellar_config: original,
+      blog_extensions: "{}",
+      categories: [],
+    });
+    const error = useStellarForm(() => form.value, postFields);
+    const expected = ["应用,工具，指南/Android"];
+    assert.deepEqual(form.value.categories, expected);
+    assert.deepEqual(JSON.parse(JSON.stringify(form.value)).categories, expected);
+    assert.equal(form.value.stellar_config, original);
+    form.value.title = "保存时修改标题";
+    assert.equal(readJSONFieldRaw(form.value.stellar_config, "categories"), '"应用,工具，指南/Android"');
+    assert.deepEqual(form.value.categories, expected);
+    assert.ok(form.value.stellar_config.includes(bag));
+    form.value.categories = [...form.value.categories, "其他/分类"];
+    assert.deepEqual(JSON.parse(form.value.stellar_config).categories, [...expected, "其他/分类"]);
+    form.value.categories = [];
+    assert.deepEqual(JSON.parse(form.value.stellar_config).categories, []);
+    assert.equal(error.value, "");
+  }));
+
+test("post category lists, empty values and replaced records keep an array in the form", () =>
+  inScope(() => {
+    const form = ref<any>({ stellar_version: 2, stellar_config: "{}", blog_extensions: "{}", categories: [] });
+    useStellarForm(() => form.value, postFields);
+    for (const [raw, expected] of [
+      ['{"categories":["技术/Go","随笔"]}', ["技术/Go", "随笔"]],
+      ['{"categories":[]}', []],
+      ['{"categories":null}', []],
+      ['{"categories":""}', []],
+      ['{"categories":"  "}', []],
+      ["{}", []],
+      ['{"categories":"应用使用指南"}', ["应用使用指南"]],
+    ] as const) {
+      form.value.stellar_config = raw;
+      assert.deepEqual(JSON.parse(JSON.stringify(form.value.categories)), expected);
+      assert.equal(form.value.stellar_config, raw);
+    }
+    form.value = {
+      stellar_version: 2,
+      stellar_config: '{"categories":"重新加载分类"}',
+      blog_extensions: "{}",
+      categories: ["宿主列"],
+    };
+    assert.deepEqual(JSON.parse(JSON.stringify(form.value)).categories, ["重新加载分类"]);
+  }));
+
 test("collection and Hero controls preserve options, command labels, route, visibility and unknown action data", () =>
   inScope(() => {
     const raw =
