@@ -13,7 +13,7 @@ import (
 
 func TestMarkdownImportUnsupportedParameterConsentMultipart(t *testing.T) {
 	r, st, user, _ := newFullStellarEnv(t)
-	source := []byte("---\npassword: private-password-value\nmusic: {id: 321}\ncomments: true\ntopic: new-topic\nstatus: published\n---\n正文\n")
+	source := []byte("---\nauthor: old-author\npassword: private-password-value\nmusic: {id: 321}\ncomments: true\ntopic: new-topic\nstatus: published\n---\n正文\n")
 	upload := func(legacy string, ignored []string, topics string) *httptest.ResponseRecorder {
 		var body bytes.Buffer
 		writer := multipart.NewWriter(&body)
@@ -31,10 +31,10 @@ func TestMarkdownImportUnsupportedParameterConsentMultipart(t *testing.T) {
 	}
 	w := upload("true", nil, "")
 	var problem MarkdownImportUnsupportedParametersProblem
-	if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || w.Code != http.StatusBadRequest || problem.Type != "legacy_markdown_unsupported_parameters" || len(problem.UnsupportedParameters) != 2 {
+	if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || w.Code != http.StatusBadRequest || problem.Type != "legacy_markdown_unsupported_parameters" || len(problem.UnsupportedParameters) != 3 {
 		t.Fatalf("structured problem: %d %s %v", w.Code, w.Body.String(), err)
 	}
-	if strings.Contains(w.Body.String(), "private-password-value") || strings.Contains(w.Body.String(), "321") {
+	if strings.Contains(w.Body.String(), "private-password-value") || strings.Contains(w.Body.String(), "321") || strings.Contains(w.Body.String(), "old-author") {
 		t.Fatal("response leaked source values")
 	}
 	paths := []string{}
@@ -48,7 +48,7 @@ func TestMarkdownImportUnsupportedParameterConsentMultipart(t *testing.T) {
 			t.Fatal("incomplete issue")
 		}
 	}
-	if !reflect.DeepEqual(paths, []string{"/music", "/password"}) || draftCount != 1 {
+	if !reflect.DeepEqual(paths, []string{"/author", "/music", "/password"}) || draftCount != 2 {
 		t.Fatalf("unexpected issues: %+v", problem.UnsupportedParameters)
 	}
 	if value, _ := st.GetBySlug("Perfdog"); value != nil {
@@ -73,10 +73,10 @@ func TestMarkdownImportUnsupportedParameterConsentMultipart(t *testing.T) {
 		}
 	}
 	w = upload("true", []string{`[{"source":"Perfdog.md","path":"/music"}]`}, "")
-	if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || len(problem.UnsupportedParameters) != 1 || problem.UnsupportedParameters[0].Path != "/password" {
+	if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || len(problem.UnsupportedParameters) != 2 || problem.UnsupportedParameters[0].Path != "/author" || problem.UnsupportedParameters[1].Path != "/password" {
 		t.Fatalf("partial consent response: %s", w.Body.String())
 	}
-	approved := `[{"source":"Perfdog.md","path":"/music"},{"source":"Perfdog.md","path":"/password"}]`
+	approved := `[{"source":"Perfdog.md","path":"/author"},{"source":"Perfdog.md","path":"/music"},{"source":"Perfdog.md","path":"/password"}]`
 	w = upload("true", []string{approved}, "")
 	var missing MarkdownImportMissingTopicsProblem
 	if err := json.Unmarshal(w.Body.Bytes(), &missing); err != nil || missing.Type != "legacy_markdown_topics_required" || !reflect.DeepEqual(missing.MissingTopics, []string{"new-topic"}) {
@@ -90,7 +90,7 @@ func TestMarkdownImportUnsupportedParameterConsentMultipart(t *testing.T) {
 		t.Fatalf("approved request failed: %d %s", w.Code, w.Body.String())
 	}
 	value, _ := st.GetBySlug("Perfdog")
-	if value == nil || value.Status != "draft" || value.ContentMD != "正文\n" || strings.Contains(value.StellarConfig+value.BlogExtensions, "private-password-value") {
+	if value == nil || value.Status != "draft" || value.ContentMD != "正文\n" || value.Author != "" || len(value.AuthorIDs) == 0 || strings.Contains(value.StellarConfig+value.BlogExtensions, "private-password-value") || strings.Contains(value.StellarConfig+value.BlogExtensions, "old-author") {
 		t.Fatalf("wrong persisted result: %+v", value)
 	}
 	var raw struct {

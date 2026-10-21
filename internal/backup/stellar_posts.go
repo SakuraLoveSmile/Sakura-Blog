@@ -293,18 +293,48 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 	if len(sources) == 0 {
 		return nil, fmt.Errorf("markdown archive has no sources")
 	}
-	// 在创建候选前收集整批参数问题。固定文件顺序，真实数据库与文件不写入。
+	if !legacy && len(ignored) > 0 {
+		return nil, fmt.Errorf("仅 1.x 导入支持忽略参数授权")
+	}
+	directory, err := os.MkdirTemp(filepath.Dir(s.store.DBPath()), ".stellar-import-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(directory)
+	snapshot := filepath.Join(directory, "blog.db")
+	if err := s.store.BackupTo(snapshot); err != nil {
+		return nil, err
+	}
+	probe, err := store.OpenForRecovery(snapshot)
+	if err != nil {
+		return nil, err
+	}
+	defer probe.Close()
+	// 整批预检与转换读取同一候选快照，真实数据库与文件不写入。
 	ordered := make([]string, 0, len(sources))
 	for slug := range sources {
 		ordered = append(ordered, slug)
 	}
 	sort.Slice(ordered, func(i, j int) bool { return sourceNames[ordered[i]] < sourceNames[ordered[j]] })
 	ignoredBySource := map[string][]string{}
+	options := stellarmigration.LegacyMarkdownImportOptions{}
 	if legacy {
+		configuration, err := config.LoadStellarV2(probe)
+		if err != nil {
+			return nil, err
+		}
+		runtime, err := config.ParseStellarBlogRuntime(configuration.Blog)
+		if err != nil {
+			return nil, err
+		}
+		options.PublicAuthorIDs = map[string]bool{}
+		for id, author := range runtime.Authors {
+			options.PublicAuthorIDs[id] = strings.TrimSpace(author.Name) != ""
+		}
 		all := []stellarmigration.UnsupportedMarkdownParameter{}
 		known := map[IgnoredMarkdownParameter]bool{}
 		for _, slug := range ordered {
-			parameters, err := stellarmigration.InspectLegacyMarkdownParameters(sources[slug], sourceNames[slug])
+			parameters, err := stellarmigration.InspectLegacyMarkdownParametersWithOptions(sources[slug], sourceNames[slug], options)
 			if err != nil {
 				return nil, err
 			}
@@ -330,23 +360,7 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 		if len(remaining) > 0 {
 			return nil, &stellarmigration.UnsupportedMarkdownParametersError{Parameters: remaining}
 		}
-	} else if len(ignored) > 0 {
-		return nil, fmt.Errorf("仅 1.x 导入支持忽略参数授权")
 	}
-	directory, err := os.MkdirTemp(filepath.Dir(s.store.DBPath()), ".stellar-import-")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(directory)
-	snapshot := filepath.Join(directory, "blog.db")
-	if err := s.store.BackupTo(snapshot); err != nil {
-		return nil, err
-	}
-	probe, err := store.OpenForRecovery(snapshot)
-	if err != nil {
-		return nil, err
-	}
-	defer probe.Close()
 	if legacy {
 		topics, err := probe.ListTopics()
 		if err != nil {
@@ -361,7 +375,8 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 		for _, fileSlug := range ordered {
 			source := sources[fileSlug]
 			sourceName := sourceNames[fileSlug]
-			result, err := stellarmigration.ConvertLegacyMarkdownWithIgnoredParameters(source, sourceName, "post", topics, ignoredBySource[sourceName])
+			options.Topics, options.IgnoredParameters = topics, ignoredBySource[sourceName]
+			result, err := stellarmigration.ConvertLegacyMarkdownWithOptions(source, sourceName, "post", options)
 			var unresolved *stellarmigration.MissingLegacyTopicError
 			if errors.As(err, &unresolved) {
 				if !approved[unresolved.Topic] {
@@ -380,7 +395,8 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 					return nil, err
 				}
 				topics = append(topics, topic)
-				result, err = stellarmigration.ConvertLegacyMarkdownWithIgnoredParameters(source, sourceName, "post", topics, ignoredBySource[sourceName])
+				options.Topics = topics
+				result, err = stellarmigration.ConvertLegacyMarkdownWithOptions(source, sourceName, "post", options)
 			}
 			if err != nil {
 				return nil, err

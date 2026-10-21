@@ -1,0 +1,38 @@
+{
+  "source_unchanged_sha256": "56f0923cdaf3e9558a93a22d6aab6bb65d7bd2bf1fa9884ec2f4320df065df4a",
+  "body_bytes": 15213,
+  "body_sha256": "730b4021bcae30911a4f61c5010bf23c0aa210554a945036a4269337a0077376",
+  "body_preserved_exactly": true,
+  "status": "draft",
+  "legacy_comments_enabled": true,
+  "public_author_ignored": true,
+  "public_catalog": {
+    "sakura": {
+      "name": "Sakura"
+    }
+  },
+  "catalog_users_topics_unmodified": true,
+  "existing_posts_unchanged": 2,
+  "new_post_owner": "configured admin",
+  "served_current_spa_entries": [
+    "/console/assets/index-CLZZptlt.js",
+    "/console/assets/index-BihGOG2u.css",
+    "/console/assets/registry-BYJksN3f.css",
+    "/console/assets/DefaultLayout-C-a137it.css",
+    "/console/assets/api-C-H7IBEY.js",
+    "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+    "/console/assets/pinia-CXeiBUD1.js",
+    "/console/assets/preload-helper-l0U7FUPx.js",
+    "/console/assets/registry-DhQgNSY5.js",
+    "/console/assets/chart-init-BhrNxZ3G.js",
+    "/console/assets/format-DaBMN9QY.js",
+    "/console/assets/DefaultLayout-CaW0ZOpu.js",
+    "/console/assets/useQuery-gOJyKPZ4.js",
+    "/console/assets/useQueryClient-WYZggzf6.js",
+    "/console/assets/BackupView-m1DaOETt.js",
+    "/console/assets/VEmpty-B8HxL7vI.js",
+    "/console/assets/VLoading-zdiV8KT-.js",
+    "/console/assets/ConsoleStatsCard-B3yRKS6Z.js"
+  ],
+  "integrity": "ok"
+}

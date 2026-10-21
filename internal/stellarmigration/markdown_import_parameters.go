@@ -30,9 +30,22 @@ func (e *UnsupportedMarkdownParametersError) Error() string {
 	return "文章包含不支持的参数；请修复参数，或明确选择忽略后继续导入"
 }
 
-// InspectLegacyMarkdownParameters 使用 strict schema 识别真正未知/已移除的字段。
-// Blog 是开放扩展袋；仅宿主生命周期字段需要单独确认，不扫描其余扩展。
+// LegacyMarkdownImportOptions 让预检与转换共享同一候选目录和精确忽略授权。
+type LegacyMarkdownImportOptions struct {
+	Topics            []*store.Topic
+	IgnoredParameters []string
+	// nil 表示未提供目录；非 nil 空集合表示站点确实没有可用公开作者。
+	PublicAuthorIDs map[string]bool
+}
+
+// InspectLegacyMarkdownParameters 保留无站点上下文的检查入口。
 func InspectLegacyMarkdownParameters(source []byte, filename string) ([]UnsupportedMarkdownParameter, error) {
+	return InspectLegacyMarkdownParametersWithOptions(source, filename, LegacyMarkdownImportOptions{})
+}
+
+// InspectLegacyMarkdownParametersWithOptions 使用 strict schema 识别真正未知/已移除的字段。
+// Blog 是开放扩展袋；仅宿主生命周期字段需要单独确认，不扫描其余扩展。
+func InspectLegacyMarkdownParametersWithOptions(source []byte, filename string, options LegacyMarkdownImportOptions) ([]UnsupportedMarkdownParameter, error) {
 	if !utf8.Valid(source) {
 		return nil, fmt.Errorf("invalid Markdown UTF-8")
 	}
@@ -40,11 +53,15 @@ func InspectLegacyMarkdownParameters(source []byte, filename string) ([]Unsuppor
 	if err != nil {
 		return nil, fmt.Errorf("%s: invalid front matter", filename)
 	}
-	return unsupportedMarkdownParameters(raw, filename), nil
+	return unsupportedMarkdownParameters(raw, filename, options.PublicAuthorIDs), nil
 }
 
-func unsupportedMarkdownParameters(raw map[string]any, filename string) []UnsupportedMarkdownParameter {
+func unsupportedMarkdownParameters(raw map[string]any, filename string, publicAuthorIDs map[string]bool) []UnsupportedMarkdownParameter {
 	out := []UnsupportedMarkdownParameter{}
+	// 仅旧署名别名可明确忽略。类型错误、显式目标及父级冲突仍由转换器硬拒绝。
+	if author, ok := raw["author"].(string); ok && author != "" && publicAuthorIDs != nil && !publicAuthorIDs[author] && !importTargetExists(raw, "article.author") {
+		out = append(out, UnsupportedMarkdownParameter{Source: filename, Path: "/author", Field: "author", Code: "unresolved_public_author", Message: "此旧版作者未匹配站点公开作者目录；忽略后使用站点默认署名，并保存为草稿，编辑权限保持不变。", RequiresDraft: true})
+	}
 	for _, key := range []string{"password", "publish_at", "authors", "draft_json"} {
 		paths := [][]string{{key}, {"blog", "host", key}}
 		for _, parts := range paths {
@@ -257,6 +274,11 @@ func markdownFooterActionPath(prefix []string) bool {
 
 // ConvertLegacyMarkdownWithIgnoredParameters 每次重新识别并只移除明确授权的节点。
 func ConvertLegacyMarkdownWithIgnoredParameters(source []byte, filename, kind string, topics []*store.Topic, ignored []string) (MarkdownImport, error) {
+	return ConvertLegacyMarkdownWithOptions(source, filename, kind, LegacyMarkdownImportOptions{Topics: topics, IgnoredParameters: ignored})
+}
+
+// ConvertLegacyMarkdownWithOptions 每次依据候选目录重新证明忽略项，拒绝过时授权。
+func ConvertLegacyMarkdownWithOptions(source []byte, filename, kind string, options LegacyMarkdownImportOptions) (MarkdownImport, error) {
 	out := MarkdownImport{Warnings: []string{}}
 	if !utf8.Valid(source) || kind != "post" && kind != "page" {
 		return out, fmt.Errorf("invalid Markdown UTF-8 or kind")
@@ -265,14 +287,14 @@ func ConvertLegacyMarkdownWithIgnoredParameters(source []byte, filename, kind st
 	if err != nil {
 		return out, fmt.Errorf("%s: invalid front matter", filename)
 	}
-	problems := unsupportedMarkdownParameters(raw, filename)
+	problems := unsupportedMarkdownParameters(raw, filename, options.PublicAuthorIDs)
 	allowed := map[string]UnsupportedMarkdownParameter{}
 	for _, problem := range problems {
 		allowed[problem.Path] = problem
 	}
 	selected := map[string]bool{}
 	requiresDraft := false
-	for _, path := range ignored {
+	for _, path := range options.IgnoredParameters {
 		problem, exists := allowed[path]
 		if !exists || selected[path] {
 			return out, fmt.Errorf("无效的不支持参数忽略授权")
@@ -326,5 +348,5 @@ func ConvertLegacyMarkdownWithIgnoredParameters(source []byte, filename, kind st
 	}
 	// 后续所有快路径只读清理后的内容，不能从 source 重新引入被移除的参数。
 	cleaned := []byte(";;;\n" + encode(raw) + "\n;;;\n" + body)
-	return convertLegacyMarkdown(cleaned, filename, kind, topics)
+	return convertLegacyMarkdown(cleaned, filename, kind, options.Topics)
 }

@@ -23,14 +23,14 @@ func TestLegacyMarkdownParameterBatchPreflightAndAtomicRetry(t *testing.T) {
 	beforeTopics, _ := st.ListTopics()
 	var packed bytes.Buffer
 	writer := zip.NewWriter(&packed)
-	for _, item := range [][2]string{{"z.MD", "password: secret\nmusic: {id: 123}\nstatus: published"}, {"a.md", "hide: true\ntopic: new-topic"}} {
+	for _, item := range [][2]string{{"z.MD", "author: old-author\npassword: secret\nmusic: {id: 123}\nstatus: published"}, {"a.md", "hide: true\ntopic: new-topic"}} {
 		entry, _ := writer.Create(item[0])
 		_, _ = entry.Write([]byte("---\n" + item[1] + "\n---\n正文\n```\npassword: keep\n```\n"))
 	}
 	_ = writer.Close()
 	_, err := svc.ImportLegacyMarkdownContext(context.Background(), "posts.zip", packed.Bytes())
 	var unsupported *stellarmigration.UnsupportedMarkdownParametersError
-	if !errors.As(err, &unsupported) || len(unsupported.Parameters) != 3 {
+	if !errors.As(err, &unsupported) || len(unsupported.Parameters) != 4 {
 		t.Fatalf("missing whole-batch issues: %+v %v", unsupported, err)
 	}
 	if unsupported.Parameters[0].Source != "a.md" || unsupported.Parameters[1].Source != "z.MD" {
@@ -50,7 +50,7 @@ func TestLegacyMarkdownParameterBatchPreflightAndAtomicRetry(t *testing.T) {
 	}
 	assertUntouched()
 	_, err = svc.ImportLegacyMarkdownWithOptionsContext(context.Background(), "posts.zip", packed.Bytes(), nil, selected[:1])
-	if !errors.As(err, &unsupported) || len(unsupported.Parameters) != 2 {
+	if !errors.As(err, &unsupported) || len(unsupported.Parameters) != 3 {
 		t.Fatalf("partial authorization skipped unresolved file: %v", err)
 	}
 	assertUntouched()
