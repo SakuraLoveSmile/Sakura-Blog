@@ -224,6 +224,9 @@ func stellarMarkdownProtectedRanges(source string) [][2]int {
 	return merged
 }
 func (r *shortcodeV2Renderer) prepareMath(source string) (string, map[string]string) {
+	if v2Object(r.page["render"])["math"] == false {
+		return source, nil
+	}
 	provider := v2String(v2Object(v2Object(r.theme["features"])["math"])["provider"])
 	if override, ok := v2Object(r.page["render"])["math"].(string); ok && override != "" {
 		provider = override

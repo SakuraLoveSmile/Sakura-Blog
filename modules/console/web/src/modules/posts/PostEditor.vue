@@ -7,7 +7,6 @@ import { useQueryClient } from "@tanstack/vue-query";
 import { postApi, taxonomyApi, previewApi, editorImportApi, getApiErrorMessage } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
-import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import MarkdownImportPreview from "@/components/editor/MarkdownImportPreview.vue";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 // Spec 62：tiptap 190KB gzip chunk 按需挂载——仅富文本模式启用时才下载
@@ -1055,15 +1054,6 @@ function handleDiscardDraft() {
 
         <!-- 编辑器内核 -->
         <div class="rounded-b-xl border border-border bg-card sm:rounded-b-[14px]">
-          <StellarContentConfig
-            :sync-error="stellarFormError"
-            v-model:config="form.stellar_config"
-            v-model:blog="form.blog_extensions"
-            :version="form.stellar_version"
-            profile="post"
-            :content="form.content_md"
-            class="mb-3"
-          />
           <RichTextEditor
             v-if="editorKind === 'rich'"
             :key="'rich:' + editorInstanceKey"
@@ -1098,6 +1088,7 @@ function handleDiscardDraft() {
       >
         <EditorSidebar
           :form="form"
+          :sync-error="stellarFormError"
           :categories="categories"
           :category-tree="categoryTree"
           :tags="tags"
@@ -1148,6 +1139,7 @@ function handleDiscardDraft() {
           <EditorSidebar
             initial-tab="detail"
             :form="form"
+            :sync-error="stellarFormError"
             :categories="categories"
             :category-tree="categoryTree"
             :tags="tags"

@@ -149,7 +149,7 @@ func Build(input Input) (Bundle, error) {
 	}
 	render := obj(input.Page["render"])
 	mathProvider := str(render["math"])
-	if !truth(render["math"]) {
+	if !truth(render["math"]) && render["math"] != false {
 		mathProvider = str(at(features, "math.provider"))
 	}
 	if mathProvider == "mathjax" {

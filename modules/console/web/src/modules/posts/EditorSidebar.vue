@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { patchJSONField, readJSONField } from "@/components/editor/stellar-form-json";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
+import PostThemeSettings from "@/components/editor/PostThemeSettings.vue";
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
 import { previewApi, settingsApi, getApiErrorMessage, postApi, aiApi, topicApi, type TopicItem } from "@/api";
@@ -14,6 +16,7 @@ import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCa
 interface PostForm {
   stellar_version: number;
   stellar_config: string;
+  blog_extensions: string;
   slug: string;
   title: string;
   excerpt: string;
@@ -48,6 +51,7 @@ interface CategoryNode {
 const props = defineProps<{
   initialTab?: "outline" | "detail";
   form: PostForm;
+  syncError?: string;
   categories: string[];
   categoryTree: CategoryNode[];
   tags: string[];
@@ -587,8 +591,9 @@ const chipActiveCls = "bg-primary/15 text-primary";
       </div>
     </div>
 
-    <!-- 设置：四张卡片 -->
+    <!-- 设置 -->
     <template v-else>
+      <p v-if="syncError" role="alert" class="px-1 text-xs text-destructive">{{ syncError }}</p>
       <!-- 卡片 1：发布设置 -->
       <div :class="cardCls">
         <div :class="cardHeaderCls">发布设置</div>
@@ -911,8 +916,16 @@ const chipActiveCls = "bg-primary/15 text-primary";
             <label :class="labelCls">封面 URL</label>
             <input v-model="form.cover" :class="fieldCls" />
           </div>
+          <div>
+            <label class="block text-[12.5px] font-medium text-text-secondary">
+              文章横幅图片
+              <input v-model="form.banner" :class="fieldCls + ' mt-1.5'" placeholder="图片 URL，留空使用默认横幅" />
+            </label>
+          </div>
         </div>
       </div>
+
+      <PostThemeSettings v-model:config="form.stellar_config" :version="form.stellar_version" :sync-error="syncError" />
 
       <!-- 卡片 4：高级选项 -->
       <div :class="cardCls">
@@ -1047,6 +1060,16 @@ const chipActiveCls = "bg-primary/15 text-primary";
           <p v-else class="text-xs text-text-quaternary">选择插件后可编辑参数并插入正文。</p>
         </div>
       </div>
+      <StellarContentConfig
+        v-model:config="form.stellar_config"
+        v-model:blog="form.blog_extensions"
+        :sync-error="syncError"
+        :version="form.stellar_version"
+        :content="form.content_md"
+        profile="post"
+        summary="配置原文（JSON）"
+        class="min-w-0"
+      />
     </template>
   </div>
 </template>

@@ -220,6 +220,54 @@ func TestStylesAndUseNumber(t *testing.T) {
 	}
 }
 
+func TestPageMathOverride(t *testing.T) {
+	for _, themeProvider := range []string{"katex", "mathjax"} {
+		for _, tc := range []struct {
+			name     string
+			render   map[string]any
+			provider string
+		}{
+			{"missing", nil, themeProvider},
+			{"null", map[string]any{"math": nil}, themeProvider},
+			{"disabled", map[string]any{"math": false}, ""},
+			{"katex", map[string]any{"math": "katex"}, "katex"},
+			{"mathjax", map[string]any{"math": "mathjax"}, "mathjax"},
+		} {
+			t.Run(themeProvider+"/"+tc.name, func(t *testing.T) {
+				bundle, err := Build(Input{
+					Theme: map[string]any{"features": map[string]any{"math": map[string]any{"provider": themeProvider}}},
+					Page:  map[string]any{"render": tc.render},
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				hasMathJax := false
+				for _, extension := range bundle.Manifest.Extensions {
+					if extension.ID == "mathjax" {
+						hasMathJax = true
+					}
+				}
+				if hasMathJax != (tc.provider == "mathjax") {
+					t.Errorf("MathJax extension present = %v; selected provider = %q", hasMathJax, tc.provider)
+				}
+				katexStyles := 0
+				for _, style := range bundle.Styles {
+					if strings.Contains(style.Href, "katex") {
+						katexStyles++
+					}
+				}
+				wantStyles := 0
+				if tc.provider == "katex" {
+					wantStyles = 2
+				}
+				if katexStyles != wantStyles {
+					t.Errorf("KaTeX stylesheet count = %d; want %d", katexStyles, wantStyles)
+				}
+			})
+		}
+	}
+}
+
 func TestLanguageDefaultsAndExplicitMessages(t *testing.T) {
 	for language, want := range map[string]string{"zh-CN": "刚刚", "zh-TW": "剛剛", "en": "Just"} {
 		bundle, err := Build(Input{Language: language})

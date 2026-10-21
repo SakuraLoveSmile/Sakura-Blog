@@ -129,6 +129,45 @@ $$\begin{cases}x<y\\x>y\end{cases}$$
 		t.Fatal("code/math boundary failed", out)
 	}
 }
+func TestStellarV2PageMathOverride(t *testing.T) {
+	for _, themeProvider := range []string{"katex", "mathjax"} {
+		for _, tc := range []struct {
+			name     string
+			render   map[string]any
+			provider string
+		}{
+			{"missing", nil, themeProvider},
+			{"null", map[string]any{"math": nil}, themeProvider},
+			{"disabled", map[string]any{"math": false}, ""},
+			{"katex", map[string]any{"math": "katex"}, "katex"},
+			{"mathjax", map[string]any{"math": "mathjax"}, "mathjax"},
+		} {
+			t.Run(themeProvider+"/"+tc.name, func(t *testing.T) {
+				ctx := StellarRenderContext{
+					Theme: map[string]any{"features": map[string]any{"math": map[string]any{"provider": themeProvider}}},
+					Page:  map[string]any{"render": tc.render},
+				}
+				out, err := NewService("").RenderStellarV2WithContext("Inline $x$\n\n{% box %}\n$$y$$\n{% endbox %}", ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				root := parseStellarHTML(t, out)
+				for class, wantProvider := range map[string]string{"katex": "katex", "has-jax": "mathjax"} {
+					want := 0
+					if tc.provider == wantProvider {
+						want = 2
+					}
+					if got := len(selectStellarClass(root, class)); got != want {
+						t.Errorf("%s node count = %d; want %d: %s", class, got, want, out)
+					}
+				}
+				if tc.provider == "" && (!strings.Contains(out, "$x$") || !strings.Contains(out, "$$y$$") || strings.Contains(out, "data-stellar-math-placeholder")) {
+					t.Fatalf("disabled math must remain text without server math markup: %s", out)
+				}
+			})
+		}
+	}
+}
 func TestStellarV2KatexActualGoldenDOMOptionsAndErrors(t *testing.T) {
 	cases := []struct {
 		tex     string

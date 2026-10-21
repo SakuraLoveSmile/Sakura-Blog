@@ -14,8 +14,9 @@ const props = withDefaults(
     profile: string;
     collection?: boolean;
     content?: string;
+    summary?: string;
   }>(),
-  { collection: false, content: "" },
+  { collection: false, content: "", summary: "Stellar 2 原文配置" },
 );
 const emit = defineEmits<{ "update:config": [string]; "update:blog": [string] }>();
 const busy = ref(false);
@@ -66,7 +67,7 @@ async function exportDocument() {
 
 <template>
   <details class="rounded-[var(--radius)] border border-border bg-card p-4">
-    <summary class="cursor-pointer text-sm font-medium">Stellar 2 原文配置</summary>
+    <summary class="cursor-pointer text-sm font-medium">{{ summary }}</summary>
     <div class="mt-4 space-y-3">
       <p v-if="syncError" role="alert" class="text-sm text-destructive">{{ syncError }}</p>
       <p v-if="version !== 2" class="text-sm text-destructive" role="status">
