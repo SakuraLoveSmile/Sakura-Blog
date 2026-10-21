@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const ftsTablePrefix = "posts_fts"
-
 func (s *Store) RestoreFrom(srcPath string) error {
 	if err := s.ValidateRestoreFrom(srcPath); err != nil {
 		return err
@@ -196,7 +194,11 @@ func attachReadOnly(ctx context.Context, conn *sql.Conn, path string) error {
 func listTablesConn(ctx context.Context, conn interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
 }, schema string) ([]string, error) {
-	rows, err := conn.QueryContext(ctx, `SELECT name FROM `+quoteIdent(schema)+`.sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
+	// FTS 影子表由 SQLite 随虚表维护，不能再逐表清空或复制。
+	// RAG 复制虚表的逻辑行以支持启动前补偿；站内搜索仍由应用层重建。
+	rows, err := conn.QueryContext(ctx, `SELECT name FROM pragma_table_list
+		WHERE schema = ? AND type IN ('table', 'virtual') AND name NOT LIKE 'sqlite_%'
+		AND NOT (type = 'virtual' AND name = 'posts_fts') ORDER BY name`, schema)
 	if err != nil {
 		return nil, err
 	}
@@ -207,9 +209,7 @@ func listTablesConn(ctx context.Context, conn interface {
 		if err := rows.Scan(&n); err != nil {
 			return nil, err
 		}
-		if !strings.HasPrefix(n, ftsTablePrefix) {
-			out = append(out, n)
-		}
+		out = append(out, n)
 	}
 	return out, rows.Err()
 }
