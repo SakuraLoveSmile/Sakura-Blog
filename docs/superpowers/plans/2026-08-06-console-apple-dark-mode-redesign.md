@@ -1,4 +1,6 @@
 > **历史文档：旧目录结构（已废弃）**
+
+> 路径说明：文中本机绝对路径已脱敏。执行历史命令前，将 `BLOG_ROOT` 设置为对应版本的仓库根目录（例如从根目录执行 `export BLOG_ROOT="$PWD"`）。
 >
 > 本文档记录的是模块化重构前的路径，仅作历史参考，不应据此修改现行代码。
 >
@@ -356,7 +358,7 @@
 
 - [ ] **Step 1:** 在 worktree 根执行完整测试：
   ```bash
-  cd /Users/sakurasep/Documents/Code/Project/Blog/dev
+  cd "$BLOG_ROOT"
   make test
   ```
   预期：console-test（vue-tsc + node:test）、assets-test、go vet、go test 全部通过。
