@@ -210,7 +210,7 @@ func StageStellarPosts(st *store.Store, renderer *post.Service, sources map[stri
 }
 
 func (s *Service) importStellarPosts(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
-	return s.importMarkdownPosts(ctx, filename, data, false, nil)
+	return s.importMarkdownPosts(ctx, filename, data, false, nil, nil)
 }
 
 // ImportLegacyMarkdownContext 仅在调用者明确选择 1.x 转换时执行；不接受 manifest 备份。
@@ -230,19 +230,33 @@ func (e *MissingLegacyTopicsError) Error() string {
 // ImportLegacyMarkdownWithTopicsContext 仅在候选副本中创建已明确确认的同名/同 Slug 专栏。
 // 后续转换或校验失败不会把新专栏单独写入真实数据库。
 func (s *Service) ImportLegacyMarkdownWithTopicsContext(ctx context.Context, filename string, data []byte, createTopics []string) (*ImportResult, error) {
-	return s.importMarkdownPosts(ctx, filename, data, true, createTopics)
+	return s.ImportLegacyMarkdownWithOptionsContext(ctx, filename, data, createTopics, nil)
 }
 
-func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data []byte, legacy bool, createTopics []string) (*ImportResult, error) {
+// IgnoredMarkdownParameter 是仅对本次源文件中已证明不支持的参数的精确授权。
+type IgnoredMarkdownParameter struct {
+	Source string `json:"source"`
+	Path   string `json:"path"`
+}
+
+// ImportLegacyMarkdownWithOptionsContext 不保存忽略偏好；每次重新解析上传内容。
+func (s *Service) ImportLegacyMarkdownWithOptionsContext(ctx context.Context, filename string, data []byte, createTopics []string, ignored []IgnoredMarkdownParameter) (*ImportResult, error) {
+	return s.importMarkdownPosts(ctx, filename, data, true, createTopics, ignored)
+}
+
+func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data []byte, legacy bool, createTopics []string, ignored []IgnoredMarkdownParameter) (*ImportResult, error) {
 	if _, err := config.LoadStellarV2(s.store); err != nil {
 		return nil, fmt.Errorf("%w: %w", store.ErrStellarMigrationRequired, err)
 	}
 	sources := map[string][]byte{}
+	sourceNames := map[string]string{}
 	if strings.HasSuffix(strings.ToLower(filename), ".md") {
 		if filename != filepath.Base(filename) || len(data) > maxZipEntrySize {
 			return nil, fmt.Errorf("invalid Markdown file name or size")
 		}
-		sources[strings.TrimSuffix(filename, filepath.Ext(filename))] = data
+		slug := strings.TrimSuffix(filename, filepath.Ext(filename))
+		sources[slug] = data
+		sourceNames[slug] = filename
 	} else if strings.HasSuffix(strings.ToLower(filename), ".zip") {
 		reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 		if err != nil {
@@ -271,12 +285,53 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 				return nil, fmt.Errorf("markdown archive exceeds size limit or cannot be read")
 			}
 			sources[slug] = body
+			sourceNames[slug] = entry.Name
 		}
 	} else {
 		return nil, fmt.Errorf("only Markdown or portable ZIP content is supported")
 	}
 	if len(sources) == 0 {
 		return nil, fmt.Errorf("markdown archive has no sources")
+	}
+	// 在创建候选前收集整批参数问题。固定文件顺序，真实数据库与文件不写入。
+	ordered := make([]string, 0, len(sources))
+	for slug := range sources {
+		ordered = append(ordered, slug)
+	}
+	sort.Slice(ordered, func(i, j int) bool { return sourceNames[ordered[i]] < sourceNames[ordered[j]] })
+	ignoredBySource := map[string][]string{}
+	if legacy {
+		all := []stellarmigration.UnsupportedMarkdownParameter{}
+		known := map[IgnoredMarkdownParameter]bool{}
+		for _, slug := range ordered {
+			parameters, err := stellarmigration.InspectLegacyMarkdownParameters(sources[slug], sourceNames[slug])
+			if err != nil {
+				return nil, err
+			}
+			for _, parameter := range parameters {
+				all = append(all, parameter)
+				known[IgnoredMarkdownParameter{Source: parameter.Source, Path: parameter.Path}] = true
+			}
+		}
+		selected := map[IgnoredMarkdownParameter]bool{}
+		for _, parameter := range ignored {
+			if !known[parameter] || selected[parameter] {
+				return nil, fmt.Errorf("无效的不支持参数忽略授权")
+			}
+			selected[parameter] = true
+			ignoredBySource[parameter.Source] = append(ignoredBySource[parameter.Source], parameter.Path)
+		}
+		remaining := []stellarmigration.UnsupportedMarkdownParameter{}
+		for _, parameter := range all {
+			if !selected[IgnoredMarkdownParameter{Source: parameter.Source, Path: parameter.Path}] {
+				remaining = append(remaining, parameter)
+			}
+		}
+		if len(remaining) > 0 {
+			return nil, &stellarmigration.UnsupportedMarkdownParametersError{Parameters: remaining}
+		}
+	} else if len(ignored) > 0 {
+		return nil, fmt.Errorf("仅 1.x 导入支持忽略参数授权")
 	}
 	directory, err := os.MkdirTemp(filepath.Dir(s.store.DBPath()), ".stellar-import-")
 	if err != nil {
@@ -303,8 +358,10 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 			approved[name] = true
 		}
 		missing := map[string]bool{}
-		for fileSlug, source := range sources {
-			result, err := stellarmigration.ConvertLegacyMarkdown(source, fileSlug+".md", "post", topics)
+		for _, fileSlug := range ordered {
+			source := sources[fileSlug]
+			sourceName := sourceNames[fileSlug]
+			result, err := stellarmigration.ConvertLegacyMarkdownWithIgnoredParameters(source, sourceName, "post", topics, ignoredBySource[sourceName])
 			var unresolved *stellarmigration.MissingLegacyTopicError
 			if errors.As(err, &unresolved) {
 				if !approved[unresolved.Topic] {
@@ -323,7 +380,7 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 					return nil, err
 				}
 				topics = append(topics, topic)
-				result, err = stellarmigration.ConvertLegacyMarkdown(source, fileSlug+".md", "post", topics)
+				result, err = stellarmigration.ConvertLegacyMarkdownWithIgnoredParameters(source, sourceName, "post", topics, ignoredBySource[sourceName])
 			}
 			if err != nil {
 				return nil, err

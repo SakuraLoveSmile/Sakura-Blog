@@ -30,6 +30,10 @@ func (e *MissingLegacyTopicError) Error() string {
 // ConvertLegacyMarkdown 显式复用整站迁移的字段与 shortcode 规则，不作为 strict 解析的 fallback。
 // 空 topic 表示未分配；非空值只允许唯一 slug/name 匹配，不创建集合或修改任何记录。
 func ConvertLegacyMarkdown(source []byte, filename, kind string, topics []*store.Topic) (MarkdownImport, error) {
+	return ConvertLegacyMarkdownWithIgnoredParameters(source, filename, kind, topics, nil)
+}
+
+func convertLegacyMarkdown(source []byte, filename, kind string, topics []*store.Topic) (MarkdownImport, error) {
 	out := MarkdownImport{Warnings: []string{}}
 	if !utf8.Valid(source) || kind != "post" && kind != "page" {
 		return out, fmt.Errorf("invalid Markdown UTF-8 or kind")
@@ -37,13 +41,6 @@ func ConvertLegacyMarkdown(source []byte, filename, kind string, topics []*store
 	raw, body, err := readLegacyDocument(string(source))
 	if err != nil {
 		return out, fmt.Errorf("%s: invalid front matter", filename)
-	}
-	for _, key := range []string{"password", "publish_at", "authors", "draft_json"} {
-		_, direct := raw[key]
-		_, host := get(raw, "blog.host."+key)
-		if direct || host {
-			return out, fmt.Errorf("%s: %s requires a supported host lifecycle contract; import rejected", filename, key)
-		}
 	}
 	if v, exists := raw["slug"]; exists {
 		text, ok := v.(string)
@@ -244,7 +241,7 @@ func validateImportPoster(blog map[string]any, source string) error {
 		return fmt.Errorf("%s: poster must be an object", source)
 	}
 	for key, value := range poster {
-		if key != "headline" && key != "topic" && key != "caption" && key != "color" {
+		if !isImportPosterField(key) {
 			return fmt.Errorf("%s: unknown poster field %s", source, key)
 		}
 		if _, ok := value.(string); !ok {
@@ -252,4 +249,9 @@ func validateImportPoster(blog map[string]any, source string) error {
 		}
 	}
 	return nil
+}
+
+// isImportPosterField 与旧别名导入预检共用真实宿主消费字段名单。
+func isImportPosterField(key string) bool {
+	return key == "headline" || key == "topic" || key == "caption" || key == "color"
 }

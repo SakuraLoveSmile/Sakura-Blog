@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/backup"
+	"blog/internal/stellarmigration"
 	"blog/internal/stellarv2"
 	"blog/internal/store"
 )
@@ -29,6 +31,26 @@ type MarkdownImportMissingTopicsProblem struct {
 	Instance      string   `json:"instance"`
 	Error         string   `json:"error"`
 	MissingTopics []string `json:"missing_topics"`
+}
+
+// MarkdownImportUnsupportedParameter 不返回参数值，尤其不返回密码或原 front matter。
+type MarkdownImportUnsupportedParameter struct {
+	Source        string `json:"source"`
+	Path          string `json:"path"`
+	Field         string `json:"field"`
+	Code          string `json:"code"`
+	Message       string `json:"message"`
+	RequiresDraft bool   `json:"requires_draft"`
+}
+
+type MarkdownImportUnsupportedParametersProblem struct {
+	Type                  string                               `json:"type"`
+	Title                 string                               `json:"title"`
+	Status                int                                  `json:"status"`
+	Detail                string                               `json:"detail"`
+	Instance              string                               `json:"instance"`
+	Error                 string                               `json:"error"`
+	UnsupportedParameters []MarkdownImportUnsupportedParameter `json:"unsupported_parameters"`
 }
 
 type PostsMarkdownImportResponse struct {
@@ -144,12 +166,38 @@ func (h *Handler) importPostsMarkdown(c *gin.Context) {
 			return
 		}
 	}
+	var ignored []backup.IgnoredMarkdownParameter
+	if values, present := c.Request.MultipartForm.Value["ignored_parameters"]; present {
+		valid := legacy && len(values) == 1
+		if valid {
+			decoder := json.NewDecoder(bytes.NewBufferString(values[0]))
+			decoder.DisallowUnknownFields()
+			valid = decoder.Decode(&ignored) == nil && ignored != nil && decoder.Decode(new(any)) == io.EOF
+			for _, parameter := range ignored {
+				valid = valid && parameter.Source != "" && parameter.Path != ""
+			}
+		}
+		if !valid {
+			Fail(c, http.StatusBadRequest, "ignored_parameters 必须是 1.x 导入中明确确认的 source、path 参数数组")
+			return
+		}
+	}
 	if legacy {
-		res, err = h.backups.ImportLegacyMarkdownWithTopicsContext(c.Request.Context(), header.Filename, data, createTopics)
+		res, err = h.backups.ImportLegacyMarkdownWithOptionsContext(c.Request.Context(), header.Filename, data, createTopics, ignored)
 	} else {
 		res, err = h.backups.ImportContext(c.Request.Context(), header.Filename, data)
 	}
 	if err != nil {
+		var unsupported *stellarmigration.UnsupportedMarkdownParametersError
+		if errors.As(err, &unsupported) {
+			parameters := make([]MarkdownImportUnsupportedParameter, 0, len(unsupported.Parameters))
+			for _, parameter := range unsupported.Parameters {
+				parameters = append(parameters, MarkdownImportUnsupportedParameter{Source: parameter.Source, Path: parameter.Path, Field: parameter.Field, Code: parameter.Code, Message: parameter.Message, RequiresDraft: parameter.RequiresDraft})
+			}
+			message := unsupported.Error()
+			c.JSON(http.StatusBadRequest, MarkdownImportUnsupportedParametersProblem{Type: "legacy_markdown_unsupported_parameters", Title: "需要确认不支持的参数", Status: http.StatusBadRequest, Detail: message, Error: message, Instance: c.Request.URL.Path, UnsupportedParameters: parameters})
+			return
+		}
 		var missing *backup.MissingLegacyTopicsError
 		if errors.As(err, &missing) {
 			message := missing.Error()

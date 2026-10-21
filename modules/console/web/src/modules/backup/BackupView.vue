@@ -9,6 +9,7 @@ import {
   RestoreTaskHttpError,
   type RestoreTask,
   type MarkdownImportMissingTopicsProblem,
+  type MarkdownImportUnsupportedParametersProblem,
 } from "@/api";
 import { formatBytes, formatRelative } from "@/lib/format";
 import { Icon } from "@iconify/vue";
@@ -37,6 +38,27 @@ const importResult = ref<{
   slugs: string[];
   skipped: string[];
 } | null>(null);
+type UnsupportedImportParameter = MarkdownImportUnsupportedParametersProblem["unsupported_parameters"][number];
+type IgnoredImportParameter = Pick<UnsupportedImportParameter, "source" | "path">;
+const pendingUnsupportedImport = ref<{
+  file: File;
+  createTopics: string[];
+  ignoredParameters: IgnoredImportParameter[];
+  issues: UnsupportedImportParameter[];
+} | null>(null);
+const importBusy = computed(() => importing.value || !!pendingUnsupportedImport.value);
+const unsupportedImportFiles = computed(() => {
+  const files = new Map<string, UnsupportedImportParameter[]>();
+  for (const issue of pendingUnsupportedImport.value?.issues || []) {
+    const issues = files.get(issue.source) || [];
+    issues.push(issue);
+    files.set(issue.source, issues);
+  }
+  return Array.from(files, ([source, issues]) => ({ source, issues }));
+});
+const unsupportedImportRequiresDraft = computed(() =>
+  pendingUnsupportedImport.value?.issues.some((issue) => issue.requires_draft),
+);
 
 // 整站恢复（双重确认：输入 RESTORE）
 const restoring = ref(false);
@@ -222,7 +244,7 @@ async function loadStatus() {
 
 function openImportPicker() {
   const input = importFileInput.value;
-  if (!input || importing.value) return;
+  if (!input || importBusy.value) return;
   input.value = "";
   input.click();
 }
@@ -240,8 +262,12 @@ async function confirmMarkdownImport(
   legacy: boolean,
   detectedLegacy = false,
   createTopics: string[] = [],
+  ignoredParameters: IgnoredImportParameter[] = [],
 ): Promise<void> {
   const creatingTopics = createTopics.length > 0;
+  const statusDescription = ignoredParameters.length
+    ? "已确认忽略的参数仍会跳过；忽略访问或发布设置的文章保存为草稿，其余文章沿用原状态。未指定状态的新文章保存为草稿。"
+    : "未指定状态的新文章保存为草稿，明确 published 的文章会公开。";
   const confirmed = await new Promise<boolean>((resolve) => {
     Dialog.warning({
       title: creatingTopics
@@ -250,7 +276,7 @@ async function confirmMarkdownImport(
           ? "检测到 1.x 格式文章"
           : `确定导入「${file.name}」吗？`,
       description: creatingTopics
-        ? `「${file.name}」引用了尚不存在的专栏：${createTopics.join("、")}。将以这些值同时作为名称和 Slug 创建专栏，并与文章一起导入；任一文件失败时整批不写入。取消不会修改数据。未指定状态的新文章保存为草稿，明确 published 的文章会公开，同名 Slug 会覆盖现有文章。`
+        ? `「${file.name}」引用了尚不存在的专栏：${createTopics.join("、")}。将以这些值同时作为名称和 Slug 创建专栏，并与文章一起导入；任一文件失败时整批不写入。取消不会修改数据。${statusDescription}同名 Slug 会覆盖现有文章。`
         : legacy
           ? `将「${file.name}」按 1.x 格式转换后导入；未指定状态的新文章保存为草稿，明确 published 的文章会公开。同名 Slug 会覆盖现有文章。任一文件无法转换时整批不写入。`
           : "同名 Slug 的文章将被导入的文件内容直接覆盖。未指定状态的新文章默认发布，请确认后再操作。",
@@ -261,13 +287,23 @@ async function confirmMarkdownImport(
     });
   });
   if (!confirmed || componentUnmounted.value) return;
+  await executeMarkdownImport(file, legacy, createTopics, ignoredParameters);
+}
+
+async function executeMarkdownImport(
+  file: File,
+  legacy: boolean,
+  createTopics: string[] = [],
+  ignoredParameters: IgnoredImportParameter[] = [],
+): Promise<void> {
+  if (importing.value || componentUnmounted.value) return;
   if (legacy) legacyImport.value = true;
   importing.value = true;
   importResult.value = null;
   let conversionRequired = false;
   let missingTopics: string[] = [];
   try {
-    const { data } = await backupApi.importMarkdown(file, legacy, createTopics);
+    const { data } = await backupApi.importMarkdown(file, legacy, createTopics, ignoredParameters);
     if (componentUnmounted.value) return;
     importResult.value = data;
     Toast.success(`成功导入 ${data.imported} 篇文章`);
@@ -281,7 +317,19 @@ async function confirmMarkdownImport(
       conversionRequired = true;
     } else if (
       legacy &&
-      !creatingTopics &&
+      isAxiosError<MarkdownImportUnsupportedParametersProblem>(error) &&
+      error.response?.data.type === "legacy_markdown_unsupported_parameters" &&
+      error.response.data.unsupported_parameters.length
+    ) {
+      pendingUnsupportedImport.value = {
+        file,
+        createTopics,
+        ignoredParameters,
+        issues: error.response.data.unsupported_parameters,
+      };
+    } else if (
+      legacy &&
+      !createTopics.length &&
       isAxiosError<MarkdownImportMissingTopicsProblem>(error) &&
       error.response?.data.type === "legacy_markdown_topics_required" &&
       error.response.data.missing_topics.length
@@ -293,8 +341,21 @@ async function confirmMarkdownImport(
   } finally {
     importing.value = false;
   }
-  if (conversionRequired) await confirmMarkdownImport(file, true, true);
-  if (missingTopics.length) await confirmMarkdownImport(file, true, false, missingTopics);
+  if (conversionRequired) await confirmMarkdownImport(file, true, true, createTopics, ignoredParameters);
+  if (missingTopics.length) await confirmMarkdownImport(file, true, false, missingTopics, ignoredParameters);
+}
+
+async function ignoreUnsupportedImportParameters() {
+  const pending = pendingUnsupportedImport.value;
+  if (!pending || importing.value) return;
+  pendingUnsupportedImport.value = null;
+  const ignoredParameters = [...pending.ignoredParameters];
+  for (const { source, path } of pending.issues) {
+    if (!ignoredParameters.some((item) => item.source === source && item.path === path)) {
+      ignoredParameters.push({ source, path });
+    }
+  }
+  await executeMarkdownImport(pending.file, true, pending.createTopics, ignoredParameters);
 }
 
 // ---------- 统计数据 ----------
@@ -562,7 +623,7 @@ onBeforeUnmount(() => {
             </p>
 
             <label class="mb-3 flex items-start gap-2 text-sm text-text-secondary">
-              <input v-model="legacyImport" type="checkbox" :disabled="importing" class="mt-1 accent-primary" />
+              <input v-model="legacyImport" type="checkbox" :disabled="importBusy" class="mt-1 accent-primary" />
               <span
                 >从 1.x 格式转换<span class="mt-1 block text-xs text-text-tertiary"
                   >ZIP 内请直接放置 .md 文件；1.x 模式下，未指定状态的新文章保存为草稿。</span
@@ -580,10 +641,10 @@ onBeforeUnmount(() => {
                 type="file"
                 accept=".md,.zip"
                 class="hidden"
-                :disabled="importing"
+                :disabled="importBusy"
                 @change="handleImport"
               />
-              <VButton size="sm" :loading="importing" @click="openImportPicker">
+              <VButton size="sm" :loading="importing" :disabled="importBusy" @click="openImportPicker">
                 <template #icon><Icon icon="ri:upload-2-line" /></template>
                 选择文件导入
               </VButton>
@@ -631,6 +692,41 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+
+    <VModal
+      :visible="!!pendingUnsupportedImport"
+      title="发现不支持的参数"
+      :width="640"
+      @update:visible="pendingUnsupportedImport = null"
+    >
+      <div v-if="pendingUnsupportedImport" class="space-y-4 text-sm leading-relaxed text-text-secondary">
+        <p>以下参数暂不支持导入，本次尚未写入任何文章。你可以修改原文件后重新导入，或忽略所列参数继续导入。</p>
+        <div
+          v-if="unsupportedImportRequiresDraft"
+          class="rounded-xl border border-state-error/30 bg-state-error/10 p-3 text-foreground"
+        >
+          部分参数涉及文章访问或发布设置。忽略后，对应文章将保存为草稿，请在编辑器中检查后再发布。
+        </div>
+        <section v-for="file in unsupportedImportFiles" :key="file.source" class="min-w-0">
+          <h4 class="mb-2 break-all font-semibold text-foreground">{{ file.source }}</h4>
+          <ul class="space-y-2">
+            <li v-for="issue in file.issues" :key="issue.path" class="rounded-xl border border-border p-3">
+              <code class="break-all font-mono text-xs text-foreground">{{ issue.field }}</code>
+              <p class="mt-1 break-words text-xs text-text-tertiary">{{ issue.message }}</p>
+            </li>
+          </ul>
+        </section>
+        <p class="text-xs text-text-tertiary">
+          忽略只跳过以上参数，其余内容仍需通过格式检查。同名 Slug 会覆盖现有文章。
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+          <VButton autofocus @click="pendingUnsupportedImport = null">取消并自行修改</VButton>
+          <VButton type="primary" @click="ignoreUnsupportedImportParameters">忽略并继续导入</VButton>
+        </div>
+      </template>
+    </VModal>
 
     <!-- ============ 危险操作：整站恢复双重确认弹窗 ============ -->
     <VModal

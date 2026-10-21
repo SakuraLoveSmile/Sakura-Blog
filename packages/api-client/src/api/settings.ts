@@ -37,11 +37,17 @@ async function readRestoreTaskResponse(response: Response): Promise<RestoreTaskR
 
 export const backupApi = {
   status: () => http.get("/backup/status"),
-  importMarkdown: (file: File, legacy = false, createTopics: string[] = []) => {
+  importMarkdown: (
+    file: File,
+    legacy = false,
+    createTopics: string[] = [],
+    ignoredParameters: { source: string; path: string }[] = [],
+  ) => {
     const form = new FormData();
     form.append("file", file);
     if (legacy) form.append("legacy", "true");
     if (createTopics.length) form.append("create_topics", JSON.stringify(createTopics));
+    if (ignoredParameters.length) form.append("ignored_parameters", JSON.stringify(ignoredParameters));
     return http.post<PostsMarkdownImportResponse>("/backup/import/markdown", form, {
       headers: { "Content-Type": "multipart/form-data" },
       mute: true,

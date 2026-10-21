@@ -29,6 +29,26 @@ export interface MarkdownImportMissingTopicsProblem {
   error: string;
   missing_topics: string[];
 }
+/**
+ * MarkdownImportUnsupportedParameter 不返回参数值，尤其不返回密码或原 front matter。
+ */
+export interface MarkdownImportUnsupportedParameter {
+  source: string;
+  path: string;
+  field: string;
+  code: string;
+  message: string;
+  requires_draft: boolean;
+}
+export interface MarkdownImportUnsupportedParametersProblem {
+  type: string;
+  title: string;
+  status: number /* int */;
+  detail: string;
+  instance: string;
+  error: string;
+  unsupported_parameters: MarkdownImportUnsupportedParameter[];
+}
 export interface PostsMarkdownImportResponse {
   imported: number /* int */;
   slugs: string[];
