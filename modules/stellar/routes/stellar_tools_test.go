@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"blog/internal/store"
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
+	"golang.org/x/net/html"
 )
 
 type stellarNoNetwork struct{ calls int }
@@ -217,7 +219,7 @@ func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`data-stellar-preview-token="test-generation"`, `http://127.0.0.1:8109/sub/assets/js/blog-preview.js`, `data-stellar-script="defines"`, `data-page-layout="post"`, `rel="canonical" href="http://127.0.0.1:8109/sub/post/one"`, "Current content"} {
+	for _, want := range []string{`data-stellar-preview-token="test-generation"`, `/sub/assets/js/blog-preview.js`, `data-stellar-script="defines"`, `data-page-layout="post"`, `rel="canonical" href="http://127.0.0.1:8109/sub/post/one"`, "Current content"} {
 		if !strings.Contains(document, want) {
 			t.Errorf("preview missing %q", want)
 		}
@@ -261,6 +263,62 @@ func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) 
 	input.StellarConfig = `{"collection":{"profile":"wiki","id":"missing"}}`
 	if _, err := ws.renderContentPreview(input); err == nil {
 		t.Fatal("unknown collection preview accepted")
+	}
+}
+
+func TestStellarPreviewBridgeFollowsBrowserOrigin(t *testing.T) {
+	const source = `<!doctype html><html><head></head><body><main id="main"><article class="md-text content"><div data-stellar-preview-body="preview-token"><p>Preview body</p></div></article></main></body></html>`
+	for _, siteURL := range []string{"http://backend.test", "http://backend.test/sub/", "https://backend.test/sub%20path/"} {
+		for _, mode := range []content.StellarPreviewMode{content.StellarPreviewModeContent, content.StellarPreviewModeDocument, content.StellarPreviewModeWidget} {
+			t.Run(siteURL+"/"+string(mode), func(t *testing.T) {
+				output, err := stellarPreviewDocument(source, siteURL, "preview-token", mode)
+				if err != nil {
+					t.Fatal(err)
+				}
+				document, err := html.Parse(strings.NewReader(output))
+				if err != nil {
+					t.Fatal(err)
+				}
+				bridge, found := "", false
+				var walk func(*html.Node)
+				walk = func(n *html.Node) {
+					if n.Type == html.ElementNode && n.Data == "script" {
+						attributes := map[string]string{}
+						for _, attr := range n.Attr {
+							attributes[attr.Key] = attr.Val
+						}
+						if attributes["data-stellar-script"] == "blog-preview" {
+							if _, ok := attributes["defer"]; !ok {
+								t.Error("preview bridge must defer until content exists")
+							}
+							bridge, found = attributes["src"], true
+						}
+					}
+					for child := n.FirstChild; child != nil; child = child.NextSibling {
+						walk(child)
+					}
+				}
+				walk(document)
+				if !found {
+					t.Fatal("missing preview bridge")
+				}
+				path, err := url.Parse(bridge)
+				if err != nil {
+					t.Fatal(err)
+				}
+				base, _ := url.Parse(siteURL)
+				want := strings.TrimRight(base.EscapedPath(), "/") + "/assets/js/blog-preview.js"
+				if path.IsAbs() || path.Host != "" || path.EscapedPath() != want {
+					t.Fatalf("preview bridge must follow the browser protocol and site root: got %q, want %q", bridge, want)
+				}
+				if path.Query().Get("v") != stellarweb.AssetVersion("/assets/js/blog-preview.js") {
+					t.Fatalf("preview bridge version missing: %q", bridge)
+				}
+				if contentStyle := strings.Contains(output, `data-stellar-preview-style="content"`); contentStyle != (mode == content.StellarPreviewModeContent) {
+					t.Fatalf("inline layout styles must stay within content preview: mode=%s", mode)
+				}
+			})
+		}
 	}
 }
 

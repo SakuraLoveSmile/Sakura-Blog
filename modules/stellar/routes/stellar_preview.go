@@ -275,7 +275,7 @@ func stellarPreviewDocument(document, siteURL, token string, mode content.Stella
 	if err != nil {
 		return "", err
 	}
-	var body *html.Node
+	var head, body *html.Node
 	var walk func(*html.Node)
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode {
@@ -292,6 +292,9 @@ func stellarPreviewDocument(document, siteURL, token string, mode content.Stella
 		}
 		if n.Type == html.ElementNode && n.Data == "body" {
 			body = n
+		}
+		if n.Type == html.ElementNode && n.Data == "head" {
+			head = n
 		}
 		for c := n.FirstChild; c != nil; {
 			next := c.NextSibling
@@ -398,7 +401,10 @@ func stellarPreviewDocument(document, siteURL, token string, mode content.Stella
 			body.RemoveChild(c)
 			c = next
 		}
-		container := &html.Node{Type: html.ElementNode, Data: "main", Attr: []html.Attribute{{Key: "data-stellar-preview-content", Val: ""}, {Key: "class", Val: "ui-surface"}}}
+		container := &html.Node{Type: html.ElementNode, Data: "main", Attr: []html.Attribute{{Key: "data-stellar-preview-content", Val: ""}}}
+		if mode == content.StellarPreviewModeWidget {
+			container.Attr = append(container.Attr, html.Attribute{Key: "class", Val: "ui-surface"})
+		}
 		if mode == content.StellarPreviewModeWidget && instance != nil {
 			container.AppendChild(instance)
 		} else if mode == content.StellarPreviewModeContent && article != nil {
@@ -409,7 +415,18 @@ func stellarPreviewDocument(document, siteURL, token string, mode content.Stella
 			body.AppendChild(scripts)
 		}
 	}
-	body.AppendChild(&html.Node{Type: html.ElementNode, Data: "script", Attr: []html.Attribute{{Key: "src", Val: tmpl.JoinSiteURL(siteURL, "/assets/js/blog-preview.js")}, {Key: "defer", Val: ""}, {Key: "data-stellar-script", Val: "blog-preview"}}})
+	if mode == content.StellarPreviewModeContent && head != nil {
+		// 只重置内嵌正文的宿主布局；flow-root 把标签边距计入测量，避免视口高度反馈。
+		style := &html.Node{Type: html.ElementNode, Data: "style", Attr: []html.Attribute{{Key: "data-stellar-preview-style", Val: "content"}}}
+		style.AppendChild(&html.Node{Type: html.TextNode, Data: `html,body{height:auto;min-height:0;background:transparent}html{overflow-y:hidden}body{margin:0;padding:0}[data-stellar-preview-content]{display:flow-root}[data-stellar-preview-content]>article.md-text.content{margin:0;padding:0}`})
+		head.AppendChild(style)
+	}
+	// srcdoc 跟随浏览器的协议，不能使用反向代理到后端的 HTTP 连接协议。
+	bridgePath := strings.TrimRight(mustStellarURL(siteURL).EscapedPath(), "/") + "/assets/js/blog-preview.js"
+	if version := stellarweb.AssetVersion("/assets/js/blog-preview.js"); version != "" {
+		bridgePath += "?" + url.Values{"v": {version}}.Encode()
+	}
+	body.AppendChild(&html.Node{Type: html.ElementNode, Data: "script", Attr: []html.Attribute{{Key: "src", Val: bridgePath}, {Key: "defer", Val: ""}, {Key: "data-stellar-script", Val: "blog-preview"}}})
 	var out bytes.Buffer
 	err = html.Render(&out, doc)
 	return out.String(), err

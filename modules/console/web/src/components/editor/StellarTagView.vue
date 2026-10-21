@@ -77,7 +77,7 @@ function onPreviewMessage(event: MessageEvent) {
     return;
   const height = event.data.height;
   if (typeof height === "number" && Number.isFinite(height) && height > 0)
-    iframeH.value = Math.min(Math.max(Math.ceil(height), 32), 500);
+    iframeH.value = Math.max(Math.ceil(height), 32);
 }
 onMounted(() => window.addEventListener("message", onPreviewMessage));
 onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
@@ -256,6 +256,10 @@ function closeEditor() {
 </template>
 
 <style scoped>
+.stellar-tag-node iframe {
+  /* 与子文档的默认配色方案一致，让透明背景透出编辑器底色。 */
+  color-scheme: normal;
+}
 .stellar-tag-node.is-dragging iframe {
   display: none !important;
 }
