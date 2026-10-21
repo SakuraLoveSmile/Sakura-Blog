@@ -1,0 +1,32 @@
+{
+  "checked_at": "2026-10-21T08:31:11.637234+00:00",
+  "isolated_root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-import-comment-boolean/.tmp/comment-browser-_13ooezg",
+  "source_file_sha256": "56f0923cdaf3e9558a93a22d6aab6bb65d7bd2bf1fa9884ec2f4320df065df4a",
+  "body_sha256": "730b4021bcae30911a4f61c5010bf23c0aa210554a945036a4269337a0077376",
+  "body_bytes": 15213,
+  "original_source_unchanged": true,
+  "real_browser_import_success": true,
+  "confirmed_ignored_fields": [
+    "abstract",
+    "banner_img",
+    "hide",
+    "index_img",
+    "math",
+    "password",
+    "sticky",
+    "wrong_pass_message"
+  ],
+  "comments_enabled": true,
+  "native_not_forced_on": true,
+  "status": "draft",
+  "preflight_posts_topics_unchanged": true,
+  "other_posts_unchanged": true,
+  "integrity_check": "ok",
+  "fixture_public_author_added": "上杉九月",
+  "fixture_note": "The copied test root did not contain this public byline; only its isolated Blog.data.authors was extended. Production author configuration was not changed.",
+  "failing_baseline": "Before the fix, all four true/false post/page converter cases failed with Perfdog.md: comments: object.",
+  "focused_tests_passed": true,
+  "make_build_passed": true,
+  "make_merge_check_passed": true,
+  "production_deployed": false
+}

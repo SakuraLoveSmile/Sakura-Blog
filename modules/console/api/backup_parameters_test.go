@@ -13,7 +13,7 @@ import (
 
 func TestMarkdownImportUnsupportedParameterConsentMultipart(t *testing.T) {
 	r, st, user, _ := newFullStellarEnv(t)
-	source := []byte("---\npassword: private-password-value\nmusic: {id: 321}\ntopic: new-topic\nstatus: published\n---\n正文\n")
+	source := []byte("---\npassword: private-password-value\nmusic: {id: 321}\ncomments: true\ntopic: new-topic\nstatus: published\n---\n正文\n")
 	upload := func(legacy string, ignored []string, topics string) *httptest.ResponseRecorder {
 		var body bytes.Buffer
 		writer := multipart.NewWriter(&body)
@@ -92,5 +92,13 @@ func TestMarkdownImportUnsupportedParameterConsentMultipart(t *testing.T) {
 	value, _ := st.GetBySlug("Perfdog")
 	if value == nil || value.Status != "draft" || value.ContentMD != "正文\n" || strings.Contains(value.StellarConfig+value.BlogExtensions, "private-password-value") {
 		t.Fatalf("wrong persisted result: %+v", value)
+	}
+	var raw struct {
+		Comments struct {
+			Enabled bool `json:"enabled"`
+		} `json:"comments"`
+	}
+	if err := json.Unmarshal([]byte(value.StellarConfig), &raw); err != nil || !raw.Comments.Enabled {
+		t.Fatalf("legacy comment switch not persisted: %s %v", value.StellarConfig, err)
 	}
 }

@@ -60,6 +60,19 @@ func convertLegacyMarkdown(source []byte, filename, kind string, topics []*store
 			out.Warnings = append(out.Warnings, "旧版 topic 为空，按未分配专栏处理。")
 		}
 	}
+	// 旧版布尔开关允许已配置的评论服务；关闭时也须关闭独立的原生评论。
+	// 2.0 对象保持原样，不能由宽松转换绕过其字段和类型校验。
+	if enabled, legacy := raw["comments"].(bool); legacy {
+		if !enabled {
+			if importTargetExists(raw, "blog.native_comments.enabled") {
+				return out, fmt.Errorf("%s: comments conflicts with blog.native_comments.enabled", filename)
+			}
+			set(raw, "blog.native_comments.enabled", false)
+		}
+		raw["comments"] = map[string]any{"enabled": enabled}
+		out.LegacyConverted = true
+		out.Warnings = append(out.Warnings, "已转换旧版 comments 评论开关，保留原有开启或关闭设置。")
+	}
 	// 显式选择 1.x 时，通用配置仍可复用 strict 解析，但正文统一应用旧版映射。
 	// 例如仅含 image 的旧文档也必须保留旧 fancybox 默认值；2.0 文档应走 strict 入口。
 	if !out.LegacyConverted {
