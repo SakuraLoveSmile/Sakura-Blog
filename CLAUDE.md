@@ -23,7 +23,7 @@
 
 ### 构建入口
 
-- `make test`：完整本地门禁。它会为 `go:embed` 写最小 `dist` 占位，运行 Console 类型/行为测试、Stellar 资源测试、部署/发布来源/模块检查，以及 Go vet、Staticcheck、全部 Go 测试。
+- `make test`：完整本地门禁。它会为 `go:embed` 写最小 `dist` 与 `dist-uc` 占位（后者供 `cmd/blog` 的 `TestStellarMigrationActualBinary` 挂载 `/uc/`），运行 Console 类型/行为测试、Stellar 资源测试、部署/发布来源/模块检查，以及 Go vet、Staticcheck、全部 Go 测试。
 - `make build`：真实构建 Console（包含 `/console/` 与 `/uc/` 产物）后再编译 Go 二进制。只要涉及 SPA 交付、embed 或发布，不能用 `make test` 代替它。
 - `make dev`：根据 Console 输入指纹按需重建前端，随后以 `-dev` 启动服务；`make run` 是 embed 模式。
 - `pnpm run e2e`：Playwright 关键路径验收。配置会重建 Console、用独立数据库启动 `-dev` 服务并使用 8096；在需要页面交互证据时运行相关用例。
@@ -33,7 +33,7 @@ Go 版本由根 `go.mod` 决定，pnpm 版本由根 `package.json` 的 `packageM
 ### 发布流水线
 
 - `.github/workflows/release.yml`：tag 推送时构建 `blog-linux-amd64`，Release 发布到公开仓库 `SakuraLoveSmile/Sakura-Blog-Release`（跨仓库需 `RELEASE_REPO_PAT` secret）；`update.sh`/`update-docker.sh` 与该仓库的 `BLOG_REPO`/`update_repo` 默认值保持同一目标。
-- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态。
+- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，镜像标签不带 `v`（`1.7.4`、`1.7`、`1`）。`latest` 只由 tag 推送更新，`workflow_dispatch` 不会改写它。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态。`ci.yml` 的 `image` 作业在晋级 `release` 的 PR 上预构建 Dockerfile（不推送）。发布步骤见 AGENTS.md「发布 release」。
 - v1.7.3 起 Console 只保留「检查更新」（`GET /system/update/check`），一键更新执行链（`internal/updaterunner`、apply/status 端点、systemd path/timer watcher）已移除；升级一律在宿主手动执行 `update.sh`/`update-docker.sh` 或 `docker compose pull`。
 
 ### `go:embed` 与前端重建
