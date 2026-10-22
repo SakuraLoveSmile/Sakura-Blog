@@ -24,6 +24,8 @@ const search = ref("");
 const activeCategory = ref<PluginCategory | "全部">("全部");
 const selected = ref<PluginMeta | null>(null);
 const example = ref("");
+const formValid = ref(true);
+const formError = ref("");
 
 watch(runtimePlugins, (next) => {
   const refreshed = next.find((plugin) => selected.value && plugin.name === selected.value.name);
@@ -61,6 +63,9 @@ function typeBadge(type: PluginMeta["type"]): string {
 function selectPlugin(p: PluginMeta) {
   selected.value = p;
   example.value = p.example;
+  // 无 form 时 PluginParamForm 不挂载、不会发出 validation，这里复位；有 form 时由初始化的 validation 重新判定
+  formValid.value = true;
+  formError.value = "";
   preview.resetHeight(); // 选中标签先应用推荐高度，再按 iframe 实际内容高度回传调整
   preview.scheduleRender(example.value, true);
 }
@@ -68,6 +73,12 @@ function selectPlugin(p: PluginMeta) {
 // 结构化参数表单产出 shortcode（Spec 29）：同步驱动示例/预览/复制
 function onFormCode(code: string) {
   example.value = code;
+}
+
+// 必填缺失时示例保留上一次有效值，但复制入口需禁用并提示原因
+function onFormValidation(state: { valid: boolean; error?: string }) {
+  formValid.value = state.valid;
+  formError.value = state.error || "";
 }
 
 // ---------- 实时预览（Spec 63：共享预览运行时） ----------
@@ -315,7 +326,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                   <p>调整参数将自动同步拼装 Shortcode 示例与下方渲染效果。</p>
                 </div>
                 <div class="studio-panel studio-form-panel">
-                  <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
+                  <PluginParamForm
+                    :plugin="selected"
+                    :model-value="example"
+                    @update:model-value="onFormCode"
+                    @validation="onFormValidation"
+                  />
+                  <p v-if="formError" style="color: var(--color-state-error, #ff453a)">{{ formError }}</p>
                 </div>
               </section>
 
@@ -334,6 +351,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                     <button
                       type="button"
                       class="studio-copy-action"
+                      :disabled="!formValid"
                       @click="copyText('example', example)"
                     >
                       <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />

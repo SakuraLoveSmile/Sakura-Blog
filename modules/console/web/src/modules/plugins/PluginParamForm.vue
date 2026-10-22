@@ -4,7 +4,7 @@ import { pluginApi, getApiErrorMessage } from "@/api";
 import SchemaForm from "@/components/forms/SchemaForm.vue";
 import type { SchemaField, SchemaValues } from "@/components/forms/schema";
 import type { PluginMeta, PluginVariant } from "./plugin-types";
-import { editedFormPresence, initFormValues } from "./shortcode";
+import { editedFormPresence, initFormValues, validateEditValues } from "./shortcode";
 
 // 标签插件的领域适配器：通用字段渲染交给 SchemaForm，shortcode 语义仍由本模块负责。
 // 插入模式（initialValues 未传）用 catalog default 初始化；
@@ -60,14 +60,16 @@ function shortcodeValues(next: SchemaValues): Record<string, string | boolean> {
 let generation = 0;
 async function updateValidation(next: SchemaValues, emitUpdate: boolean) {
   const current = ++generation;
+  // 后端只生成 raw 并保留显式空值；必填缺失时不产出新 raw，消费方保留上一次有效值，并据 validation 禁用应用或插入。
+  const requiredError = validateEditValues(props.plugin, shortcodeValues(next));
   validation.value = { valid: false };
   emit("validation", validation.value);
   try {
     const { data } = await pluginApi.serializeShortcode(props.plugin.name, shortcodeValues(next), presentKeys.value);
     if (current !== generation) return;
-    validation.value = { valid: true };
+    validation.value = requiredError ? { valid: false, error: requiredError } : { valid: true };
     emit("validation", validation.value);
-    if (emitUpdate) emit("update:modelValue", data.raw);
+    if (emitUpdate && !requiredError) emit("update:modelValue", data.raw);
   } catch (error) {
     if (current !== generation) return;
     validation.value = { valid: false, error: getApiErrorMessage(error) };

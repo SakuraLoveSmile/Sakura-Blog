@@ -38,7 +38,7 @@ export function serializeShortcodeArgument(value: unknown): { value: string; err
   return { value: `${quote}${trimmed}${quote}` };
 }
 
-function validateEditValues(plugin: PluginMeta, values: Record<string, string | boolean>): string | undefined {
+export function validateEditValues(plugin: PluginMeta, values: Record<string, string | boolean>): string | undefined {
   const edit = plugin.edit;
   if (!edit?.enabled) return undefined;
   const text = (key: string) => valueString(values[key]).trim();

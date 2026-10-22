@@ -23,7 +23,8 @@ func init() {
 				e.Params[j].Options = nil
 			}
 		}
-		e.Edit = ShortcodeEditSchema{Enabled: true}
+		// 只开放编辑：保留基础目录的必填声明，由编辑表单在应用前校验；保存路径仍保留显式空值。
+		e.Edit = ShortcodeEditSchema{Enabled: true, Required: e.Edit.Required, RequiredAny: e.Edit.RequiredAny}
 		// 未写出的参数无默认值；下面的默认值只用于插入新标签。
 		switch e.Name {
 		case "tip":

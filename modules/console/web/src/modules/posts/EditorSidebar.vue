@@ -380,6 +380,8 @@ const pluginList = computed(() =>
 );
 const selectedPlugin = ref<PluginMeta | null>(null);
 const pluginCode = ref("");
+const pluginValid = ref(true);
+const pluginError = ref("");
 const pluginPreviewHtml = ref("");
 const pluginRendering = ref(false);
 let pluginTimer: ReturnType<typeof setTimeout> | undefined;
@@ -388,12 +390,21 @@ function selectPlugin(p: PluginMeta) {
   selectedPlugin.value = p;
   // 有 form schema：由 PluginParamForm 初始化后立即产出 shortcode；否则回退示例文本
   pluginCode.value = p.form ? "" : p.example;
+  // 无 form 时不会收到 validation 事件，这里复位；有 form 时由初始化的 validation 重新判定
+  pluginValid.value = true;
+  pluginError.value = "";
   schedulePluginPreview(true);
 }
 
 function onPluginCode(code: string) {
   pluginCode.value = code;
   schedulePluginPreview();
+}
+
+// 必填缺失时表单不再产出新 raw：保留上一次有效的 pluginCode，但禁止插入并提示原因
+function onPluginValidation(state: { valid: boolean; error?: string }) {
+  pluginValid.value = state.valid;
+  pluginError.value = state.error || "";
 }
 
 async function refreshPluginPreview() {
@@ -452,7 +463,7 @@ const pluginSrcdoc = computed(() => {
 });
 
 function insertPlugin() {
-  if (!pluginCode.value) return;
+  if (!pluginCode.value || !pluginValid.value) return;
   emit("insert", "\n" + pluginCode.value + "\n");
 }
 
@@ -1027,6 +1038,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
               :plugin="selectedPlugin"
               :model-value="pluginCode"
               @update:model-value="onPluginCode"
+              @validation="onPluginValidation"
             />
             <div v-else>
               <label :class="labelCls">示例（可编辑）</label>
@@ -1055,7 +1067,10 @@ const chipActiveCls = "bg-primary/15 text-primary";
               </div>
             </div>
 
-            <VButton type="secondary" block :disabled="!pluginCode" @click="insertPlugin">插入到正文</VButton>
+            <p v-if="pluginError" class="text-xs" style="color: var(--color-state-error, #ff453a)">{{ pluginError }}</p>
+            <VButton type="secondary" block :disabled="!pluginCode || !pluginValid" @click="insertPlugin"
+              >插入到正文</VButton
+            >
           </div>
           <p v-else class="text-xs text-text-quaternary">选择插件后可编辑参数并插入正文。</p>
         </div>
