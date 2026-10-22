@@ -77,7 +77,7 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 
 `modules/stellar/web/assets/css/main*.css`、`comments/*.css` 和 `plugins/*.css` 是从 `upstream.json` 锁定的 Stellar 2.0.0 commit 编译得到的生成物，不应手改。`resource/hexo-theme-stellar` 是被 gitignore 的本地输入仓库；编译通过 `git archive` 读取锁定对象，不消费共享工作树改动。使用 `make css` 重建，再用 `make css-drift-check` 在临时目录重新编译全部生成 CSS 并逐份比较；漂移检查失败不会覆盖真实产物。
 
-`resource/` 跨 sibling worktree 共用，可能处于 detached HEAD 或带本地补丁。每次编译前先执行 `git -C resource/hexo-theme-stellar status --short --branch`，确认正在消费的版本与变更；不要把某个历史 tag、commit 或旧的产物大小写成永久真值，更不能擅自 reset、checkout 或清理共享资源。
+`resource/` 跨 worktree 共用；统一目录中的工作树可用绝对路径链接根目录的 `resource/`。共享源可能处于 detached HEAD 或带本地补丁。每次编译前先执行 `git -C resource/hexo-theme-stellar status --short --branch`，确认正在消费的版本与变更；不要把某个历史 tag、commit 或旧的产物大小写成永久真值，更不能擅自 reset、checkout 或清理共享资源。
 
 项目自己的辅助样式应保留在其受跟踪源文件中；上述主外观、选配和动态 CSS 均须由 `make css` 生成，其他辅助 CSS 不纳入主题重编或漂移比较。
 

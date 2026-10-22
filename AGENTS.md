@@ -9,25 +9,27 @@
 ## 1. 开工前的边界
 
 - Blog 根目录是日常 `dev` 工作树。先看 `git status --short --branch`，已有改动、未跟踪文件和其他 worktree 都属于用户上下文；不得覆盖、清理或顺带格式化无关内容。
-- 默认一个实现任务对应一个临时分支和一个同级 worktree。多个 agent 必须按模块拆分，不能共享分支或写同一批文件。
+- 默认一个实现任务对应一个临时分支和一个独立 worktree，统一放在 `/Users/sakurasep/Documents/Code/Project/Project Worktree/Blog/<任务标识>/`。多个 agent 必须按模块拆分，不能共享分支或写同一批文件。
 - 仅做审计、定位或答疑时保持只读；实现前先读与改动范围对应的 [CLAUDE.md](CLAUDE.md) 章节。
-- 不得自行 `git push`、创建发布、部署生产、删除分支/worktree 或重置共享的 `resource/`。这些操作须有用户的明确授权。
+- 不得自行 `git push`、创建发布、部署生产、删除远端分支、清理其他任务资源或重置共享的 `resource/`。这些操作须有用户的明确授权；本任务合并验证完成后的本地 worktree 收尾按第 3 节执行，无需再次确认。
 
 ## 2. 分支与 worktree
 
-从根目录的最新 `dev` 建立同级 worktree；默认分支前缀为 `codex/`，用户指定名称时以用户要求为准。
+从根目录的最新 `dev` 在统一目录中建立 worktree；默认分支前缀为 `codex/`，用户指定名称时以用户要求为准。所有新 worktree（包括子 agent 和临时验证工作树）均放在上述目录，工具不能指定位置时使用显式绝对路径的 `git worktree add`。
 
 ```bash
 # 在 Blog 根目录执行
-git worktree add ../Blog-<topic> -b codex/<topic>
-git -C ../Blog-<topic> status --short --branch
-make -C ../Blog-<topic> hooks-install
+blog_worktree="/Users/sakurasep/Documents/Code/Project/Project Worktree/Blog/<topic>"
+mkdir -p "/Users/sakurasep/Documents/Code/Project/Project Worktree/Blog"
+git worktree add "$blog_worktree" -b "codex/<topic>" dev
+git -C "$blog_worktree" status --short --branch
+make -C "$blog_worktree" hooks-install
 ```
 
-- 临时 worktree 必须位于 Blog 同级目录，不能落在根目录内成为未跟踪文件。
+- 创建前检查 `git worktree list` 和任务归属；临时 worktree 必须位于统一目录，不能落在 Blog 同级、仓库内部或工具默认目录。
 - `main` 与 `release` 是远端稳定/发布分支；本地长期集成目标只有根目录的 `dev`。
 - 如果其他任务已经合入 `dev`，在自己的 feature worktree 中先 `git rebase dev`，解决自己改动的冲突后再继续。
-- 需要 `resource/` 的前台/CSS/UI 任务，可让 sibling worktree 链接根目录现有的 `resource/`；不要另外克隆、切换或重置这个跨 worktree 共用的目录。
+- 需要 `resource/` 的前台/CSS/UI 任务，可让独立 worktree 用绝对路径链接根目录现有的 `resource/`；不要另外克隆、切换或重置这个跨 worktree 共用的目录。
 
 ## 3. 验证、集成与清理
 
@@ -53,7 +55,13 @@ make merge-check
 make pre-commit-check
 ```
 
-这与 hook 共用同一测试门槛；禁止用普通手工合并或跳过验证来绕开它。获得用户授权后，才可在确认合并已完成且 worktree 不再需要时执行清理；正确顺序是先 `git worktree remove <path>`，再 `git branch -d <branch>`。
+这与 hook 共用同一测试门槛；禁止用普通手工合并或跳过验证来绕开它。
+
+### 合并后的及时清理
+
+本任务合入约定目标且组合态验证通过后，在同一任务内及时清理已完成的 worktree 和已合并本地任务分支，无需另行确认。删除前核对预期提交或等效改动已在目标中，工作树无未保存或独有成果，且无运行任务、服务或仍需保留的路径引用；需保留的未跟踪、忽略文件先迁出或建立可核验、可恢复的备份。
+
+从待删除目录之外先执行 `git worktree remove "<path>"`，再执行 `git branch -d <branch>`，最后核对 `git worktree list`、本地分支和实际目录。只移除本任务不再使用的空容器，保留统一根目录、共享 `resource/`、主工作区、其他任务与恢复归档；无法安全移除时保留并报告具体路径与原因，不强制删除。远端分支删除仍需明确授权。
 
 ### CSS 产物
 
