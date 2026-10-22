@@ -47,8 +47,8 @@ release-source-test:
 	bash scripts/check-release-source_test.sh
 
 ## dist-bootstrap: 对齐 CI（.github/workflows/ci.yml go job 的 stub 策略）——
-## modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
-## vet/test 不需要真实前端产物，dist 缺失或为空时写入占位文件即可，
+## modules/console/web/embed.go 的 //go:embed all:dist 与 all:dist-uc 编译期要求非空；
+## vet/test 不需要真实前端产物，dist 与 dist-uc 缺失时写入占位文件即可（/uc/ 挂载用例需要 uc.html），
 ## 使全新 worktree 下 make test 给出行为信号而不是 embed 编译环境错误。
 ## 需要真实产物请用 make build / make console（release 产物由 build job 用真实 dist 验证）。
 dist-bootstrap:
@@ -57,6 +57,12 @@ dist-bootstrap:
 		mkdir -p modules/console/web/dist && echo '<!doctype html>' > modules/console/web/dist/index.html; \
 	else \
 		echo "dist-bootstrap: dist 已存在，跳过"; \
+	fi
+	@if [ ! -f modules/console/web/dist-uc/uc.html ]; then \
+		echo "dist-bootstrap: dist-uc 缺失或无 uc.html，写入占位文件（仅满足 go:embed 与 /uc/ 挂载）"; \
+		mkdir -p modules/console/web/dist-uc && echo '<!doctype html>' > modules/console/web/dist-uc/uc.html; \
+	else \
+		echo "dist-bootstrap: dist-uc 已存在，跳过"; \
 	fi
 
 ## console-deps: 自举前端 workspace 依赖——依赖缺失或 lockfile 指纹变化时执行 pnpm install。

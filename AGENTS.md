@@ -45,7 +45,7 @@ make merge-check
 
 该目标会先确认 hook 已挂载，再运行 `make test`；通过后才合入根目录的 `dev`，并在合并后的 `dev` 上再跑一次 `make test`。若组合态失败，输出的 `ORIG_HEAD` 回退命令仅供人工确认后使用；不要替用户擅自回退或清理。
 
-`make test` 当前包含：Console 类型检查与行为测试、Stellar 资源行为测试、部署/发布来源/模块边界检查，以及 `go vet`、Staticcheck、`go test ./...`。它会用占位 `dist` 满足 `go:embed`，**不等于**完成真实 Console 构建；涉及前端产物时还应按风险运行 `make build` 和相关浏览器/E2E 验收。
+`make test` 当前包含：Console 类型检查与行为测试、Stellar 资源行为测试、部署/发布来源/模块边界检查，以及 `go vet`、Staticcheck、`go test ./...`。它会用占位 `dist` 与 `dist-uc` 满足 `go:embed`，**不等于**完成真实 Console 构建；涉及前端产物时还应按风险运行 `make build` 和相关浏览器/E2E 验收。
 
 ### 直接在 `dev` 工作
 
@@ -62,6 +62,26 @@ make pre-commit-check
 本任务合入约定目标且组合态验证通过后，在同一任务内及时清理已完成的 worktree 和已合并本地任务分支，无需另行确认。删除前核对预期提交或等效改动已在目标中，工作树无未保存或独有成果，且无运行任务、服务或仍需保留的路径引用；需保留的未跟踪、忽略文件先迁出或建立可核验、可恢复的备份。
 
 从待删除目录之外先执行 `git worktree remove "<path>"`，再执行 `git branch -d <branch>`，最后核对 `git worktree list`、本地分支和实际目录。只移除本任务不再使用的空容器，保留统一根目录、共享 `resource/`、主工作区、其他任务与恢复归档；无法安全移除时保留并报告具体路径与原因，不强制删除。远端分支删除仍需明确授权。
+
+### 发布 release
+
+发布路径只有一条：`dev` → `main`（PR）→ `release`（PR）→ 在 `release` 的合并提交上打 `vX.Y.Z` tag。服务器采用 Docker 部署，**一次发布 = 二进制 Release + GHCR 镜像，两者都成功才算完成**。
+
+用户要求「完成 feature 后按要求发布」时按本节执行。标注「需授权」的外部步骤（推送、开/合并 PR、打 tag、服务器部署）仍须在当次请求中获得明确同意；流程要求本身不构成预先授权。
+
+1. **准备（本地）**：feature 已通过 `make merge-check` 合入 `dev`，且 `dev` 已推送。先 `git fetch origin`，确认 `git rev-list --count dev..origin/main` 为 `0`。若 `origin/main` 有 `dev` 缺少的提交（例如直接合入 `main` 的热修），先在 feature worktree 中从 `origin/main` 建同步分支，经 `make merge-check` 合回 `dev` 并解决冲突，再开 PR。
+2. **dev → main（需授权）**：开 PR，CI 全部通过后合并。
+3. **main → release（需授权）**：开 PR。`release-source` 校验来源必须是本仓库的 `main`；`ci.yml` 的 `image` 作业预构建 Dockerfile（不推送）。两者都通过才能合并。推送 `release` 分支只产生 Actions 构建产物，不创建 Release，也不推送镜像。
+4. **打 tag（需授权）**：在 `release` 的合并提交上打 `vX.Y.Z` 并推送。tag 同时触发两个 workflow：
+   - `release.yml`：构建 `blog-linux-amd64`、`.sha256` 与 SPDX SBOM，发布到 `SakuraLoveSmile/Sakura-Blog-Release`。
+   - `docker-release.yml`：推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像标签不带 `v`，为 `X.Y.Z`、`X.Y`、`X`、`latest` 与 `sha-<短哈希>`。
+5. **完成判定**（缺任一项即未完成，不得宣布发布）：
+   - 该 tag 上 `Release Build` 与 `Docker Release` 均为 `success`（`gh run list --workflow=release.yml` 与 `--workflow=docker-release.yml`）。
+   - 公开 Release 含 `blog-linux-amd64`、`blog-linux-amd64.sha256`、`blog-linux-amd64.spdx.json` 三个资产。
+   - `docker run --rm ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z -h` 退出码为 0，证明镜像内二进制可启动。
+6. **服务器升级（需授权，且第 5 步已完成）**：compose 的 `image` 固定为 `ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z`，执行 `docker compose pull && docker compose up -d`，再探测宿主映射端口的 `/readyz`，并在 Console 核对版本。不要以 `latest` 是否变化作为版本证据。
+   - 回退：把 `image` 改回上一个已验证的版本标签并 `up -d`。若该版本含数据迁移，回退前必须先恢复停服前的完整数据备份，只切回镜像不足以回退（见 `deploy/README.md`「整站恢复与维护窗口」）。
+   - 若服务器改用宿主挂载二进制（`update-docker.sh`），第 5 步的 Release 资产检查同样适用，升级步骤见 `deploy/README.md`。
 
 ### CSS 产物
 

@@ -188,7 +188,7 @@ sudo /opt/blog/update-docker.sh
 
 ### 镜像部署（GHCR，可选形态）
 
-`.github/workflows/docker-release.yml` 在 tag 推送时构建并推送 `ghcr.io/sakuralovesmile/sakura-blog:<version>`（含 `latest`）。镜像为自包含多阶段构建（node → go → debian-slim），二进制位于镜像内 `/usr/local/bin/blog`，入口 `blog -root /app`。
+`.github/workflows/docker-release.yml` 在 tag 推送时构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，标签为去掉 `v` 的版本号（如 `1.7.4`），另有 `1.7`、`1` 与 `latest`；`latest` 只由 tag 推送更新。镜像为自包含多阶段构建（node → go → debian-slim），二进制位于镜像内 `/usr/local/bin/blog`，入口 `blog -root /app`。生产环境应把 compose 的 `image` 固定为具体版本标签，升级与回退都改这一行；`docker-compose.image.yml` 示例中的 `:latest` 仅作演示，不作为版本证据。
 
 ```bash
 docker compose -f deploy/docker-compose.image.yml up -d
