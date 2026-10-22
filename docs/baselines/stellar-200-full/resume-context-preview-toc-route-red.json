@@ -1,0 +1,34 @@
+{
+  "preview": {
+    "opaque": true,
+    "sandbox": "allow-scripts",
+    "toc": [
+      {
+        "text": "galaxy · intro",
+        "href": "wiki/galaxy/intro"
+      },
+      {
+        "text": "galaxy · second",
+        "href": "wiki/galaxy/second"
+      }
+    ],
+    "localLink": [
+      {
+        "href": "/about",
+        "api": null
+      }
+    ]
+  },
+  "public": [
+    {
+      "raw": "wiki/galaxy/intro",
+      "resolved": "http://127.0.0.1:8103/wiki/galaxy/intro",
+      "text": "galaxy · intro"
+    },
+    {
+      "raw": "wiki/galaxy/second",
+      "resolved": "http://127.0.0.1:8103/wiki/galaxy/second",
+      "text": "galaxy · second"
+    }
+  ]
+}

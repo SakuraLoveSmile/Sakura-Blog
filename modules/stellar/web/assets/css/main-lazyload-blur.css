@@ -1,0 +1,105 @@
+img:not([src]) {
+  visibility: hidden;
+}
+.lazy {
+  opacity: 0;
+  z-index: 1;
+}
+.lazy-box {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  line-height: 0;
+}
+.lazy-box.async {
+  background: var(--block);
+  min-height: 4rem;
+}
+.lazy-icon {
+  width: 2rem;
+  height: 2rem;
+  max-width: 100%;
+  max-height: 100%;
+  background-color: var(--theme);
+  -webkit-mask-image: var(--icon-loading, url("https://api.iconify.design/eos-icons:three-dots-loading.svg?color=%231cd0fd"));
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  mask-image: var(--icon-loading, url("https://api.iconify.design/eos-icons:three-dots-loading.svg?color=%231cd0fd"));
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+img.lazy.loading + .lazy-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+img.lazy.loaded + .lazy-icon,
+img.lazy.error + .lazy-icon {
+  display: none;
+}
+img.lazy.error {
+  width: 2rem;
+  height: 2rem;
+}
+.lazy {
+  filter: blur(20px);
+  -webkit-filter: blur(20px);
+}
+.lazy.loaded,
+.lazy.error {
+  opacity: 1;
+  filter: none;
+  -webkit-filter: none;
+  animation: ll-blur-in 0.5s ease-out;
+}
+@-moz-keyframes ll-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(20px);
+    -webkit-filter: blur(20px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    -webkit-filter: none;
+  }
+}
+@-webkit-keyframes ll-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(20px);
+    -webkit-filter: blur(20px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    -webkit-filter: none;
+  }
+}
+@-o-keyframes ll-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(20px);
+    -webkit-filter: blur(20px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    -webkit-filter: none;
+  }
+}
+@keyframes ll-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(20px);
+    -webkit-filter: blur(20px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    -webkit-filter: none;
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "built_head": "c2cee18",
+  "scope": "real partial navigation with temporary 700ms browser latency",
+  "latencyRestored": true,
+  "before": {
+    "result": {
+      "description": "1791905247963.5",
+      "type": "number",
+      "value": 1791905247963.5
+    }
+  },
+  "after": {
+    "result": {
+      "type": "string",
+      "value": "{\"url\":\"http://127.0.0.1:8103/post/technical\",\"h1\":\"技术：完整 Go SSR 链路\",\"title\":\"技术：完整 Go SSR 链路 - Stellar 2.0 验收站\",\"canonical\":\"http://127.0.0.1:8103/post/technical\",\"timeOrigin\":1791905247963.5,\"loading\":0}"
+    }
+  },
+  "events": [
+    {
+      "sequence": 188466,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1486",
+      "url": "http://127.0.0.1:8103/post/t5-lifecycle-b"
+    },
+    {
+      "sequence": 188478,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1487",
+      "url": "https://api.iconify.design/eos-icons:three-dots-loading.svg?color=%231cd0fd"
+    },
+    {
+      "sequence": 188497,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1488",
+      "url": "http://127.0.0.1:8103/post/technical"
+    },
+    {
+      "sequence": 188500,
+      "method": "Network.loadingFailed",
+      "id": "18767.1486",
+      "error": "net::ERR_ABORTED",
+      "cancelled": true
+    },
+    {
+      "sequence": 188569,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1493",
+      "url": "http://127.0.0.1:8103/assets/js/runtime/extensions/adaptive-text.js?v=015244b4"
+    },
+    {
+      "sequence": 188575,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1494",
+      "url": "http://127.0.0.1:8103/uploads/cover.png"
+    },
+    {
+      "sequence": 188578,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1495",
+      "url": "http://127.0.0.1:8103/assets/js/runtime/image-color.js?v=015244b4"
+    },
+    {
+      "sequence": 188583,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1496",
+      "url": "http://127.0.0.1:8103/api/auth/me"
+    },
+    {
+      "sequence": 188584,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1499",
+      "url": "http://127.0.0.1:8103/assets/js/color.js?v=015244b4"
+    },
+    {
+      "sequence": 188589,
+      "method": "Network.requestWillBeSent",
+      "id": "18767.1500",
+      "url": "http://127.0.0.1:8103/assets/js/plugins/adaptive-text.js?v=015244b4"
+    }
+  ]
+}

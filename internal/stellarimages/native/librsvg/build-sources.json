@@ -1,0 +1,57 @@
+[
+  {
+    "archive": "fontconfig-2.17.1-git.tar.gz",
+    "sha256": "82e73b26adad651b236e5f5d4b3074daf8ff0910188808496326bd3449e5261d",
+    "url": "https://gitlab.freedesktop.org/fontconfig/fontconfig/-/archive/2.17.1/fontconfig-2.17.1.tar.gz"
+  },
+  {
+    "archive": "harfbuzz-12.1.0.tar.gz",
+    "sha256": "0238bf7ada6b1fb92984f69f8b9cd66518af83cf24f7db1cfe60c772c42312d3",
+    "url": "https://codeload.github.com/harfbuzz/harfbuzz/tar.gz/refs/tags/12.1.0"
+  },
+  {
+    "archive": "pango-1.57.0.tar.xz",
+    "sha256": "890640c841dae77d3ae3d8fe8953784b930fa241b17423e6120c7bfdf8b891e7",
+    "url": "https://download.gnome.org/sources/pango/1.57/pango-1.57.0.tar.xz"
+  },
+  {
+    "archive": "librsvg-2.61.2.tar.xz",
+    "sha256": "4644d83623dd61cc4479c2b3c372e1da2b281552ebc90035c8d1ac502eb1dc00",
+    "url": "https://download.gnome.org/sources/librsvg/2.61/librsvg-2.61.2.tar.xz"
+  },
+  {
+    "archive": "cairo-1.18.4.tar.xz",
+    "sha256": "445ed8208a6e4823de1226a74ca319d3600e83f6369f99b14265006599c32ccb",
+    "url": "https://cairographics.org/releases/cairo-1.18.4.tar.xz"
+  },
+  {
+    "archive": "pixman-0.46.4.tar.gz",
+    "sha256": "d09c44ebc3bd5bee7021c79f922fe8fb2fb57f7320f55e97ff9914d2346a591c",
+    "url": "https://cairographics.org/releases/pixman-0.46.4.tar.gz"
+  },
+  {
+    "archive": "fribidi-1.0.16.tar.xz",
+    "sha256": "1b1cde5b235d40479e91be2f0e88a309e3214c8ab470ec8a2744d82a5a9ea05c",
+    "url": "https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz"
+  },
+  {
+    "archive": "freetype-2.14.1.tar.xz",
+    "sha256": "32427e8c471ac095853212a37aef816c60b42052d4d9e48230bab3bdf2936ccc",
+    "url": "https://download.savannah.gnu.org/releases/freetype/freetype-2.14.1.tar.xz"
+  },
+  {
+    "archive": "libpng-1.6.50.tar.gz",
+    "sha256": "708f4398f996325819936d447f982e0db90b6b8212b7507e7672ea232210949a",
+    "url": "https://download.sourceforge.net/libpng/libpng-1.6.50.tar.gz"
+  },
+  {
+    "archive": "expat-2.7.3.tar.gz",
+    "sha256": "821ac9710d2c073eaf13e1b1895a9c9aa66c1157a99635c639fbff65cdbdd732",
+    "url": "https://github.com/libexpat/libexpat/releases/download/R_2_7_3/expat-2.7.3.tar.gz"
+  },
+  {
+    "archive": "libxml2-2.15.1.tar.xz",
+    "sha256": "c008bac08fd5c7b4a87f7b8a71f283fa581d80d80ff8d2efd3b26224c39bc54c",
+    "url": "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.1.tar.xz"
+  }
+]

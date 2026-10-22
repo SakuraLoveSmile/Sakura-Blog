@@ -1,0 +1,9 @@
+{
+  "source": "isolated fixture using actual route and blog-gist.js",
+  "officialGist": "octocat/9257657",
+  "height": "850px",
+  "parentDocumentIsNull": true,
+  "parentWindowReadDenied": true,
+  "sandbox": "allow-scripts",
+  "manifestIntegration": "NOT RUN - pending full template"
+}

@@ -1,0 +1,77 @@
+{
+  "fixture_only": true,
+  "built_head": "cd3d7e65",
+  "cards": [
+    {
+      "article": "<div class=\"tag-plugin toc\"><details class=\"toc\" open=\"\"><summary>TOC</summary><div class=\"body fs14\"><div class=\"body\"><ul class=\"toc\"><li><a class=\"list-link\" href=\"/wiki/galaxy/intro\"><span>galaxy · intro</span></a></li><li><a class=\"list-link\" href=\"/wiki/galaxy/second\"><span>galaxy · second</span></a></li></ul></div></div></details></div>",
+      "height": 151,
+      "hostTagLinks": 0,
+      "manifest": true,
+      "opaque": true,
+      "sandbox": "allow-scripts",
+      "scripts": 7,
+      "shell": 0,
+      "tokenBridge": true
+    },
+    {
+      "article": "<div class=\"tag-plugin link dis-select\"><a autofill=\"icon,desc\" cardlink=\"\" class=\"link-card plain card-hover card-hover--spotlight card-hover--tilt\" href=\"/about\" title=\"ContextLocalLink\"><div class=\"left\"><span class=\"title\">ContextLocalLink</span><span class=\"cap link footnote\">http://127.0.0.1:8103/about</span></div><div class=\"right\"><div class=\"lazy img\" data-bg=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/link/8f277b4ee0ecd.svg\"></div></div></a></div>",
+      "height": 118,
+      "hostTagLinks": 0,
+      "manifest": true,
+      "opaque": true,
+      "sandbox": "allow-scripts",
+      "scripts": 7,
+      "shell": 0,
+      "tokenBridge": true
+    },
+    {
+      "article": "<div class=\"tag-plugin swiper fancybox\" id=\"swiper-api\" width=\"min\" effect=\"fade\"><div class=\"swiper-wrapper\"><div class=\"swiper-slide\"><img no-lazy=\"\" src=\"/uploads/cover.png\" alt=\"Cover\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" width=\"960\" height=\"540\" data-stellar-image-dimensions=\"true\" data-stellar-image-color=\"{&quot;size&quot;:64,&quot;hsla&quot;:[223.763,21.8748,49.8744,1]}\" data-stellar-image-source=\"/uploads/cover.png\"></div><div class=\"swiper-slide\"><img no-lazy=\"\" src=\"/uploads/avatar.png\" alt=\"Avatar\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" width=\"960\" height=\"540\" data-stellar-image-dimensions=\"true\" data-stellar-image-color=\"{&quot;size&quot;:64,&quot;hsla&quot;:[195.8218,51.168,36.1383,1]}\" data-stellar-image-source=\"/uploads/avatar.png\"></div></div><div class=\"swiper-pagination\"></div><div class=\"swiper-button-prev blur\"></div><div class=\"swiper-button-next blur\"></div></div>",
+      "height": 500,
+      "hostTagLinks": 0,
+      "manifest": true,
+      "opaque": true,
+      "sandbox": "allow-scripts",
+      "scripts": 7,
+      "shell": 0,
+      "tokenBridge": true
+    },
+    {
+      "article": "<div class=\"tag-plugin swiper fancybox\" id=\"swiper-api\" width=\"max\" effect=\"coverflow\"><div class=\"swiper-wrapper\"><div class=\"swiper-slide\"><img no-lazy=\"\" src=\"/uploads/cover.png\" alt=\"Cover\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" width=\"960\" height=\"540\" data-stellar-image-dimensions=\"true\" data-stellar-image-color=\"{&quot;size&quot;:64,&quot;hsla&quot;:[223.763,21.8748,49.8744,1]}\" data-stellar-image-source=\"/uploads/cover.png\"></div><div class=\"swiper-slide\"><img no-lazy=\"\" src=\"/uploads/avatar.png\" alt=\"Avatar\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" width=\"960\" height=\"540\" data-stellar-image-dimensions=\"true\" data-stellar-image-color=\"{&quot;size&quot;:64,&quot;hsla&quot;:[195.8218,51.168,36.1383,1]}\" data-stellar-image-source=\"/uploads/avatar.png\"></div></div><div class=\"swiper-pagination\"></div><div class=\"swiper-button-prev blur\"></div><div class=\"swiper-button-next blur\"></div></div>",
+      "height": 500,
+      "hostTagLinks": 0,
+      "manifest": true,
+      "opaque": true,
+      "sandbox": "allow-scripts",
+      "scripts": 7,
+      "shell": 0,
+      "tokenBridge": true
+    },
+    {
+      "article": "<div class=\"tag-plugin gallery flow-box\" size=\"xl\" aspect_ratio=\"landscape\"><div class=\"flow-cell lazy-box\"><img class=\"lazy\" data-fancybox=\"gallery-1\" data-src=\"/uploads/cover.png\" alt=\"Cover\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" width=\"960\" height=\"540\" data-stellar-image-dimensions=\"true\" data-stellar-image-color=\"{&quot;size&quot;:64,&quot;hsla&quot;:[223.763,21.8748,49.8744,1]}\" data-stellar-image-source=\"/uploads/cover.png\"><div class=\"lazy-icon\"></div><div class=\"image-meta\"><span class=\"image-caption\">Cover</span></div></div><div class=\"flow-cell lazy-box\"><img class=\"lazy\" data-fancybox=\"gallery-1\" data-src=\"/uploads/avatar.png\" alt=\"Avatar\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" width=\"960\" height=\"540\" data-stellar-image-dimensions=\"true\" data-stellar-image-color=\"{&quot;size&quot;:64,&quot;hsla&quot;:[195.8218,51.168,36.1383,1]}\" data-stellar-image-source=\"/uploads/avatar.png\"><div class=\"lazy-icon\"></div><div class=\"image-meta\"><span class=\"image-caption\">Avatar</span></div></div></div>",
+      "height": 64,
+      "hostTagLinks": 0,
+      "manifest": true,
+      "opaque": true,
+      "sandbox": "allow-scripts",
+      "scripts": 7,
+      "shell": 0,
+      "tokenBridge": true
+    }
+  ],
+  "unknown_parameter": {
+    "source": "# Opaque fixture\n\n{% image /uploads/cover.png unknown:x %}",
+    "popover_source": "{% image /uploads/cover.png unknown:x %}",
+    "reopened": "# Opaque fixture\n\n{% image /uploads/cover.png unknown:x %}"
+  },
+  "original_note_restored": true,
+  "historical_opaque_scope": "Original five mode probes did not record scope; historical opaque flags are not independent origin proof.",
+  "current_native_isolation": {
+    "built_head": "605d1186",
+    "measurement": "CDP Runtime.evaluate native parent DOM",
+    "iframe_count": 1,
+    "sandbox": "allow-scripts",
+    "contentDocument_null": true,
+    "srcdoc": true,
+    "limit": "Current restored Note preview; does not retest all five historical modes."
+  }
+}

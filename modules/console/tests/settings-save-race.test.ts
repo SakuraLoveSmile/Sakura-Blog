@@ -42,18 +42,29 @@ const SAVE_BUTTON_FILES = [
   "modules/console/web/src/modules/appearance/EnhancementsSettings.vue",
 ];
 
-test("AppearanceView.save: 深复制提交内容与快照更新，杜绝请求中继续编辑造成的快照污染（结构检查）", () => {
-  const code = read("modules/console/web/src/modules/appearance/AppearanceView.vue");
-
-  // 请求前深拷贝提交内容
-  assert.match(code, /payloadToSubmit\s*=\s*deepCloneJsonSafe/);
-  // 请求接口使用深拷贝副本
-  assert.match(code, /settingsApi\.updateSection\(section,\s*payloadToSubmit\)/);
-  // 快照更新使用本次深拷贝副本，绝不读取请求结束时的可变表单对象
-  assert.match(code, /updateSectionSnapshot\(section,\s*payloadToSubmit\)/);
+test("旧主题设置仅提供 canonical 配置入口，不再双协议写入", () => {
+  for (const path of ["appearance/AppearanceView.vue", "appearance/MenuView.vue", "authors/AuthorsView.vue", "friends/FriendSettings.vue"]) {
+    const code = read(`modules/console/web/src/modules/${path}`);
+    assert.match(code, /CanonicalSettingsNotice/);
+    assert.doesNotMatch(code, /settingsApi\.updateSection|settingsApi\.all/);
+  }
 });
 
-test("SettingsView.save & saveJson: 维护各分区 JSON 文本基线与表单/草稿双重脏态判定（结构检查）", () => {
+test("AI 设置使用 canonical 编辑器读写 blog_extensions.ai，不接入旧 ai 分段", () => {
+  const code = read("modules/console/web/src/modules/assistant/AiSettings.vue");
+  assert.match(code, /useStellarSettings\(\)/);
+  assert.match(code, /<CanonicalSettingsForm/);
+  assert.match(code, /tab="ai"/);
+  assert.doesNotMatch(code, /CanonicalSettingsNotice|settingsApi\.updateSection|settingsApi\.all/);
+});
+
+test("AI 设置仅在首次进入设置标签后挂载，默认助手标签不读取配置", () => {
+  const code = read("modules/console/web/src/modules/assistant/AssistantView.vue");
+  assert.match(code, /<AiSettings v-if="settingsVisited" v-show="activeTab === 'settings'" \/>/);
+  assert.match(code, /if \(tab === "settings"\) settingsVisited\.value = true;/);
+});
+
+test("SettingsView.save 与 canonical 原文保存: 维护各分区 JSON 文本基线与表单/草稿双重脏态判定（结构检查）", () => {
   const code = read("modules/console/web/src/modules/settings/SettingsView.vue");
 
   // 必须维护 savedJsonBaseline 响应式基线
@@ -63,16 +74,19 @@ test("SettingsView.save & saveJson: 维护各分区 JSON 文本基线与表单/�
   assert.match(code, /const isFormDirty\s*=\s*JSON\.stringify\(data\.value\[key\]\)\s*!==\s*JSON\.stringify\(original\[key\]\)/);
   assert.match(code, /const isJsonDirty\s*=\s*\(rawText\.value\[key\]\s*\?\?\s*""\)\s*!==\s*\(savedJsonBaseline\.value\[key\]\s*\?\?\s*""\)/);
 
-  // saveJson 必须在发请求前解析 JSON，失败时不发送请求直接 return
-  assert.match(code, /JSON\.parse\(rawAtStart\)/);
-  assert.match(code, /Toast\.error\("JSON 格式错误，请检查语法后再保存"\)/);
+  // 旧 JSON 分段编辑器已停止产品保存，只有宿主基本信息与 Feedback 可走旧 API。
+  assert.match(code, /section !== "site" && section !== "feedback"/);
+  assert.doesNotMatch(code, /function saveJson/);
 
   // 普通保存只有在无独立草稿且请求期间未被编辑时才自动格式化回填，否则保留用户草稿
   assert.match(code, /hadNoIndependentDraft\s*=\s*jsonAtStart\s*===\s*savedJsonBaseline\.value\[section\]/);
   assert.match(code, /if\s*\(rawText\.value\[section\]\s*===\s*jsonAtStart\s*&&\s*hadNoIndependentDraft\)/);
 
-  // JSON 保存期间若表单发生变化，绝对不覆盖新的表单数据
-  assert.match(code, /if\s*\(JSON\.stringify\(data\.value\[section\]\)\s*===\s*formAtStart\)\s*\{\s*data\.value\[section\]\s*=/);
+  // canonical 提交原文且保存期间新草稿不被完成响应覆盖，保留大整数。
+  const canonical = read("modules/console/web/src/modules/settings/useStellarSettings.ts");
+  assert.match(canonical, /const payload = draft\.value/);
+  assert.match(canonical, /api\.save\(payload\)/);
+  assert.match(canonical, /if \(draft\.value === payload\) draft\.value = data/);
 });
 
 test("所有设置与主题设置保存按钮都带全局保存禁用条件（结构检查）", () => {
@@ -94,7 +108,7 @@ test("所有设置与主题设置保存按钮都带全局保存禁用条件（�
   assert.doesNotMatch(themeYaml, /:disabled="loading \|\| localSaving"/);
   assert.match(
     read("modules/console/web/src/modules/appearance/AppearanceView.vue"),
-    /<ThemeYamlTab :saving="savingKey" \/>/,
+    /CanonicalSettingsNotice/,
   );
   assert.match(
     read("modules/console/web/src/modules/settings/MenubarEditor.vue"),

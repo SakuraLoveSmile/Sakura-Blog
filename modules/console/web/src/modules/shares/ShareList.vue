@@ -160,7 +160,7 @@ function isExpired(expiresAt: string): boolean {
         <div v-else class="overflow-x-auto">
           <table class="w-full min-w-[760px] text-left">
             <thead>
-              <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+              <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                 <th class="px-4 py-3">关联文章</th>
                 <th class="px-4 py-3">分享类型</th>
                 <th class="px-4 py-3">分享直链 / 令牌</th>
@@ -180,9 +180,7 @@ function isExpired(expiresAt: string): boolean {
                 <td class="px-4 py-3.5 text-xs">
                   <span
                     class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    :class="
-                      s.share_type === 'draft' ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#30D158]/10 text-[#30D158]'
-                    "
+                    :class="s.share_type === 'draft' ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#30D158]/10 text-[#30D158]'"
                   >
                     {{ s.share_type === "draft" ? "草稿预览" : "公开发布" }}
                   </span>
@@ -276,7 +274,7 @@ function isExpired(expiresAt: string): boolean {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -293,7 +291,6 @@ function isExpired(expiresAt: string): boolean {
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {
@@ -321,7 +318,7 @@ function isExpired(expiresAt: string): boolean {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {

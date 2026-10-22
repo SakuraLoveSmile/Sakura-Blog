@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/xml"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -102,72 +101,38 @@ func rssItemsFromPosts(posts []*store.Post, siteURL string, resolveAuthor func(s
 
 // registerFeedRoutes 注册订阅/SEO 域路由：Atom/JSON Feed/robots.txt（feed 包）、/rss.xml、/sitemap.xml、/og/:slug。
 func (s *webServer) registerFeedRoutes(r *gin.Engine) {
-	// Atom / JSON Feed / 分类标签 RSS / robots.txt
-	NewFeedHandler(s.st, s.site).Register(r)
-
-	// RSS 2.0 订阅输出：/rss.xml，最新 20 篇 published 文章。
-	r.GET("/rss.xml", func(c *gin.Context) {
-		posts, err := s.st.ListPublishedPaged(1, 20)
-		if err != nil {
-			log.Printf("list posts: %v", err)
-			s.render500(c)
-			return
-		}
-		siteURL := s.canonicalBaseURL(&tmpl.ViewData{Site: s.site.Load()}, c)
-		rss := RSS{
-			Version: "2.0",
-			Channel: Channel{
-				Title:       s.site.Load().Title,
-				Link:        tmpl.JoinSiteURL(siteURL, "/"),
-				Description: s.site.Load().Description,
-				Items:       rssItemsFromPosts(posts, siteURL, s.resolveAuthor),
-			},
-		}
-		output, err := xml.MarshalIndent(rss, "", "  ")
-		if err != nil {
-			log.Printf("marshal rss: %v", err)
-			s.render500(c)
-			return
-		}
-		c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", append([]byte(xml.Header), output...))
-	})
-
-	// Sitemap 输出：/sitemap.xml，包含首页、所有已发布文章、wiki 已发布文档、静态索引页。
-	// Spec 61 阶段 5：生成期缓存（按 baseURL 分 key，写路径置脏后重建）。
-	r.GET("/sitemap.xml", func(c *gin.Context) {
-		output, err := s.contentCache.sitemapXML(s.canonicalBaseURL(&tmpl.ViewData{Site: s.site.Load()}, c))
-		if err != nil {
-			log.Printf("sitemap: %v", err)
-			s.render500(c)
-			return
-		}
-		c.Data(http.StatusOK, "application/xml; charset=utf-8", output)
-	})
-
-	// OG 社交分享图（Spec 27）：/og/:slug.png，磁盘缓存 + 写时失效。
+	r.GET("/atom.xml", func(c *gin.Context) { s.serveStellarFeed(c, "atom", "", "") })
+	r.GET("/feed.json", func(c *gin.Context) { s.serveStellarFeed(c, "json", "", "") })
+	r.GET("/rss.xml", func(c *gin.Context) { s.serveStellarFeed(c, "rss", "", "") })
+	r.GET("/categories/:name/rss.xml", func(c *gin.Context) { s.serveStellarFeed(c, "rss", "categories", c.Param("name")) })
+	r.GET("/tags/:name/rss.xml", func(c *gin.Context) { s.serveStellarFeed(c, "rss", "tags", c.Param("name")) })
+	r.GET("/robots.txt", NewFeedHandler(s.st, s.site).robots)
+	r.GET("/sitemap.xml", s.serveStellarSitemap)
 	r.GET("/og/:slug", func(c *gin.Context) {
-		slug := c.Param("slug")
-		slug = strings.TrimSuffix(slug, ".png")
-		if slug == "" {
-			c.Status(http.StatusNotFound)
-			return
-		}
-		p, err := s.st.GetBySlug(slug)
-		if err != nil || p == nil || p.Status != store.StatusPublished {
-			c.Status(http.StatusNotFound)
-			return
-		}
-		data, err := s.ogGen.GetOrGenerate(slug, og.PostInfo{
-			Title:     p.Title,
-			Date:      p.CreatedAt,
-			SiteTitle: s.site.Load().Title,
-		})
+		slug := strings.TrimSuffix(c.Param("slug"), ".png")
+		p, err := s.st.GetPublishedBySlug(slug)
 		if err != nil {
-			log.Printf("og: generate %s failed: %v", slug, err)
-			c.Status(http.StatusInternalServerError)
+			stellarError(c, err)
 			return
 		}
-		c.Header("Cache-Control", "public, max-age=86400")
+		if p == nil || p.IsPasswordProtected() {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		if _, err := p.ValidateStellar(); err != nil {
+			stellarError(c, err)
+			return
+		}
+		if s.ogGen == nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		data, err := s.ogGen.GetOrGenerate(slug, og.PostInfo{Title: p.Title, Date: p.CreatedAt, SiteTitle: s.site.Load().Title})
+		if err != nil {
+			stellarError(c, err)
+			return
+		}
+		c.Header("Cache-Control", "no-store")
 		c.Data(http.StatusOK, "image/png", data)
 	})
 }

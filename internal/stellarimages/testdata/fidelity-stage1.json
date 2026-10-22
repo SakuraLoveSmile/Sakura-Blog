@@ -1,0 +1,842 @@
+[
+  {
+    "file": "cmyk.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          316.2394,
+          34.1772,
+          33.0451,
+          0.5018
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          316.2394,
+          34.1772,
+          33.0451,
+          0.5018
+        ]
+      }
+    }
+  },
+  {
+    "file": "complex.svg",
+    "match": false,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 257,
+        "height": 139
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          262.1189,
+          24.4492,
+          28.0519,
+          0.9892
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 257,
+        "height": 139
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          262.6666,
+          25.2549,
+          27.6807,
+          0.9858
+        ]
+      }
+    }
+  },
+  {
+    "file": "float.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 137,
+        "height": 73
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          54.4595,
+          71.6867,
+          98.7231,
+          1
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 137,
+        "height": 73
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          54.4595,
+          71.6867,
+          98.7231,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "file": "gradient.avif",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    }
+  },
+  {
+    "file": "gradient.gif",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          307.2569,
+          41.2625,
+          21.3861,
+          0.5048
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          307.2569,
+          41.2625,
+          21.3861,
+          0.5048
+        ]
+      }
+    }
+  },
+  {
+    "file": "gradient.jpg",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          301.9714,
+          38.772,
+          18.2777,
+          1
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          301.9714,
+          38.772,
+          18.2777,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "file": "gradient.png",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    }
+  },
+  {
+    "file": "gradient.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    }
+  },
+  {
+    "file": "gradient.webp",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          298.8239,
+          37.4995,
+          36.3736,
+          0.5031
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          298.8239,
+          37.4995,
+          36.3736,
+          0.5031
+        ]
+      }
+    }
+  },
+  {
+    "file": "icc-p3-rgb16.png",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          293.0214,
+          32.0406,
+          37.0939,
+          0.5019
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          293.0214,
+          32.0406,
+          37.0939,
+          0.5019
+        ]
+      }
+    }
+  },
+  {
+    "file": "icc-p3.png",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.8996,
+          38.3356,
+          34.983,
+          0.5018
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.8996,
+          38.3356,
+          34.983,
+          0.5018
+        ]
+      }
+    }
+  },
+  {
+    "file": "jpeg.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          302.1924,
+          38.3061,
+          18.3064,
+          1
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          302.1924,
+          38.3061,
+          18.3064,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "file": "lab.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          299.6142,
+          37.4357,
+          36.2754,
+          0.5008
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          299.6142,
+          37.4357,
+          36.2754,
+          0.5008
+        ]
+      }
+    }
+  },
+  {
+    "file": "large.png",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 513,
+        "height": 227
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          298.8245,
+          39.415,
+          34.3317,
+          0.5049
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 513,
+        "height": 227
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          298.8245,
+          39.415,
+          34.3317,
+          0.5049
+        ]
+      }
+    }
+  },
+  {
+    "file": "offset.webp",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 6,
+        "height": 6
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          0,
+          100,
+          5.5556,
+          0.1111
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 6,
+        "height": 6
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          0,
+          100,
+          5.5556,
+          0.1111
+        ]
+      }
+    }
+  },
+  {
+    "file": "orientation.jpg",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 117,
+        "height": 253
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          301.9714,
+          38.772,
+          18.2777,
+          1
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 117,
+        "height": 253
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          301.9714,
+          38.772,
+          18.2777,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "file": "rgb16.png",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9966,
+          37.4685,
+          35.8195,
+          0.5019
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9966,
+          37.4685,
+          35.8195,
+          0.5019
+        ]
+      }
+    }
+  },
+  {
+    "file": "rgb16.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 137,
+        "height": 73
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          260.9812,
+          56.3283,
+          31.9628,
+          1
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 137,
+        "height": 73
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          260.9812,
+          56.3283,
+          31.9628,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "file": "shape.svg",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 20,
+        "height": 10
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          210,
+          65.3846,
+          20.3922,
+          1
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 20,
+        "height": 10
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          210,
+          65.3846,
+          20.3922,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "file": "tiled.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          297.9094,
+          38.3467,
+          34.9761,
+          0.5018
+        ]
+      }
+    }
+  },
+  {
+    "file": "webp.tiff",
+    "match": true,
+    "expected": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          298.4131,
+          38.0389,
+          34.8894,
+          0.5018
+        ]
+      }
+    },
+    "actual": {
+      "dimensions": {
+        "status": "ready",
+        "width": 253,
+        "height": 117
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          298.4131,
+          38.0389,
+          34.8894,
+          0.5018
+        ]
+      }
+    }
+  }
+]

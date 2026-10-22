@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-14",
+  "binary_sha256": "c0ef7e6c5d88d95cb2db5e282ef5a1c158cce93933f133a9b7bf68c3287a891a",
+  "binary_source_head": "74ef648a780d1beff52b19b1817dba9d4c6e6c9e",
+  "current_head": "572788a01f3fc6a7718cbcf2c29959b4bb168013",
+  "old_binding_rejected_exit": 1,
+  "fresh_original_exit": 0,
+  "fresh_selected_exit": 0,
+  "digests": {
+    "source_digest": "d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9",
+    "root_digest": "8e2206a91d8d331f988030b6f399257f6747d38682a1076e35b5e895da0cc371",
+    "candidate_digest": "71dcecb6e55518cf34fcbbabbd5a1247c24fba12efbd93a732468c44a2fb095b",
+    "selected_candidate_digest": "ff8904deccbb1e797887363bce1221b3955763438ecaf4d2bed89967f026524a",
+    "review_digest": "d2e8b831450349c0db48cc78f6fb6100d53e23a9cf8e065d75cbd4ed67451711"
+  },
+  "prior_digests": {
+    "source_digest": "d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9",
+    "root_digest": "7fca4425173d6ba025c238b90c2248557bab1b1689549202f7514fc3e42f88cd",
+    "candidate_digest": "71dcecb6e55518cf34fcbbabbd5a1247c24fba12efbd93a732468c44a2fb095b",
+    "selected_candidate_digest": "ff8904deccbb1e797887363bce1221b3955763438ecaf4d2bed89967f026524a",
+    "review_digest": "b12070c516f266e5ce4e01ab5f15fd566a8017e6113866c165f2f27117d85d06"
+  },
+  "resource_changes": [
+    {
+      "resource": "internal/settings/data/icons.yml",
+      "fields": [
+        "data"
+      ]
+    }
+  ],
+  "body_digests": {
+    "pages/2": "5cbb018aa0f6e40c2056d2f3eb73cf705fd06f511e6c79c5b0c5b6e474c94143",
+    "pages/3": "3412f73b4af8eb3a16b79f213b03f4f8f8254cb8714a63ce86a829cd206188a9",
+    "posts/1": "16071c6f6656e7e68565ecd1d1cd3db3002f2c706907953b3ca009f9c4de485a",
+    "posts/12": "2c6751340fbc5e968deae110c09263b8f434f12ff936701e7885a2475bd4a592",
+    "posts/2": "e6a8d7437c8a39b466da05678ac7073df0a01ea5411dfa1ef1256b455974c861",
+    "posts/4": "da21604e7665bbb0408f25c44b9bafdcc8f19a9933cd4726b63fcc203ed82cec",
+    "posts/6": "e390589b21727ed59c441e46a2ade505ad598151a605e9b7ca883c89ec5a36bf"
+  },
+  "body_approval_reused_from_user": true,
+  "candidate_values_unchanged": true,
+  "approved": false,
+  "offline_all_false": true,
+  "rehearsal_executed": false,
+  "apply_executed": false,
+  "source_integrity": {
+    "fingerprints": 72,
+    "only_changes": [
+      {
+        "resource": "data/blog.db-shm",
+        "fields": [
+          "mtime_ns"
+        ]
+      }
+    ],
+    "persistent_source_unchanged": true,
+    "database_wal_tracked_content_unchanged": true
+  },
+  "permissions_0700_0600_verified": true,
+  "capture": {
+    "resources": 68,
+    "database_objects": 67,
+    "tracked_sources": 2
+  },
+  "boundary": "Candidate/body choices approved; new root/review binding pending; no rehearsal, Apply, Recover, server stop or real bootstrap."
+}

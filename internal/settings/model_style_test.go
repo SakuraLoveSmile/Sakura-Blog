@@ -2,6 +2,8 @@ package settings
 
 import (
 	"encoding/json"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -37,7 +39,7 @@ func TestParseHSL(t *testing.T) {
 	}
 }
 
-// TestStyleInjectCSSEmpty 零配置 → 1.43.0 原生 View Transition 默认规则。
+// TestStyleInjectCSSEmpty 零配置 → 保留原生 View Transition 默认规则。
 func TestStyleInjectCSSEmpty(t *testing.T) {
 	var s StyleConfig
 	got := string(s.InjectCSS())
@@ -89,7 +91,7 @@ default:
 	if cfg.Style.BorderRadius.Card != "12px" || cfg.Style.HeaderPrefix["h2"] != "#" || cfg.Default.Loading != "/assets/loading.svg" {
 		t.Fatalf("style/default compatibility values = %+v / %+v", cfg.Style, cfg.Default)
 	}
-	if css := string(cfg.Style.InjectCSS()); strings.Contains(css, "--fsp:17px") || strings.Contains(css, "--gap-p:calc(17px") {
+	if css := string(cfg.Style.InjectCSS()); strings.Contains(css, "--fsp:17px") || strings.Contains(css, "--fs-content-base:17px") || strings.Contains(css, "--fs-content:17px") || strings.Contains(css, "--gap-p:calc(17px") {
 		t.Fatalf("legacy font-size.body must not affect 1.43 rendering: %s", css)
 	}
 
@@ -164,36 +166,36 @@ func TestStyleInjectCSSFontAndMisc(t *testing.T) {
 	}
 	css := string(s.InjectCSS())
 	for _, want := range []string{
-		"html{font-size:18px;}",                          // 根字号
-		"html{font-family:Arial;}",                       // body 字体
-		"code{font-family:Menlo;}",                       // code 字体
-		"pre,.md-text .highlight{font-family:Consolas;}", // codeblock 字体
-		".md-text p:not([class]){text-align:justify;}",   // 对齐
-		"::-webkit-scrollbar{height:6px;width:6px;}",     // 代码块滚动条
-		".extend.next{background-image:url(/n.svg);}",    // 分页 next
-		".extend.prev{background-image:url(/p.svg);}",    // 分页 prev
-		"h2 >a:first-child:before{content:'#';}",         // header_prefix h2
-		"h3 >a:first-child:before{content:'=';}",         // header_prefix h3
+		"--fs-root:18px;", // 根字号
+		"html,body,button,input,textarea,select,.search-input,.search-result-more{font-family:Arial;}", // body 字体
+		".md-text code{font-family:Menlo;}", // code 字体
+		".md-text pre,.md-text pre code,.md-text .highlight,.md-text .gist .blob-code-inner{font-family:Consolas;}", // codeblock 字体
+		".md-text p:not([class]){text-align:justify;}",                                                              // 对齐
+		"::-webkit-scrollbar{height:6px;width:6px;}",                                                                // 代码块滚动条
+		".extend.next{background-image:url(/n.svg);",                                                                // 分页 next
+		".extend.prev{background-image:url(/p.svg);",                                                                // 分页 prev
+		"body[data-article-style='tech'] article.content h2 >a:first-child:before{content:'#';}",                    // header_prefix h2
+		"body[data-article-style='tech'] article.content h3 >a:first-child:before{content:'=';}",                    // header_prefix h3
 	} {
 		if !strings.Contains(css, want) {
 			t.Errorf("缺 %q\n完整: %s", want, css)
 		}
 	}
-	if strings.Contains(css, "--fsp:16px") || strings.Contains(css, "--gap-p:calc(16px + 4px)") {
+	if strings.Contains(css, "--fsp:16px") || strings.Contains(css, "--fs-content-base:16px") || strings.Contains(css, "--fs-content:16px") || strings.Contains(css, "--gap-p:calc(16px + 4px)") {
 		t.Errorf("旧 font-size.body 不应参与 1.43.0 渲染: %s", css)
 	}
 }
 
 // TestStyleInjectCSSBackgrounds leftbar 图片模式 / 全站背景毛玻璃。
 func TestStyleInjectCSSBackgrounds(t *testing.T) {
-	// leftbar 图片模式：重启 sidebg + 恢复 head.html 纯色块关掉的 mask 淡出与玻璃高光（Spec 50）
+	// leftbar 图片模式：新版装饰层与表面层分离，保留原模糊/透明度配置。
 	img := StyleConfig{Leftbar: StyleLeftbar{BackgroundImage: "/bg.jpg", BlurPx: "80px", BackgroundOpacity: "0.7"}}
 	c1 := string(img.InjectCSS())
 	for _, want := range []string{
-		".l_left .sidebg{display:block;background-image:url(/bg.jpg);--blur-px:80px;--background-opacity:0.7;}",
-		".l_left .leftbar-container{background:transparent;}",
-		".l_left .leftbar-container >.widgets{mask:linear-gradient(#fff,90%,transparent);-webkit-mask:linear-gradient(#fff,90%,transparent);}",
-		"@media screen and (min-width:667px){.l_left .leftbar-container:before{display:block;}}",
+		".site-region--leftbar .site-region__decoration{display:block;",
+		"background-image:url(/bg.jpg);background-position:center;background-size:cover;--blur-px:80px;--background-opacity:0.7;filter:blur(var(--blur-px)) opacity(var(--background-opacity));}",
+		".site-region--leftbar .site-region__surface.ui-surface{background:transparent;}",
+		".site-region--leftbar .site-region__viewport{background:transparent;}",
 	} {
 		if !strings.Contains(c1, want) {
 			t.Errorf("leftbar 图片模式缺 %q\n完整: %s", want, c1)
@@ -203,27 +205,89 @@ func TestStyleInjectCSSBackgrounds(t *testing.T) {
 	// leftbar 纯色模式（全站仅深色，background_color_dark 无条件生效）
 	color := StyleConfig{Leftbar: StyleLeftbar{BackgroundColorDark: "#222"}}
 	c2 := string(color.InjectCSS())
-	if !strings.Contains(c2, ".l_left .leftbar-container{background:#222;}") {
+	if !strings.Contains(c2, ".site-region--leftbar .site-region__surface.ui-surface{background:#222;}") {
 		t.Errorf("leftbar 纯色注入错误: %s", c2)
 	}
 
 	// 全站背景毛玻璃
 	site := StyleConfig{Site: StyleSite{BackgroundImage: "/site.webp"}}
 	c3 := string(site.InjectCSS())
-	if !strings.Contains(c3, "body>.sitebg{background-image:url(/site.webp);}") ||
-		!strings.Contains(c3, "backdrop-filter:saturate(300%) blur(100px) !important") {
+	if !strings.Contains(c3, "body>.site-background{background-image:url(/site.webp);}") ||
+		!strings.Contains(c3, ".site-background__blur{--blur-px:100px;--blur-sat:300%;--blur-bg:var(--bg-a75);") ||
+		!strings.Contains(c3, "backdrop-filter:saturate(var(--blur-sat)) blur(var(--blur-px))!important") {
 		t.Errorf("全站背景注入错误: %s", c3)
 	}
 	// 未配全站背景图 → 不输出 sitebg（保持 head.html 透明兜底）
-	if strings.Contains(string(color.InjectCSS()), "body>.sitebg{") {
+	if strings.Contains(string(color.InjectCSS()), "body>.site-background{") {
 		t.Errorf("未配背景图不应输出 sitebg")
+	}
+}
+
+func TestStyleLeftbarModes(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		leftbar StyleLeftbar
+		want    []string
+		absent  []string
+	}{
+		{
+			name:    "card retains stored image but renders custom solid color",
+			leftbar: StyleLeftbar{UIStyle: "card", BackgroundImage: "/saved.jpg", BackgroundColorDark: "#222"},
+			want:    []string{".site-region__decoration{display:none;}", ".site-region__surface.ui-surface{background:#222;}"},
+			absent:  []string{"background-image:", "display:block", "filter:"},
+		},
+		{
+			name:    "card uses built-in solid color",
+			leftbar: StyleLeftbar{UIStyle: "card", BackgroundImage: "/saved.jpg"},
+			want:    []string{".site-region__decoration{display:none;}", ".site-region__surface.ui-surface{background:var(--card);}"},
+			absent:  []string{"background-image:"},
+		},
+		{
+			name:    "glass without image restores historical built-in image",
+			leftbar: StyleLeftbar{UIStyle: "glass", BlurPx: "60px", BackgroundOpacity: "0.6"},
+			want:    []string{"background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg);", "--blur-px:60px;--background-opacity:0.6;", ".site-region__surface.ui-surface{background:transparent;}", ".site-region__viewport{background:transparent;}"},
+		},
+		{
+			name:    "glass uses configured image and default filters",
+			leftbar: StyleLeftbar{UIStyle: "glass", BackgroundImage: "/custom.jpg", BackgroundColorDark: "#222"},
+			want:    []string{"background-image:url(/custom.jpg);", "--blur-px:100px;--background-opacity:0.8;"},
+			absent:  []string{"sidebar-bg1@small.jpg", "background:#222;"},
+		},
+		{
+			name:    "unconfigured mode preserves new default",
+			leftbar: StyleLeftbar{},
+			absent:  []string{"background-image:", "background:transparent;", "display:block"},
+		},
+		{
+			name:    "historical image without mode remains supported",
+			leftbar: StyleLeftbar{BackgroundImage: "/legacy.jpg"},
+			want:    []string{"background-image:url(/legacy.jpg);", ".site-region__surface.ui-surface{background:transparent;}"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := StyleConfig{Leftbar: tc.leftbar}
+			got := string(cfg.InjectCSS())
+			for _, want := range tc.want {
+				if !strings.Contains(got, want) {
+					t.Errorf("missing %q in %s", want, got)
+				}
+			}
+			for _, absent := range tc.absent {
+				if strings.Contains(got, absent) {
+					t.Errorf("unexpected %q in %s", absent, got)
+				}
+			}
+			if cfg.Leftbar != tc.leftbar {
+				t.Fatal("rendering must preserve the saved leftbar configuration")
+			}
+		})
 	}
 }
 
 // TestStyleInjectCSSRadiusGradient 圆角/渐变组注入（Spec 52）：仅显式配置时输出 :root 变量。
 func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 	s := StyleConfig{
-		BorderRadius: StyleBorderRadius{Card: "12px", Block: "6px", Navbar: "24px", Image: "4px"},
+		BorderRadius: StyleBorderRadius{Card: "12px", Block: "6px", Navbar: "24px", Image: "4px", CardL: "16px", CardS: "8px", Bar: "10px", ImageL: "6px", ImageS: "2px"},
 		Gradient:     StyleGradient{Start: "linear-gradient(135deg, #ff8a5c, #ff5724)", Searchbar: "linear-gradient(90deg, #f00, #00f)"},
 	}
 	css := string(s.InjectCSS())
@@ -232,6 +296,11 @@ func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 		"--radius-block:6px;",
 		"--radius-navbar:24px;",
 		"--radius-image:4px;",
+		"--radius-card-l:16px;",
+		"--radius-card-s:8px;",
+		"--radius-bar:10px;",
+		"--radius-image-l:6px;",
+		"--radius-image-s:2px;",
 		"--gradient-start:linear-gradient(135deg, #ff8a5c, #ff5724);",
 		"--gradient-searchbar:linear-gradient(90deg, #f00, #00f);",
 	} {
@@ -241,5 +310,64 @@ func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 	}
 	if !strings.Contains(css, ":root{") {
 		t.Errorf("圆角/渐变变量应在 :root 块内，got %s", css)
+	}
+}
+
+// 检查注入变量被实际构建产物消费，避免仅验证输出字符串却遗漏上游契约变更。
+func TestStyleInjectCSSStellar200Consumers(t *testing.T) {
+	data, err := os.ReadFile("../../modules/stellar/web/assets/css/main.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	css := string(data)
+	for _, variable := range []string{
+		"--hue", "--sat", "--light", "--accent", "--link", "--fs-root",
+		"--radius-card", "--radius-block", "--radius-navbar", "--radius-image",
+		"--radius-card-l", "--radius-card-s", "--radius-bar", "--radius-image-l", "--radius-image-s",
+		"--gradient-start", "--gradient-searchbar",
+	} {
+		if !regexp.MustCompile(`var\(` + regexp.QuoteMeta(variable) + `(?:[,\)])`).MatchString(css) {
+			t.Errorf("当前 Stellar 产物缺少 %s 消费者", variable)
+		}
+	}
+	for _, selector := range []string{
+		".site-region--leftbar", ".site-region__surface", ".site-region__viewport",
+		".site-background", ".site-background__blur", ".brand-wrap", ".brand-image--avatar",
+		"body[data-article-style='tech']", ".search-input", ".md-text .highlight",
+	} {
+		if !strings.Contains(css, selector) {
+			t.Errorf("当前 Stellar 产物缺少 %s 消费者", selector)
+		}
+	}
+}
+
+func TestStyleInjectCSSNewSelectorsAndLegacySafety(t *testing.T) {
+	cfg := StyleConfig{
+		PrefersTheme:   "light", // 历史值可读取，但不能开启浅色体验。
+		AnimatedAvatar: StyleAnimatedAvatar{Animate: "always"},
+		Gradient:       StyleGradient{Avatar: "linear-gradient(90deg, red, blue)"},
+		HeaderPrefix:   map[string]string{"h2": "'/\\", "h3": "/icons/prefix.svg"},
+		FontSize:       StyleFontSize{Code: "0.9em", Codeblock: "0.8em"},
+		Site:           StyleSite{BackgroundImage: "/site.jpg", BlurPx: "60px", BlurSat: "200%", BlurBg: "#222"},
+	}
+	got := string(cfg.InjectCSS())
+	for _, want := range []string{
+		".site-region--leftbar{view-transition-name:leftbar;}",
+		".brand-wrap .brand-image--avatar div.bg{background:linear-gradient(90deg, red, blue);}",
+		".brand-wrap .brand-image--avatar div.bg{opacity:1!important;animation:spin",
+		"@media (prefers-reduced-motion:reduce){.brand-wrap .brand-image--avatar div.bg{animation:none!important;}}",
+		"content:'\\'/\\\\';", "background:url(/icons/prefix.svg) center/contain no-repeat;",
+		".md-text code:not(pre code){font-size:0.9em;}",
+		".md-text pre,.md-text .highlight,.md-text .highlight .code{font-size:0.8em;}",
+		"--blur-px:60px;--blur-sat:200%;--blur-bg:#222;",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("新版覆盖缺少 %q: %s", want, got)
+		}
+	}
+	for _, old := range []string{".l_left", ".leftbar-container", ".sidebg", "body>.sitebg", ".siteblur", ".logo-wrap", ".l_body", "data-theme='light'", "prefers-color-scheme:light"} {
+		if strings.Contains(got, old) {
+			t.Errorf("不应输出失效或浅色选择器 %q: %s", old, got)
+		}
 	}
 }

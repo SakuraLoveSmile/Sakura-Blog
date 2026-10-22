@@ -1,14 +1,20 @@
 <script setup lang="ts">
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { wikiFields } from "@/components/editor/stellar-form-fields";
 import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, Dialog, Toast } from "@/components/ui";
 import { wikiApi, type WikiHeroAction, type WikiProject } from "@/api";
+import { wikiProjectDisplayName } from "./wiki-project-name";
 
 interface ProjectForm {
+  stellar_version: number;
+  stellar_config: string;
+  blog_extensions: string;
   id: string;
   name: string;
-  title: string;
   headline: string;
   subtitle: string;
   description: string;
@@ -23,15 +29,16 @@ interface ProjectForm {
   visible: boolean;
   tagsText: string;
   hero: {
+    enabled: boolean;
     background: string;
     title: string;
     description: string;
     start: string;
-    animationType: "" | "galaxy";
+    animationType: "" | "galaxy" | "strands" | "light-rays" | "ferrofluid";
     animationParamsText: string;
     previewType: "" | "terminal" | "image";
     previewImage: string;
-    commandsText: string;
+    commands: { label?: string | null; codes?: string | null }[];
     actions: WikiHeroAction[];
   };
 }
@@ -42,9 +49,11 @@ const selectCls = "apple-select";
 
 function emptyForm(id = ""): ProjectForm {
   return {
+    stellar_version: 2,
+    stellar_config: "{}",
+    blog_extensions: "{}",
     id,
     name: "",
-    title: "",
     headline: "",
     subtitle: "",
     description: "",
@@ -59,6 +68,7 @@ function emptyForm(id = ""): ProjectForm {
     visible: true,
     tagsText: "",
     hero: {
+      enabled: false,
       background: "",
       title: "",
       description: "",
@@ -67,7 +77,7 @@ function emptyForm(id = ""): ProjectForm {
       animationParamsText: "",
       previewType: "",
       previewImage: "",
-      commandsText: "",
+      commands: [],
       actions: [],
     },
   };
@@ -77,11 +87,12 @@ function formFromProject(p: WikiProject): ProjectForm {
   const hero = p.hero || {};
   const animation = hero.animation || {};
   const preview = hero.preview || {};
-  const commands = (preview.commands || []).flatMap((c) => c.codes || []);
   return {
+    stellar_version: p.stellar_version ?? 0,
+    stellar_config: p.stellar_config || "{}",
+    blog_extensions: p.blog_extensions || "{}",
     id: p.id,
-    name: p.name || p.id,
-    title: p.title || "",
+    name: p.name || "",
     headline: p.headline || "",
     subtitle: p.subtitle || "",
     description: p.description || "",
@@ -96,6 +107,7 @@ function formFromProject(p: WikiProject): ProjectForm {
     visible: p.visible !== false,
     tagsText: (p.tags || []).join(", "),
     hero: {
+      enabled: false,
       background: hero.background || "",
       title: hero.title || "",
       description: hero.description || "",
@@ -104,7 +116,7 @@ function formFromProject(p: WikiProject): ProjectForm {
       animationParamsText: animation.params ? JSON.stringify(animation.params, null, 2) : "",
       previewType: preview.type === "terminal" || preview.type === "image" ? preview.type : "",
       previewImage: preview.image || "",
-      commandsText: commands.join("\n"),
+      commands: [],
       actions: (hero.actions || []).map((a) => ({
         title: a.title || "",
         url: a.url || "",
@@ -117,6 +129,7 @@ function formFromProject(p: WikiProject): ProjectForm {
 const projects = ref<WikiProject[]>([]);
 const selectedId = ref("");
 const form = ref<ProjectForm>(emptyForm());
+const stellarFormError = useStellarForm(() => form.value, wikiFields);
 const loading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
@@ -184,64 +197,15 @@ function removeAction(index: number) {
   form.value.hero.actions.splice(index, 1);
 }
 
-function buildHero() {
-  const h = form.value.hero;
-  const commands = h.commandsText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const actions = h.actions
-    .map((a) => ({
-      title: (a.title || "").trim(),
-      url: (a.url || "").trim(),
-      icon: (a.icon || "").trim(),
-    }))
-    .filter((a) => a.title || a.url);
-  const preview = h.previewType
-    ? {
-        type: h.previewType,
-        ...(h.previewImage.trim() ? { image: h.previewImage.trim() } : {}),
-        ...(commands.length ? { commands: commands.map((code) => ({ codes: [code] })) } : {}),
-      }
-    : undefined;
-  let animation: { type: "galaxy"; params?: Record<string, unknown> } | undefined;
-  if (h.animationType === "galaxy") {
-    const raw = h.animationParamsText.trim();
-    if (raw) {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        throw new Error("Galaxy 参数必须是合法 JSON");
-      }
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error("Galaxy 参数必须是 JSON 对象");
-      }
-      animation = { type: "galaxy", params: parsed as Record<string, unknown> };
-    } else {
-      animation = { type: "galaxy" };
-    }
-  }
-  const hero = {
-    background: h.background.trim() === "galaxy" ? "" : h.background.trim(),
-    title: h.title.trim(),
-    description: h.description.trim(),
-    start: h.start.trim(),
-    ...(animation ? { animation } : {}),
-    ...(preview ? { preview } : {}),
-    ...(actions.length ? { actions } : {}),
-  };
-  return Object.values(hero).some((value) => value && (typeof value !== "object" || Object.keys(value).length))
-    ? hero
-    : undefined;
-}
-
 function payload() {
   const f = form.value;
   return {
+    stellar_version: f.stellar_version,
+    stellar_config: f.stellar_config,
+    blog_extensions: f.blog_extensions,
     id: f.id.trim(),
     name: f.name.trim(),
-    title: f.title.trim(),
+    title: f.name.trim(),
     headline: f.headline.trim(),
     subtitle: f.subtitle.trim(),
     description: f.description.trim(),
@@ -258,11 +222,14 @@ function payload() {
       .split(/[,，]/)
       .map((tag) => tag.trim())
       .filter(Boolean),
-    hero: buildHero(),
   };
 }
 
 async function saveProject() {
+  if (stellarFormError.value) {
+    Toast.error(stellarFormError.value);
+    return;
+  }
   const id = form.value.id.trim();
   if (!id) {
     Toast.error("请输入项目 ID");
@@ -296,7 +263,7 @@ function deleteProject() {
   if (!project || project.has_docs) return;
   Dialog.warning({
     title: "确定删除这个 Wiki 项目吗？",
-    description: `「${project.title || project.name || project.id}」删除后不可恢复。`,
+    description: `「${wikiProjectDisplayName(project)}」删除后不可恢复。`,
     confirmType: "danger",
     onConfirm: async () => {
       deleting.value = true;
@@ -388,9 +355,7 @@ onMounted(() => loadProjects());
         <!-- 左侧项目列表 -->
         <div class="space-y-3 lg:col-span-4">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary"
-              >项目列表 ({{ projects.length }})</span
-            >
+            <span class="text-xs font-bold text-text-tertiary">项目列表 ({{ projects.length }})</span>
             <button type="button" class="text-xs text-primary hover:underline" @click="startCreate">+ 新增</button>
           </div>
 
@@ -400,7 +365,7 @@ onMounted(() => loadProjects());
             <div
               v-for="project in projects"
               :key="project.id"
-              class="group relative flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-all hover:border-border-strong"
+              class="group relative flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors duration-150 hover:border-border-strong"
               :class="{ 'border-primary ring-1 ring-primary bg-primary/5': selectedId === project.id }"
               @click="selectProject(project)"
             >
@@ -416,7 +381,7 @@ onMounted(() => loadProjects());
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
                   <span class="truncate text-sm font-semibold text-foreground">
-                    {{ project.title || project.name || project.id }}
+                    {{ wikiProjectDisplayName(project) }}
                   </span>
                   <Icon v-if="project.pin" icon="ri:pushpin-fill" class="shrink-0 text-xs text-primary" />
                 </div>
@@ -437,7 +402,16 @@ onMounted(() => loadProjects());
 
         <!-- 右侧项目表单与 Hero 设置 -->
         <div class="space-y-5 lg:col-span-8">
-          <VCard :title="isEditing ? `编辑项目：${selectedProject?.title || form.id}` : '新建 Wiki 项目'">
+          <StellarContentConfig
+            :sync-error="stellarFormError"
+            v-model:config="form.stellar_config"
+            v-model:blog="form.blog_extensions"
+            :version="form.stellar_version"
+            profile="wiki"
+            collection
+            class="mb-4"
+          />
+          <VCard :title="isEditing ? `编辑项目：${selectedProject ? wikiProjectDisplayName(selectedProject) : form.id}` : '新建 Wiki 项目'">
             <div class="space-y-4">
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
@@ -448,7 +422,7 @@ onMounted(() => loadProjects());
                   <small class="mt-1 block text-[11px] text-text-quaternary">用于 /wiki/:project，创建后不可更改</small>
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">内部名称</label>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">集合显示名（name）</label>
                   <input v-model="form.name" :class="inputCls" placeholder="Stellar Docs" />
                 </div>
                 <div>
@@ -458,10 +432,6 @@ onMounted(() => loadProjects());
               </div>
 
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">卡片主标题</label>
-                  <input v-model="form.title" :class="inputCls" placeholder="如：Stellar 使用指南" />
-                </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">卡片副标题</label>
                   <input v-model="form.subtitle" :class="inputCls" placeholder="如：全场景多功能知识库" />
@@ -537,6 +507,9 @@ onMounted(() => loadProjects());
             </p>
 
             <div class="space-y-4">
+              <label class="inline-flex items-center gap-2 text-xs font-medium">
+                <input v-model="form.hero.enabled" type="checkbox" />启用 Hero
+              </label>
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">背景图片</label>
@@ -547,6 +520,9 @@ onMounted(() => loadProjects());
                   <select v-model="form.hero.animationType" :class="selectCls">
                     <option value="">无动画</option>
                     <option value="galaxy">Galaxy 星空</option>
+                    <option value="strands">Strands</option>
+                    <option value="light-rays">Light Rays</option>
+                    <option value="ferrofluid">Ferrofluid</option>
                   </select>
                 </div>
                 <div>
@@ -558,13 +534,13 @@ onMounted(() => loadProjects());
                   <input v-model="form.hero.description" :class="inputCls" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">开始阅读按钮文案</label>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">首个行动按钮文案</label>
                   <input v-model="form.hero.start" :class="inputCls" placeholder="开始阅读" />
                 </div>
               </div>
 
-              <div v-if="form.hero.animationType === 'galaxy'">
-                <label class="mb-1 block text-xs font-medium text-text-tertiary">Galaxy 参数（可选 JSON）</label>
+              <div v-if="form.hero.animationType">
+                <label class="mb-1 block text-xs font-medium text-text-tertiary">动效参数（JSON 原文）</label>
                 <textarea
                   v-model="form.hero.animationParamsText"
                   rows="5"
@@ -572,7 +548,9 @@ onMounted(() => loadProjects());
                   spellcheck="false"
                   placeholder='{"density": 2, "speed": 0.5, "transparent": true}'
                 ></textarea>
-                <small class="mt-1 block text-[11px] text-text-quaternary">支持 focal、density、speed、hueShift 等上游参数；非法值会回退默认值。</small>
+                <small class="mt-1 block text-[11px] text-text-quaternary"
+                  >支持 focal、density、speed、hueShift 等上游参数；完整参数原文保留；服务端会返回无效参数诊断。</small
+                >
               </div>
 
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -590,14 +568,35 @@ onMounted(() => loadProjects());
                 </div>
               </div>
 
-              <div v-if="form.hero.previewType === 'terminal'">
-                <label class="mb-1 block text-xs font-medium text-text-tertiary">终端命令（每行一条）</label>
-                <textarea
-                  v-model="form.hero.commandsText"
-                  rows="3"
-                  :class="textareaCls"
-                  placeholder="npm install stellar\nmake dev"
-                ></textarea>
+              <div v-if="form.hero.previewType === 'terminal'" class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-medium text-text-tertiary">终端命令标签页</span>
+                  <button
+                    type="button"
+                    class="text-xs text-primary hover:underline"
+                    @click="form.hero.commands.push({ label: '', codes: '' })"
+                  >
+                    + 添加标签页
+                  </button>
+                </div>
+                <div v-for="(command, index) in form.hero.commands" :key="index" class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <input v-model="command.label" :class="inputCls" placeholder="标签页名称（可留空）" />
+                    <button
+                      type="button"
+                      class="text-xs text-primary hover:underline"
+                      @click="form.hero.commands.splice(index, 1)"
+                    >
+                      删除标签页
+                    </button>
+                  </div>
+                  <textarea
+                    v-model="command.codes"
+                    rows="3"
+                    :class="textareaCls"
+                    placeholder="一个标签页内可以输入多行命令"
+                  ></textarea>
+                </div>
               </div>
 
               <!-- 快捷行动按钮组 -->
@@ -673,7 +672,7 @@ onMounted(() => loadProjects());
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -690,7 +689,6 @@ onMounted(() => loadProjects());
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {

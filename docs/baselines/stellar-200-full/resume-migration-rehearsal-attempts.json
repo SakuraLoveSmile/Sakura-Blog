@@ -1,0 +1,117 @@
+{
+  "date": "2026-10-14",
+  "scope": "approved complete isolated rehearsal; real source migration not authorized",
+  "root_digest": "8e2206a91d8d331f988030b6f399257f6747d38682a1076e35b5e895da0cc371",
+  "review_digest": "d2e8b831450349c0db48cc78f6fb6100d53e23a9cf8e065d75cbd4ed67451711",
+  "candidate_and_seven_body_hashes_approved": true,
+  "new_binding_approved": true,
+  "fresh_previews_exit": [
+    0,
+    0
+  ],
+  "attempts": [
+    {
+      "binary_sha256": "c0ef7e6c5d88d95cb2db5e282ef5a1c158cce93933f133a9b7bf68c3287a891a",
+      "exit_code": 1,
+      "complete_rehearsal_passed": false,
+      "failure_stage": "production bootstrap",
+      "failure": "missing config/site.yml",
+      "source_integrity": {
+        "fingerprints": 72,
+        "changes": [
+          {
+            "resource": "data/blog.db-shm",
+            "fields": [
+              "mtime_ns"
+            ]
+          }
+        ],
+        "persistent_bytes_modes_shapes_unchanged": true
+      },
+      "independent_rebuild_review": {
+        "source_tables": 56,
+        "source_rows": 77286,
+        "staged_rows": 77288,
+        "added_canonical_settings": 2,
+        "source_rowids_preserved": 77216,
+        "sql_objects_and_index_shapes_preserved": 67,
+        "canonical_db_records": 30,
+        "approved_bodies_match": 7,
+        "tracked_documents_match": 2,
+        "untouched_resources_match": 63,
+        "quick_check": "ok",
+        "foreign_key_violations": 0,
+        "note_and_owner_orphans": 0
+      }
+    },
+    {
+      "binary_sha256": "00fd6eed83ef162e78e67f6d42d7151fbfd9f703f76053aad6ac8ae0aa503082",
+      "source_parent": "572788a01f3fc6a7718cbcf2c29959b4bb168013",
+      "source_patch_sha256": "4e7a9c46bba4c8d1cba73aa8a7ca59cd6643b54dc7df4631f52acd07a8936947",
+      "exit_code": 1,
+      "complete_rehearsal_passed": false,
+      "failure_stage": "offline SSR snapshots after production bootstrap and search rebuild",
+      "failure": "absolute HTTP(S) site URL required; source settings.site.url is empty",
+      "source_integrity": {
+        "fingerprints": 72,
+        "changes": [
+          {
+            "resource": "data/blog.db-shm",
+            "fields": [
+              "mtime_ns"
+            ]
+          }
+        ],
+        "persistent_bytes_modes_shapes_unchanged": true
+      },
+      "independent_post_bootstrap_review": {
+        "source_tables_exact": 50,
+        "source_tables_total": 56,
+        "derived_tables_changed": [
+          "posts_fts",
+          "posts_fts_data",
+          "posts_fts_idx",
+          "posts_fts_content",
+          "posts_fts_docsize",
+          "schema_migrations"
+        ],
+        "search_items": 18,
+        "search_types": {
+          "post": 11,
+          "page": 3,
+          "moment": 4
+        },
+        "search_identity_and_title_multiset_preserved": true,
+        "search_duplicates": 0,
+        "schema_migration_additions": [
+          "stellar-v2-content-metadata",
+          "notebook-note-ownership"
+        ],
+        "original_schema_migrations_preserved": true,
+        "sql_objects_and_index_shapes_preserved": 67,
+        "non_derived_rowid_sets_preserved": 46,
+        "new_posts_or_pages_imported": 0,
+        "users_and_identity_records_unchanged": true,
+        "approved_bodies_equal": 7,
+        "no_extra_tables_or_unexpected_columns": true,
+        "quick_check": "ok",
+        "foreign_key_violations": 0,
+        "note_owner_orphans": 0
+      }
+    }
+  ],
+  "startup_fix": {
+    "app_config_tests_exit": 0,
+    "app_config_race_exit": 0,
+    "focused_boundary_tests_exit": 0,
+    "make_build_exit": 0,
+    "independent_review": "no substantive defect"
+  },
+  "runtime_site_url_pending": false,
+  "offline_attestation_all_false": true,
+  "apply_executed": false,
+  "recover_executed": false,
+  "real_bootstrap_or_server_stop_executed": false,
+  "no_private_contents_or_user_ids_disclosed": true,
+  "runtime_site_url_user_choice": "https://blog.xn--fhqths51enha.cn/"
+}

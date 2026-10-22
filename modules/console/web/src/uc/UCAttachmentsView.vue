@@ -70,7 +70,7 @@ onMounted(load);
   <div>
     <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">My media</p>
+        <p class="mb-2 text-xs font-medium text-text-tertiary">媒体库</p>
         <h1 class="text-3xl font-semibold tracking-tight">我的附件</h1>
         <p class="mt-2 text-sm text-text-tertiary">只显示你上传的图片。</p>
       </div>
@@ -207,6 +207,5 @@ onMounted(load);
 }
 .uc-input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 </style>

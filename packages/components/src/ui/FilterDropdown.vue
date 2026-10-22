@@ -162,7 +162,7 @@ const isSelected = (item: FilterItem) => props.modelValue === item.value;
 <style scoped>
 .dropdown-fade-enter-active,
 .dropdown-fade-leave-active {
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 .dropdown-fade-enter-from,
 .dropdown-fade-leave-to {

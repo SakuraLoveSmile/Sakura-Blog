@@ -1,0 +1,58 @@
+[
+  {
+    "source": "librsvg-2.61.2/COPYING.LIB",
+    "notice": "licenses/librsvg-2.61.2-COPYING.LIB"
+  },
+  {
+    "source": "pango-1.57.0/COPYING",
+    "notice": "licenses/pango-1.57.0-COPYING"
+  },
+  {
+    "source": "fontconfig-2.17.1/COPYING",
+    "notice": "licenses/fontconfig-2.17.1-COPYING"
+  },
+  {
+    "source": "harfbuzz-12.1.0/COPYING",
+    "notice": "licenses/harfbuzz-12.1.0-COPYING"
+  },
+  {
+    "source": "fribidi-1.0.16/COPYING",
+    "notice": "licenses/fribidi-1.0.16-COPYING"
+  },
+  {
+    "source": "freetype-2.14.1/docs/FTL.TXT",
+    "notice": "licenses/freetype-2.14.1-FTL.TXT"
+  },
+  {
+    "source": "freetype-2.14.1/docs/GPLv2.TXT",
+    "notice": "licenses/freetype-2.14.1-GPLv2.TXT"
+  },
+  {
+    "source": "libpng-1.6.50/LICENSE",
+    "notice": "licenses/libpng-1.6.50-LICENSE"
+  },
+  {
+    "source": "libxml2-2.15.1/Copyright",
+    "notice": "licenses/libxml2-2.15.1-Copyright"
+  },
+  {
+    "source": "cairo-1.18.4/COPYING",
+    "notice": "licenses/cairo-1.18.4-COPYING"
+  },
+  {
+    "source": "cairo-1.18.4/COPYING-LGPL-2.1",
+    "notice": "licenses/cairo-1.18.4-COPYING-LGPL-2.1"
+  },
+  {
+    "source": "cairo-1.18.4/COPYING-MPL-1.1",
+    "notice": "licenses/cairo-1.18.4-COPYING-MPL-1.1"
+  },
+  {
+    "source": "pixman-0.46.4/COPYING",
+    "notice": "licenses/pixman-0.46.4-COPYING"
+  },
+  {
+    "source": "expat-2.7.3/COPYING",
+    "notice": "licenses/expat-2.7.3-COPYING"
+  }
+]

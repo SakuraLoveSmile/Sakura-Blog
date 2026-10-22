@@ -27,6 +27,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "save"): void;
+  (e: "pending-change", pending: boolean): void;
 }>();
 
 const mdRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
@@ -39,6 +40,7 @@ interface RichEditorExpose {
   openImageUpload: () => void;
   openImagePicker: () => void;
   clearDraft: () => void;
+  flushPendingChanges: () => Promise<void>;
 }
 const richRef = ref<RichEditorExpose | null>(null);
 
@@ -49,8 +51,10 @@ function loadKind(): EditorKind {
   return localStorage.getItem(KIND_KEY) === "markdown" ? "markdown" : "rich";
 }
 const editorKind = ref<EditorKind>(loadKind());
-function onKindChange(e: Event) {
+async function onKindChange(e: Event) {
   const v = (e.target as HTMLSelectElement).value as EditorKind;
+  // 富文本的序列化有防抖，卸载前先把最后输入或属性修改送回父模型。
+  await flushPendingChanges();
   editorKind.value = v;
   localStorage.setItem(KIND_KEY, v);
 }
@@ -122,7 +126,10 @@ function clearDraft() {
   (editorKind.value === "rich" ? richRef.value : mdRef.value)?.clearDraft();
 }
 
-defineExpose({ clearDraft, onInsert });
+async function flushPendingChanges() {
+  await richRef.value?.flushPendingChanges();
+}
+defineExpose({ clearDraft, onInsert, flushPendingChanges });
 
 // 工具栏格式化按钮
 const formatTools = [
@@ -208,6 +215,7 @@ const iconBtnCls =
       :storage-key="storageKey"
       @update:model-value="emit('update:modelValue', $event)"
       @save="emit('save')"
+      @pending-change="emit('pending-change', $event)"
     />
     <MarkdownEditor
       v-else

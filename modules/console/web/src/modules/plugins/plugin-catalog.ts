@@ -8,6 +8,7 @@ import {
 } from "./plugin-types";
 
 export interface PluginCatalogParam {
+  named_alias?: boolean;
   key: string;
   label?: string;
   label_key?: string;
@@ -65,6 +66,7 @@ function mergeForm(existing: PluginMeta | undefined, params: PluginCatalogParam[
     const old = existing?.form?.find((field) => field.key === param.key);
     return {
       key: param.key,
+      named_alias: param.named_alias,
       label: param.label || old?.label || param.key,
       label_key: param.label_key || old?.label_key,
       type: formTypeOf(param.type),

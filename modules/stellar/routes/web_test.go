@@ -12,9 +12,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/modules/stellar/viewmodel"
-	stellarweb "blog/modules/stellar/web"
 )
 
 func TestInvalidateSidebarCacheConcurrentWithReaders(t *testing.T) {
@@ -221,139 +221,254 @@ func TestBuildTagCloud(t *testing.T) {
 // TestRenderSitePreview 设置页「前端预览」：草稿分段应用到 site 副本并渲染整页，
 // 不影响全局共享 site（所见即所得不落库）。
 func TestRenderSitePreview(t *testing.T) {
-	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
+	ws, _ := newWikiVerifyServer(t)
+	live := canonicalRouteSite(t, "线上标题", nil, nil)
+	ws.site.Store(live)
+	document, err := ws.renderSitePreview(map[string]json.RawMessage{"site": json.RawMessage(`{"title":"草稿标题"}`)}, "index")
 	if err != nil {
-		t.Fatalf("open store: %v", err)
+		t.Fatal(err)
 	}
-	t.Cleanup(func() { st.Close() })
-	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
-	if err != nil {
-		t.Fatalf("engine: %v", err)
+	if !strings.Contains(document, "草稿标题") {
+		t.Error("draft title missing")
 	}
-	live := &tmpl.Site{Title: "线上标题"}
-	ws := newWebServer(webDeps{Site: sitePtr(live), Store: st, Engine: eng})
-
-	sections := map[string]json.RawMessage{
-		"site": json.RawMessage(`{"title":"草稿标题"}`),
-	}
-	html, err := ws.renderSitePreview(sections, "index")
-	if err != nil {
-		t.Fatalf("renderSitePreview: %v", err)
-	}
-	if !strings.Contains(html, "草稿标题") {
-		t.Errorf("preview html should contain draft title, got %d bytes", len(html))
-	}
-	// 全局 site 不被草稿污染
 	if live.Title != "线上标题" {
-		t.Errorf("live site mutated by preview: %q", live.Title)
+		t.Fatal("preview mutated live site")
 	}
 }
 
 func TestRenderSitePreviewWidgetsOnlyKeepsLiveSiteSections(t *testing.T) {
-	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	t.Cleanup(func() { st.Close() })
-	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
-	if err != nil {
-		t.Fatalf("engine: %v", err)
-	}
-	live := &tmpl.Site{Title: "线上标题", Comments: tmpl.CommentsConfig{Enabled: true}}
-	ws := newWebServer(webDeps{Site: sitePtr(live), Store: st, Engine: eng})
-
-	html, err := ws.renderSitePreview(map[string]json.RawMessage{
-		"widgets": json.RawMessage(`{"library":{"__preview__":{"layout":"recent"}},"pages":{"index":{"leftbar":["__preview__"]}}}`),
+	ws, _ := newWikiVerifyServer(t)
+	live := canonicalRouteSite(t, "线上标题", nil, map[string]any{"native_comments": map[string]any{"enabled": true}})
+	ws.site.Store(live)
+	document, err := ws.renderSitePreview(map[string]json.RawMessage{
+		"stellar_v2":      json.RawMessage(`{"version":2,"theme":{"profiles":{"home":{"leftbar":{"widgets":["__preview__"]}}}}}`),
+		"blog_extensions": json.RawMessage(`{"native_comments":{"enabled":true},"data":{"widgets":{"__preview__":{"layout":"markdown","content":"预览组件"}}}}`),
 	}, "index")
 	if err != nil {
-		t.Fatalf("renderSitePreview widgets-only: %v", err)
+		t.Fatal(err)
 	}
-	if !strings.Contains(html, "线上标题") {
-		t.Errorf("widgets-only preview should retain site title")
+	for _, want := range []string{"线上标题", "预览组件"} {
+		if !strings.Contains(document, want) {
+			t.Errorf("widget preview missing %s", want)
+		}
 	}
-	if live.Comments.Enabled != true {
-		t.Error("widgets-only preview mutated live comments")
+	if live.StellarV2.Blog["native_comments"].(map[string]any)["enabled"] != true {
+		t.Fatal("preview mutated live native comments")
+	}
+	if len(live.StellarV2.RawTheme) != 0 {
+		t.Fatal("widget preview mutated live theme")
+	}
+	if strings.Contains(document, `id="blog-comments"`) {
+		t.Fatal("preview must disable interactive native comments")
 	}
 }
 
 func TestRenderSitePreviewWikiUsesFirstProjectTreeAndRelatedData(t *testing.T) {
-	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
+	ws, st := newWikiVerifyServer(t)
+	createRouteWikiProject(t, st, "first", map[string]any{"name": "首个项目", "tags": []any{"go"}, "listing": map[string]any{"order": 10}})
+	createRouteWikiProject(t, st, "second", map[string]any{"name": "相关项目", "tags": []any{"go"}, "listing": map[string]any{"order": 1}})
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "first", Slug: "intro", Title: "首个项目文档", ContentMD: "说明", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+		t.Fatal(err)
 	}
-	t.Cleanup(func() { st.Close() })
-	if err := st.EnsureWikidocsTable(); err != nil {
-		t.Fatalf("ensure wikidocs: %v", err)
-	}
-	if err := st.CreateWikidoc(&store.WikiDoc{
-		ProjectID: "first", Slug: "intro", Title: "首个项目文档", Order: 1, Status: store.StatusPublished,
-	}); err != nil {
-		t.Fatalf("create wiki doc: %v", err)
-	}
-	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
-	if err != nil {
-		t.Fatalf("engine: %v", err)
-	}
-	first := tmpl.WikiProject{ID: "first", Title: "首个项目", Tags: []string{"go"}, Sort: 10}
-	second := tmpl.WikiProject{ID: "second", Title: "相关项目", Tags: []string{"go"}, Sort: 1}
-	site := &tmpl.Site{
-		Title: "文库预览",
-		Wiki:  []tmpl.WikiProject{first, second},
-		Widgets: tmpl.WidgetsConfig{
-			Library: map[string]tmpl.WidgetDef{
-				"tree":         {"layout": "tree"},
-				"wiki_related": {"layout": "wiki_related"},
-			},
-			Pages: map[string]tmpl.PageBars{
-				"wiki": {Leftbar: []string{"tree", "wiki_related"}},
-			},
-		},
-	}
-	ws := newWebServer(webDeps{Site: sitePtr(site), Store: st, Engine: eng})
-
-	html, err := ws.renderSitePreview(nil, "wiki")
-	if err != nil {
-		t.Fatalf("renderSitePreview wiki: %v", err)
-	}
-	for _, want := range []string{"首个项目文档", "相关项目", `id="data-tree"`} {
-		if !strings.Contains(html, want) {
-			t.Errorf("wiki preview missing %q", want)
+	for _, d := range []*store.WikiDoc{
+		{ProjectID: "first", Slug: "setup", Title: "安装", ContentMD: "安装正文", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`},
+		{ProjectID: "second", Slug: "overview", Title: "相关项目概览", ContentMD: "相关正文", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`},
+	} {
+		if err := st.CreateWikidoc(d); err != nil {
+			t.Fatal(err)
 		}
+	}
+	ws.site.Store(canonicalRouteSite(t, "文库预览", nil, map[string]any{"data": map[string]any{"wiki": []any{"first", "second"}}}))
+	document, err := ws.renderSitePreview(nil, "wiki")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"首个项目文档", "相关项目", `data-wiki="first"`, "doc-tree-widget", "related-summary-widget"} {
+		if !strings.Contains(document, want) {
+			t.Errorf("wiki preview missing %s", want)
+		}
+	}
+	index, err := ws.renderSitePreview(nil, "wiki-index")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"首个项目", "相关项目", `href="/wiki/first/intro"`, "wiki-card"} {
+		if !strings.Contains(index, want) {
+			t.Errorf("wiki index preview missing %s", want)
+		}
+	}
+	doc, err := st.GetWikidocBySlug("first", "intro")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if doc.Title != "首个项目文档" || doc.ContentMD != "说明" {
+		t.Fatal("wiki preview mutated content")
 	}
 }
 
 func TestRenderSitePreviewPostUsesDraftTOCDepth(t *testing.T) {
-	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
+	ws, st := newWikiVerifyServer(t)
+	if _, err := st.Create(&store.Post{Slug: "toc-preview", Title: "TOC 预览", Status: store.StatusPublished, ContentMD: `<h1 id="h1">一级标题</h1><h2 id="h2">二级标题</h2>`, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+		t.Fatal(err)
+	}
+	ws.posts = post.NewService(filepath.Join(t.TempDir(), "posts"))
+	site := canonicalRouteSite(t, "TOC 预览", map[string]any{"profiles": map[string]any{"post": map[string]any{"rightbar": map[string]any{"widgets": []any{"toc"}}}}}, map[string]any{"data": map[string]any{"widgets": map[string]any{"toc": map[string]any{"layout": "toc", "min_depth": 1}}}})
+	ws.site.Store(site)
+	baseline, err := ws.renderSitePreview(nil, "post")
 	if err != nil {
-		t.Fatalf("open store: %v", err)
+		t.Fatal(err)
 	}
-	t.Cleanup(func() { st.Close() })
-	if _, err := st.Create(&store.Post{
-		Slug: "toc-preview", Title: "TOC 预览", Status: store.StatusPublished,
-		ContentHTML: `<h1 id="h1">一级标题</h1><h2 id="h2">二级标题</h2>`,
-	}); err != nil {
-		t.Fatalf("create post: %v", err)
+	if !strings.Contains(baseline, `href="#h1"`) || !strings.Contains(baseline, `href="#h2"`) {
+		t.Fatal("baseline toc missing both headings")
 	}
-	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
-	if err != nil {
-		t.Fatalf("engine: %v", err)
-	}
-	site := &tmpl.Site{
-		Title: "TOC 预览",
-		Widgets: tmpl.WidgetsConfig{
-			Library: map[string]tmpl.WidgetDef{"toc": {"layout": "toc", "min_depth": 1}},
-			Pages:   map[string]tmpl.PageBars{"post": {Rightbar: []string{"toc"}}},
-		},
-	}
-	ws := newWebServer(webDeps{Site: sitePtr(site), Store: st, Engine: eng})
-
-	html, err := ws.renderSitePreview(map[string]json.RawMessage{
-		"widgets": json.RawMessage(`{"library":{"toc":{"layout":"toc","min_depth":2}},"pages":{"post":{"rightbar":["toc"]}}}`),
+	document, err := ws.renderSitePreview(map[string]json.RawMessage{
+		"blog_extensions": json.RawMessage(`{"data":{"widgets":{"toc":{"layout":"toc","min_depth":2}}}}`),
 	}, "post")
 	if err != nil {
-		t.Fatalf("renderSitePreview post: %v", err)
+		t.Fatal(err)
 	}
-	if strings.Contains(html, `href="#h1"`) || !strings.Contains(html, `href="#h2"`) {
-		t.Errorf("draft toc min_depth=2 not applied: %s", html)
+	if strings.Contains(document, `href="#h1"`) || !strings.Contains(document, `href="#h2"`) {
+		t.Error("draft min_depth=2 not applied")
+	}
+	after, err := ws.renderSitePreview(nil, "post")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(after, `href="#h1"`) {
+		t.Fatal("draft mutated live toc config")
+	}
+}
+
+func TestRenderSitePreviewRejectsLegacySections(t *testing.T) {
+	ws, _ := newWikiVerifyServer(t)
+	if _, err := ws.renderSitePreview(map[string]json.RawMessage{"widgets": json.RawMessage(`{}`)}, "index"); err == nil || !strings.Contains(err.Error(), "requires migration") {
+		t.Fatalf("legacy preview error=%v", err)
+	}
+	ws.site.Load().StellarV2 = nil
+	if _, err := ws.renderSitePreview(nil, "index"); err == nil {
+		t.Fatal("legacy site preview must require migration")
+	}
+}
+
+// 正式公开入口拒绝未迁移/无效内容，且不能借读取补写配置或内容版本。
+func TestStrictPublicRouteMigrationGateDoesNotWrite(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, invalid := range []bool{false, true} {
+		t.Run(map[bool]string{false: "unmigrated", true: "invalid"}[invalid], func(t *testing.T) {
+			ws, st := newWikiVerifyServer(t)
+			p := &store.Post{Slug: "migration-gate", Title: "待迁移", ContentMD: "正文", Status: store.StatusPublished}
+			if _, err := st.Create(p); err != nil {
+				t.Fatal(err)
+			}
+			if invalid {
+				if _, err := st.DB().Exec(`UPDATE posts SET stellar_version=2,stellar_config='{"pin":true,"sensitive":"fixture-secret"}',blog_extensions='{}' WHERE id=?`, p.ID); err != nil {
+					t.Fatal(err)
+				}
+			}
+			settingsBefore, err := st.ReadSettingsSnapshot()
+			if err != nil {
+				t.Fatal(err)
+			}
+			before, err := st.GetBySlug(p.Slug)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r := gin.New()
+			ws.registerPostRoutes(r)
+			ws.registerFeedRoutes(r)
+			ws.registerSearchRoutes(r)
+			for _, path := range []string{"/post/migration-gate", "/rss.xml", "/sitemap.xml", "/search.json"} {
+				w := httptest.NewRecorder()
+				r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+				want := http.StatusConflict
+				code := "stellar_migration_required"
+				if invalid {
+					want = http.StatusUnprocessableEntity
+					code = "stellar_content_invalid"
+				}
+				if w.Code != want || !strings.Contains(w.Body.String(), code) {
+					t.Fatalf("%s status=%d body=%s", path, w.Code, w.Body.String())
+				}
+				if strings.Contains(w.Body.String(), "fixture-secret") {
+					t.Fatal("schema diagnostics leaked parameter value")
+				}
+			}
+			settingsAfter, err := st.ReadSettingsSnapshot()
+			if err != nil {
+				t.Fatal(err)
+			}
+			beforeJSON, _ := json.Marshal(settingsBefore)
+			afterJSON, _ := json.Marshal(settingsAfter)
+			if string(beforeJSON) != string(afterJSON) {
+				t.Fatal("public read wrote settings migration")
+			}
+			after, err := st.GetBySlug(p.Slug)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if after.StellarVersion != before.StellarVersion || after.StellarConfig != before.StellarConfig || after.ContentMD != before.ContentMD || after.Views != before.Views {
+				t.Fatal("public read mutated migration candidate")
+			}
+		})
+	}
+}
+
+func TestStrictPublicIndexesExcludeNonPublicContent(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	for _, p := range []*store.Post{
+		{Slug: "open", Title: "公开标题", ContentMD: "公开正文", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`},
+		{Slug: "locked", Title: "密码标题", ContentMD: "密码正文", Password: "pw", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`},
+		{Slug: "draft", Title: "草稿标题", ContentMD: "草稿正文", Status: store.StatusDraft},
+		{Slug: "private", Title: "私密标题", ContentMD: "私密正文", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"visibility":{"listed":false,"searchable":false}}`, BlogExtensions: `{}`},
+	} {
+		if _, err := st.Create(p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := gin.New()
+	ws.registerFeedRoutes(r)
+	ws.registerSearchRoutes(r)
+	for _, path := range []string{"/rss.xml", "/atom.xml", "/feed.json", "/sitemap.xml", "/search.json"} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "/post/open") {
+			t.Fatalf("%s status=%d body=%s", path, w.Code, w.Body.String())
+		}
+		for _, hidden := range []string{"/post/locked", "/post/draft", "/post/private", "密码正文", "草稿正文", "私密正文"} {
+			if strings.Contains(w.Body.String(), hidden) {
+				t.Errorf("%s leaked %s", path, hidden)
+			}
+		}
+	}
+}
+
+func TestStrictPublicPageMigrationGateDoesNotWrite(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	if _, err := st.CreatePage(&store.Page{Slug: "legacy-page", Title: "旧页面", ContentMD: "待迁移正文", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	handler, err := NewPageHandler(st, ws.posts, ws.engine, ws.site)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	handler.Register(r)
+	before, err := st.GetPageBySlug("legacy-page")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/pages/legacy-page", nil))
+	if w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "stellar_migration_required") {
+		t.Fatalf("legacy page status=%d body=%s", w.Code, w.Body.String())
+	}
+	after, err := st.GetPageBySlug("legacy-page")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Views != before.Views || after.StellarVersion != before.StellarVersion || after.ContentMD != before.ContentMD {
+		t.Fatal("migration rejection mutated legacy page")
 	}
 }

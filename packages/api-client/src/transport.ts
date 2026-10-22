@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosInstance } from "axios";
+import axios, { AxiosError, isCancel, type AxiosInstance } from "axios";
 
 export interface ApiErrorEnvelope {
   type?: string;
@@ -55,6 +55,7 @@ export function getApiErrorMessage(error: unknown, fallback = "请求失败"): s
 
 function handleResponseError(error: unknown): Promise<never> {
   const axiosError = error as AxiosError<ApiErrorEnvelope>;
+  if (isCancel(error) || axiosError.config?.signal?.aborted) return Promise.reject(error);
   if (axiosError.response?.status === 401) {
     onUnauthorized?.(error);
   } else if (!axiosError.config?.mute) {

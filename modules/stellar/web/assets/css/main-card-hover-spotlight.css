@@ -1,0 +1,34 @@
+.card-hover.is-card-hover-ready {
+  position: relative;
+  --card-hover-mouse-x: 50%;
+  --card-hover-mouse-y: 50%;
+  --card-hover-rotate-x: 0deg;
+  --card-hover-rotate-y: 0deg;
+}
+.card-hover__spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: radial-gradient(circle at var(--card-hover-mouse-x) var(--card-hover-mouse-y), var(--card-hover-spotlight-color, rgba(255,255,255,0.25)), transparent 80%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
+}
+.card-hover.is-card-hover-ready.card-hover--spotlight.is-card-hover-active > .card-hover__spotlight,
+.card-hover.is-card-hover-ready.card-hover--spotlight:focus-within > .card-hover__spotlight {
+  opacity: 0.6;
+}
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .card-hover.is-card-hover-ready.card-hover--tilt,
+  .card-hover.is-card-hover-ready.card-hover--tilt.is-card-hover-active,
+  .md-text .link-card.card-hover.card-hover--tilt.is-card-hover-ready,
+  .tag-plugin.grid[bg='card'] > .cell.card-hover.card-hover--tilt.is-card-hover-ready {
+    transform: none;
+    transition: none;
+  }
+  .card-hover.is-card-hover-ready.card-hover--spotlight > .card-hover__spotlight {
+    opacity: 0;
+  }
+}

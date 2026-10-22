@@ -1,0 +1,151 @@
+{
+  "fixture": {
+    "beta": {
+      "date": "2020-01-01T00:00:00Z",
+      "updated": "2030-01-01T00:00:00Z"
+    },
+    "twoPublishedNotes": true
+  },
+  "cases": [
+    {
+      "field": "date",
+      "direction": "asc",
+      "reopened": {
+        "per_page": 0,
+        "sort": {
+          "field": "date",
+          "direction": "asc"
+        }
+      },
+      "cards": [
+        {
+          "href": "/journal/beta",
+          "title": "笔记 beta · 保存重开实测"
+        },
+        {
+          "href": "/journal/alpha",
+          "title": "笔记 alpha"
+        }
+      ]
+    },
+    {
+      "field": "date",
+      "direction": "desc",
+      "reopened": {
+        "per_page": 0,
+        "sort": {
+          "field": "date",
+          "direction": "desc"
+        }
+      },
+      "cards": [
+        {
+          "href": "/journal/alpha",
+          "title": "笔记 alpha"
+        },
+        {
+          "href": "/journal/beta",
+          "title": "笔记 beta · 保存重开实测"
+        }
+      ]
+    },
+    {
+      "field": "updated",
+      "direction": "asc",
+      "reopened": {
+        "per_page": 0,
+        "sort": {
+          "field": "updated",
+          "direction": "asc"
+        }
+      },
+      "cards": [
+        {
+          "href": "/journal/alpha",
+          "title": "笔记 alpha"
+        },
+        {
+          "href": "/journal/beta",
+          "title": "笔记 beta · 保存重开实测"
+        }
+      ]
+    },
+    {
+      "field": "updated",
+      "direction": "desc",
+      "reopened": {
+        "per_page": 0,
+        "sort": {
+          "field": "updated",
+          "direction": "desc"
+        }
+      },
+      "cards": [
+        {
+          "href": "/journal/beta",
+          "title": "笔记 beta · 保存重开实测"
+        },
+        {
+          "href": "/journal/alpha",
+          "title": "笔记 alpha"
+        }
+      ]
+    },
+    {
+      "field": "title",
+      "direction": "asc",
+      "reopened": {
+        "per_page": 0,
+        "sort": {
+          "field": "title",
+          "direction": "asc"
+        }
+      },
+      "cards": [
+        {
+          "href": "/journal/alpha",
+          "title": "笔记 alpha"
+        },
+        {
+          "href": "/journal/beta",
+          "title": "笔记 beta · 保存重开实测"
+        }
+      ]
+    },
+    {
+      "field": "title",
+      "direction": "desc",
+      "reopened": {
+        "per_page": 0,
+        "sort": {
+          "field": "title",
+          "direction": "desc"
+        }
+      },
+      "cards": [
+        {
+          "href": "/journal/beta",
+          "title": "笔记 beta · 保存重开实测"
+        },
+        {
+          "href": "/journal/alpha",
+          "title": "笔记 alpha"
+        }
+      ]
+    }
+  ],
+  "perPageOne": {
+    "first": [
+      "笔记 alpha"
+    ],
+    "second": [
+      "笔记 beta · 保存重开实测"
+    ],
+    "url": "http://127.0.0.1:8103/journal/page/2/"
+  },
+  "restored": {
+    "notebook": true,
+    "betaMarkdown": true,
+    "betaMetadata": true
+  }
+}

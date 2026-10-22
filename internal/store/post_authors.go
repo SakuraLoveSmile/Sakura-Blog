@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -212,7 +213,23 @@ func (s *Store) migrateLegacyPostAuthors() error {
 	return nil
 }
 
+// 旧库启动时版本列可能尚未补齐；此时所有行仍是旧版本。只查询，不提前改 schema。
+func (s *Store) legacyPostAuthorPredicate() (string, error) {
+	var count int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('posts') WHERE name='stellar_version'`).Scan(&count); err != nil {
+		return "", err
+	}
+	if count == 0 {
+		return "1", nil
+	}
+	return "p.stellar_version=0", nil
+}
+
 func (s *Store) reconcileLegacyPostAuthors() error {
+	legacy, err := s.legacyPostAuthorPredicate()
+	if err != nil {
+		return err
+	}
 	var exists int
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?`, legacyPostAuthorsTable).Scan(&exists); err != nil {
 		return fmt.Errorf("check legacy post authors table: %w", err)
@@ -223,17 +240,22 @@ func (s *Store) reconcileLegacyPostAuthors() error {
 	if _, err := s.db.Exec(`INSERT OR IGNORE INTO post_authors (post_id, author_id, sort_order)
 		SELECT l.post_id, u.id, l.sort_order
 		FROM post_authors_legacy l
-		JOIN users u ON u.username = l.author_ref`); err != nil {
+		JOIN users u ON u.username = l.author_ref
+		JOIN posts p ON p.id=l.post_id WHERE ` + legacy); err != nil {
 		return fmt.Errorf("reconcile legacy post authors: %w", err)
 	}
 	if _, err := s.db.Exec(`DELETE FROM post_authors_legacy
-		WHERE EXISTS (SELECT 1 FROM users u WHERE u.username = post_authors_legacy.author_ref)`); err != nil {
+		WHERE EXISTS (SELECT 1 FROM users u JOIN posts p ON p.id=post_authors_legacy.post_id WHERE u.username = post_authors_legacy.author_ref AND ` + legacy + `)`); err != nil {
 		return fmt.Errorf("remove reconciled post authors: %w", err)
 	}
 	return nil
 }
 
 func (s *Store) backfillPostAuthorsFromPosts() error {
+	legacy, err := s.legacyPostAuthorPredicate()
+	if err != nil {
+		return err
+	}
 	if err := s.ensureLegacyPostAuthorsTableOutsideTx(); err != nil {
 		return err
 	}
@@ -241,14 +263,14 @@ func (s *Store) backfillPostAuthorsFromPosts() error {
 		SELECT p.id, TRIM(p.author), 0, 'posts.author does not match users.username'
 		FROM posts p
 		LEFT JOIN users u ON u.username = TRIM(p.author)
-		WHERE TRIM(p.author) != '' AND u.id IS NULL`); err != nil {
+		WHERE ` + legacy + ` AND TRIM(p.author) != '' AND u.id IS NULL`); err != nil {
 		return fmt.Errorf("quarantine unmapped posts.author: %w", err)
 	}
 	if _, err := s.db.Exec(`INSERT OR IGNORE INTO post_authors (post_id, author_id, sort_order)
 		SELECT p.id, u.id, 0
 		FROM posts p
 		JOIN users u ON u.username = TRIM(p.author)
-		WHERE TRIM(p.author) != ''`); err != nil {
+		WHERE ` + legacy + ` AND TRIM(p.author) != ''`); err != nil {
 		return fmt.Errorf("backfill post authors: %w", err)
 	}
 	return nil
@@ -269,11 +291,120 @@ func (s *Store) ensureLegacyPostAuthorsTableOutsideTx() error {
 	return nil
 }
 
+// ErrStellarPublicAuthorInvalid 不带原始扩展值，避免作者目录诊断回显秘密。
+var ErrStellarPublicAuthorInvalid = errors.New("strict public author is missing from Blog.data.authors")
+
+func projectStellarPostPublicAuthors(p *Post) error {
+	var raw struct {
+		Article struct {
+			Author string `json:"author"`
+		} `json:"article"`
+	}
+	var blog struct {
+		Content struct {
+			Authors []string `json:"authors"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal([]byte(p.StellarConfig), &raw); err != nil {
+		return err
+	}
+	if p.BlogExtensions != "" {
+		if err := json.Unmarshal([]byte(p.BlogExtensions), &blog); err != nil {
+			return err
+		}
+	}
+	p.Author, p.Authors = raw.Article.Author, append([]string(nil), blog.Content.Authors...)
+	if len(p.Authors) == 0 && p.Author != "" {
+		p.Authors = []string{p.Author}
+	}
+	return nil
+}
+
+// ValidateStellarPostPublicAuthors 公开署名按严格目录验证，与 post_authors 的编辑权限 ID 无关。
+// 原始配置保持不变；只回填供 Console 显示的公开投影。
+func (s *Store) ValidateStellarPostPublicAuthors(p *Post) error {
+	if p == nil || p.StellarVersion != 2 {
+		return nil
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "posts/"+p.Slug, "post", false); err != nil {
+		return err
+	}
+	if err := projectStellarPostPublicAuthors(p); err != nil {
+		return err
+	}
+	refs := append([]string(nil), p.Authors...)
+	if p.Author != "" {
+		refs = append(refs, p.Author)
+	}
+	if len(refs) == 0 {
+		return nil
+	}
+	snapshot, err := s.ReadSettingsSnapshot()
+	if err != nil {
+		return err
+	}
+	var version struct {
+		Version int `json:"version"`
+	}
+	if json.Unmarshal([]byte(snapshot["stellar_v2"]), &version) != nil || version.Version != 2 {
+		return ErrStellarPublicAuthorInvalid
+	}
+	var catalog struct {
+		Data struct {
+			Authors map[string]struct {
+				Name string `json:"name"`
+			} `json:"authors"`
+		} `json:"data"`
+	}
+	if json.Unmarshal([]byte(snapshot["blog_extensions"]), &catalog) != nil {
+		return ErrStellarPublicAuthorInvalid
+	}
+	for _, ref := range refs {
+		if strings.TrimSpace(catalog.Data.Authors[ref].Name) == "" {
+			return ErrStellarPublicAuthorInvalid
+		}
+	}
+	return nil
+}
+
+func (s *Store) validateStellarDraftPublicAuthors(raw string) error {
+	if raw == "" {
+		return nil
+	}
+	var envelope struct {
+		Version int `json:"stellar_version"`
+	}
+	if json.Unmarshal([]byte(raw), &envelope) != nil || envelope.Version != 2 {
+		return nil
+	}
+	var p Post
+	if err := json.Unmarshal([]byte(raw), &p); err != nil {
+		return err
+	}
+	return s.ValidateStellarPostPublicAuthors(&p)
+}
+
 func (s *Store) preparePostAuthors(p *Post) error {
 	if p == nil {
 		return nil
 	}
 	ids := append([]int64(nil), p.AuthorIDs...)
+	if p.StellarVersion == 2 {
+		if err := s.ValidateStellarPostPublicAuthors(p); err != nil {
+			return err
+		}
+		for _, id := range normalizeAuthorIDs(ids) {
+			user, err := s.GetUserByID(id)
+			if err != nil {
+				return err
+			}
+			if user == nil {
+				return ErrPostAuthorNotFound
+			}
+		}
+		p.AuthorIDs = normalizeAuthorIDs(ids)
+		return nil
+	}
 	if len(ids) == 0 {
 		refs := normalizeAuthorRefs(p.Authors, p.Author)
 		for _, ref := range refs {

@@ -5,6 +5,12 @@
 // document 级事件委托绑定，PJAX 换页后 DOM 替换不受影响。
 // 打字机：模块级定时器 ID，PJAX 切页时清理。
 (function () {
+  function mount(rootRegion, context) {
+  var scope = window.blogRuntime.createScope(rootRegion, context);
+  var document = scope.document;
+  var fetch = scope.fetch;
+  var setTimeout = scope.setTimeout, setInterval = scope.setInterval, clearInterval = scope.clearInterval;
+
   var STORE_KEY = 'Stellar.ai';
   var CONTENT_LIMIT = 40000;
 
@@ -59,6 +65,7 @@
       body.replaceChildren(); // 清空旧占位，不用 innerHTML 避免解析标记
       var p = document.createElement('p');
       body.appendChild(p);
+      scope.onCleanup(function () { p.textContent = text; });
       // 打字机逐字输出（仅读者点击生成后调用，页面加载的已有摘要不走此路径）
       var chars = Array.from(text);
       var idx = 0;
@@ -103,6 +110,7 @@
       _typewriterTimer = null;
     }
     p.replaceChildren();
+    scope.onCleanup(function () { p.textContent = text; });
     var chars = Array.from(text);
     var idx = 0;
     var cursor = document.createElement('span');
@@ -170,7 +178,7 @@
   }
 
   // document 级委托：展开按钮 + 生成按钮（PJAX 友好，只绑一次）
-  document.addEventListener('click', function (e) {
+  scope.listen(rootRegion, 'click', function (e) {
     var open = e.target.closest && e.target.closest('.ai-summary-open');
     if (open) {
       var form = open.parentElement.querySelector('.ai-summary-form');
@@ -199,5 +207,8 @@
     }
   });
 
-  document.addEventListener('DOMContentLoaded', initTypewriter);
+  initTypewriter();
+  return scope.cleanup;
+  }
+  window.blogAISummary = { mount: mount };
 })();

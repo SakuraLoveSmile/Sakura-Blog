@@ -1,0 +1,741 @@
+{
+  "kind": "loopback synthetic SDK on formal runtime, not account service",
+  "providers": [
+    {
+      "provider": "artalk",
+      "before": {
+        "timeOrigin": 1791910867152.7,
+        "counts": {
+          "artalk": {
+            "load": 1,
+            "init": 1
+          }
+        }
+      },
+      "after": {
+        "timeOrigin": 1791910867152.7,
+        "counts": {
+          "artalk": {
+            "load": 1,
+            "init": 2,
+            "destroy": 1
+          }
+        },
+        "markers": 1,
+        "path": "/post/t5-plugins-d"
+      }
+    },
+    {
+      "provider": "twikoo",
+      "savedProvider": "twikoo",
+      "before": {
+        "timeOrigin": 1791911089806.7,
+        "counts": {
+          "twikoo": {
+            "load": 1,
+            "initStart": 1,
+            "init": 1
+          }
+        }
+      },
+      "after": {
+        "timeOrigin": 1791911089806.7,
+        "counts": {
+          "twikoo": {
+            "load": 1,
+            "initStart": 2,
+            "init": 2,
+            "destroy": 1
+          }
+        },
+        "markers": 1,
+        "path": "/post/t5-plugins-d"
+      }
+    },
+    {
+      "provider": "waline",
+      "savedProvider": "waline",
+      "before": {
+        "timeOrigin": 1791911091017.3,
+        "counts": {
+          "waline": {
+            "load": 1,
+            "init": 1
+          }
+        }
+      },
+      "after": {
+        "timeOrigin": 1791911091017.3,
+        "counts": {
+          "waline": {
+            "load": 1,
+            "init": 2,
+            "destroy": 1
+          }
+        },
+        "markers": 1,
+        "path": "/post/t5-plugins-d"
+      }
+    },
+    {
+      "provider": "beaudar",
+      "savedProvider": "beaudar",
+      "before": {
+        "timeOrigin": 1791911092090.9,
+        "counts": {
+          "beaudar": {
+            "load": 1,
+            "init": 1
+          }
+        }
+      },
+      "after": {
+        "timeOrigin": 1791911092090.9,
+        "counts": {
+          "beaudar": {
+            "load": 2,
+            "init": 2,
+            "observedRemove": 1
+          }
+        },
+        "markers": 1,
+        "path": "/post/t5-plugins-d"
+      }
+    },
+    {
+      "provider": "utterances",
+      "savedProvider": "utterances",
+      "before": {
+        "timeOrigin": 1791911093156.2,
+        "counts": {
+          "utterances": {
+            "load": 1,
+            "init": 1
+          }
+        }
+      },
+      "after": {
+        "timeOrigin": 1791911093156.2,
+        "counts": {
+          "utterances": {
+            "load": 2,
+            "init": 2,
+            "observedRemove": 1
+          }
+        },
+        "markers": 1,
+        "path": "/post/t5-plugins-d"
+      }
+    },
+    {
+      "provider": "giscus",
+      "savedProvider": "giscus",
+      "before": {
+        "timeOrigin": 1791911094239,
+        "counts": {
+          "giscus": {
+            "load": 1,
+            "init": 1
+          }
+        }
+      },
+      "after": {
+        "timeOrigin": 1791911094239,
+        "counts": {
+          "giscus": {
+            "load": 2,
+            "init": 2,
+            "observedRemove": 1
+          }
+        },
+        "markers": 1,
+        "path": "/post/t5-plugins-d"
+      }
+    }
+  ],
+  "delayedTwikoo": {
+    "before": {
+      "timeOrigin": 1791911182217.2,
+      "counts": {
+        "twikoo": {
+          "load": 1,
+          "initStart": 1
+        }
+      }
+    },
+    "after": {
+      "timeOrigin": 1791911182217.2,
+      "counts": {
+        "twikoo": {
+          "load": 1,
+          "initStart": 2,
+          "init": 2,
+          "destroy": 1
+        }
+      },
+      "events": [
+        {
+          "provider": "twikoo",
+          "variant": "delayed",
+          "kind": "load",
+          "connected": true,
+          "path": "/post/t5-plugins-c",
+          "time": 1791911183607
+        },
+        {
+          "provider": "twikoo",
+          "variant": "delayed",
+          "kind": "initStart",
+          "connected": true,
+          "path": "/post/t5-plugins-c",
+          "time": 1791911183608
+        },
+        {
+          "provider": "twikoo",
+          "variant": "delayed",
+          "kind": "initStart",
+          "connected": true,
+          "path": "/post/t5-plugins-d",
+          "time": 1791911183831
+        },
+        {
+          "provider": "twikoo",
+          "variant": "delayed",
+          "kind": "init",
+          "connected": false,
+          "path": "/post/t5-plugins-d",
+          "time": 1791911185109,
+          "token": "1"
+        },
+        {
+          "provider": "twikoo",
+          "variant": "delayed",
+          "kind": "destroy",
+          "connected": false,
+          "path": "/post/t5-plugins-d",
+          "time": 1791911185110,
+          "token": "1"
+        },
+        {
+          "provider": "twikoo",
+          "variant": "delayed",
+          "kind": "init",
+          "connected": true,
+          "path": "/post/t5-plugins-d",
+          "time": 1791911185331,
+          "token": "2"
+        }
+      ],
+      "markers": 1
+    }
+  },
+  "delayedResources": [
+    {
+      "provider": "artalk",
+      "before": {
+        "timeOrigin": 1791911201532.7,
+        "counts": null
+      },
+      "after": {
+        "timeOrigin": 1791911201532.7,
+        "counts": {
+          "artalk": {
+            "load": 1,
+            "init": 1
+          }
+        },
+        "events": [
+          {
+            "provider": "artalk",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911202929
+          },
+          {
+            "provider": "artalk",
+            "variant": "delayed",
+            "kind": "init",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911202930,
+            "token": "1"
+          }
+        ],
+        "markers": 1
+      }
+    },
+    {
+      "provider": "waline",
+      "before": {
+        "timeOrigin": 1791911203266.2,
+        "counts": null
+      },
+      "after": {
+        "timeOrigin": 1791911203266.2,
+        "counts": {
+          "waline": {
+            "load": 1,
+            "init": 1
+          }
+        },
+        "events": [
+          {
+            "provider": "waline",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": false,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911205865
+          },
+          {
+            "provider": "waline",
+            "variant": "delayed",
+            "kind": "init",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911205865,
+            "token": "1"
+          }
+        ],
+        "markers": 1
+      }
+    },
+    {
+      "provider": "beaudar",
+      "before": {
+        "timeOrigin": 1791911206234.8,
+        "counts": null
+      },
+      "after": {
+        "timeOrigin": 1791911206234.8,
+        "counts": {
+          "beaudar": {
+            "load": 2,
+            "orphanScript": 1,
+            "init": 1
+          }
+        },
+        "events": [
+          {
+            "provider": "beaudar",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": false,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911207630
+          },
+          {
+            "provider": "beaudar",
+            "variant": "delayed",
+            "kind": "orphanScript",
+            "connected": false,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911207631
+          },
+          {
+            "provider": "beaudar",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911207631
+          },
+          {
+            "provider": "beaudar",
+            "variant": "delayed",
+            "kind": "init",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911207632,
+            "token": "1"
+          }
+        ],
+        "markers": 1
+      }
+    },
+    {
+      "provider": "utterances",
+      "before": {
+        "timeOrigin": 1791911207975.8,
+        "counts": null
+      },
+      "after": {
+        "timeOrigin": 1791911207975.8,
+        "counts": {
+          "utterances": {
+            "load": 2,
+            "init": 1,
+            "orphanScript": 1
+          }
+        },
+        "events": [
+          {
+            "provider": "utterances",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911209373
+          },
+          {
+            "provider": "utterances",
+            "variant": "delayed",
+            "kind": "init",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911209376,
+            "token": "1"
+          },
+          {
+            "provider": "utterances",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": false,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911209377
+          },
+          {
+            "provider": "utterances",
+            "variant": "delayed",
+            "kind": "orphanScript",
+            "connected": false,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911209377
+          }
+        ],
+        "markers": 1
+      }
+    },
+    {
+      "provider": "giscus",
+      "before": {
+        "timeOrigin": 1791911209692.6,
+        "counts": null
+      },
+      "after": {
+        "timeOrigin": 1791911209692.6,
+        "counts": {
+          "giscus": {
+            "load": 2,
+            "init": 1,
+            "orphanScript": 1
+          }
+        },
+        "events": [
+          {
+            "provider": "giscus",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911211076
+          },
+          {
+            "provider": "giscus",
+            "variant": "delayed",
+            "kind": "init",
+            "connected": true,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911211078,
+            "token": "1"
+          },
+          {
+            "provider": "giscus",
+            "variant": "delayed",
+            "kind": "load",
+            "connected": false,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911211079
+          },
+          {
+            "provider": "giscus",
+            "variant": "delayed",
+            "kind": "orphanScript",
+            "connected": false,
+            "path": "/post/t5-plugins-d",
+            "time": 1791911211079
+          }
+        ],
+        "markers": 1
+      }
+    }
+  ],
+  "failures": [
+    {
+      "provider": "artalk",
+      "proof": {
+        "timeOrigin": 1791911245526.9,
+        "url": "/post/t5-plugins-d",
+        "markers": 0,
+        "loading": false,
+        "resources": [
+          "http://127.0.0.1:8111/artalk/missing/style.css",
+          "http://127.0.0.1:8111/artalk/missing/client.js",
+          "http://127.0.0.1:8111/artalk/missing/style.css",
+          "http://127.0.0.1:8111/artalk/missing/client.js"
+        ]
+      },
+      "errors": [
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/artalk/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:25.734Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/artalk/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:25.976Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        }
+      ]
+    },
+    {
+      "provider": "twikoo",
+      "proof": {
+        "timeOrigin": 1791911246366.1,
+        "url": "/post/t5-plugins-d",
+        "markers": 0,
+        "loading": false,
+        "resources": [
+          "http://127.0.0.1:8111/twikoo/missing/client.js",
+          "http://127.0.0.1:8111/twikoo/missing/client.js"
+        ]
+      },
+      "errors": [
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/artalk/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:25.734Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/artalk/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:25.976Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/twikoo/missing/client.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:26.578Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/twikoo/missing/client.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:26.757Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        }
+      ]
+    },
+    {
+      "provider": "waline",
+      "proof": {
+        "timeOrigin": 1791911247141.9,
+        "url": "/post/t5-plugins-d",
+        "markers": 0,
+        "loading": false,
+        "resources": [
+          "http://127.0.0.1:8111/waline/missing/style.css",
+          "http://127.0.0.1:8111/waline/missing/meta.css",
+          "http://127.0.0.1:8111/waline/missing/style.css",
+          "http://127.0.0.1:8111/waline/missing/meta.css"
+        ]
+      },
+      "errors": [
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/artalk/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:25.734Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/artalk/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:25.976Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/twikoo/missing/client.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:26.578Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/twikoo/missing/client.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:26.757Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/waline/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:27.319Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/waline/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:27.524Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        }
+      ]
+    },
+    {
+      "provider": "beaudar",
+      "proof": {
+        "timeOrigin": 1791911247822.6,
+        "url": "/post/t5-plugins-d",
+        "markers": 0,
+        "loading": false,
+        "resources": [
+          "http://127.0.0.1:8111/beaudar/missing/client.js",
+          "http://127.0.0.1:8111/beaudar/missing/client.js"
+        ]
+      },
+      "errors": [
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/twikoo/missing/client.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:26.578Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/twikoo/missing/client.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:26.757Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/waline/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:27.319Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/waline/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:27.524Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: beaudar comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.019Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: beaudar comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.208Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        }
+      ]
+    },
+    {
+      "provider": "utterances",
+      "proof": {
+        "timeOrigin": 1791911248588.1,
+        "url": "/post/t5-plugins-d",
+        "markers": 0,
+        "loading": false,
+        "resources": [
+          "http://127.0.0.1:8111/utterances/missing/client.js",
+          "http://127.0.0.1:8111/utterances/missing/client.js"
+        ]
+      },
+      "errors": [
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/waline/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:27.319Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: failed to load http://127.0.0.1:8111/waline/missing/style.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+          "timestamp": "2026-10-13T17:07:27.524Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: beaudar comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.019Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: beaudar comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.208Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: utterances comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.789Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: utterances comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.982Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        }
+      ]
+    },
+    {
+      "provider": "giscus",
+      "proof": {
+        "timeOrigin": 1791911249366.2,
+        "url": "/post/t5-plugins-d",
+        "markers": 0,
+        "loading": false,
+        "resources": [
+          "http://127.0.0.1:8111/giscus/missing/client.js",
+          "http://127.0.0.1:8111/giscus/missing/client.js"
+        ]
+      },
+      "errors": [
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: beaudar comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.019Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: beaudar comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.208Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: utterances comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.789Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: utterances comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:28.982Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: giscus comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:29.559Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        },
+        {
+          "level": "error",
+          "message": "[stellar extension:comments] mount failed Error: giscus comment embed failed to load\n    at http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:49\n    at finish (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:105:9)\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/extensions/comments.js?v=0d7b4eaa:108:29)",
+          "timestamp": "2026-10-13T17:07:29.742Z",
+          "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+        }
+      ]
+    }
+  ]
+}

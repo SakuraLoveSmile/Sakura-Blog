@@ -3,6 +3,7 @@ import { http } from "../transport";
 // --- Shortcode catalog（后端 parser 注册表真值） ---
 export interface ShortcodeCatalogParam {
   key: string;
+  named_alias?: boolean;
   label?: string;
   label_key?: string;
   type: "text" | "select" | "number" | "switch" | "color" | "textarea";
@@ -42,6 +43,7 @@ export interface ShortcodeEditResult {
   name: string;
   values: Record<string, unknown>;
   editable: boolean;
+  present?: string[];
   /** 仅 hybrid 标签（navbar/frame）返回，标明当前 raw 是单行还是块级写法。 */
   variant?: "inline" | "block";
 }
@@ -49,6 +51,12 @@ export interface ShortcodeEditResult {
 export const pluginApi = {
   catalog: () => http.get<{ items: ShortcodeCatalogItem[] }>("/plugins/catalog"),
   parseShortcode: (raw: string) => http.post<ShortcodeEditResult>("/plugins/shortcode/parse", { raw }),
+  serializeShortcode: (name: string, values: Record<string, unknown>, present?: string[]) =>
+    http.post<{ raw: string }>("/plugins/shortcode/serialize", {
+      name,
+      values,
+      ...(present === undefined ? {} : { present }),
+    }),
   runtime: () => http.get<{ items: RuntimePluginManifest[] }>("/plugins/runtime"),
 };
 

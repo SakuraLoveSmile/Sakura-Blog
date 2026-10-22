@@ -33,15 +33,21 @@ test("文章与页面编辑器共享 Markdown 导入按钮和确认链路", () =
   const toolbar = read("modules/posts/EditorToolbar.vue");
   const postEditor = read("modules/posts/PostEditor.vue");
   const pageEditor = read("modules/pages/PageEditor.vue");
+  const preview = read("components/editor/MarkdownImportPreview.vue");
   const api = read("../../../../packages/api-client/src/api/editor.ts");
 
   assert.match(toolbar, /accept="\.md,\.markdown,text\/markdown,text\/plain"/);
-  assert.match(toolbar, /emit\("import", file\)/);
+  assert.match(toolbar, /emit\("import", file, legacyImport\.value\)/);
+  assert.match(toolbar, /chooseImportFile\(false\)/);
+  assert.match(toolbar, /chooseImportFile\(true\)/);
   assert.match(postEditor, /kind: "post"/);
-  assert.match(pageEditor, /kind: "page"/);
-  assert.match(postEditor, /确认导入 Markdown/);
-  assert.match(pageEditor, /确认导入 Markdown/);
-  assert.match(postEditor, /不会自动保存或发布/);
-  assert.match(pageEditor, /不会自动保存或发布/);
-  assert.match(api, /\/editor\/import\/markdown/);
+  assert.match(pageEditor, /kind:\s*"page"/);
+  for (const editor of [postEditor, pageEditor]) {
+    assert.match(editor, /<MarkdownImportPreview :data="pendingImport"/);
+    assert.match(editor, /@confirm="confirmImport"/);
+    assert.match(editor, /pendingImport\.value = data/);
+  }
+  assert.match(preview, /审查 1\.x 转换预览/);
+  assert.match(preview, /不会自动保存或发布/);
+  assert.match(api, /\/editor\/import\/stellar/);
 });

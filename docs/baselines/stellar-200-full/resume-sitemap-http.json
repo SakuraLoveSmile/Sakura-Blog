@@ -1,0 +1,219 @@
+{
+  "url": "http://127.0.0.1:8103/sitemap.xml",
+  "sha256": "924dfdf90ad60de2e80ddb60a8ad7feb1cc3b3552d732519d6ffbe2540e8d7d7",
+  "home": {
+    "loc": "http://127.0.0.1:8103/",
+    "priority": "1.0"
+  },
+  "entries": [
+    {
+      "loc": "http://127.0.0.1:8103/",
+      "priority": "1.0"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/blog/archives",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/blog/categories",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/blog/tags",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/links",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/moments",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/blog",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/topic",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/notebooks",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/ferrofluid",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/galaxy",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/light-rays",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/strands",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/video",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/topic/port-journal",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/journal",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/t5-plugins-d",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/t5-plugins-c",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/t5-code-copy-d",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/t5-code-copy-c",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/t5-lifecycle-b",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/t5-lifecycle-a",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/poster",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/story",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/post/technical",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/about",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/tags-showcase",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/friends-fixture",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/friends-unrelated",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/friends",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-interactions",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-gist",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-services-extra",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-remote-md",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-chat-public-file",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-services-final",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-memos-final",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/t5-icon-images",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/context-validation",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/ferrofluid/intro",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/ferrofluid/second",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/galaxy/intro",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/galaxy/second",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/light-rays/intro",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/light-rays/second",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/strands/intro",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/strands/second",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/video/intro",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/wiki/video/second",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/journal/alpha",
+      "priority": "0.6"
+    },
+    {
+      "loc": "http://127.0.0.1:8103/journal/beta",
+      "priority": "0.6"
+    }
+  ],
+  "unique": true
+}

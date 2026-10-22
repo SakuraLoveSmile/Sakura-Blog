@@ -1,0 +1,39 @@
+--- a/src/fccache.c
++++ b/src/fccache.c
+@@ -1610,6 +1610,11 @@
+ FcDirCacheLock (const FcChar8 *dir,
+                 FcConfig      *config)
+ {
++#ifdef __wasi__
++    /* Read-only virtual fonts have no writable interprocess disk cache. */
++    errno = ENOSYS;
++    return -1;
++#else
+     FcChar8       *cache_hashed = NULL;
+     FcChar8        cache_base[CACHEBASE_LEN];
+     FcStrList     *list;
+@@ -1657,11 +1662,16 @@
+     if (fd != -1)
+ 	close (fd);
+     return -1;
++#endif
+ }
+ 
+ void
+ FcDirCacheUnlock (int fd)
+ {
++#ifdef __wasi__
++    /* No lock can have been acquired by FcDirCacheLock. */
++    if (fd != -1) close(fd);
++#else
+     if (fd != -1) {
+ #if defined(_WIN32)
+ 	_locking (fd, _LK_UNLCK, 1);
+@@ -1677,6 +1687,7 @@
+ #endif
+ 	close (fd);
+     }
++#endif
+ }
+ 
+ /*

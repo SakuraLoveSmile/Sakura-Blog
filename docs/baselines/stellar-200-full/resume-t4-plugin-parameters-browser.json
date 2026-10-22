@@ -1,0 +1,297 @@
+{
+  "fixture_only": true,
+  "source_commit": "cd3d7e65",
+  "runtime": "resume-runtime-cd3.json",
+  "cases": [
+    {
+      "id": "hover-reveal-on",
+      "save_reopen_equal": true,
+      "manifest": [
+        {
+          "config": {
+            "blur": 4,
+            "distance": 8,
+            "duration": 800,
+            "enabled": true,
+            "interval": 200
+          },
+          "id": "reveal",
+          "module": "/assets/js/runtime/extensions/reveal.js",
+          "scope": "region",
+          "when": {
+            "selector": ".slide-up"
+          }
+        },
+        {
+          "config": {
+            "assets": {
+              "js": "/assets/js/plugins/card-hover.js"
+            },
+            "spotlight": true,
+            "tilt": true
+          },
+          "id": "card-hover",
+          "module": "/assets/js/runtime/extensions/card-hover.js",
+          "scope": "region",
+          "when": {
+            "selector": ".card-hover"
+          }
+        }
+      ],
+      "hoverOn": {
+        "class": "post-card post card-hover card-hover--spotlight card-hover--tilt is-card-hover-ready is-card-hover-active",
+        "style": "--card-hover-mouse-x: 172px; --card-hover-mouse-y: 35px; --card-hover-rotate-x: 1.011deg; --card-hover-rotate-y: -1.325deg;"
+      },
+      "revealBefore": {
+        "opacity": "0",
+        "style": "opacity: 0;",
+        "top": 754.1875
+      },
+      "revealAfter": {
+        "opacity": "1",
+        "style": "",
+        "top": 607.1875
+      }
+    },
+    {
+      "id": "hover-reveal-off",
+      "save_reopen_equal": true,
+      "front": {
+        "hoverReady": 0,
+        "manifest": [],
+        "optionalCSS": [],
+        "reveal": []
+      }
+    },
+    {
+      "id": "katex-page-on",
+      "save_reopen_equal": true,
+      "front": {
+        "css": [
+          "http://127.0.0.1:8114/assets/css/main-katex.css?v=f5eff4b5",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.23/dist/katex.min.css?v=0"
+        ],
+        "display": 1,
+        "katex": 2,
+        "manifest": [
+          "pin-slider",
+          "page-controls",
+          "partial-navigation",
+          "color-scheme-switch",
+          "hero-parallax",
+          "hero-effect",
+          "lazy-loading",
+          "deferred-icons",
+          "dropdown",
+          "services",
+          "settings",
+          "lightbox",
+          "diagrams",
+          "code-copy",
+          "adaptive-text",
+          "swiper",
+          "blog-search",
+          "blog-comments",
+          "blog-gist",
+          "blog-services"
+        ]
+      }
+    },
+    {
+      "id": "math-page-off",
+      "save_reopen_equal": true,
+      "front": {
+        "css": [],
+        "katex": 0,
+        "manifest": [
+          "pin-slider",
+          "page-controls",
+          "partial-navigation",
+          "color-scheme-switch",
+          "hero-parallax",
+          "hero-effect",
+          "lazy-loading",
+          "deferred-icons",
+          "dropdown",
+          "services",
+          "settings",
+          "lightbox",
+          "diagrams",
+          "code-copy",
+          "adaptive-text",
+          "swiper",
+          "blog-search",
+          "blog-comments",
+          "blog-gist",
+          "blog-services"
+        ],
+        "mathjax": 0,
+        "source": "T5 插件 C\n前往同专栏插件 D\nMathJax 行内公式\nT5_MATHJAX_INLINE_MARKER：$E=mc^2$。\nMathJax 块公式\nT5_MATHJAX_DISPLAY_MARKER：\n$$\n\\int_0^1 x\\,dx=\\frac{1}{2}\n$$\nMermaid 流程图\n#mermaid-1791919038592{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;fill:#ccc;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1791919038592 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1791919038592 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1791919038592 .error-icon{fill:#a44141;}#mermaid-1791919038592 .error-text{fill:#ddd;stroke:#ddd;}#mermaid-1791919038592 .edge-thickness-normal{stroke-width:1px;}#mermaid-1791919038592 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1791919038592 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1791919038592 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1791919038592 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1791919038592 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1791919038592 .marker{fill:lightgrey;stroke:lightgrey;}#mermaid-1791919038592 .marker.cross{stroke:lightgrey;}#mermaid-1791919038592 svg{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;}#mermaid-1791919038592 p{margin:0;}#mermaid-1791919038592 .label{font-family:\"trebuchet ms\",verdana,arial,sans-serif;color:#ccc;}#mermaid-1791919038592 .cluster-label text{fill:#F9FFFE;}#mermaid-1791919038592 .cluster-label span{color:#F9FFFE;}#mermaid-1791919038592 .cluster-label span p{background-color:transparent;}#mermaid-1791919038592 .label text,#mermaid-1791919038592 span{fill:#ccc;color:#ccc;}#mermaid-1791919038592 .node rect,#mermaid-1791919038592 .node circle,#mermaid-1791919038592 .node ellipse,#mermaid-1791919038592 .node polygon,#mermaid-1791919038592 .node path{fill:#1f2020;stroke:#ccc;stroke-width:1px;}#mermaid-1791919038592 .rough-node .label text,#mermaid-1791919038592 .node .label text,#mermaid-1791919038592 .image-shape .label,#mermaid-1791919038592 .icon-shape .label{text-anchor:middle;}#mermaid-1791919038592 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1791919038592 .rough-node .label,#mermaid-1791919038592 .node .label,#mermaid-1791919038592 .image-shape .label,#mermaid-1791919038592 .icon-shape .label{text-align:center;}#mermaid-1791919038592 .node.clickable{cursor:pointer;}#mermaid-1791919038592 .root .anchor path{fill:lightgrey!important;stroke-width:0;stroke:lightgrey;}#mermaid-1791919038592 .arrowheadPath{fill:lightgrey;}#mermaid-1791919038592 .edgePaths .path{stroke:lightgrey;stroke-width:1px;}#mermaid-1791919038592 .flowchart-link{stroke:lightgrey;fill:none;}#mermaid-1791919038592 .edgeLabel{background-color:hsl(0, 0%, 34.4117647059%);text-align:center;}#mermaid-1791919038592 .edgeLabel p{background-color:hsl(0, 0%, 34.4117647059%);}#mermaid-1791919038592 .edgeLabel rect{opacity:0.5;background-color:hsl(0, 0%, 34.4117647059%);fill:hsl(0, 0%, 34.4117647059%);}#mermaid-1791919038592 .labelBkg{background-color:rgba(87.75, 87.75, 87.75, 0.5);}#mermaid-1791919038592 .cluster rect{fill:hsl(180, 1.5873015873%, 28.3529411765%);stroke:rgba(255, 255, 255, 0.25);stroke-width:1px;}#mermaid-1791919038592 .cluster text{fill:#F9FFFE;}#mermaid-1791919038592 .cluster span{color:#F9FFFE;}#mermaid-1791919038592 .node .collapsed-indicator{fill:rgba(255, 255, 255, 0.25);stroke:none;opacity:0.6;}#mermaid-1791919038592 .node .collapsed-separator{stroke:rgba(255, 255, 255, 0.25);stroke-width:0.75px;}#mermaid-1791919038592 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:12px;background:hsl(20, 1.5873015873%, 12.3529411765%);border:1px solid rgba(255, 255, 255, 0.25);border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1791919038592 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#ccc;}#mermaid-1791919038592 rect.text{fill:none;stroke-width:0;}#mermaid-1791919038592 .icon-shape,#mermaid-1791919038592 .image-shape{background-color:hsl(0, 0%, 34.4117647059%);text-align:center;}#mermaid-1791919038592 .icon-shape p,#mermaid-1791919038592 .image-shape p{background-color:hsl(0, 0%, 34.4117647059%);padding:2px;}#mermaid-1791919038592 .icon-shape .label rect,#mermaid-1791919038592 .image-shape .label rect{opacity:0.5;background-color:hsl(0, 0%, 34.4117647059%);fill:hsl(0, 0%, 34.4117647059%);}#mermaid-1791919038592 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1791919038592 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1791919038592 .node .neo-node{stroke:#ccc;}#mermaid-1791919038592 [data-look=\"neo\"].node rect,#mermaid-1791919038592 [data-look=\"neo\"].cluster rect,#mermaid-1791919038592 [data-look=\"neo\"].node polygon{stroke:url(#mermaid-1791919038592-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1791919038592 [data-look=\"neo\"].swimlane.cluster rect{filter:none;}#mermaid-1791919038592 [data-look=\"neo\"].node path{stroke:url(#mermaid-1791919038592-gradient);stroke-width:1px;}#mermaid-1791919038592 [data-look=\"neo\"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1791919038592 [data-look=\"neo\"].node .neo-line path{stroke:#ccc;filter:none;}#mermaid-1791919038592 [data-look=\"neo\"].node circle{stroke:url(#mermaid-1791919038592-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1791919038592 [data-look=\"neo\"].node circle .state-start{fill:#000000;}#mermaid-1791919038592 [data-look=\"neo\"].icon-shape .icon{fill:url(#mermaid-1791919038592-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1791919038592 [data-look=\"neo\"].icon-shape .icon-neo path{stroke:url(#mermaid-1791919038592-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1791919038592 :root{--mermaid-font-family:\"trebuchet ms\",verdana,arial,sans-serif;}T5_MERMAID_STARTT5_MERMAID_FINISH\nDeferred Icons 官方载体\n\n再次前往插件 D\n"
+      }
+    },
+    {
+      "id": "lightbox-on",
+      "save_reopen_equal": true,
+      "dialog": 1,
+      "image": {
+        "loaded": true,
+        "src": "http://127.0.0.1:8114/uploads/cover.png"
+      }
+    },
+    {
+      "id": "lightbox-off",
+      "save_reopen_equal": true,
+      "dialog": 0,
+      "manifest": []
+    },
+    {
+      "id": "lightbox-404",
+      "save_reopen_equal": true,
+      "errors": {
+        "result": {
+          "type": "string",
+          "value": "[{\"id\":\"services\",\"phase\":\"mount\",\"message\":\"Error: HTTP 404\"},{\"id\":\"services\",\"phase\":\"mount\",\"message\":\"Error: HTTP 404\"},{\"id\":\"services\",\"phase\":\"mount\",\"message\":\"Error: HTTP 404\"},{\"id\":\"services\",\"phase\":\"mount\",\"message\":\"Error: HTTP 404\"},{\"id\":\"services\",\"phase\":\"mount\",\"message\":\"Error: HTTP 400\"},{\"id\":\"lightbox\",\"phase\":\"mount\",\"message\":\"Error: failed to load /assets/css/t4-missing-lightbox.css?v=65862543\"}]"
+        }
+      },
+      "responses": [
+        {
+          "url": "http://127.0.0.1:8114/assets/js/t4-missing-lightbox.js?v=65862543",
+          "status": 404
+        }
+      ],
+      "dialog": 0
+    },
+    {
+      "id": "swiper-no-carrier",
+      "path": "http://127.0.0.1:8114/about/",
+      "count": 0,
+      "manifest": [
+        {
+          "config": {
+            "assets": {
+              "css": "https://unpkg.com/swiper@10.3/swiper-bundle.min.css",
+              "js": "https://unpkg.com/swiper@10.3/swiper-bundle.min.js",
+              "localCss": "/assets/css/plugins/swiper.css"
+            }
+          },
+          "id": "swiper",
+          "module": "/assets/js/runtime/extensions/swiper.js",
+          "scope": "region",
+          "when": {
+            "selector": "#swiper-api"
+          }
+        }
+      ]
+    },
+    {
+      "id": "swiper-two-carriers",
+      "path": "http://127.0.0.1:8114/context-validation",
+      "before": [
+        {
+          "activeImage": "/uploads/cover.png",
+          "class": "tag-plugin swiper fancybox swiper-fade swiper-initialized swiper-horizontal swiper-watch-progress swiper-backface-hidden"
+        },
+        {
+          "activeImage": "/uploads/cover.png",
+          "class": "tag-plugin swiper fancybox swiper-coverflow swiper-3d swiper-initialized swiper-horizontal swiper-watch-progress"
+        }
+      ],
+      "after_first": [
+        {
+          "activeImage": "/uploads/avatar.png"
+        },
+        {
+          "activeImage": "/uploads/cover.png"
+        }
+      ],
+      "after_second": [
+        {
+          "activeImage": "/uploads/avatar.png",
+          "class": "tag-plugin swiper fancybox swiper-fade swiper-initialized swiper-horizontal swiper-watch-progress swiper-backface-hidden"
+        },
+        {
+          "activeImage": "/uploads/avatar.png",
+          "class": "tag-plugin swiper fancybox swiper-coverflow swiper-3d swiper-initialized swiper-horizontal swiper-watch-progress"
+        }
+      ],
+      "boundary": "Real public page instances; component editor card does not permit pointer input"
+    },
+    {
+      "id": "swiper-404",
+      "save_reopen_equal": true,
+      "errors": {
+        "result": {
+          "type": "string",
+          "value": "[{\"id\":\"swiper\",\"phase\":\"mount\",\"message\":\"Error: asset load timed out: /assets/css/t4-missing-swiper.css?v=65862543\"}]"
+        }
+      },
+      "initialized": 0,
+      "source_images": 4
+    },
+    {
+      "id": "swiper-404-immediate-continue",
+      "save_reopen_equal": true,
+      "requests": [
+        "http://127.0.0.1:8114/assets/css/t4-missing-swiper.css?v=65862543",
+        "http://127.0.0.1:8114/assets/js/t4-missing-swiper.js?v=65862543"
+      ],
+      "errors": {
+        "result": {
+          "type": "string",
+          "value": "[{\"id\":\"swiper\",\"phase\":\"mount\",\"message\":\"Error: failed to load /assets/css/t4-missing-swiper.css?v=65862543\"}]"
+        }
+      },
+      "initialized": 0
+    },
+    {
+      "id": "pin-slider-adaptive",
+      "before": {
+        "adaptive": [
+          {
+            "style": "--text-banner: rgb(216,217,217); --text-banner-theme: rgb(208,213,225);"
+          },
+          {
+            "style": "--text-banner: rgb(216,217,218); --text-banner-theme: rgb(197,226,236);"
+          }
+        ],
+        "dots": [
+          {
+            "active": "pin-slider-dot active",
+            "aria": "true",
+            "index": "0"
+          },
+          {
+            "active": "pin-slider-dot",
+            "aria": null,
+            "index": "1"
+          }
+        ],
+        "interval": "5000"
+      },
+      "after_dot": {
+        "dots": [
+          {
+            "active": "pin-slider-dot",
+            "aria": null,
+            "index": "0"
+          },
+          {
+            "active": "pin-slider-dot active",
+            "aria": "true",
+            "index": "1"
+          }
+        ],
+        "transform": "translateX(-100%)"
+      },
+      "lifecycle": {
+        "result": {
+          "type": "string",
+          "value": "{\"sameDocument\":false,\"oldPinPresent\":false}"
+        }
+      }
+    }
+  ],
+  "pin_ui_reopened": true,
+  "baseline_restored": true,
+  "pin_navigation_boundary": "Pagination changed timeOrigin and removed the old window reference: full document navigation and remount, not proof of partial pin timer disposal."
+}

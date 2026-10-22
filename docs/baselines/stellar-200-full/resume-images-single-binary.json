@@ -1,0 +1,33 @@
+{
+  "binary_sha256": "ccf055e80807249bd345734a3c9c7a4ac9d162024e73bb546c0a553293475347",
+  "empty_environment": true,
+  "command": "stellar images --page about/ --refresh http://127.0.0.1:8103/uploads/decoder-local.svg",
+  "exit_code": 0,
+  "stdout": "{\n  \"found\": 1,\n  \"skipped\": 0,\n  \"deferred\": 0,\n  \"processed\": 1,\n  \"failed\": 0,\n  \"file\": \"/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-v2-tools/.tmp/stellar-200-browser-root-2808603452/content/_data/caches/images_metadata.json\"\n}\n",
+  "stderr": "",
+  "seconds": 2.827,
+  "original_sha256_before": "9cb63730c896532b0bd19f633a5eef93b95b6f1d57b284b1a5f09fdc0c0f6013",
+  "original_sha256_after": "9cb63730c896532b0bd19f633a5eef93b95b6f1d57b284b1a5f09fdc0c0f6013",
+  "original_unchanged": true,
+  "metadata": {
+    "http://127.0.0.1:8103/uploads/decoder-local.svg": {
+      "updatedAt": "2026-10-13T12:34:32.551Z",
+      "dimensions": {
+        "status": "ready",
+        "width": 160,
+        "height": 80
+      },
+      "color": {
+        "status": "ready",
+        "algorithm": "hsla-mean-v1",
+        "size": 64,
+        "hsla": [
+          0,
+          87.7374,
+          91.9909,
+          1
+        ]
+      }
+    }
+  }
+}

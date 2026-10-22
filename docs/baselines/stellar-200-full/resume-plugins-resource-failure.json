@@ -1,0 +1,41 @@
+{
+  "head": "c161a63",
+  "kind": "loopback 404 resource failures; no external account check",
+  "proof": {
+    "result": {
+      "type": "object",
+      "value": {
+        "loading": 2,
+        "math": 0,
+        "mermaid": 0,
+        "requested": [
+          "http://127.0.0.1:8110/missing-mathjax.js",
+          "http://127.0.0.1:8110/missing-mermaid.js",
+          "http://127.0.0.1:8110/missing-heti.css"
+        ],
+        "spacing": 0,
+        "url": "http://127.0.0.1:8103/post/t5-plugins-c"
+      }
+    }
+  },
+  "errors": [
+    {
+      "level": "error",
+      "message": "[stellar extension:heti] mount failed Error: failed to load http://127.0.0.1:8110/missing-heti.css\n    at HTMLLinkElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+      "timestamp": "2026-10-13T16:46:41.081Z",
+      "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+    },
+    {
+      "level": "error",
+      "message": "[stellar extension:mathjax] mount failed Error: failed to load http://127.0.0.1:8110/missing-mathjax.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+      "timestamp": "2026-10-13T16:46:41.081Z",
+      "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+    },
+    {
+      "level": "error",
+      "message": "[stellar extension:diagrams] mount failed Error: failed to load http://127.0.0.1:8110/missing-mermaid.js\n    at HTMLScriptElement.onError (http://127.0.0.1:8103/assets/js/runtime/asset-loader.js?v=0d7b4eaa:43:34)",
+      "timestamp": "2026-10-13T16:46:41.081Z",
+      "url": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=0d7b4eaa"
+    }
+  ]
+}

@@ -39,6 +39,7 @@ func (h *Handler) listTopics(c *gin.Context) {
 // name/slug 任一冲突返回 409（双唯一约束，删除保护之外的写冲突主入口）。
 func (h *Handler) createTopic(c *gin.Context) {
 	var req struct {
+		StellarContentMetadata
 		Name        string `json:"name"`
 		Slug        string `json:"slug"`
 		Description string `json:"description"`
@@ -49,6 +50,14 @@ func (h *Handler) createTopic(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
+	}
+	raw, blog := stellarFormObject(req.StellarConfig), stellarFormObject(req.BlogExtensions)
+	if req.StellarVersion == 2 {
+		stellarFormString(raw, "name", &req.Name)
+		stellarFormString(raw, "description", &req.Description)
+		stellarFormString(raw, "icon", &req.Icon)
+		stellarFormString(raw, "cover", &req.Cover)
+		stellarFormInt(blog, "content.collection_order", &req.Sort)
 	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
@@ -68,7 +77,12 @@ func (h *Handler) createTopic(c *gin.Context) {
 		return
 	}
 
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "topic", true); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	t := &store.Topic{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		Name:        name,
 		Slug:        slug,
 		Description: req.Description,
@@ -84,6 +98,7 @@ func (h *Handler) createTopic(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": t.ID})
 }
 
@@ -105,6 +120,7 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	}
 
 	var req struct {
+		StellarContentMetadata
 		Name        *string `json:"name"`
 		Slug        *string `json:"slug"`
 		Description *string `json:"description"`
@@ -117,7 +133,12 @@ func (h *Handler) updateTopic(c *gin.Context) {
 		return
 	}
 
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "topic", true); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	t := &store.Topic{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ID:          existing.ID,
 		Name:        existing.Name,
 		Slug:        existing.Slug,
@@ -125,6 +146,19 @@ func (h *Handler) updateTopic(c *gin.Context) {
 		Icon:        existing.Icon,
 		Cover:       existing.Cover,
 		Sort:        existing.Sort,
+	}
+	raw, blog := stellarFormObject(req.StellarConfig), stellarFormObject(req.BlogExtensions)
+	for key, target := range map[string]**string{"name": &req.Name, "description": &req.Description, "icon": &req.Icon, "cover": &req.Cover} {
+		if _, exists := raw[key]; exists {
+			value := ""
+			stellarFormString(raw, key, &value)
+			*target = &value
+		}
+	}
+	if _, exists := stellarFormValue(blog, "content.collection_order"); exists {
+		value := 0
+		stellarFormInt(blog, "content.collection_order", &value)
+		req.Sort = &value
 	}
 	if req.Name != nil {
 		newName := strings.TrimSpace(*req.Name)
@@ -167,6 +201,10 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	}
 
 	if err := h.store.UpdateTopic(t); err != nil {
+		if err == store.ErrTopicInUse {
+			Fail(c, http.StatusConflict, "专栏已有文章或未发布草稿，不能修改 ID（slug）；请先解除所有归属")
+			return
+		}
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: topics.") {
 			Fail(c, http.StatusConflict, "name 或 slug 已被占用")
 			return
@@ -174,6 +212,7 @@ func (h *Handler) updateTopic(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "更新失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -200,5 +239,6 @@ func (h *Handler) deleteTopic(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

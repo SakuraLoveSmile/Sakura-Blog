@@ -1,0 +1,115 @@
+{
+  "phase": "feature-working-tree",
+  "binary_sha256": "b3a9be1a190f51bb73841d576eb9664c857ffa95554aa6b3eb8408c08a1b3078",
+  "fixture": "http://localhost:8112",
+  "admin_default_days": 7,
+  "admin_one_day_generation": true,
+  "close_reopen_removes_plaintext": true,
+  "clipboard": {
+    "first_sample": false,
+    "subsequent_confirmed_match": true
+  },
+  "native_register": {
+    "invalid_code_status": 400,
+    "duplicate_username_status": 409,
+    "same_code_retry_status": 201,
+    "failed_form_and_comment_preserved": true,
+    "auto_login": true
+  },
+  "uc_register": {
+    "reused_code_rejected": true,
+    "one_day_code_accepted": true,
+    "retained_reader": true
+  },
+  "dual_session": {
+    "profile_save_reopen_reader": true,
+    "console_profile_admin_unchanged": true,
+    "public_logout_preserves_admin": true,
+    "notification_responses": [
+      {
+        "path": "/api/v1/uc/notifications",
+        "status": 200
+      }
+    ]
+  },
+  "comment": {
+    "before_count": 2,
+    "immediate_count": 3,
+    "reload_count": 3
+  },
+  "uc_author_attachments": {
+    "empty_before_upload": true,
+    "upload_and_list_responses": [
+      {
+        "path": "/api/v1/uc/attachments",
+        "status": 200
+      },
+      {
+        "path": "/api/v1/uc/attachments/upload",
+        "status": 201
+      }
+    ],
+    "only_own_test_image_visible": true
+  },
+  "mobile_dom": {
+    "close": {
+      "bottom": 72.3671875,
+      "height": 31.6875,
+      "left": 326.46875,
+      "right": 354.65625,
+      "top": 40.6796875,
+      "width": 28.1875,
+      "x": 326.46875,
+      "y": 40.6796875
+    },
+    "docWidth": 382,
+    "height": 640,
+    "inputs": [
+      {
+        "id": "cmt-reg-username",
+        "left": 33.296875,
+        "right": 348.703125
+      },
+      {
+        "id": "cmt-reg-password",
+        "left": 33.296875,
+        "right": 348.703125
+      },
+      {
+        "id": "cmt-reg-nick",
+        "left": 33.296875,
+        "right": 348.703125
+      },
+      {
+        "id": "cmt-reg-email",
+        "left": 33.296875,
+        "right": 348.703125
+      },
+      {
+        "id": "cmt-reg-avatar",
+        "left": 33.296875,
+        "right": 348.703125
+      },
+      {
+        "id": "cmt-reg-invitation",
+        "left": 33.296875,
+        "right": 348.703125
+      }
+    ],
+    "submit": {
+      "bottom": 591.6640625,
+      "height": 32,
+      "left": 278.78125,
+      "right": 348.703125,
+      "top": 559.6640625,
+      "width": 69.921875,
+      "x": 278.78125,
+      "y": 559.6640625
+    },
+    "width": 390
+  },
+  "mobile_screenshot_limit": "IAB screenshot scale differs from CSS viewport; DOM reachability verified, screenshot is not full visual acceptance",
+  "totp_browser_enabled": false,
+  "totp_and_recovery_real_http": "resume-invitation-deployed-http.json",
+  "real_source_modified": false
+}

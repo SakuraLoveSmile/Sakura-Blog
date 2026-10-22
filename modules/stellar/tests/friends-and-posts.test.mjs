@@ -5,11 +5,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import vm from "node:vm";
+import { mountBlogService } from "./blog-service-fixture.mjs";
 
 const SRC_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
-  "../web/assets/js/services/friends_and_posts.js",
+  "../web/assets/js/blog/services/friends_and_posts.js",
 );
 
 async function renderFriend(payload, options = {}) {
@@ -47,7 +47,7 @@ async function renderFriend(payload, options = {}) {
       wrapLazyloadImages() {},
     },
   };
-  vm.runInNewContext(readFileSync(SRC_PATH, "utf8"), sandbox, { filename: SRC_PATH });
+  mountBlogService(readFileSync(SRC_PATH, "utf8"), sandbox, { request: async () => ({ json: async () => payload }) });
   await new Promise((resolve) => setImmediate(resolve));
   return appended;
 }

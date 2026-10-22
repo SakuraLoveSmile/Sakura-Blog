@@ -1,0 +1,341 @@
+{
+  "tag": "2.0.0",
+  "commit": "9d11978a24fe6610e3a7dbab741cf62634539d05",
+  "added": [
+    {
+      "source": "source/js/navigation-init.js",
+      "target": "modules/stellar/web/assets/js/navigation-init.js",
+      "sha256": "d1e00ede1461e4f0cfbdc7edb946db7a3056d180384a65d356df467454f251bd"
+    },
+    {
+      "source": "source/js/plugins/download-file.js",
+      "target": "modules/stellar/web/assets/js/plugins/download-file.js",
+      "sha256": "2a7eb7c3676aede9c895ff2f40d742d19e9bb989165d1b0b1257f52134040cad"
+    },
+    {
+      "source": "source/js/plugins/video.js",
+      "target": "modules/stellar/web/assets/js/plugins/video.js",
+      "sha256": "3a594693ed0119bed702457f2110661481cdb956c1b81aa8a17e71d32f33920d"
+    },
+    {
+      "source": "source/js/plugins/voice.js",
+      "target": "modules/stellar/web/assets/js/plugins/voice.js",
+      "sha256": "96713dfa47e3f0f4f5ad50ab0a367739e2ddc647641fb7ac798c6b8f3a5ee834"
+    },
+    {
+      "source": "source/js/profile.js",
+      "target": "modules/stellar/web/assets/js/profile.js",
+      "sha256": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d"
+    },
+    {
+      "source": "source/js/runtime/extensions/adaptive-text.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/adaptive-text.js",
+      "sha256": "dd28bb05404912011be7f2094c1e6dca40d058c0ac117801ed28ebf9dccc9f22"
+    },
+    {
+      "source": "source/js/runtime/extensions/card-hover.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/card-hover.js",
+      "sha256": "e252a4ce9989106dd8fb673f7700465937897666d794789405f6a3adc784a650"
+    },
+    {
+      "source": "source/js/runtime/extensions/code-copy.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/code-copy.js",
+      "sha256": "41fd4e158d18f4a8e99b475878d78f549ae505cf44cbd1444892290994deabee"
+    },
+    {
+      "source": "source/js/runtime/extensions/color-scheme-switch.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/color-scheme-switch.js",
+      "sha256": "af263ec9b1187c9ca0474b0f912841085293c5a00cea7c86304f9144c52b0e07"
+    },
+    {
+      "source": "source/js/runtime/extensions/comments.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/comments.js",
+      "sha256": "85ec3ded66f570941e00eedc2963f39ee0bcac0e12fa18da3a9131bf2a89552d"
+    },
+    {
+      "source": "source/js/runtime/extensions/deferred-icons.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/deferred-icons.js",
+      "sha256": "d463a5e1405d474574859cbaa3cdf5ca298b2eeee816bb597fa66b15578a0c89"
+    },
+    {
+      "source": "source/js/runtime/extensions/diagrams.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/diagrams.js",
+      "sha256": "e73c2cb6d12d79f97c5600949f1c6eb4a65e7f43e2a8c220831e06394cfe49d2"
+    },
+    {
+      "source": "source/js/runtime/extensions/dropdown.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/dropdown.js",
+      "sha256": "8dfe42efa0c34e429f49e85d3a81728b080c62b6e19b7a1b054b81ed5e91c4cb"
+    },
+    {
+      "source": "source/js/runtime/extensions/hero-effect.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/hero-effect.js",
+      "sha256": "a810bdbb369a2f6cd3919268b45a30ac54ec5ede7dba1fc33d90738e93b1782c"
+    },
+    {
+      "source": "source/js/runtime/extensions/hero-parallax.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/hero-parallax.js",
+      "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+    },
+    {
+      "source": "source/js/runtime/extensions/heti.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/heti.js",
+      "sha256": "e16f1e8b927d8c7603299c1752b52511b535ff61ba81139204882ff93d8f9667"
+    },
+    {
+      "source": "source/js/runtime/extensions/lazy-loading.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/lazy-loading.js",
+      "sha256": "915deb0fb8a5981986bc51acaf358993586437b5529c5f28e74c04194e245489"
+    },
+    {
+      "source": "source/js/runtime/extensions/lightbox.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/lightbox.js",
+      "sha256": "f4d541764fd789efb1748a9ad20ab85a6cebd8d22f88d82671e807bd8095696b"
+    },
+    {
+      "source": "source/js/runtime/extensions/link-prefetch.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/link-prefetch.js",
+      "sha256": "2ccf8c0cb6a0e9d0126b11f5d14d6d4ae79e2e8058c3fbe6db092b5f8ff42784"
+    },
+    {
+      "source": "source/js/runtime/extensions/mathjax.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/mathjax.js",
+      "sha256": "9bfc988839c49d1e4a64f5d2d6b061b437a23440dc0b8a0559be4f9ed26b0a1d"
+    },
+    {
+      "source": "source/js/runtime/extensions/page-controls.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/page-controls.js",
+      "sha256": "f4072ae8ca059e89157ccb5109eeb3cccf32d0e2647620882707b85826e28bb1"
+    },
+    {
+      "source": "source/js/runtime/extensions/partial-navigation.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/partial-navigation.js",
+      "sha256": "cbcd24ed7514b3d1539e247b7b1c5e053838aaa3b90c1149a142f35cb6d1a103"
+    },
+    {
+      "source": "source/js/runtime/extensions/pin-slider.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/pin-slider.js",
+      "sha256": "7ee737af4b61c7172df742e1bec938f8fbbfd138ff1a80a9c25754efce77edf4"
+    },
+    {
+      "source": "source/js/runtime/extensions/reveal.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/reveal.js",
+      "sha256": "5ead7bc261be600c774a371b7769931ed7b24d7b3e246e1d5bccf78e7ed4ce0a"
+    },
+    {
+      "source": "source/js/runtime/extensions/services.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/services.js",
+      "sha256": "f129193bfaf0b8f78e412132786efbbcf947d34675a3e48d8282876f4be1052f"
+    },
+    {
+      "source": "source/js/runtime/extensions/settings.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/settings.js",
+      "sha256": "d351476459920829f607b5324489cf99f7e0caf812565271ccbf9b0e9a67eb5f"
+    },
+    {
+      "source": "source/js/runtime/extensions/swiper.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/swiper.js",
+      "sha256": "c3a2adb4ede7ff6bcaf70c2c34acda02d2755931d504b22ae9f12383fe34e704"
+    },
+    {
+      "source": "source/js/runtime/hero-effects/ferrofluid.js",
+      "target": "modules/stellar/web/assets/js/runtime/hero-effects/ferrofluid.js",
+      "sha256": "1a97faab4b1bd1daf0d62b1c6dd55ccf74c1164166d5499c720d982df15c00ea"
+    },
+    {
+      "source": "source/js/runtime/hero-effects/galaxy.js",
+      "target": "modules/stellar/web/assets/js/runtime/hero-effects/galaxy.js",
+      "sha256": "79d35596b92eb288f7c6e9601f386e819cab399956291e0e7c76a0fb2af8832a"
+    },
+    {
+      "source": "source/js/runtime/hero-effects/light-rays.js",
+      "target": "modules/stellar/web/assets/js/runtime/hero-effects/light-rays.js",
+      "sha256": "ce7f80e408cd6018f3083362dde21b796b9f9b6f002d68e81b6a3cd5cdb56f81"
+    },
+    {
+      "source": "source/js/runtime/hero-effects/strands.js",
+      "target": "modules/stellar/web/assets/js/runtime/hero-effects/strands.js",
+      "sha256": "ebcaac7672c9d5645f6b4610e7441c727ef4fad103024157c9164e069a567a0a"
+    },
+    {
+      "source": "source/js/runtime/image-color.js",
+      "target": "modules/stellar/web/assets/js/runtime/image-color.js",
+      "sha256": "cb7bbcee0d204667743a9204656f9820e33ba16dda5312882b0846e212d6af58"
+    },
+    {
+      "source": "source/js/search/algolia-search.js",
+      "target": "modules/stellar/web/assets/js/search/algolia-search.js",
+      "sha256": "f82a65e3a8be22769927699585462ed0cefd3fa08f6c4e0b030ba3cdd030c9db"
+    },
+    {
+      "source": "source/js/services/artalk_latest_comment.js",
+      "target": "modules/stellar/web/assets/js/services/artalk_latest_comment.js",
+      "sha256": "16f19270033b04deee7e162409d78737fa48bead5c851cb6d4b69f45c6084604"
+    },
+    {
+      "source": "source/js/services/giscus_latest_comment.js",
+      "target": "modules/stellar/web/assets/js/services/giscus_latest_comment.js",
+      "sha256": "265c434eced7323e0f144ca922ad40065e1fa0fbb1f0b78edfcc67fdfcddd2c3"
+    },
+    {
+      "source": "source/js/services/memos.js",
+      "target": "modules/stellar/web/assets/js/services/memos.js",
+      "sha256": "9372ccbe8bafa6d54bf99e3e698b71a5bd5352c14c0a58d3e3cd830712ac2b5f"
+    },
+    {
+      "source": "source/js/services/rss.js",
+      "target": "modules/stellar/web/assets/js/services/rss.js",
+      "sha256": "520495fd38d1a7ab6521f13a6931af8c59bf757a8e155c3ed9e478a7983900bf"
+    },
+    {
+      "source": "source/js/services/twikoo_latest_comment.js",
+      "target": "modules/stellar/web/assets/js/services/twikoo_latest_comment.js",
+      "sha256": "41f4aff422711407632feae21dd8f092a021362e1459b6b6a30d2bacc581508b"
+    },
+    {
+      "source": "source/js/services/waline_latest_comment.js",
+      "target": "modules/stellar/web/assets/js/services/waline_latest_comment.js",
+      "sha256": "9528cdafdac9fb9faa1c6fc00b49b07dca7761258f5faa2d7b968b3cb9a5de5f"
+    },
+    {
+      "source": "source/js/services/weibo.js",
+      "target": "modules/stellar/web/assets/js/services/weibo.js",
+      "sha256": "c4a8c7649e4b4c85d325d733ceb5eb1bfd6369cb87174d98f89123143df9f520"
+    },
+    {
+      "source": "source/js/tagtree.js",
+      "target": "modules/stellar/web/assets/js/tagtree.js",
+      "sha256": "de2da4a4fe046ddb4363bb5e29c0fb3e951c2a51b53aa44c60b9e85a7616641b"
+    },
+    {
+      "source": "source/js/utils.js",
+      "target": "modules/stellar/web/assets/js/utils.js",
+      "sha256": "d990afb2fa48ad5fee69d01615cded392ec676004c9cc694cc335da9f63ae142"
+    }
+  ],
+  "identical": [
+    {
+      "source": "source/js/runtime/asset-loader.js",
+      "target": "modules/stellar/web/assets/js/runtime/asset-loader.js",
+      "sha256": "d8f9625d7f4c67e625ed3af536ce474eeee9c185df81538f5b4a533de3985763"
+    },
+    {
+      "source": "source/js/runtime/extension-registry.js",
+      "target": "modules/stellar/web/assets/js/runtime/extension-registry.js",
+      "sha256": "81e17082d343b1a76e6e1b242da892ac9402c35568981e7eb08cd35311b64ebd"
+    },
+    {
+      "source": "source/js/runtime/legacy-request-adapter.js",
+      "target": "modules/stellar/web/assets/js/runtime/legacy-request-adapter.js",
+      "sha256": "3d3122e0dfbae142fb1d63943dc60e8f8dbfa8c938003d14769de06657d1fa42"
+    },
+    {
+      "source": "source/js/runtime/request-cache.js",
+      "target": "modules/stellar/web/assets/js/runtime/request-cache.js",
+      "sha256": "029f9237efbc6ec8daf8556ca4507ae9e5241abd96f06e8f2b62f60fad71f177"
+    }
+  ],
+  "existing_conflicts": [
+    {
+      "source": "source/js/color.js",
+      "target": "modules/stellar/web/assets/js/color.js",
+      "sha256": "383ae836af90ed82e08eddafe6c9e84ce8748ea38d2c1bd92dd238ace2e7b387"
+    },
+    {
+      "source": "source/js/main.js",
+      "target": "modules/stellar/web/assets/js/main.js",
+      "sha256": "3bff0f64871f1ba487ad25097731a4d0471f4727b4af380cadc55e0796f19b3b"
+    },
+    {
+      "source": "source/js/plugins/adaptive-text.js",
+      "target": "modules/stellar/web/assets/js/plugins/adaptive-text.js",
+      "sha256": "88aff6e10be739870de215591ceef942ecfd407968ed2e038f94ed7d6e2f9f8e"
+    },
+    {
+      "source": "source/js/plugins/card-hover.js",
+      "target": "modules/stellar/web/assets/js/plugins/card-hover.js",
+      "sha256": "385776bc15cb2b4779df5f19549b4d1bb9ad7e002b90fa4e6428ed04c9d540f4"
+    },
+    {
+      "source": "source/js/plugins/copycode.js",
+      "target": "modules/stellar/web/assets/js/plugins/copycode.js",
+      "sha256": "2f422d920280c1ba8cd4f9ede529191ec0b38d3b9136d2b1ef32a32690167fcc"
+    },
+    {
+      "source": "source/js/runtime/extensions/search.js",
+      "target": "modules/stellar/web/assets/js/runtime/extensions/search.js",
+      "sha256": "565ba3a10f038790a299f493d621917ebae5d44db76e52448fcb163f4cc21f59"
+    },
+    {
+      "source": "source/js/runtime/index.js",
+      "target": "modules/stellar/web/assets/js/runtime/index.js",
+      "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+    },
+    {
+      "source": "source/js/search/highlight.js",
+      "target": "modules/stellar/web/assets/js/search/highlight.js",
+      "sha256": "dd6b3a1bf7d332fe2b68b32adaa370924117b172a6066f649efb16e44ab50cb2"
+    },
+    {
+      "source": "source/js/search/local-search.js",
+      "target": "modules/stellar/web/assets/js/search/local-search.js",
+      "sha256": "a52d7ab7872ae69edda024663d56d1a41b1b8ce674a84f60b49ffdc287f6f92e"
+    },
+    {
+      "source": "source/js/search/shortcut.js",
+      "target": "modules/stellar/web/assets/js/search/shortcut.js",
+      "sha256": "af582e22f51760c8ae5242d3112096576a9069f7d6dcdeed2498b1adcdee1cfb"
+    },
+    {
+      "source": "source/js/services/contributors.js",
+      "target": "modules/stellar/web/assets/js/services/contributors.js",
+      "sha256": "14d7f57b933a0bd67cb9fd3d5235d3cf1bb4006c5bd7a7d68f181d89eaa95138"
+    },
+    {
+      "source": "source/js/services/friends.js",
+      "target": "modules/stellar/web/assets/js/services/friends.js",
+      "sha256": "c4ddef94cd0ea6f13a10e3e809c9d7796b54640c4d32637f5912ea5faa73daa3"
+    },
+    {
+      "source": "source/js/services/friends_and_posts.js",
+      "target": "modules/stellar/web/assets/js/services/friends_and_posts.js",
+      "sha256": "89044ba30fdffe7f84501b6635033630ae393c2c7e494c367a8de9a9bcbc6f30"
+    },
+    {
+      "source": "source/js/services/ghinfo.js",
+      "target": "modules/stellar/web/assets/js/services/ghinfo.js",
+      "sha256": "e6ecdf2cfc8d0388d26110b43fe6fd6ccacead1add1bebfe23de0e8b6ae3a0fe"
+    },
+    {
+      "source": "source/js/services/mdrender.js",
+      "target": "modules/stellar/web/assets/js/services/mdrender.js",
+      "sha256": "52fd4f444ce318c5d91e5d53e9b57e360228c8d3cdf8a749b1de82d6b7342712"
+    },
+    {
+      "source": "source/js/services/rating.js",
+      "target": "modules/stellar/web/assets/js/services/rating.js",
+      "sha256": "1d9482dcf7e90a6acc8c294d727a8905e26f2e6c39ce3b360b5f369a82a1c823"
+    },
+    {
+      "source": "source/js/services/siteinfo.js",
+      "target": "modules/stellar/web/assets/js/services/siteinfo.js",
+      "sha256": "1d5e0d7bcaf6529d48fa51070a3bbcdbe37d13dbab0fa911d25a5a68ea869f21"
+    },
+    {
+      "source": "source/js/services/sites.js",
+      "target": "modules/stellar/web/assets/js/services/sites.js",
+      "sha256": "2f2417bcf981faca7721fbe2fb003e04e87982882c3a2f02f34742ba632ced94"
+    },
+    {
+      "source": "source/js/services/timeline.js",
+      "target": "modules/stellar/web/assets/js/services/timeline.js",
+      "sha256": "7aa2847bd7d41ea36cbe0cb1301bff1dacccb0f85971c5667a79ddb50563ede0"
+    },
+    {
+      "source": "source/js/services/vote.js",
+      "target": "modules/stellar/web/assets/js/services/vote.js",
+      "sha256": "0029bf3f38a91c2c6f89245e2332d88f8c16e60c689b135fb717110bb7b6fb08"
+    }
+  ],
+  "integration": "New files transferred only; manifest and local lifecycle not yet adapted."
+}

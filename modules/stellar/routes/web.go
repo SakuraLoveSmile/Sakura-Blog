@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"blog/internal/settings"
 	"log"
 	"net"
 	"net/http"
@@ -58,8 +59,9 @@ type webServer struct {
 	// dev 模式同样启动时读——改 sw.js 需重启服务生效）
 	swTemplate []byte
 	st         *store.Store
+	icons      *tmpl.IconRegistry
 	posts      *post.Service
-	engine     *stellarweb.Engine
+	engine     PageRenderer
 	searchIdx  *search.Index // 可空：FTS 建索引失败时降级
 	ogGen      *og.Generator
 	momentH    *MomentHandler // /notes 页近期动态，Stellar 装配 moment 后设置
@@ -92,10 +94,11 @@ func loadSWTemplate(devMode bool, root string) []byte {
 
 // webDeps webServer 构造依赖（均为必填，momentH 除外——moment 装配依赖 webServer 的 fill 函数，装配后回填）。
 type webDeps struct {
+	Icons     *tmpl.IconRegistry
 	Site      *atomic.Pointer[tmpl.Site]
 	Store     *store.Store
 	Posts     *post.Service
-	Engine    *stellarweb.Engine
+	Engine    PageRenderer
 	SearchIdx *search.Index
 	OGGen     *og.Generator
 	DevMode   bool
@@ -106,8 +109,12 @@ type webDeps struct {
 
 // newWebServer 构造前台装配载体。
 func newWebServer(d webDeps) *webServer {
+	if d.Icons == nil {
+		d.Icons, _ = settings.LoadIconsEmbed()
+	}
 	return &webServer{
 		site:         d.Site,
+		icons:        d.Icons,
 		st:           d.Store,
 		posts:        d.Posts,
 		engine:       d.Engine,
@@ -150,7 +157,11 @@ func (s *webServer) canonicalBaseURL(data *tmpl.ViewData, c *gin.Context) string
 func canonicalBaseURL(site *tmpl.Site, c *gin.Context) string {
 	original := ""
 	if site != nil {
-		original = canonicalHost(site.SEO.Canonical.OriginalHost)
+		if site.StellarV2 != nil {
+			original = canonicalHost(stellarString(stellarGet(site.StellarV2.Theme, "canonical.host")))
+		} else {
+			original = canonicalHost(site.SEO.Canonical.OriginalHost)
+		}
 	}
 	if original == "" {
 		if site != nil && site.URL != "" {
@@ -494,11 +505,6 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 	}
 }
 
-// tocOptions library toc 参数 → TOC 生成选项（Spec 33 参数补齐：list_number/min_depth/max_depth）。
-func (s *webServer) tocOptions() stellarweb.TOCOptions {
-	return s.tocOptionsFrom(s.site.Load())
-}
-
 // tocOptionsFrom 使用指定站点配置读取 toc 参数，设置页预览可据此联动草稿。
 func (s *webServer) tocOptionsFrom(site *tmpl.Site) stellarweb.TOCOptions {
 	def := site.Widgets.Lookup("toc")
@@ -574,98 +580,30 @@ func toString(v any) string {
 	return s
 }
 
-// fillComments 文章页评论区 SSR 注入（评论树 + 计数）。查询失败留空，评论区降级为空列表。
-// CommentPageKey 统一在此设置（模板 data-page-key 优先用它，文章页兜底 /post/{slug}）。
-func (s *webServer) fillComments(data *tmpl.ViewData, pageKey string) {
-	data.CommentPageKey = pageKey
-	if !s.site.Load().Comments.Enabled {
-		return
-	}
-	if list, err := s.st.ListCommentsByPage(pageKey); err == nil {
-		boosts, _ := s.st.ListBoostsByPage(pageKey)
-		data.Comments = comments.ToViewItemsWithOptions(list, &s.site.Load().Comments, comments.BoostViewOptions{Boosts: boosts})
-		// Spec 62：ListCommentsByPage 返回全量，计数直接 len 派生，省一次 COUNT 查询。
-		data.CommentCount = len(list)
-	} else {
-		// 列表查询失败时单独尝试计数（仍失败则留 0，评论区降级为空）
-		if n, err := s.st.CountCommentsByPage(pageKey); err == nil {
-			data.CommentCount = n
-		}
-	}
-}
-
 // render404 渲染自定义 404 页（HTTP 404 + base 布局 Layout=404），NoRoute 与各路由未命中共用。
 func (s *webServer) render404(c *gin.Context) {
-	data := &tmpl.ViewData{
-		Site: s.site.Load(),
-		Page: &tmpl.Page{Title: "页面不存在", Layout: "404", Lang: "zh-CN"},
-	}
-	s.fillSidebar(data)
-	html, err := s.engine.Render("layout/base", data)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Internal Server Error")
-		return
-	}
-	c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
+	s.renderStellarErrorPage(c, http.StatusNotFound, "页面不存在", "404")
 }
-
-// render500 渲染自定义 500 页（P1-8），不暴露内部错误细节。
 func (s *webServer) render500(c *gin.Context) {
-	data := &tmpl.ViewData{
-		Site: s.site.Load(),
-		Page: &tmpl.Page{Title: "服务器错误", Layout: "500", Lang: "zh-CN"},
+	s.renderStellarErrorPage(c, http.StatusInternalServerError, "服务器错误", "500")
+}
+func (s *webServer) renderStellarErrorPage(c *gin.Context, status int, title, layout string) {
+	if s.site == nil || s.site.Load() == nil || s.site.Load().StellarV2 == nil || s.engine == nil {
+		c.String(status, title)
+		return
 	}
-	s.fillSidebar(data)
+	in, err := stellarSiteInput(s.site.Load())
+	if err != nil {
+		c.String(status, title)
+		return
+	}
+	data := s.stellarAggregate(&stellarSnapshot{site: s.site.Load(), input: in}, "error", title, c.Request.URL.Path, layout)
 	html, err := s.engine.Render("layout/base", data)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Internal Server Error")
+		c.String(status, title)
 		return
 	}
-	c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(html))
-}
-
-// renderBase 渲染 base 布局并写响应（归档/分类/标签页等共用）。
-func (s *webServer) renderBase(c *gin.Context, data *tmpl.ViewData) {
-	s.fillPinSlider(data)
-	s.fillSidebar(data)
-	s.fillSEO(data, c)
-	html, err := s.engine.Render("layout/base", data)
-	if err != nil {
-		log.Printf("render: %v", err)
-		s.render500(c)
-		return
-	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
-}
-
-// fillPinSlider 装配 1.40 置顶轮播数据。文章列表的 flat 模式由数据库 pinned 排序承担，
-// carousel 模式则在列表前抽出置顶项，避免卡片重复出现。
-func (s *webServer) fillPinSlider(data *tmpl.ViewData) {
-	if data == nil || data.Page == nil || data.Site == nil || data.Site.Article.EffectivePinStyle() == "flat" {
-		return
-	}
-	if data.Page.Layout == "index" && data.Paginator != nil && data.Paginator.Current > 1 {
-		return
-	}
-	data.PinSliderActive = pinSliderReplacesPosts(data)
-	switch data.Page.Layout {
-	case "index", "archive", "categories", "tags", "topics":
-		posts, err := s.st.ListPublished()
-		if err != nil {
-			return
-		}
-		for _, p := range posts {
-			if p.Pinned {
-				data.PinnedPosts = append(data.PinnedPosts, s.toCardWith(data.Site, p))
-			}
-		}
-	case "wiki":
-		for _, project := range s.wikiProjectsForRuntime() {
-			if project.Pin {
-				data.PinnedWiki = append(data.PinnedWiki, project)
-			}
-		}
-	}
+	c.Data(status, "text/html; charset=utf-8", []byte(html))
 }
 
 func pinSliderReplacesPosts(data *tmpl.ViewData) bool {
@@ -702,22 +640,4 @@ func (s *webServer) toCardWith(site *tmpl.Site, p *store.Post) *tmpl.PostCard {
 		card.Poster = &tmpl.PosterCard{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
 	}
 	return card
-}
-
-// toCards store.Post 列表转首页卡片视图模型。
-func (s *webServer) toCards(posts []*store.Post) []*tmpl.PostCard {
-	cards := make([]*tmpl.PostCard, 0, len(posts))
-	for _, p := range posts {
-		cards = append(cards, s.toCard(p))
-	}
-	return cards
-}
-
-// toCardsWith 同 toCards，站点配置参数化（预览用）。
-func (s *webServer) toCardsWith(site *tmpl.Site, posts []*store.Post) []*tmpl.PostCard {
-	cards := make([]*tmpl.PostCard, 0, len(posts))
-	for _, p := range posts {
-		cards = append(cards, s.toCardWith(site, p))
-	}
-	return cards
 }

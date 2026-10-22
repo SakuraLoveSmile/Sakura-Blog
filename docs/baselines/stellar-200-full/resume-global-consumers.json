@@ -1,0 +1,137 @@
+{
+  "built_head": "fba9255",
+  "home": {
+    "nav": [
+      {
+        "active": false,
+        "title": "验收导航",
+        "url": "/blog/"
+      },
+      {
+        "active": false,
+        "title": "关于验收",
+        "url": "/about/"
+      }
+    ],
+    "poster": "独立 Blog 海报走向星空headline · topic · caption · color",
+    "url": "http://127.0.0.1:8103/",
+    "widgets": "欢迎实测\n公开欢迎语 · 浏览器实测\n公开欢迎链接"
+  },
+  "post": {
+    "ai": "已 AI 审核",
+    "authorWidget": "本文目录\n第一节\n第二节\n回到顶部\n参与讨论",
+    "edit": "https://github.com/test/repo/blob/main/content/technical.md",
+    "expired": null,
+    "ratio": "2.75",
+    "readNext": false,
+    "url": "http://127.0.0.1:8103/post/technical"
+  },
+  "seo": [
+    {
+      "name": "description",
+      "value": "全局 SEO 描述 · 实测"
+    },
+    {
+      "name": "keywords",
+      "value": "stellar, browser"
+    },
+    {
+      "name": "robots",
+      "value": "noindex"
+    },
+    {
+      "name": "google-site-verification",
+      "value": "synthetic-google"
+    },
+    {
+      "name": "msvalidate.01",
+      "value": "synthetic-bing"
+    },
+    {
+      "name": "baidu-site-verification",
+      "value": "synthetic-baidu"
+    },
+    {
+      "name": "og:description",
+      "value": "全局 SEO 描述 · 实测"
+    },
+    {
+      "name": "twitter:description",
+      "value": "全局 SEO 描述 · 实测"
+    }
+  ],
+  "notebook": {
+    "body": true,
+    "license": "许可协议\n\n笔记专属许可 · 浏览器实测",
+    "share": false,
+    "url": "http://127.0.0.1:8103/journal/beta"
+  },
+  "authorWidget": {
+    "authors": [
+      {
+        "text": "公开欢迎链接",
+        "url": "/about/"
+      },
+      {
+        "text": "所有文章",
+        "url": "/author/admin"
+      },
+      {
+        "text": "第一节",
+        "url": "#heading"
+      },
+      {
+        "text": "第二节",
+        "url": "#heading-1"
+      },
+      {
+        "text": "回到顶部",
+        "url": null
+      },
+      {
+        "text": "参与讨论",
+        "url": "#blog-comments"
+      }
+    ],
+    "url": "http://127.0.0.1:8103/post/poster",
+    "widgets": "欢迎实测\n公开欢迎语 · 浏览器实测\n公开欢迎链接\n\n验收管理员\n\n虚构作者\n\n所有文章\n本文目录\n第一节\n第二节\n回到顶部\n参与讨论"
+  },
+  "welcomeExplicitEmpty": [
+    {
+      "value": "",
+      "widget": "欢迎实测\n公开欢迎链接"
+    },
+    {
+      "value": null,
+      "widget": "欢迎实测\n公开欢迎链接"
+    },
+    {
+      "value": false,
+      "widget": "欢迎实测\n公开欢迎链接"
+    }
+  ],
+  "expiry": {
+    "bannerRatio": "2.75",
+    "edit": "https://github.com/test/repo/blob/main/content/technical.md",
+    "expired": "本文最后更新于 650 天前，其中的信息可能已经过时，请谨慎参考。",
+    "url": "http://127.0.0.1:8103/post/technical"
+  },
+  "category": [
+    {
+      "icon": "/uploads/decoder-local.svg",
+      "name": "技术(3)"
+    },
+    {
+      "name": "Go(3)"
+    }
+  ],
+  "tags": [
+    {
+      "icon": "/uploads/decoder-local.svg",
+      "name": "Go"
+    },
+    {
+      "name": "Stellar"
+    }
+  ]
+}

@@ -7,17 +7,33 @@
 
 /* 左栏 footer 允许站点配置直接提供外部 <img> 图标；统一限制到 social 按钮的图标盒，
    避免 SVG 自身的 128/512px intrinsic size 撑开横向布局。 */
-.l_left footer.footer .social-wrap .social > img {
+.site-region--leftbar footer.footer .social-wrap .social > img {
   display: block;
   width: 24px;
   height: 24px;
   object-fit: contain;
 }
 
-/* Spec 32 banner_ratio：main.css 编译期固定 aspect-ratio: 2.5，
-   模板在 .article.banner 上注入 --banner-ratio（site.yml article.banner_ratio）时覆盖。 */
-.article.banner .bg + .content {
+/* 背景头图保留配置比例；文字换行超过比例高度时，让同格内容自然撑开头部。 */
+.article.banner:has(> img.bg) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+.article.banner:has(> img.bg)::before {
+  content: "";
+  grid-area: 1 / 1;
+  width: 100%;
   aspect-ratio: var(--banner-ratio, 2.5);
+  align-self: start;
+  pointer-events: none;
+}
+.article.banner > img.bg + .content {
+  grid-area: 1 / 1;
+  aspect-ratio: auto;
+  height: auto;
+  min-height: 0;
+  align-self: stretch;
 }
 
 /* 打赏：正文结尾居中（模板 .reward-wrap，位于 .article-footer 之外） */
@@ -122,4 +138,36 @@
   .reward-wrap .reward-item {
     transition: none;
   }
+}
+
+/* 既有品牌副标题与头像动画配置，映射到 2.0 品牌结构。 */
+.brand-tagline__hover { display: none; }
+.brand-title:hover .brand-tagline__normal { display: none; }
+.brand-title:hover .brand-tagline__hover { display: inline; }
+.brand-image--animated .bg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  pointer-events: none;
+}
+.brand-image--animated img {
+  position: relative;
+  box-sizing: border-box;
+  padding: 2px;
+}
+.brand-image--animated:hover .bg {
+  opacity: 1;
+  animation: spin 4s linear infinite;
+}
+.article-share .body > .link {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-image--animated .bg { animation: none !important; }
 }

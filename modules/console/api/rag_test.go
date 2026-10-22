@@ -54,8 +54,9 @@ func TestRAGPublicGateQuestionLimitAndBYOKPolicy(t *testing.T) {
 	if err := st.EnsureSettingsTable(); err != nil {
 		t.Fatal(err)
 	}
-	config.InvalidateLoadAI()
-	t.Cleanup(config.InvalidateLoadAI)
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{}); err != nil {
+		t.Fatal(err)
+	}
 	service, err := rag.New(st, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +71,10 @@ func TestRAGPublicGateQuestionLimitAndBYOKPolicy(t *testing.T) {
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("QA disabled code = %d body=%s", response.Code, response.Body.String())
 	}
-	if err := st.PutSetting(config.SectionAI, `{"qa_enabled":true,"qa_allow_user_llm":false}`); err != nil {
+	if err := func() error {
+		_, err := config.SaveStellarV2(st, map[string]any{}, map[string]any{"ai": map[string]any{"ask": map[string]any{"enabled": true, "allow_user_llm": false}}})
+		return err
+	}(); err != nil {
 		t.Fatal(err)
 	}
 	config.InvalidateLoadAI()

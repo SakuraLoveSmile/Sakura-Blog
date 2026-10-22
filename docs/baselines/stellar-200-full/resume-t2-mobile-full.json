@@ -1,0 +1,95 @@
+{
+  "fixture_only": true,
+  "source_commit": "cd3d7e65",
+  "viewport_method": "CDP Emulation.setDeviceMetricsOverride: width390 height844 deviceScaleFactor1 mobile=true; Page.captureScreenshot PNG clip390x844",
+  "cases": [
+    {
+      "id": "mobile-card",
+      "front": {
+        "brandClass": "brand-header brand-header--regular brand-header--site",
+        "docWidth": 390,
+        "innerHeight": 844,
+        "innerWidth": 390,
+        "leftbar": {
+          "bottom": 780,
+          "height": 764,
+          "left": 16,
+          "right": 304,
+          "top": 16,
+          "width": 288,
+          "x": 16,
+          "y": 16
+        }
+      },
+      "screenshot": "after-resume-mobile-card-full.png"
+    },
+    {
+      "id": "mobile-glass",
+      "front": {
+        "brandClass": "brand-header brand-header--regular brand-header--site",
+        "docWidth": 390,
+        "innerHeight": 844,
+        "innerWidth": 390,
+        "leftbar": {
+          "bottom": 780,
+          "height": 764,
+          "left": 16,
+          "right": 304,
+          "top": 16,
+          "width": 288,
+          "x": 16,
+          "y": 16
+        },
+        "mainAriaHidden": "true",
+        "mainInert": true
+      },
+      "screenshot": "after-resume-mobile-glass-full.png"
+    },
+    {
+      "id": "mobile-minimal",
+      "front": {
+        "brandClass": "brand-header brand-header--regular brand-header--site",
+        "docWidth": 390,
+        "innerHeight": 844,
+        "innerWidth": 390,
+        "leftbar": {
+          "bottom": 780,
+          "height": 764,
+          "left": 16,
+          "right": 304,
+          "top": 16,
+          "width": 288,
+          "x": 16,
+          "y": 16
+        },
+        "mainAriaHidden": "true",
+        "mainInert": true
+      },
+      "screenshot": "after-resume-mobile-minimal-full.png"
+    },
+    {
+      "id": "mobile-flat",
+      "front": {
+        "brandClass": "brand-header brand-header--regular brand-header--site",
+        "docWidth": 390,
+        "innerHeight": 844,
+        "innerWidth": 390,
+        "leftbar": {
+          "bottom": 780,
+          "height": 764,
+          "left": 16,
+          "right": 304,
+          "top": 16,
+          "width": 288,
+          "x": 16,
+          "y": 16
+        },
+        "mainAriaHidden": "true",
+        "mainInert": true
+      },
+      "screenshot": "after-resume-mobile-flat-full.png"
+    }
+  ],
+  "attempt_boundary": "browser viewport capability reported success but innerWidth stayed1280; that attempt is not mobile evidence",
+  "limits": "card initial inert property was unavailable in read-only scope; three later cases checked inert attribute. Brand explicitly regular; automatic compact is not established."
+}

@@ -1,0 +1,20 @@
+{
+  "url": "http://127.0.0.1:8103/wiki/video/intro#blog-comments",
+  "modalOwned": true,
+  "modalOpen": true,
+  "loginFormVisible": true,
+  "modalCount": 1,
+  "navigationResponses": [
+    {
+      "type": "Document",
+      "status": 200,
+      "path": "/wiki/ferrofluid/second"
+    },
+    {
+      "type": "Document",
+      "status": 200,
+      "path": "/wiki/video/intro"
+    }
+  ],
+  "userOriginalPageUntouched": true
+}

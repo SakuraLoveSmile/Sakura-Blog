@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { collectionFields } from "@/components/editor/stellar-form-fields";
+import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { topicApi, type TopicItem } from "@/api";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import IconPicker from "@/components/IconPicker.vue";
 import { Dialog, Toast, VButton, VCard, VEmpty, VLoading, VModal, VPageHeader } from "@/components/ui";
@@ -20,7 +23,10 @@ const viewMode = ref<"grid" | "table">("grid");
 const sortBy = ref<"sort" | "post_count">("sort");
 const sortOrder = ref<"desc" | "asc">("desc");
 
-const form = reactive({
+const form = ref({
+  stellar_version: 2,
+  stellar_config: "{}",
+  blog_extensions: "{}",
   name: "",
   slug: "",
   description: "",
@@ -29,6 +35,7 @@ const form = reactive({
   sort: 0,
 });
 
+const stellarFormError = useStellarForm(() => form.value, collectionFields);
 // ---------- 统计数据 ----------
 const stats = computed(() => {
   const all = topics.value;
@@ -79,12 +86,17 @@ function toggleSort(by: "sort" | "post_count") {
 
 function resetForm(topic?: TopicItem) {
   editingId.value = topic?.id ?? null;
-  form.name = topic?.name ?? "";
-  form.slug = topic?.slug ?? "";
-  form.description = topic?.description ?? "";
-  form.icon = topic?.icon ?? "";
-  form.cover = topic?.cover ?? "";
-  form.sort = topic?.sort ?? 0;
+  form.value = {
+    stellar_version: topic?.stellar_version ?? 2,
+    stellar_config: topic?.stellar_config || "{}",
+    blog_extensions: topic?.blog_extensions || "{}",
+    name: topic?.name ?? "",
+    slug: topic?.slug ?? "",
+    description: topic?.description ?? "",
+    icon: topic?.icon ?? "",
+    cover: topic?.cover ?? "",
+    sort: topic?.sort ?? 0,
+  };
 }
 
 function openCreate() {
@@ -111,19 +123,22 @@ async function load() {
 }
 
 async function save() {
-  const name = form.name.trim();
+  const name = form.value.name.trim();
   if (!name) {
     Toast.warning("请输入专栏名称");
     return;
   }
   saving.value = true;
   const payload = {
+    stellar_version: form.value.stellar_version,
+    stellar_config: form.value.stellar_config,
+    blog_extensions: form.value.blog_extensions,
     name,
-    slug: form.slug.trim(),
-    description: form.description.trim(),
-    icon: form.icon.trim(),
-    cover: form.cover.trim(),
-    sort: Number.isFinite(form.sort) ? form.sort : 0,
+    slug: form.value.slug.trim(),
+    description: form.value.description.trim(),
+    icon: form.value.icon.trim(),
+    cover: form.value.cover.trim(),
+    sort: Number.isFinite(form.value.sort) ? form.value.sort : 0,
   };
   try {
     if (editingId.value == null) {
@@ -228,7 +243,7 @@ onMounted(load);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
+            <div class="stats-icon text-primary bg-primary/10">
               <Icon icon="ri:image-line" />
             </div>
             <div>
@@ -307,7 +322,7 @@ onMounted(load);
           <div
             v-for="topic in filteredTopics"
             :key="topic.id"
-            class="topic-hero-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-1 hover:border-border-strong hover:shadow-lg"
+            class="topic-hero-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-150 hover:border-border-strong hover:shadow-lg"
           >
             <!-- 卡片海报封面区 -->
             <div class="relative aspect-video w-full overflow-hidden bg-secondary">
@@ -326,13 +341,10 @@ onMounted(load);
 
               <!-- 顶部浮层：文章数 Badge + 排序值 -->
               <div class="absolute inset-x-3 top-3 flex items-center justify-between">
-                <span class="rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
+                <span class="rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white">
                   {{ topic.post_count }} 篇收录
                 </span>
-                <span
-                  v-if="topic.sort"
-                  class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-white/80 backdrop-blur-md"
-                >
+                <span v-if="topic.sort" class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-white/80">
                   权重 {{ topic.sort }}
                 </span>
               </div>
@@ -385,7 +397,7 @@ onMounted(load);
           <div class="overflow-x-auto">
             <table class="w-full min-w-[800px] text-left">
               <thead>
-                <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                   <th class="w-20 px-4 py-3">封面</th>
                   <th class="px-4 py-3">专栏名称</th>
                   <th class="px-4 py-3">Slug 路径</th>
@@ -464,6 +476,7 @@ onMounted(load);
           <div>
             <label class="mb-1.5 block text-xs font-medium text-text-tertiary">Slug 路径（可选）</label>
             <input v-model="form.slug" class="apple-input font-mono text-xs" placeholder="留空按名称自动生成" />
+            <p class="apple-form-hint">已有文章或未发布草稿归属时不能修改 ID；请先解除所有归属。</p>
           </div>
 
           <div>
@@ -491,6 +504,14 @@ onMounted(load);
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">专栏封面海报</label>
           <AttachmentField v-model="form.cover" placeholder="输入图片 URL 或从附件库选择" show-thumb />
         </div>
+        <StellarContentConfig
+          :sync-error="stellarFormError"
+          v-model:config="form.stellar_config"
+          v-model:blog="form.blog_extensions"
+          :version="form.stellar_version"
+          profile="topic"
+          collection
+        />
       </form>
 
       <template #footer>
@@ -524,7 +545,7 @@ onMounted(load);
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -541,7 +562,6 @@ onMounted(load);
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {
@@ -571,7 +591,10 @@ onMounted(load);
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .apple-sort-btn:hover {
@@ -590,7 +613,10 @@ onMounted(load);
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover:not(:disabled) {

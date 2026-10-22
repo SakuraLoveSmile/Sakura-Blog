@@ -9,6 +9,7 @@ const route = useRoute();
 const auth = useUCAuthStore();
 const username = ref("");
 const password = ref("");
+const code = ref("");
 const error = ref("");
 const loading = ref(false);
 
@@ -16,7 +17,7 @@ async function submit() {
   error.value = "";
   loading.value = true;
   try {
-    const user = await auth.login(username.value, password.value);
+    const user = await auth.login(username.value, password.value, code.value.trim() || undefined);
     await router.replace(user.role === "reader" ? "/upgrade" : String(route.query.from || "/posts"));
   } catch (err) {
     error.value = err instanceof Error ? err.message : "登录失败";
@@ -35,7 +36,7 @@ async function submit() {
         >
           <Icon icon="ri:user-3-line" class="h-7 w-7" />
         </div>
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">User Center</p>
+        <p class="mb-2 text-xs font-medium text-text-tertiary">用户中心</p>
         <h1 class="text-3xl font-semibold tracking-tight">欢迎回来</h1>
         <p class="mt-2 text-sm text-text-tertiary">登录后管理你的文章与附件。</p>
       </div>
@@ -50,6 +51,15 @@ async function submit() {
           type="password"
           autocomplete="current-password"
           required
+        />
+        <label class="uc-label mt-4" for="uc-login-code">两步验证码或恢复码（已开启时填写）</label>
+        <input
+          id="uc-login-code"
+          v-model="code"
+          class="uc-input"
+          pattern="[0-9]{6}|[A-Za-z0-9]{8}"
+          maxlength="8"
+          autocomplete="one-time-code"
         />
         <p
           v-if="error"
@@ -86,7 +96,6 @@ async function submit() {
 }
 .uc-input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 .uc-primary-button {
   min-height: 44px;

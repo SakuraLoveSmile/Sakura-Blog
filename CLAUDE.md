@@ -23,7 +23,7 @@
 
 ### 构建入口
 
-- `make test`：完整本地门禁。它会为 `go:embed` 写最小 `dist` 占位，运行 Console 类型/行为测试、Stellar 资源测试、部署/发布来源/模块检查，以及 Go vet、Staticcheck、全部 Go 测试。
+- `make test`：完整本地门禁。它会为 `go:embed` 写最小 `dist` 与 `dist-uc` 占位（后者供 `cmd/blog` 的 `TestStellarMigrationActualBinary` 挂载 `/uc/`），运行 Console 类型/行为测试、Stellar 资源测试、部署/发布来源/模块检查，以及 Go vet、Staticcheck、全部 Go 测试。
 - `make build`：真实构建 Console（包含 `/console/` 与 `/uc/` 产物）后再编译 Go 二进制。只要涉及 SPA 交付、embed 或发布，不能用 `make test` 代替它。
 - `make dev`：根据 Console 输入指纹按需重建前端，随后以 `-dev` 启动服务；`make run` 是 embed 模式。
 - `pnpm run e2e`：Playwright 关键路径验收。配置会重建 Console、用独立数据库启动 `-dev` 服务并使用 8096；在需要页面交互证据时运行相关用例。
@@ -33,7 +33,7 @@ Go 版本由根 `go.mod` 决定，pnpm 版本由根 `package.json` 的 `packageM
 ### 发布流水线
 
 - `.github/workflows/release.yml`：tag 推送时构建 `blog-linux-amd64`，Release 发布到公开仓库 `SakuraLoveSmile/Sakura-Blog-Release`（跨仓库需 `RELEASE_REPO_PAT` secret）；`update.sh`/`update-docker.sh` 与该仓库的 `BLOG_REPO`/`update_repo` 默认值保持同一目标。
-- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态。
+- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，镜像标签不带 `v`（`1.7.4`、`1.7`、`1`）。`latest` 只由 tag 推送更新，`workflow_dispatch` 不会改写它。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态。`ci.yml` 的 `image` 作业在晋级 `release` 的 PR 上预构建 Dockerfile（不推送）。发布步骤见 AGENTS.md「发布 release」。
 - v1.7.3 起 Console 只保留「检查更新」（`GET /system/update/check`），一键更新执行链（`internal/updaterunner`、apply/status 端点、systemd path/timer watcher）已移除；升级一律在宿主手动执行 `update.sh`/`update-docker.sh` 或 `docker compose pull`。
 
 ### `go:embed` 与前端重建
@@ -75,25 +75,25 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 
 ### CSS 与共享主题源
 
-`modules/stellar/web/assets/css/main.css` 是从本地、被 gitignore 的 `resource/hexo-theme-stellar` 编译得到的生成物。它不应手改；调整 Stylus 配置、上游同步或主题源后使用 `make css`，再用 `make css-drift-check` 验证。
+`modules/stellar/web/assets/css/main*.css`、`comments/*.css` 和 `plugins/*.css` 是从 `upstream.json` 锁定的 Stellar 2.0.0 commit 编译得到的生成物，不应手改。`resource/hexo-theme-stellar` 是被 gitignore 的本地输入仓库；编译通过 `git archive` 读取锁定对象，不消费共享工作树改动。使用 `make css` 重建，再用 `make css-drift-check` 在临时目录重新编译全部生成 CSS 并逐份比较；漂移检查失败不会覆盖真实产物。
 
-`resource/` 跨 sibling worktree 共用，可能处于 detached HEAD 或带本地补丁。每次编译前先执行 `git -C resource/hexo-theme-stellar status --short --branch`，确认正在消费的版本与变更；不要把某个历史 tag、commit 或旧的产物大小写成永久真值，更不能擅自 reset、checkout 或清理共享资源。
+`resource/` 跨 worktree 共用；统一目录中的工作树可用绝对路径链接根目录的 `resource/`。共享源可能处于 detached HEAD 或带本地补丁。每次编译前先执行 `git -C resource/hexo-theme-stellar status --short --branch`，确认正在消费的版本与变更；不要把某个历史 tag、commit 或旧的产物大小写成永久真值，更不能擅自 reset、checkout 或清理共享资源。
 
-项目自己的辅助样式应保留在其受跟踪源文件中；只有 `main.css` 受「必须由 `make css` 生成」约束。
+项目自己的辅助样式应保留在其受跟踪源文件中；上述主外观、选配和动态 CSS 均须由 `make css` 生成，其他辅助 CSS 不纳入主题重编或漂移比较。
 
 ### Stylus 编译 shim
 
 Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `modules/stellar/web/build/stylus/` 以 `config.json`、`shim.js` 和 `compile.js` 注入该函数，不改上游 `.styl`：字符串、布尔、数字、数组和缺失值必须分别保持对应的 Stylus 类型，尤其不能把布尔值写成字符串 `"false"`。
 
-`compile.js` 会在主入口之后追加上游移出的 swiper、fancybox 与 artalk 样式，保持单一 `main.css`。上游移动样式入口或新增需要保留的段时，先核对当前源，再同步 `EXTRA_STYLES` 与测试；不要直接向产物追加 CSS。
+`compile.js` 生成 `main-{card,glass,minimal,flat}.css` 和兼容入口 `main.css`（与 card 逐字一致），保留 swiper/fancybox/Artalk 与 `local.styl` 的旧内容兼容层。独立选配包括 `main-card-hover-{spotlight,tilt}.css`、`main-katex.css`、`main-lazyload-blur.css`；启用选配后最后加载 `main-appearance-{preset}.css`，保持上游最终视觉层的顺序。动态入口 `comments/{beaudar,utterances,twikoo,waline,artalk}.css` 和 `plugins/{fancybox,swiper}.css` 分别编译对应上游文件，供原生运行时按需加载。新增入口时同步编译清单与 CSS 专属测试，不直接追加产物。
 
 ### 模板、资源与图标
 
 - Go `html/template` 的结构必须与当前上游 Stellar EJS 和已存在的项目模板对齐。新增/改动前先对照 class、属性和嵌套，不凭记忆复刻过时的 layout 片段。
 - `template.HTML` 已是可信渲染结果时直接输出；不要再次传给只接收 `string` 的 `safe` helper。任何作者可控原始 HTML 都应先走现有渲染/净化链。
-- 前台脚本依赖的 `ctx`、模板函数和 `asset_ver` 是服务端到浏览器的契约。新增依赖时在模板注入与消费端一起修改；静态资源引用使用 `asset_ver`，不手写 cache-busting 版本戳。
+- 前台采用 Stellar 2.0 `site-shell/site-region/brand/listing-nav` 骨架，运行时外观注入必须输出对应的新选择器；旧 settings 字段保留。原生 ESM runtime 通过 `stellar-runtime-config` 加载本地 shell/search 扩展，入口 `asset_ver` 聚合本地 assets 全部 JS/CSS（包括动态 search/services/plugins 和 vendor）及实际 IconRegistry 公开派生资源（包括继承 runtime query 的 `js/icons/*.json`）；生成素材按 path/body 稳定排序并快照，HTTP 与离线 CLI 使用同一注册表，文档和独立静态图片不参与；磁盘与 embed 使用同一规则。完整移植要求保留 SSR 的同时接通上游 partial navigation；本地扩展须先具备区域挂载、取消与卸载，不能只注册模块而跳过自建服务初始化。前台脚本依赖的 `ctx`、模板函数和 `asset_ver` 是服务端到浏览器的契约。新增依赖时在模板注入与消费端一起修改；静态资源引用使用 `asset_ver`，不手写 cache-busting 版本戳。
 - 部署使用 `internal/settings/data/icons.yml` 的嵌入图标注册表；开发默认也读取这份受跟踪副本。图标为内联 SVG，未知 key 会安全地渲染占位。新配置使用当前语义化键；保留 `legacyIconAlias`，直到迁移数据确认不再需要旧 `solar:`/`ph:`/`bxs:` 键。
-- 产品只面向深色模式。上游 CSS 的亮色选择器可能为兼容保留，但不能据此新增产品切换入口或浅色验收范围。
+- 用户已批准完整移植中的浅色、深色与自动配色以及四种外观预设。当前是否接通以代码与浏览器证据为准，不能再用旧的仅深色约定缩减本任务。
 
 ## 编辑器与 shortcode
 

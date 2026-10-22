@@ -89,12 +89,12 @@ func TestTopicUpdate(t *testing.T) {
 	if _, err := s.Create(p); err != nil {
 		t.Fatalf("create associated post: %v", err)
 	}
-	tp.Name, tp.Slug, tp.Description = "新名", "new", "desc"
+	tp.Name, tp.Description = "新名", "desc"
 	if err := s.UpdateTopic(tp); err != nil {
 		t.Fatalf("update: %v", err)
 	}
 	got, _ := s.GetTopicByID(tp.ID)
-	if got.Name != "新名" || got.Slug != "new" || got.Description != "desc" {
+	if got.Name != "新名" || got.Slug != "old" || got.Description != "desc" {
 		t.Fatalf("update not applied: %+v", got)
 	}
 	updatedPost, err := s.GetBySlug(p.Slug)

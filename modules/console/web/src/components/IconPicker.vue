@@ -10,7 +10,7 @@ import AttachmentPickerModal from "./AttachmentPickerModal.vue";
 // - 手填输入保留为兜底（emit 前 trim，与 matchedItem/warnValue 的 trim 匹配保持一致）；
 //   图标按钮打开遮罩弹窗，搜索（35 项客户端过滤）+ 按前缀分组网格；图片按钮打开附件库。
 // - 弹窗用 Teleport 挂到 body：避免 TaxonomyList 分类卡片等 transform 祖先
-//   （hover:-translate-y-px）约束 fixed 定位导致遮罩只覆盖卡片、点外部无法关闭。
+//   （）约束 fixed 定位导致遮罩只覆盖卡片、点外部无法关闭。
 // - 数据模块级缓存：多实例（菜单/右栏/页脚等多行）共享一次请求。
 const props = defineProps<{
   modelValue: string;
@@ -188,7 +188,7 @@ const groups = computed(() => {
     <p v-if="hint" class="ip-hint">{{ hint }}</p>
 
     <!-- 选择弹窗：Teleport 到 body，避免 TaxonomyList 分类卡片等 transform 祖先
-         （hover:-translate-y-px）约束 fixed 定位导致遮罩只覆盖卡片、点外部无法关闭；
+         （）约束 fixed 定位导致遮罩只覆盖卡片、点外部无法关闭；
          模式对齐 components/ui/VModal.vue；scoped 样式随 data-v 属性照常生效 -->
     <Teleport to="body">
       <div
@@ -361,7 +361,7 @@ const groups = computed(() => {
   background: var(--color-card);
   color: var(--color-foreground);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 .ip-cell:hover {
   border-color: var(--color-primary);

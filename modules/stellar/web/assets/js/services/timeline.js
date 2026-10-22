@@ -1,4 +1,6 @@
-(function () {
+document.currentScript.stellarMount = function (root, context) {
+  const utils = context.serviceUtils;
+
   const reactions = {
       '+1': '👍',
       '-1': '👎', 
@@ -9,7 +11,7 @@
       'rocket': '🚀', 
       'eyes': '👀'
     }
-    const timelines = document.getElementsByClassName('ds-timeline');
+    const timelines = root.getElementsByClassName('ds-timeline');
     for (var i = 0; i < timelines.length; i++) {
       const el = timelines[i];
       const api = el.dataset.api;
@@ -19,14 +21,7 @@
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
-        // 基准补 location.origin：本地 /api/gh 代理的相对路径也能解析（绝对 URL 时 base 被忽略，行为不变）；
-        // 嵌入式预览（srcdoc iframe）location.origin 可能为 "null"，降级取查询串，避免渲染中断
-        let query = "";
-        try {
-          query = new URL(api, location.origin).search;
-        } catch (e) {
-          query = api.includes("?") ? "?" + api.split("?").slice(1).join("?") : "";
-        }
+        const query = new URL(api).search;
         const arr = data.content || data;
         var users = [];
         const filter = el.getAttribute('user');
@@ -95,7 +90,7 @@
             }
             if (item.comments != null) {
               cell += '<a class="item comments last" href="' + item.html_url + '#issuecomment-new" target="_blank" rel="external nofollow noopener noreferrer">';
-              cell += '<span><svg t="1666270368054" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2528" width="200" height="200"><path d="M952 64H72C32.3 64 0 96.3 0 136v508c0 39.7 32.3 72 72 72h261l128 128c14 14 32.5 21.1 50.9 21.1s36.9-7 50.9-21.1l128-128h261c39.7 0 72-32.3 72-72V136c0.2-39.7-32.1-72-71.8-72zM222 462c-39.8 0-72-32.2-72-72s32.2-72 72-72 72 32.2 72 72-32.2 72-72 72z m290-7.7c-39.8 0-72-32.2-72-72s32.2-72 72-72 72 32.2 72 72c0 39.7-32.2 72-72 72z m290 8c-39.8 0-72-32.2-72-72s32.2-72 72-72 72 32.2 72 72c0 39.7-32.2 72-72 72z" p-id="2529"></path></svg> ' + (item.comments || 0) + '</span>';
+              cell += '<span>' + ctx.icons['default:to-comment'] + ' ' + (item.comments || 0) + '</span>';
               cell += '</a>';
             }
             
@@ -107,7 +102,8 @@
           cell += '</div>';
           utils.dom(el).append(cell);
         });
-        window.wrapLazyloadImages?.(el);
+        window.wrapLazyloadImages(el);
       });
     }
-})();
+
+};

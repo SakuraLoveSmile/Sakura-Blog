@@ -1,0 +1,10 @@
+{
+  "article_written": false,
+  "unchanged_tables": [
+    "posts",
+    "post_authors",
+    "settings",
+    "topics",
+    "users"
+  ]
+}

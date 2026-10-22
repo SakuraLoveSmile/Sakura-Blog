@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { wikiDocFields } from "@/components/editor/stellar-form-fields";
+import { provide, ref, computed, onMounted, watch } from "vue";
 import { wikiApi, type WikiProject } from "@/api";
+import { stellarEditorContextKey } from "@/components/editor/stellar-context";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import ContentEditor from "@/components/ContentEditor.vue";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, Toast, Dialog, VModal } from "@/components/ui";
@@ -154,13 +158,38 @@ function flatten(nodes: TreeNode[], depth = 0): FlatNode[] {
 
 // ---------- 当前编辑文档 ----------
 const form = ref<{
+  stellar_version: number;
+  stellar_config: string;
+  blog_extensions: string;
   title: string;
   slug: string;
   order: number;
   parent: number;
   status: "published" | "draft";
   content_md: string;
-}>({ title: "", slug: "", order: 0, parent: 0, status: "draft", content_md: "" });
+}>({
+  stellar_version: 2,
+  stellar_config: "{}",
+  blog_extensions: "{}",
+  title: "",
+  slug: "",
+  order: 0,
+  parent: 0,
+  status: "draft",
+  content_md: "",
+});
+const stellarFormError = useStellarForm(() => form.value, wikiDocFields);
+provide(
+  stellarEditorContextKey,
+  computed(() => ({
+    stellar_version: form.value.stellar_version,
+    stellar_config: form.value.stellar_config,
+    blog_extensions: form.value.blog_extensions,
+    title: form.value.title,
+    layout: "wiki",
+    path: "/wiki/" + activeProject.value + "/" + form.value.slug,
+  })),
+);
 const currentId = ref(0);
 const originalSlug = ref("");
 const selectedSlug = ref("");
@@ -194,7 +223,17 @@ function resetEditor() {
   currentId.value = 0;
   originalSlug.value = "";
   selectedSlug.value = "";
-  form.value = { title: "", slug: "", order: 0, parent: 0, status: "draft", content_md: "" };
+  form.value = {
+    stellar_version: 2,
+    stellar_config: "{}",
+    blog_extensions: "{}",
+    title: "",
+    slug: "",
+    order: 0,
+    parent: 0,
+    status: "draft",
+    content_md: "",
+  };
 }
 
 // ---------- 新建文档弹窗 ----------
@@ -296,6 +335,9 @@ async function selectDoc(slug: string) {
     originalSlug.value = data.slug;
     selectedSlug.value = data.slug;
     form.value = {
+      stellar_version: data.stellar_version ?? 0,
+      stellar_config: data.stellar_config || "{}",
+      blog_extensions: data.blog_extensions || "{}",
       title: data.title,
       slug: data.slug,
       order: data.order,
@@ -311,10 +353,14 @@ async function selectDoc(slug: string) {
 
 // ---------- 保存 / 删除 ----------
 async function handleSave() {
+  await editorRef.value?.flushPendingChanges();
   if (!activeProject.value || !hasCurrent.value) return;
   saving.value = true;
   try {
     const payload = {
+      stellar_version: form.value.stellar_version,
+      stellar_config: form.value.stellar_config,
+      blog_extensions: form.value.blog_extensions,
       slug: form.value.slug.trim(),
       title: form.value.title.trim(),
       order: Number(form.value.order) || 0,
@@ -541,7 +587,7 @@ onMounted(loadProjects);
                 <!-- 叶子节点 -->
                 <div
                   v-else
-                  class="group flex items-center justify-between rounded-xl px-2 py-1.5 text-xs font-medium transition-all cursor-pointer"
+                  class="group flex items-center justify-between rounded-xl px-2 py-1.5 text-xs font-medium transition-colors duration-150 cursor-pointer"
                   :class="[
                     selectedSlug === node.doc.slug
                       ? 'bg-primary text-white font-semibold'
@@ -637,6 +683,15 @@ onMounted(loadProjects);
               </div>
 
               <!-- Markdown 编辑器 -->
+              <StellarContentConfig
+                :sync-error="stellarFormError"
+                v-model:config="form.stellar_config"
+                v-model:blog="form.blog_extensions"
+                :version="form.stellar_version"
+                profile="wiki"
+                :content="form.content_md"
+                class="mb-3"
+              />
               <ContentEditor
                 ref="editorRef"
                 v-model="form.content_md"
@@ -721,7 +776,7 @@ onMounted(loadProjects);
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -738,7 +793,6 @@ onMounted(loadProjects);
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {

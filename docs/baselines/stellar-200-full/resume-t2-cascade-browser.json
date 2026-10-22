@@ -1,0 +1,510 @@
+{
+  "fixture_only": true,
+  "source_commit": "cd3d7e65",
+  "cases": [
+    {
+      "id": "cascade-global-omit",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "upstream defaults",
+        "expectedCustomCount": 0,
+        "upstreamDefaultMenu": true,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [],
+        "menu": [
+          "博客",
+          "分类",
+          "标签",
+          "专栏",
+          "归档",
+          "友链",
+          "关于"
+        ],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:menu",
+            "text": "博客分类标签专栏归档友链关于"
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-global-empty",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": null,
+        "expectedCustomCount": 0,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [],
+        "menu": [],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-global-replace",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "GLOBAL_REPLACED",
+        "expectedCustomCount": 1,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [
+          "T2_ACTION_GLOBAL_REPLACED_0"
+        ],
+        "menu": [
+          "T2_MENU_GLOBAL_REPLACED_0"
+        ],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:menu",
+            "text": "T2_MENU_GLOBAL_REPLACED_0"
+          },
+          {
+            "id": "leftbar:0:markdown",
+            "text": "T2_WIDGET_GLOBAL_REPLACED_0"
+          },
+          {
+            "id": "leftbar:fixed:actions",
+            "text": ""
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-profile-omit",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "upstream wiki profile defaults",
+        "expectedCustomCount": 0,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [],
+        "menu": [],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-profile-empty",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": null,
+        "expectedCustomCount": 0,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [],
+        "menu": [],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-profile-replace",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "PROFILE_REPLACED",
+        "expectedCustomCount": 1,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [
+          "T2_ACTION_PROFILE_REPLACED_0"
+        ],
+        "menu": [
+          "T2_MENU_PROFILE_REPLACED_0"
+        ],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:menu",
+            "text": "T2_MENU_PROFILE_REPLACED_0"
+          },
+          {
+            "id": "leftbar:0:markdown",
+            "text": "T2_WIDGET_PROFILE_REPLACED_0"
+          },
+          {
+            "id": "leftbar:fixed:actions",
+            "text": ""
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-collection-omit",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "PROFILE",
+        "expectedCustomCount": 2,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [
+          "T2_ACTION_PROFILE_0",
+          "T2_ACTION_PROFILE_1"
+        ],
+        "menu": [
+          "T2_MENU_PROFILE_0",
+          "T2_MENU_PROFILE_1"
+        ],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:menu",
+            "text": "T2_MENU_PROFILE_0T2_MENU_PROFILE_1"
+          },
+          {
+            "id": "leftbar:0:markdown",
+            "text": "T2_WIDGET_PROFILE_0"
+          },
+          {
+            "id": "leftbar:1:markdown",
+            "text": "T2_WIDGET_PROFILE_1"
+          },
+          {
+            "id": "leftbar:fixed:actions",
+            "text": ""
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-collection-empty",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": null,
+        "expectedCustomCount": 0,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [],
+        "menu": [],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-collection-replace",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "COLLECTION_REPLACED",
+        "expectedCustomCount": 1,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [
+          "T2_ACTION_COLLECTION_REPLACED_0"
+        ],
+        "menu": [
+          "T2_MENU_COLLECTION_REPLACED_0"
+        ],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:menu",
+            "text": "T2_MENU_COLLECTION_REPLACED_0"
+          },
+          {
+            "id": "leftbar:0:markdown",
+            "text": "T2_WIDGET_COLLECTION_REPLACED_0"
+          },
+          {
+            "id": "leftbar:fixed:actions",
+            "text": ""
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-page-omit",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "COLLECTION",
+        "expectedCustomCount": 2,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [
+          "T2_ACTION_COLLECTION_0",
+          "T2_ACTION_COLLECTION_1"
+        ],
+        "menu": [
+          "T2_MENU_COLLECTION_0",
+          "T2_MENU_COLLECTION_1"
+        ],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:menu",
+            "text": "T2_MENU_COLLECTION_0T2_MENU_COLLECTION_1"
+          },
+          {
+            "id": "leftbar:0:markdown",
+            "text": "T2_WIDGET_COLLECTION_0"
+          },
+          {
+            "id": "leftbar:1:markdown",
+            "text": "T2_WIDGET_COLLECTION_1"
+          },
+          {
+            "id": "leftbar:fixed:actions",
+            "text": ""
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-page-empty",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": null,
+        "expectedCustomCount": 0,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [],
+        "menu": [],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cascade-page-replace",
+      "expected": {
+        "arrays": [
+          "leftbar.widgets",
+          "leftbar.menu",
+          "leftbar.footer.actions"
+        ],
+        "expectedPrefix": "PAGE_REPLACED",
+        "expectedCustomCount": 1,
+        "upstreamDefaultMenu": false,
+        "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+      },
+      "settings_reopen_equal": true,
+      "collection_reopen_equal": true,
+      "page_reopen_equal": true,
+      "front": {
+        "actions": [
+          "T2_ACTION_PAGE_REPLACED_0"
+        ],
+        "menu": [
+          "T2_MENU_PAGE_REPLACED_0"
+        ],
+        "path": "/wiki/t2-cascade/entry",
+        "widgets": [
+          {
+            "id": "leftbar:fixed:brand",
+            "text": "所有项目T2 synthetic cascade搜索K"
+          },
+          {
+            "id": "leftbar:fixed:menu",
+            "text": "T2_MENU_PAGE_REPLACED_0"
+          },
+          {
+            "id": "leftbar:0:markdown",
+            "text": "T2_WIDGET_PAGE_REPLACED_0"
+          },
+          {
+            "id": "leftbar:fixed:actions",
+            "text": ""
+          },
+          {
+            "id": "leftbar:fixed:settings",
+            "text": "设置"
+          }
+        ]
+      }
+    }
+  ]
+}

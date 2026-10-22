@@ -9,11 +9,11 @@ import (
 )
 
 func TestPageHeaderAPICreateUpdateAndEcho(t *testing.T) {
-	r, _, user, h := newFullEnv(t)
+	r, _, user, h := newFullStellarEnv(t)
 	h.site.Load().Authors = map[string]tmpl.AuthorDef{"alice": {Name: "Alice"}}
 	cookie := authCookie(user)
 
-	body := `{"slug":"about-header","title":"关于本站","content_md":"# 正文","status":"published","banner":"https://example.test/banner.jpg","banner_info":{"title":"横幅标题","subtitle":"横幅副标题","avatar":"/avatar.png","icon":"default:book"},"breadcrumb":false,"author":"alice","date":"2026-08-01"}`
+	body := `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"about-header","title":"关于本站","content_md":"# 正文","status":"published","banner":"https://example.test/banner.jpg","banner_info":{"title":"横幅标题","subtitle":"横幅副标题","avatar":"/avatar.png","icon":"default:book"},"breadcrumb":false,"author":"alice","date":"2026-08-01"}`
 	w := do2FA(r, http.MethodPost, "/api/v1/pages", body, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create page: status=%d body=%s", w.Code, w.Body.String())
@@ -26,7 +26,7 @@ func TestPageHeaderAPICreateUpdateAndEcho(t *testing.T) {
 		t.Fatalf("create response lost page header fields: %+v", got)
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/pages/about-header", `{"slug":"about-header","title":"更新","content_md":"# 更新","status":"published","banner":"","banner_info":{"title":"新标题"},"breadcrumb":true,"author":"","date":"2026-08-27"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/pages/about-header", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"about-header","title":"更新","content_md":"# 更新","status":"published","banner":"","banner_info":{"title":"新标题"},"breadcrumb":true,"author":"","date":"2026-08-27"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("update page: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -42,8 +42,8 @@ func TestPageHeaderAPICreateUpdateAndEcho(t *testing.T) {
 	}
 
 	for name, invalid := range map[string]string{
-		"unknown author": `{"slug":"bad-author","title":"x","author":"nobody"}`,
-		"invalid date":   `{"slug":"bad-date","title":"x","date":"2026/08/27"}`,
+		"unknown author": `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"bad-author","title":"x","author":"nobody"}`,
+		"invalid date":   `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"bad-date","title":"x","date":"2026/08/27"}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			w := do2FA(r, http.MethodPost, "/api/v1/pages", invalid, cookie)

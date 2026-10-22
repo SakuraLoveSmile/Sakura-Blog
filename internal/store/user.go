@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
@@ -209,6 +210,55 @@ func (s *Store) UpdateTOTPSecret(userID int64, secret string, codes []string) er
 		return fmt.Errorf("update totp for user %d: %w", userID, err)
 	}
 	return nil
+}
+
+// ConsumeReaderRecoveryCode 仅在已验证密码的读者登录快照仍有效时消耗一个恢复码。
+// 条件更新同时绑定当前凭据、角色和原始恢复码列表；竞争失败不会消耗任何码。
+func (s *Store) ConsumeReaderRecoveryCode(user *User, code string) (bool, error) {
+	if user == nil || len(code) != 8 || user.TOTPSecret == "" || user.Status != UserStatusActive || (user.Role != RoleReader && user.Role != RoleAuthor) {
+		return false, nil
+	}
+	const predicate = `id = ? AND password_hash = ? AND auth_secret = ? AND totp_secret = ?
+		AND status = ? AND role = ? AND EXISTS (
+			SELECT 1 FROM user_roles WHERE user_id = users.id AND role = ? AND is_primary = 1)`
+	args := []any{user.ID, user.PasswordHash, user.AuthSecret, user.TOTPSecret, UserStatusActive, user.Role, user.Role}
+	var original string
+	if err := s.db.QueryRow(`SELECT totp_recovery_codes FROM users WHERE `+predicate, args...).Scan(&original); err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("read reader recovery codes: %w", err)
+	}
+	var codes []string
+	if err := json.Unmarshal([]byte(original), &codes); err != nil || len(codes) == 0 {
+		return false, nil
+	}
+	matched := false
+	remaining := make([]string, 0, len(codes))
+	for _, saved := range codes {
+		if subtle.ConstantTimeCompare([]byte(saved), []byte(code)) == 1 {
+			matched = true
+			continue
+		}
+		remaining = append(remaining, saved)
+	}
+	if !matched {
+		return false, nil
+	}
+	updated, err := json.Marshal(remaining)
+	if err != nil {
+		return false, fmt.Errorf("encode reader recovery codes: %w", err)
+	}
+	updateArgs := append([]any{string(updated)}, args...)
+	updateArgs = append(updateArgs, original)
+	result, err := s.db.Exec(`UPDATE users SET totp_recovery_codes = ? WHERE `+predicate+` AND totp_recovery_codes = ?`, updateArgs...)
+	if err != nil {
+		return false, fmt.Errorf("consume reader recovery code: %w", err)
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("reader recovery code rows affected: %w", err)
+	}
+	return n == 1, nil
 }
 
 // userListCols 管理端列表列（不含密码/2FA/签名密钥等敏感列）。

@@ -391,8 +391,6 @@ onBeforeUnmount(() => {
   cursor: pointer;
   opacity: 0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
   transition:
     opacity var(--duration-fast) var(--ease-standard),
     background-color var(--duration-fast) var(--ease-standard),
@@ -449,8 +447,6 @@ onBeforeUnmount(() => {
   background: var(--color-popover);
   color: var(--color-popover-foreground);
   box-shadow: var(--shadow-xl);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
 }
 
 .attachment-menu::before {

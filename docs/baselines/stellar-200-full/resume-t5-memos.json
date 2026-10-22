@@ -1,0 +1,29 @@
+{
+  "kind": "loopback synthetic contract, not external account verification",
+  "proof": {
+    "result": {
+      "type": "object",
+      "value": {
+        "failure": false,
+        "overflow": -8,
+        "services": [
+          {
+            "api": null,
+            "text": ""
+          },
+          {
+            "api": null,
+            "text": "\n                      合成 Memo 用户\n                      2026/10/13 09:00:00\n                      T5_MEMOS_MARKER\n\n                      \n                      "
+          },
+          {
+            "api": null,
+            "text": ""
+          }
+        ],
+        "success": true,
+        "title": "T5 Memos 合成边界验证 - Stellar 2.0 验收站",
+        "url": "http://127.0.0.1:8103/t5-memos-final/"
+      }
+    }
+  }
+}

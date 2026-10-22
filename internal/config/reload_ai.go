@@ -1,12 +1,8 @@
 package config
 
-import (
-	"blog/internal/store"
-	"encoding/json"
-	"sync"
-)
+import "blog/internal/store"
 
-// AIConfig 对应 settings 表 "ai" 段：OpenAI 兼容接口配置，供 AI 属性生成代理使用。
+// AIConfig 是本地 AI 服务使用的 typed bridge；生产真值为 canonical Blog.ai。
 type AIConfig struct {
 	BaseURL        string `json:"base_url"`
 	APIKey         string `json:"api_key"`
@@ -32,45 +28,20 @@ func (c AIConfig) QAOn() bool { return c.QAEnabled != nil && *c.QAEnabled }
 // QAUserLLMOn controls whether public users may provide only their final Chat model.
 func (c AIConfig) QAUserLLMOn() bool { return c.QAAllowUserLLM == nil || *c.QAAllowUserLLM }
 
-// LoadAI 从 settings 读取 AI 配置（未配置时返回零值）。
-// Spec 61 阶段 5：内存缓存——文章页每请求读 settings 改为 RebuildSite（设置保存）时刷新，
-// 首次调用加载，成功即缓存；失败不缓存（下次重试）。
-var (
-	loadAIMu      sync.RWMutex
-	loadAICached  AIConfig
-	loadAICacheOK bool
-)
-
+// LoadAI 从当前 Store 的一致快照读取，绝不共享另一数据库的凭据。
+// 只接受 canonical Blog.ai；未迁移或损坏时失败，绝不读取旧 ai 段。
 func LoadAI(st *store.Store) (AIConfig, error) {
-	loadAIMu.RLock()
-	if loadAICacheOK {
-		cfg := loadAICached
-		loadAIMu.RUnlock()
-		return cfg, nil
-	}
-	loadAIMu.RUnlock()
-
-	loadAIMu.Lock()
-	defer loadAIMu.Unlock()
-	if loadAICacheOK {
-		return loadAICached, nil
-	}
-	var cfg AIConfig
-	v, err := st.GetSetting(SectionAI)
-	if err != nil || v == "" {
-		return cfg, err
-	}
-	if err := json.Unmarshal([]byte(v), &cfg); err != nil {
+	snapshot, err := st.ReadSettingsSnapshot()
+	if err != nil {
 		return AIConfig{}, err
 	}
-	loadAICached = cfg
-	loadAICacheOK = true
-	return cfg, nil
+	canonical, err := LoadStellarV2Snapshot(snapshot)
+	if err != nil {
+		return AIConfig{}, err
+	}
+	runtime, err := ParseStellarBlogRuntime(canonical.Blog)
+	return runtime.AI, err
 }
 
-// InvalidateLoadAI 失效 AI 配置缓存（RebuildSite 内调用，设置保存后下次读取即重载）。
-func InvalidateLoadAI() {
-	loadAIMu.Lock()
-	loadAICacheOK = false
-	loadAIMu.Unlock()
-}
+// InvalidateLoadAI 保留旧生命周期入口；配置读取不再缓存秘密。
+func InvalidateLoadAI() {}

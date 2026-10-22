@@ -1,0 +1,24 @@
+{
+  "red": {
+    "tests": 46,
+    "passed": 44,
+    "failed": 2,
+    "failures": [
+      "identity pending blocks public list observer",
+      "ordinary attachment misclassified as emoji"
+    ]
+  },
+  "focused_green": {
+    "tests": 52,
+    "passed": 52,
+    "failed": 0,
+    "skipped": 0
+  },
+  "scope": [
+    "comments.test.mjs",
+    "stellar-v2-native-lifecycle.test.mjs",
+    "stellar-v2-blog-composition.test.mjs"
+  ],
+  "real_build_exit_code": 0,
+  "production_runtime": "single Go binary; no external comment service added"
+}

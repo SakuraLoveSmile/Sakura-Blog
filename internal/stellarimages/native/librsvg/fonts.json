@@ -1,0 +1,14 @@
+[
+  {
+    "file": "../svg/NotoSans.ttf",
+    "sha256": "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d",
+    "bytes": 2049096,
+    "notice": "../svg/FONT-LICENSE"
+  },
+  {
+    "file": "../svg/NotoSansSC.ttf",
+    "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+    "bytes": 17772300,
+    "notice": "../svg/FONT-SC-LICENSE"
+  }
+]

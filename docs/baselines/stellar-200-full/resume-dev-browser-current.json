@@ -1,0 +1,15 @@
+{
+  "fixture_only": true,
+  "build_tree": "Blog dev",
+  "source_commit": "74ef648a780d1beff52b19b1817dba9d4c6e6c9e",
+  "binary_sha256": "c0ef7e6c5d88d95cb2db5e282ef5a1c158cce93933f133a9b7bf68c3287a891a",
+  "nativeCDP": {
+    "url": "http://127.0.0.1:8103/wiki/galaxy/intro",
+    "heading": "galaxy · intro",
+    "hero": "galaxy",
+    "runtime": "http://127.0.0.1:8103/assets/js/runtime/index.js?v=71bc6f7a",
+    "width": 1280,
+    "coverParent": "site-cover"
+  },
+  "limits": "Current dev artifact smoke. Detailed interaction evidence remains bound to recorded earlier source builds with same production consumer bytes."
+}

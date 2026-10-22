@@ -1,0 +1,15 @@
+{
+  "file": "Redirectstorage.md",
+  "title": "Redirectstorage",
+  "status": "published",
+  "source_bytes": 17443,
+  "source_sha256": "f990f69802fef320e3155c0557b469bf5d87ec0ea0059bf9ab5b062591a3bba1",
+  "stored_markdown_sha256": "f990f69802fef320e3155c0557b469bf5d87ec0ea0059bf9ab5b062591a3bba1",
+  "body_preserved": true,
+  "source_images": 34,
+  "rendered_images": 34,
+  "final_paragraph": "![](https://gitee.com/sakurasep/pictures/raw/master/chevereto/%E6%88%90%E5%93%814.png)",
+  "rag_chunks_after_import": 0,
+  "rag_fts_after_import": 0,
+  "integrity_check": "ok"
+}

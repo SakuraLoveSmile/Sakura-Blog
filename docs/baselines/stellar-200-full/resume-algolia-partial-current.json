@@ -1,0 +1,24 @@
+{
+  "fixture_only": true,
+  "built_head": "605d1186",
+  "binary_sha256": "65b2cc57e031505d726d1aa90cff8a594497b3118f9a8b887dcab1dbf816a557",
+  "loaded": {
+    "runtime_version": "1714fba2",
+    "actual_mount_contains_queryPageKey": true
+  },
+  "start": {
+    "url": "http://127.0.0.1:8112/post/technical",
+    "timeOrigin": 1791922492722.7
+  },
+  "committed_before_fulfill": {
+    "url": "http://127.0.0.1:8112/post/story",
+    "timeOrigin": 1791922492722.7,
+    "heading": "随笔：保存重开与搜索实测"
+  },
+  "afterLateResponse": "",
+  "staleRejected": true,
+  "request": "{\"params\":\"query=leave-605-current&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+  "newPageResult": "VALID605 NEW PAGE\n\nVALID605 NEW PAGE",
+  "baseline_restored": true,
+  "fetch_interception_cleared": true
+}

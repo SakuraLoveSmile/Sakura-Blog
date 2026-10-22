@@ -1,7 +1,8 @@
+import type { StellarContentMetadata } from "./contracts";
 import { http } from "../transport";
 import type { UCMeResponse as GeneratedUCMeResponse } from "../generated";
 
-export interface UCPostItem {
+export interface UCPostItem extends StellarContentMetadata {
   slug: string;
   title: string;
   excerpt: string;
@@ -18,7 +19,7 @@ export interface UCPostItem {
   draft?: Partial<UCPostPayload>;
 }
 
-export interface UCPostPayload {
+export interface UCPostPayload extends StellarContentMetadata {
   slug?: string;
   title: string;
   excerpt?: string;
@@ -54,6 +55,8 @@ export interface UCAttachmentParams {
 }
 
 export const ucApi = {
+  changePassword: (current: string, newPassword: string, signal?: AbortSignal) =>
+    http.put("/uc/auth/password", { current, new: newPassword }, { signal }),
   me: () => http.get<GeneratedUCMeResponse>("/uc/me"),
   posts: {
     list: (params?: UCPageParams) =>
@@ -67,13 +70,17 @@ export const ucApi = {
     discardDraft: (slug: string) => http.delete(`/uc/posts/${slug}/draft`),
   },
   attachments: {
-    list: (params?: UCAttachmentParams) =>
-      http.get<{ items: UCAttachmentItem[]; total: number; page: number; size: number }>("/uc/attachments", { params }),
-    upload: (file: File) => {
+    list: (params?: UCAttachmentParams, signal?: AbortSignal) =>
+      http.get<{ items: UCAttachmentItem[]; total: number; page: number; size: number }>("/uc/attachments", {
+        params,
+        signal,
+      }),
+    upload: (file: File, signal?: AbortSignal) => {
       const form = new FormData();
       form.append("file", file);
       return http.post<UCAttachmentItem>("/uc/attachments/upload", form, {
         headers: { "Content-Type": "multipart/form-data" },
+        signal,
       });
     },
     importURL: (url: string) => http.post<UCAttachmentItem>("/uc/attachments/import-url", { url }),

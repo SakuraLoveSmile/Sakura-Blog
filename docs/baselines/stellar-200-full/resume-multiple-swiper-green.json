@@ -1,0 +1,57 @@
+{
+  "initial": [
+    {
+      "effect": "fade",
+      "slides": 2,
+      "index": 0,
+      "nextOwn": true,
+      "paginationOwn": true
+    },
+    {
+      "effect": "coverflow",
+      "slides": 2,
+      "index": 0,
+      "nextOwn": true,
+      "paginationOwn": true
+    }
+  ],
+  "afterSecond": [
+    {
+      "effect": "fade",
+      "index": 0
+    },
+    {
+      "effect": "coverflow",
+      "index": 1
+    }
+  ],
+  "afterFirst": [
+    {
+      "effect": "fade",
+      "index": 1
+    },
+    {
+      "effect": "coverflow",
+      "index": 1
+    }
+  ],
+  "cleanup": {
+    "url": "http://127.0.0.1:8103/about",
+    "sameDocument": false
+  },
+  "notePartialCleanup": {
+    "url": "http://127.0.0.1:8103/journal/alpha",
+    "sameDocument": true,
+    "instances": [
+      {
+        "connected": false,
+        "destroyed": true
+      },
+      {
+        "connected": false,
+        "destroyed": true
+      }
+    ],
+    "remaining": 0
+  }
+}

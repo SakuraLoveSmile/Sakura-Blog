@@ -1,8 +1,12 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
-	"html/template"
+	"errors"
+	"fmt"
+	"sync"
+
 	"log"
 	"net/http"
 	"net/url"
@@ -21,6 +25,8 @@ import (
 	"blog/internal/og"
 	"blog/internal/post"
 	"blog/internal/search"
+	"blog/internal/stellarmodels"
+	"blog/internal/stellarv2"
 	"blog/internal/store"
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
@@ -29,23 +35,24 @@ import (
 // Dependencies contains the shared services required by the Stellar SSR module.
 // It deliberately contains no Console implementation details.
 type Dependencies struct {
-	App       *config.App
-	Site      *atomic.Pointer[tmpl.Site]
-	Store     *store.Store
-	Posts     *post.Service
-	Engine    *stellarweb.Engine
-	Icons     *tmpl.IconRegistry
-	OGGen     *og.Generator
-	Search    *search.Index
-	DevMode   bool
-	Root      string
-	UploadDir string
-	NotesPath string
-	Comments  *comments.Handler
-	Friends   *friends.Aggregator
-	GH        *ghpkg.Client
-	Modules   *module.Manager
-	Events    content.Events
+	AppVersion string
+	App        *config.App
+	Site       *atomic.Pointer[tmpl.Site]
+	Store      *store.Store
+	Posts      *post.Service
+	Engine     *stellarweb.Engine
+	Icons      *tmpl.IconRegistry
+	OGGen      *og.Generator
+	Search     *search.Index
+	DevMode    bool
+	Root       string
+	UploadDir  string
+	NotesPath  string
+	Comments   *comments.Handler
+	Friends    *friends.Aggregator
+	GH         *ghpkg.Client
+	Modules    *module.Manager
+	Events     content.Events
 }
 
 // Server owns the Stellar route state and its derived caches.
@@ -61,13 +68,23 @@ type Server struct {
 
 // New creates the SSR server and installs content-index write hooks.
 func New(d Dependencies) (*Server, error) {
+	strictSearch := func() bool { return d.Site != nil && d.Site.Load() != nil && d.Site.Load().StellarV2 != nil }
 	searchIdx := d.Search
-	if searchIdx == nil {
+	if searchIdx == nil && strictSearch() {
+		searchIdx = search.New(d.Store.DB())
+		if err := searchIdx.Ensure(); err != nil {
+			return nil, fmt.Errorf("ensure strict stellar search: %w", err)
+		}
+	} else if searchIdx == nil {
 		searchIdx = setupSearchIndex(d.Store)
 	} else if err := searchIdx.Ensure(); err != nil {
+		searchIdx.SetUnavailable()
+		if strictSearch() {
+			return nil, fmt.Errorf("ensure strict stellar search: %w", err)
+		}
 		log.Printf("search: ensure shared fts failed (%v), server search disabled", err)
 		searchIdx = nil
-	} else if count, err := searchIdx.Count(); err == nil && count == 0 {
+	} else if count, err := searchIdx.Count(); err == nil && count == 0 && !strictSearch() {
 		items := search.ItemsFromStore(d.Store)
 		if err := searchIdx.Rebuild(items); err != nil {
 			log.Printf("search: rebuild shared fts failed (%v), server search disabled", err)
@@ -84,6 +101,7 @@ func New(d Dependencies) (*Server, error) {
 
 	web := newWebServer(webDeps{
 		Site:      d.Site,
+		Icons:     d.Icons,
 		Store:     d.Store,
 		Posts:     d.Posts,
 		Engine:    d.Engine,
@@ -94,6 +112,67 @@ func New(d Dependencies) (*Server, error) {
 		UploadDir: d.UploadDir,
 		NotesPath: d.NotesPath,
 	})
+	var strictSearchMu sync.Mutex
+	rebuildStrictSearch := func() error {
+		strictSearchMu.Lock()
+		defer strictSearchMu.Unlock()
+		if searchIdx == nil {
+			return nil
+		}
+		searchIdx.SetUnavailable()
+		items, err := web.stellarCanonicalSearchItems(context.Background())
+		if err == nil {
+			err = searchIdx.Rebuild(items)
+		}
+		if err != nil {
+			if clearErr := searchIdx.Rebuild(nil); clearErr != nil {
+				return fmt.Errorf("clear failed strict search after %v: %w", err, clearErr)
+			}
+			return err
+		}
+		return nil
+	}
+	if strictSearch() {
+		if err := rebuildStrictSearch(); err != nil {
+			var body *content.StellarBodyRenderError
+			var schema *stellarv2.SchemaError
+			var model *stellarmodels.ConfigError
+			if !errors.As(err, &body) || errors.As(err, &schema) || errors.As(err, &model) || errors.Is(err, store.ErrStellarMigrationRequired) {
+				return nil, fmt.Errorf("rebuild strict stellar search: %w", err)
+			}
+			log.Printf("search: strict body render failed; stale FTS cleared; Console repair remains available: %v", err)
+		}
+	}
+	legacyPostHook, legacyPageHook, legacyMomentHook := postHook, pageHook, momentHook
+	rebuildChangedSearch := func() {
+		if err := rebuildStrictSearch(); err != nil {
+			log.Printf("search: strict snapshot rebuild failed; stale results cleared or index unavailable: %v", err)
+		}
+	}
+	postHook = func(op, slug string) {
+		if strictSearch() {
+			if d.OGGen != nil {
+				d.OGGen.Invalidate(slug)
+			}
+			rebuildChangedSearch()
+			return
+		}
+		legacyPostHook(op, slug)
+	}
+	pageHook = func(op, slug string) {
+		if strictSearch() {
+			rebuildChangedSearch()
+			return
+		}
+		legacyPageHook(op, slug)
+	}
+	momentHook = func(op, slug string) {
+		if strictSearch() {
+			rebuildChangedSearch()
+			return
+		}
+		legacyMomentHook(op, slug)
+	}
 	// Content caches are initialized by newWebServer. With app.Services, one
 	// published event is the sole invalidation path for derived data.
 	var eventSub content.Subscription
@@ -101,7 +180,7 @@ func New(d Dependencies) (*Server, error) {
 		eventSub = d.Events.Subscribe(func(event content.Event) {
 			switch event.Kind {
 			case content.PostChanged:
-				if event.PreviousSlug != "" && event.PreviousSlug != event.Slug {
+				if !strictSearch() && event.PreviousSlug != "" && event.PreviousSlug != event.Slug {
 					postHook("delete", event.PreviousSlug)
 				}
 				postHook(event.Op, event.Slug)
@@ -110,9 +189,17 @@ func New(d Dependencies) (*Server, error) {
 			case content.MomentChanged:
 				momentHook(event.Op, event.Slug)
 			case content.Restored:
-				rebuildSearchIndex(d.Store, searchIdx)
+				if strictSearch() {
+					rebuildChangedSearch()
+				} else {
+					rebuildSearchIndex(d.Store, searchIdx)
+				}
 				clearOGCache(ogCacheDir)
 				web.invalidateSidebarCache()
+			case content.ContentChanged:
+				if strictSearch() {
+					rebuildChangedSearch()
+				}
 			}
 			web.contentCache.invalidate()
 		})
@@ -140,9 +227,11 @@ func (s *Server) Mount(r *gin.Engine) error {
 	}
 	s.pvBuffer = newPageViewBuffer(s.deps.Store)
 	s.web.installMiddleware(r, s.deps.App, s.pvBuffer)
+	r.Use(s.web.stellarDynamicRoutes)
 	if err := s.web.registerStaticRoutes(r); err != nil {
 		return err
 	}
+	s.web.registerEmbedRoutes(r)
 
 	pageHandler, err := NewPageHandler(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site)
 	if err != nil {
@@ -155,15 +244,6 @@ func (s *Server) Mount(r *gin.Engine) error {
 		s.web.fillSEO(data, c)
 	})
 	pageHandler.Register(r)
-	if err := pageHandler.EnsureSystemFriendsPage(); err != nil {
-		log.Printf("[warn] seed friends page: %v", err)
-	}
-	if err := pageHandler.EnsureSystemNotesPage(s.web.notesMDPath); err != nil {
-		log.Printf("[warn] seed notes page: %v", err)
-	}
-	if err := pageHandler.EnsureSystemLinksPage(); err != nil {
-		log.Printf("[warn] seed links page: %v", err)
-	}
 
 	momentHandler, err := NewMomentHandler(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site, s.web.fillSidebar, s.web.fillSEO)
 	if err != nil {
@@ -190,35 +270,36 @@ func (s *Server) renderDraftPreview(c *gin.Context) {
 		s.web.render404(c)
 		return
 	}
-	contentHTML, err := s.deps.Posts.Render(pv.ContentMD)
+	requestURL := requestScheme(c) + "://" + c.Request.Host + c.Request.URL.EscapedPath()
+	site, err := stellarPreviewSite(s.deps.Site.Load(), requestURL)
 	if err != nil {
-		log.Printf("render draft preview: %v", err)
-		s.web.render500(c)
+		stellarError(c, err)
 		return
 	}
-	title := strings.TrimSpace(pv.Title)
-	if title == "" {
-		title = "预览"
+	slug := strings.Trim(pv.Slug, "/")
+	if slug == "" {
+		slug = "__preview__"
 	}
-	notice := template.HTML(`<div style="background:var(--card);border:1px solid var(--theme);color:var(--text-p1);padding:12px 16px;border-radius:8px;margin:0 0 20px;text-align:center;font-size:14px;">预览模式：这是未发布的草稿，仅供发布前查看</div>`)
-	data := &tmpl.ViewData{
-		Site: s.deps.Site.Load(),
-		Page: &tmpl.Page{
-			Title: title, Slug: pv.Slug, Layout: "post", Type: "tech", Lang: "zh-CN",
-			MenuID: "post", Date: pv.CreatedAt.Format("2006-01-02"), Excerpt: pv.Excerpt, Topic: pv.Topic,
-		},
-		Content: notice + template.HTML(contentHTML),
-	}
-	data.TOC = stellarweb.ExtractTOC(contentHTML)
-	s.web.fillSidebar(data)
-	s.web.fillSEO(data, c)
-	html, err := s.deps.Engine.Render("layout/base", data)
+	row := &store.Post{Slug: slug, Title: pv.Title, ContentMD: pv.ContentMD, Excerpt: pv.Excerpt, CreatedAt: pv.CreatedAt, UpdatedAt: pv.CreatedAt, Status: store.StatusDraft, StellarVersion: pv.StellarVersion, StellarConfig: pv.StellarConfig, BlogExtensions: pv.BlogExtensions}
+	snap, err := s.web.stellarSnapshotAt(c.Request.Context(), site, row, true)
 	if err != nil {
-		log.Printf("render draft preview: %v", err)
-		s.web.render500(c)
+		stellarError(c, err)
 		return
 	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	for _, r := range snap.records {
+		if r.post == row {
+			data := s.web.stellarView(snap, r)
+			data.Stellar.Input.RuntimeData = stellarCopyObject(data.Stellar.Input.RuntimeData)
+			data.Stellar.Input.RuntimeData["preview"] = true
+			data.Stellar.Input.RuntimeData["nativeComments"] = map[string]any{"enabled": false}
+			data.Comments = nil
+			data.CommentCount = 0
+			stellarNotice(data, `<div class="blog-preview-notice">预览模式：这是未发布的草稿，仅供发布前查看</div>`)
+			s.web.outputStellar(c, data, http.StatusOK)
+			return
+		}
+	}
+	s.web.render404(c)
 }
 
 // NoRoute returns the final fallback after Console has supplied its SPA index.
@@ -236,7 +317,7 @@ func (s *Server) NoRoute(consoleIndex []byte) gin.HandlerFunc {
 			if err == nil && decoded != "" {
 				if strings.HasSuffix(decoded, "/rss.xml") {
 					name := strings.TrimSuffix(decoded, "/rss.xml")
-					NewFeedHandler(s.deps.Store, s.deps.Site).categoryRSSPath(c, name)
+					s.web.serveStellarFeed(c, "rss", "categories", name)
 					return
 				}
 				s.web.handleCategoryPath(c, decoded)

@@ -44,7 +44,7 @@ const classes = computed(() => [`tag-${props.theme}`, { "tag-rounded": props.rou
   font-weight: 500;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 
 .tag-default {

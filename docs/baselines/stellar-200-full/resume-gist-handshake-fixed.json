@@ -1,0 +1,28 @@
+{
+  "built_head": "d1f9dff",
+  "binary_sha256": "5ee2b326f045f895b5a2cad9e24afca81245fcdfbd0693de07401d7570861045",
+  "bridge_sha256": "5be4ae29c3109df298115598d82ee064057e1c0b5dbe30161e16ccd2029cb77f",
+  "realCdp": {
+    "result": {
+      "type": "string",
+      "value": "{\"height\":850,\"src\":\"http://127.0.0.1:8103/stellar/embed/gist?gist=octocat%2F9257657#stellar-gist-token=9bd08b37961797514def98f1df24f88b\",\"sandbox\":\"allow-scripts\",\"nullDocument\":true,\"locationDenied\":\"SecurityError\"}"
+    }
+  },
+  "currentBuild": "c2cee18",
+  "normalCacheReload": {
+    "result": {
+      "type": "string",
+      "value": "{\"height\":850,\"src\":\"http://127.0.0.1:8103/stellar/embed/gist?gist=octocat%2F9257657#stellar-gist-token=ae2ab098d08cc009d2c2b46d8d8a7c99\",\"sandbox\":\"allow-scripts\",\"docNull\":true}"
+    }
+  },
+  "departure": {
+    "scope": "full navigation destroyed original document",
+    "cdp": {
+      "result": {
+        "type": "string",
+        "value": "{\"url\":\"http://127.0.0.1:8103/about/\",\"timeOriginSame\":false,\"oldFrameExists\":false}"
+      }
+    },
+    "partialCleanupVerified": false
+  }
+}

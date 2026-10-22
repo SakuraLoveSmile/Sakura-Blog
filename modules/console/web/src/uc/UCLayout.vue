@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useQueryClient } from "@tanstack/vue-query";
 import { useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { useUCAuthStore } from "./stores/auth";
 
 const router = useRouter();
+const queryClient = useQueryClient();
 const auth = useUCAuthStore();
 const displayName = computed(() => auth.user?.nickname || auth.user?.username || "用户");
 
 async function logout() {
   await auth.logout();
+  queryClient.clear();
   await router.replace("/login");
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-background text-foreground">
-    <header class="sticky top-0 z-30 border-b border-border bg-sidebar/95 backdrop-blur-xl">
+    <header class="sticky top-0 z-30 border-b border-border bg-sidebar">
       <div class="mx-auto flex min-h-16 max-w-6xl items-center gap-5 px-4 sm:px-6">
         <RouterLink to="/posts" class="flex min-w-0 items-center gap-2.5 text-sm font-semibold tracking-tight">
           <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">

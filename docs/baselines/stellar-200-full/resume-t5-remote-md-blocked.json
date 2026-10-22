@@ -1,0 +1,34 @@
+{
+  "built_head": "c2cee18",
+  "publicSourceStatus": 502,
+  "publicSourceDNS": [
+    "198.18.0.72"
+  ],
+  "publicSourceBlockedBySafefetch": true,
+  "loopbackStatus": 400,
+  "wrapSuccessVerified": false,
+  "scope": "real browser failure path; no protection weakened",
+  "dom": [
+    {
+      "base": "https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/9d11978a24fe6610e3a7dbab741cf62634539d05/",
+      "id": "md_1",
+      "replace": null,
+      "source": "https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/9d11978a24fe6610e3a7dbab741cf62634539d05/README.md",
+      "text": ""
+    },
+    {
+      "base": "https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/9d11978a24fe6610e3a7dbab741cf62634539d05/",
+      "id": "md_2",
+      "replace": "true",
+      "source": "https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/9d11978a24fe6610e3a7dbab741cf62634539d05/README.md",
+      "text": ""
+    },
+    {
+      "base": null,
+      "id": "md_3",
+      "replace": null,
+      "source": "http://127.0.0.1:8110/markdown/readme.md",
+      "text": ""
+    }
+  ]
+}

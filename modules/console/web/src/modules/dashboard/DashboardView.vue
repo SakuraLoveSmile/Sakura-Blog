@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { VButton } from "@/components/ui";
+import { useModulesStore } from "@/stores/modules";
 import DashboardGrid from "./DashboardGrid.vue";
 import { useDashboardLayout } from "./useDashboardLayout";
 import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
@@ -11,6 +13,9 @@ import "./dashboard.css";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const modulesStore = useModulesStore();
+const hasPosts = computed(() => modulesStore.enabledNav().some((item) => item.path === "/posts"));
+const canWritePost = computed(() => hasPosts.value && authStore.hasPermission("content:write"));
 const { breakpoint, viewMode, previewWidth, isPreview, setViewMode } = provideBreakpoint();
 const { layout, loading, error, load } = useDashboardLayout();
 const refreshing = ref(false);
@@ -44,7 +49,9 @@ function refreshDashboard() {
   if (refreshing.value) return;
   refreshing.value = true;
   window.dispatchEvent(new Event(DASHBOARD_REFRESH_EVENT));
-  window.setTimeout(() => { refreshing.value = false; }, 850);
+  window.setTimeout(() => {
+    refreshing.value = false;
+  }, 850);
 }
 
 onMounted(load);
@@ -83,7 +90,11 @@ onMounted(load);
               :aria-busy="refreshing"
               @click="refreshDashboard"
             >
-              <Icon :icon="refreshing ? 'ri:loader-4-line' : 'ri:refresh-line'" class="w-4 h-4" :class="{ 'animate-spin': refreshing }" />
+              <Icon
+                :icon="refreshing ? 'ri:loader-4-line' : 'ri:refresh-line'"
+                class="w-4 h-4"
+                :class="{ 'animate-spin': refreshing }"
+              />
             </button>
             <button class="apple-edit-btn" @click="router.push('/dashboard/designer')">
               <Icon icon="ri:settings-3-line" class="w-4 h-4" />
@@ -91,6 +102,27 @@ onMounted(load);
             </button>
           </div>
         </div>
+
+        <section
+          v-if="hasPosts"
+          aria-label="写作快捷入口"
+          class="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card px-5 py-4"
+        >
+          <div>
+            <h2 class="text-base font-semibold text-foreground">今天，写点什么？</h2>
+            <p class="mt-1 text-sm text-text-tertiary">开始一篇新文章，或回到草稿接着写。</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <VButton :route="{ path: '/posts', query: { status: 'draft' } }" class="min-h-11">
+              <template #icon><Icon icon="ri:draft-line" /></template>
+              继续写草稿
+            </VButton>
+            <VButton v-if="canWritePost" type="primary" :route="{ path: '/posts/new' }" class="min-h-11">
+              <template #icon><Icon icon="ri:quill-pen-line" /></template>
+              撰写文章
+            </VButton>
+          </div>
+        </section>
 
         <div v-if="loading" class="apple-grid-empty">
           <Icon icon="ri:loader-4-line" class="w-5 h-5 animate-spin" />

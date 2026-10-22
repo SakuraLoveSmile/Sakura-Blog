@@ -63,9 +63,9 @@ const change = computed(() => {
   <!-- Small 尺寸：横向紧凑速览 -->
   <div
     v-if="sizePreset === 'small'"
-    class="apple-card stat-card-small h-full flex items-center gap-3 p-3 transition-all duration-200"
+    class="apple-card stat-card-small h-full flex items-center gap-3 p-3 transition-colors duration-150 duration-200"
     :style="{
-      background: `radial-gradient(circle at 100% 0%, ${color}10 0%, transparent 60%), color-mix(in srgb, var(--color-card) 78%, transparent)`
+      background: 'var(--color-card)'
     }"
   >
     <div
@@ -85,9 +85,9 @@ const change = computed(() => {
   <!-- Large 尺寸：带辅助分析与优雅 SVG 微趋势走势的富指标卡 -->
   <div
     v-else-if="sizePreset === 'large'"
-    class="apple-card stat-card-large h-full flex flex-col justify-between p-5 transition-all duration-200"
+    class="apple-card stat-card-large h-full flex flex-col justify-between p-5 transition-colors duration-150 duration-200"
     :style="{
-      background: `radial-gradient(circle at 95% 10%, ${color}14 0%, transparent 55%), color-mix(in srgb, var(--color-card) 78%, transparent)`
+      background: 'var(--color-card)'
     }"
   >
     <div class="stat-card-large-header flex items-start justify-between">
@@ -107,7 +107,7 @@ const change = computed(() => {
         class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border border-white/5"
         :style="{ backgroundColor: color + '14', color: color }"
       >
-        <span class="w-1.5 h-1.5 rounded-full animate-pulse" :style="{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }" />
+        <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: color }" />
         实时
       </span>
     </div>
@@ -138,7 +138,7 @@ const change = computed(() => {
   <!-- Medium 尺寸：经典标准 Apple 卡片，图标与标签同行、数值区自然排布 -->
   <div
     v-else
-    class="apple-card stat-card-medium h-full flex flex-col justify-between transition-all duration-200"
+    class="apple-card stat-card-medium h-full flex flex-col justify-between transition-colors duration-150 duration-200"
   >
     <div class="flex items-center gap-2.5">
       <div

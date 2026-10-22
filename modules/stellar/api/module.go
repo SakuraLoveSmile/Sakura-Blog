@@ -34,6 +34,11 @@ func Mount(r *gin.Engine, d Dependencies) error {
 	if d.Store == nil {
 		return fmt.Errorf("stellar api: store is required")
 	}
+	siteURL := ""
+	if d.Site != nil && d.Site.Load() != nil {
+		siteURL = d.Site.Load().URL
+	}
+	MountRemoteMarkdown(r, siteURL)
 	publicIdentity := d.Identity
 	if publicIdentity == nil {
 		publicIdentity = identity.NewPublicHandler(d.Store, d.Site)
@@ -41,7 +46,6 @@ func Mount(r *gin.Engine, d Dependencies) error {
 	}
 	identityRoutes := publicIdentity.PublicRoutes()
 	auth := r.Group("/api/auth")
-	auth.GET("/register/challenge", identityRoutes.RegisterChallenge)
 	auth.POST("/register", identityRoutes.Register)
 	auth.POST("/login", identityRoutes.Login)
 	auth.GET("/me", identityRoutes.Me)

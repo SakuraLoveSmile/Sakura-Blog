@@ -30,7 +30,7 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
         <slot name="end" />
         <div
           v-if="$slots.hoverActions"
-          class="entity-hover-actions hidden items-center gap-1 transition-all opacity-0 sm:group-hover:opacity-100 sm:group-hover:flex"
+          class="entity-hover-actions hidden items-center gap-1 transition-opacity duration-150 opacity-0 sm:group-hover:opacity-100 sm:group-hover:flex"
         >
           <slot name="hoverActions" />
         </div>
@@ -48,7 +48,7 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
 <style scoped>
 .entity-wrapper {
   position: relative;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
 }
 .entity-wrapper:hover {
   background: color-mix(in srgb, #fff 3%, transparent);

@@ -1,0 +1,31 @@
+{
+  "desktopWidth": 1280,
+  "documentWidth": 1280,
+  "sidebarCardsWidth": 312,
+  "controlWidth": 278,
+  "mobile": {
+    "dialogScrollWidth": 390,
+    "dialogWidth": 390,
+    "documentWidth": 390,
+    "focusInside": true,
+    "width": 390
+  },
+  "outlineSwitchPreserved": true,
+  "reload": {
+    "stellarPreserved": true,
+    "blogPreserved": true
+  },
+  "continuousInput": true,
+  "multilineReferences": true,
+  "invalidRawDisabledControls": true,
+  "rawCorrectedRecovered": true,
+  "exportFile": "stellar-document.md",
+  "exportBigIntegerPreserved": true,
+  "themeMathProvider": "mathjax",
+  "articleMathFalse": {
+    "mathNodes": 0,
+    "mathScripts": [],
+    "rawFormulaVisible": true
+  },
+  "draftSaved": true
+}

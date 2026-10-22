@@ -54,12 +54,12 @@ function addWidget(widget: WidgetDefinition) {
     </p>
     <div class="max-h-96 overflow-y-auto pr-1 space-y-5">
       <section v-for="[group, widgets] in grouped" :key="group">
-        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ groupLabels[group] ?? group }}</h3>
+        <h3 class="mb-2 text-xs font-semibold text-muted-foreground">{{ groupLabels[group] ?? group }}</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             v-for="widget in widgets"
             :key="widget.id"
-            class="flex items-center gap-3 p-3 rounded-xl border border-white/10 hover:border-primary/60 hover:bg-white/[0.05] text-left transition-all group"
+            class="flex items-center gap-3 p-3 rounded-xl border border-white/10 hover:border-primary/60 hover:bg-white/[0.05] text-left transition-colors duration-150 group"
             @click="addWidget(widget)"
           >
             <div class="w-10 h-10 rounded-lg bg-white/[0.05] flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">

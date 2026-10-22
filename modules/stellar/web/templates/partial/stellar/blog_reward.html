@@ -1,0 +1,22 @@
+{{$reward := sf_get .Stellar.Data "blog.content.reward"}}
+{{if and .Page.Title (sf_truth (sf_get $reward "enabled"))}}
+<div class="reward-wrap" id="reward">
+  <button type="button" class="reward-toggle" id="reward-toggle" aria-expanded="false" aria-controls="reward-codes">{{sf_icon "default:reward"}}<span>{{sf_first (sf_get $reward "text") (lang "article.reward_default")}}</span></button>
+  <div class="reward-codes" id="reward-codes" inert>
+    <div class="reward-codes-inner">
+    {{with sf_get $reward "wechat"}}
+    <figure class="reward-item">
+      <img src="{{.}}" alt="{{lang "share.wechat_pay"}}" loading="lazy">
+      <figcaption>{{- lang "share.wechat_pay" -}}</figcaption>
+    </figure>
+    {{end}}
+    {{with sf_get $reward "alipay"}}
+    <figure class="reward-item">
+      <img src="{{.}}" alt="{{lang "share.alipay_qrcode"}}" loading="lazy">
+      <figcaption>{{- lang "share.alipay" -}}</figcaption>
+    </figure>
+    {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { usersApi, type UserItem } from "@/api";
 import { queryKeys } from "@/api/query-client";
@@ -62,6 +62,52 @@ const filteredUsers = computed(() => {
 
 function invalidate() {
   queryClient.invalidateQueries({ queryKey: queryKeys.users() });
+}
+
+// ---------- 注册邀请码 ----------
+const invitationVisible = ref(false);
+const invitationSaving = ref(false);
+const invitationDays = ref<1 | 7 | 30>(7);
+const invitationCode = ref("");
+const invitationExpiresAt = ref("");
+let invitationRequest = 0;
+function clearInvitation() {
+  invitationRequest++;
+  invitationCode.value = "";
+  invitationExpiresAt.value = "";
+  invitationSaving.value = false;
+}
+watch(invitationVisible, (visible) => {
+  if (!visible) clearInvitation();
+});
+onBeforeUnmount(clearInvitation);
+function openInvitation() {
+  clearInvitation();
+  invitationDays.value = 7;
+  invitationVisible.value = true;
+}
+async function generateInvitation() {
+  if (invitationSaving.value || invitationCode.value) return;
+  const request = ++invitationRequest;
+  invitationSaving.value = true;
+  try {
+    const { data } = await usersApi.createInvitation({ expires_in_days: invitationDays.value });
+    if (request !== invitationRequest || !invitationVisible.value) return;
+    invitationCode.value = data.code;
+    invitationExpiresAt.value = new Date(data.expires_at).toLocaleString();
+  } catch {
+    // API transport 已显示具体错误。
+  } finally {
+    if (request === invitationRequest) invitationSaving.value = false;
+  }
+}
+async function copyInvitation() {
+  try {
+    await navigator.clipboard.writeText(invitationCode.value);
+    Toast.success("邀请码已复制");
+  } catch {
+    Toast.error("复制失败，请选择邀请码手动复制");
+  }
 }
 
 // ---------- 创建用户 ----------
@@ -174,7 +220,11 @@ function confirmDelete(u: UserItem) {
 
 // ---------- 展示辅助 ----------
 function roleLabel(role: string): string {
-  return role === "admin" ? "管理员" : "作者";
+  if (role === "admin") return "管理员";
+  if (role === "author") return "作者";
+  if (role === "reader") return "读者";
+  if (role === "commenter") return "评论者";
+  return role;
 }
 
 type RoleTone = "admin" | "author";
@@ -217,6 +267,10 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         <Icon icon="ri:user-star-line" class="text-xl text-primary sm:text-2xl" />
       </template>
       <template #actions>
+        <VButton v-permission="'users:manage'" size="sm" @click="openInvitation">
+          <template #icon><Icon icon="ri:key-2-line" class="h-4 w-4" /></template>
+          生成邀请码
+        </VButton>
         <VButton v-permission="'users:manage'" type="primary" size="sm" @click="openCreate">
           <template #icon>
             <Icon icon="ri:user-add-line" class="h-4 w-4" />
@@ -543,6 +597,34 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         </template>
       </VCard>
     </div>
+
+    <!-- 注册邀请码：明文仅保留在当前弹窗中 -->
+    <VModal v-model:visible="invitationVisible" title="生成注册邀请码" :width="520">
+      <div class="space-y-4">
+        <p class="text-sm text-text-secondary">邀请码只能注册一次，注册成功后自动失效。</p>
+        <div v-if="!invitationCode">
+          <label for="invitation-days" :class="labelCls">有效期</label>
+          <select id="invitation-days" v-model="invitationDays" :class="inputCls" :disabled="invitationSaving">
+            <option :value="1">1 天</option>
+            <option :value="7">7 天（默认）</option>
+            <option :value="30">30 天</option>
+          </select>
+        </div>
+        <div v-else>
+          <label for="invitation-code" :class="labelCls">邀请码</label>
+          <input id="invitation-code" :value="invitationCode" :class="inputCls" readonly autocomplete="off" />
+          <p class="mt-2 text-xs text-text-tertiary">到期时间：{{ invitationExpiresAt }}</p>
+          <p class="mt-2 text-xs text-text-tertiary">请复制并交给注册者，关闭后不再显示。</p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="invitationVisible = false">关闭</VButton>
+          <VButton v-if="invitationCode" type="primary" @click="copyInvitation">复制邀请码</VButton>
+          <VButton v-else type="primary" :loading="invitationSaving" @click="generateInvitation">生成</VButton>
+        </div>
+      </template>
+    </VModal>
 
     <!-- 创建用户 -->
     <VModal v-model:visible="createVisible" title="创建用户" :width="520">

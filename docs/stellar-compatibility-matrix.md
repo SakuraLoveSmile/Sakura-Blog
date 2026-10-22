@@ -1,6 +1,6 @@
 # Stellar 兼容性矩阵与实现规范
 
-本文档为 Sakura-Blog 对 Hexo Stellar 主题（以 1.44.0 为干净基线，锁定 commit `1f4cb4bc0a44e829b6d0929ce4102aea9cd9a2a8`）的兼容性事实、配置映射、短代码支持全集、动态服务与安全边界定义。
+本文档为 Sakura-Blog 对 Hexo Stellar 主题（以 2.0.0 为干净基线，锁定 commit `9d11978a24fe6610e3a7dbab741cf62634539d05`）的兼容性事实、配置映射、短代码支持全集、动态服务与安全边界定义。
 
 ---
 
@@ -43,6 +43,16 @@
 | 外部评论服务 (Disqus/Valine/Gitalk) | *已弃用/忽略* | 无 | 统一收敛至内部安全评论引擎 |
 
 ---
+
+### 2.1 Stellar 2.0 前台适配边界
+
+- 页面采用 `site-shell`、`site-workspace`、`site-region`、`brand` 与 `listing-nav`；文章状态由 `body[data-page-layout][data-article-style]` 表达。
+- 构建配置使用上游 `appearance/tags/features/article.listing`。站点已有 `style/plugins/site_tree` 等保存接口保留，由 Go 适配器输出新版 CSS/DOM；不要求修改真实站点配置或数据库。
+- 原生 ESM runtime 挂载本地 shell/search 扩展，保留上游区域注册、取消与卸载机制。Go FTS/静态搜索索引、自建评论和既有动态服务沿原接口运行。
+- 搜索位于品牌区按钮，使用原生 dialog；Ctrl/Command+K 可在桌面与窄屏打开。Wiki 搜索仍限定当前项目，RAG 问答能力保留其配置开关。
+- 本项目沿用 card 深色外观；不新增上游的浅色切换、访客外观设置页、Hexo CLI/Doctor、Front Matter 严格 Schema 或 Hexo 图片构建管线。完整 SSR 导航保留，未启用上游 `partial_navigation`，避免跳过自建服务的初始化。
+- `about`、块级 `tip`、旧分享链接等本地既有内容能力继续兼容；下方 shortcode 表描述本项目真实实现，不代表完全复制上游 2.0 标签全集。
+- CSS 从锁定 git commit 编译；共享 `resource/hexo-theme-stellar` 的 HEAD 无需切换到该 tag。ESM 入口版本覆盖 runtime 全部 JS 内容，依赖变化会一起使浏览器缓存失效。
 
 ## 3. 标签短代码（Shortcodes）支持清单
 

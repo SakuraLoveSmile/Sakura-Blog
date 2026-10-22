@@ -1,0 +1,75 @@
+{
+  "fallback": 4,
+  "images": [
+    {
+      "complete": true,
+      "dataSrc": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/b32ef3da1162a.svg",
+      "naturalWidth": 150,
+      "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/b32ef3da1162a.svg",
+      "style": "width:2em"
+    },
+    {
+      "complete": true,
+      "dataSrc": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/80c07e4dbb303.svg",
+      "naturalWidth": 512,
+      "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/80c07e4dbb303.svg",
+      "style": "width:2em"
+    },
+    {
+      "complete": true,
+      "dataSrc": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/a1b00e20f425d.svg",
+      "naturalWidth": 150,
+      "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/a1b00e20f425d.svg",
+      "style": "width:2em"
+    },
+    {
+      "complete": true,
+      "dataSrc": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/8411ed322ced6.svg",
+      "naturalWidth": 40,
+      "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/8411ed322ced6.svg",
+      "style": "width:2em"
+    }
+  ],
+  "svg": [
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    },
+    {
+      "style": null
+    }
+  ],
+  "url": "http://127.0.0.1:8103/t5-icon-images/"
+}

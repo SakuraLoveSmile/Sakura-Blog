@@ -100,7 +100,7 @@ function previewPost(item: PostItem) {
       <button
         v-for="item in displayedItems"
         :key="item.slug"
-        class="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl hover:bg-white/5 text-left transition-all border border-transparent hover:border-white/5"
+        class="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl hover:bg-white/5 text-left transition-colors duration-150 border border-transparent hover:border-white/5"
         @click="editPost(item)"
       >
         <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
@@ -239,9 +239,8 @@ function previewPost(item: PostItem) {
   border-radius: 50%;
   color: var(--color-muted-foreground);
   background: color-mix(in srgb, #fff 4%, transparent);
-  backdrop-filter: blur(8px);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 
 .recent-post-actions button:hover {

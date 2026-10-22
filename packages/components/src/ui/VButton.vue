@@ -93,7 +93,7 @@ function handleClick(e: MouseEvent) {
   appearance: none;
   vertical-align: middle;
   border-radius: 9999px;
-  transition: all var(--duration-fast, 150ms) var(--ease-standard);
+  transition: background-color var(--duration-fast, 150ms) var(--ease-standard), border-color var(--duration-fast, 150ms) var(--ease-standard), color var(--duration-fast, 150ms) var(--ease-standard), opacity var(--duration-fast, 150ms) var(--ease-standard), transform var(--duration-fast, 150ms) var(--ease-standard);
   background: transparent;
   white-space: nowrap;
   box-sizing: border-box;

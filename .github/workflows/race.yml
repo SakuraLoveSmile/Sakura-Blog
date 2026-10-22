@@ -19,9 +19,12 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空。
-      - name: Stub modules/console/web/dist for go:embed
-        run: mkdir -p modules/console/web/dist && echo '<!doctype html>' > modules/console/web/dist/index.html
+      # modules/console/web/embed.go 的 //go:embed all:dist 与 all:dist-uc 编译期要求非空。
+      - name: Stub Console and User Center dist for go:embed
+        run: |
+          mkdir -p modules/console/web/dist modules/console/web/dist-uc
+          echo '<!doctype html>' > modules/console/web/dist/index.html
+          echo '<!doctype html>' > modules/console/web/dist-uc/uc.html
 
       - name: Race tests
         run: go test -race ./...

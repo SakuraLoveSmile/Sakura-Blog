@@ -1,142 +1,130 @@
 {
   "stellar": {
-    "version": "1.44.0"
+    "version": "2.0.0"
   },
-  "style": {
-    "prefers_theme": "auto",
-    "page_transition": {
-      "enable": true
-    },
-    "font-size": {
-      "root": "16px",
-      "code": "85%",
-      "codeblock": "0.8125rem"
-    },
-    "font-family": {
-      "body": "\"LXGW WenKai Screen\", system-ui, \"Microsoft Yahei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-      "code": "\"LXGW WenKai Screen\", Menlo, Monaco, Consolas, system-ui, \"Courier New\", monospace, sans-serif",
-      "codeblock": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif"
-    },
-    "text-align": "left",
-    "prefix": {
-      "h2": "https://api.iconify.design/ci:heading-h2.svg"
-    },
-    "header_prefix": {
-      "h2": "#",
-      "h3": "=",
-      "h4": "|",
-      "h5": ":"
-    },
-    "border-radius": {
-      "card-l": "24px",
-      "card": "16px",
-      "card-s": "12px",
-      "bar": "12px",
-      "image-l": "24px",
-      "image": "16px",
-      "image-s": "8px"
-    },
-    "color": {
-      "theme": "hsl(192 98% 55%)",
+  "appearance": {
+    "preset": "card",
+    "color_scheme": "auto",
+    "colors": {
+      "primary": "hsl(192 98% 55%)",
       "accent": "hsl(14 100% 57%)",
       "link": "hsl(207 90% 54%)"
     },
-    "animated_avatar": {
-      "animate": "auto"
+    "gradients": {
+      "primary_action": "linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%))",
+      "search_bar": "linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"
     },
-    "codeblock": {
-      "scrollbar": "4px",
-      "highlightjs_theme": "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css"
+    "typography": {
+      "font_smoothing": "antialiased",
+      "font_weight": {
+        "100": 100,
+        "200": 200,
+        "300": 300,
+        "400": 400,
+        "500": 500,
+        "600": 600,
+        "700": 700,
+        "800": 800,
+        "900": 900
+      },
+      "font_family": {
+        "body": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "code": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif"
+      },
+      "font_size": {
+        "root": "16px",
+        "inline_code": "85%",
+        "code_block": "0.8125rem"
+      },
+      "content_align": "left"
     },
-    "loading": {
-      "loading": "正在加载",
-      "error": "加载失败，请稍后重试。"
+    "shape": {
+      "corner": "superellipse(1.25)",
+      "radius": {
+        "card_large": "24px",
+        "card": "16px",
+        "card_small": "12px",
+        "bar": "12px",
+        "image_large": "24px",
+        "image": "16px",
+        "image_small": "8px"
+      }
     },
-    "gradient": {
-      "start": "linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%))",
-      "avatar": "conic-gradient(from 0deg, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)",
-      "angle": "210deg",
-      "searchbar": "linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"
+    "backgrounds": {
+      "page": {
+        "image": null,
+        "backdrop": {
+          "radius": "100px",
+          "overlay": "var(--bg-a75)",
+          "saturation": "300%"
+        }
+      },
+      "leftbar": {
+        "type": "gradient",
+        "image": null,
+        "gradient": {
+          "light": [
+            "hsl(210 32% 84%)",
+            "hsl(188 44% 84%)",
+            "hsl(12 64% 73%)",
+            "hsl(35 100% 82%)"
+          ],
+          "dark": [
+            "hsl(210 16% 48%)",
+            "hsl(188 18% 50%)",
+            "hsl(12 30% 42%)",
+            "hsl(35 36% 49%)"
+          ]
+        },
+        "opacity": 1,
+        "backdrop": {
+          "radius": "100px"
+        }
+      }
     },
-    "leftbar": {
-      "ui-style": "card",
-      "background-color-light": "var(--card)",
-      "background-color-dark": "var(--card)",
-      "background-image": "url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg)",
-      "blur-px": "100px",
-      "blur-bg": "var(--bg-a60)",
-      "background-opacity": 0.8
-    },
-    "error_page": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg",
-    "site": {
-      "background-image": "",
-      "blur-px": "100px",
-      "blur-bg": "var(--bg-a75)",
-      "blur-sat": "300%"
-    },
-    "corner-shape": "superellipse(1.25)"
+    "code_block": {
+      "scrollbar_width": "4px",
+      "highlight_stylesheet": "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css"
+    }
   },
   "article": {
-    "type": "tech",
-    "cover_ratio": 2,
-    "banner_ratio": 2.5,
-    "auto_excerpt": 128,
-    "pin_style": "carousel",
-    "card_style": "hero",
-    "reading_time": false,
-    "card_tags": false
+    "style": "tech",
+    "listing": {
+      "pinned_layout": "carousel",
+      "card_layout": "hero",
+      "cover_ratio": 2,
+      "excerpt_length": 128,
+      "show_tags": false
+    },
+    "show_reading_time": false
   },
-  "comments": {
-    "service": "",
-    "custom_css": [],
-    "waline": {
-      "js": "https://gcore.jsdelivr.net/npm/@waline/client@3.15.2/dist/waline.js",
-      "css": "https://gcore.jsdelivr.net/npm/@waline/client@3.15.2/dist/waline.css",
-      "meta_css": "https://gcore.jsdelivr.net/npm/@waline/client@3.15.2/dist/waline-meta.css"
-    }
-  },
-  "menubar": {
-    "columns": 4
-  },
-  "plugins": {
-    "preload": {
-      "enable": true
-    },
-    "scrollreveal": {
-      "enable": true
-    },
-    "tianli_gpt": {
-      "enable": false
-    },
-    "katex": {
-      "enable": false
-    },
-    "copycode": {
-      "enable": true
-    },
-    "adaptive_text": {
-      "enable": true
-    },
-    "card_hover": {
-      "enable": true,
-      "spotlight_color": "rgba(255, 255, 255, 0.25)",
-      "max_tilt": 3
-    }
-  },
-  "tag_plugins": {
+  "tags": {
     "checkbox": {
       "interactive": false
-    },
-    "okr": {
-      "border": false
     },
     "note": {
       "border": true
     }
   },
-  "dependencies": {
-    "lazyload": {
-      "transition": "none"
+  "features": {
+    "color_scheme_switch": {
+      "enabled": false
+    },
+    "lazy_loading": {
+      "transition": "fade"
+    },
+    "card_hover": {
+      "spotlight": false,
+      "tilt": false
+    },
+    "math": {
+      "provider": null
+    }
+  },
+  "local": {
+    "loading": {
+      "loading": "正在加载",
+      "error": "加载失败，请稍后重试。"
     }
   }
 }

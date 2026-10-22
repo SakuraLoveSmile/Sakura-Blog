@@ -224,7 +224,7 @@ const aiLabelTiers = [
               <h3>
                 {{ target === "category_color" ? "分类颜色" : target === "category_icon" ? "分类图标" : "标签图标" }}
               </h3>
-              <p v-if="target === 'category_color'" class="settings-post-help">填写 CSS 颜色值，例如 #1BCDFC。</p>
+              <p v-if="target === 'category_color'" class="settings-post-help">填写 CSS 颜色值，例如 #2e8dff。</p>
               <p v-else class="settings-post-help">输入图标 key，或从当前图标库中选择。</p>
             </div>
             <button type="button" class="settings-post-add-btn" @click="addMapEntry(target)">
@@ -246,7 +246,7 @@ const aiLabelTiers = [
                 v-if="target === 'category_color'"
                 v-model="data.article[target][key]"
                 :class="inputCls"
-                placeholder="#1BCDFC"
+                placeholder="#2e8dff"
                 aria-label="分类颜色"
               />
               <IconPicker
@@ -755,9 +755,7 @@ const aiLabelTiers = [
   z-index: 10;
   padding: 16px 28px calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-card) 92%, transparent);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  background: var(--color-card);
 }
 
 .settings-post-actions-inner {

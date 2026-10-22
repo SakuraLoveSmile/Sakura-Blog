@@ -8,6 +8,7 @@ export type * from "./generated";
 export * from "./api/auth";
 export * from "./api/contracts";
 export * from "./api/content";
+export * from "./api/notebooks";
 export * from "./api/dashboard";
 export * from "./api/editor";
 export * from "./api/links";
@@ -16,6 +17,7 @@ export * from "./api/monitoring";
 export * from "./api/plugins";
 export * from "./api/rag";
 export * from "./api/settings";
+export * from "./api/stellar_settings";
 export * from "./api/wiki";
 export * from "./api/uc";
 

@@ -1,0 +1,26 @@
+{
+  "source_commit": "96d72b976dbb84d02d3661644ab54f390f364b85",
+  "scope": "startup and site URL migration combination before Hero media follow-up",
+  "normal_hook": {
+    "exit_code": 0,
+    "console_tests": 261,
+    "stellar_tests": 202,
+    "failures": 0,
+    "skips": 0,
+    "go_vet": true,
+    "staticcheck": true,
+    "go_tests_all": true
+  },
+  "feature_merge_check_exit_code": 0,
+  "dev_combination_test_exit_code": 0,
+  "dev_console_tests": 261,
+  "dev_stellar_tests": 202,
+  "dev_failures": 0,
+  "dev_skips": 0,
+  "css_build_exit_code": 0,
+  "css_drift_exit_code": 0,
+  "css_products_match": 20,
+  "real_source_migrated": false,
+  "pushed": false,
+  "deployed": false
+}

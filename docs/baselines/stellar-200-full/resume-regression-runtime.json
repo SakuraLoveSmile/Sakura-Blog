@@ -1,0 +1,44 @@
+{
+  "built_head": "5f944882b92efe8250b76d1e7d91ba98b94f6403",
+  "binary_sha256": "e07d83bed75cddadc7f96e501c31ecc679dc0ee7ba57fdc26a0d016aefb98868",
+  "console_html_matches_build": true,
+  "assets": [
+    {
+      "url": "/console/assets/index-CNdq9mXm.js",
+      "sha256": "ef5b4b8460147bd9ed59ac6aedda822f94b79359e9321e3dc74eba25c2758926",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/api-CMeGK4tt.js",
+      "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+      "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/pinia-BDaR9qFm.js",
+      "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/index-DhwoxVyW.css",
+      "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+      "matches_build": true
+    }
+  ],
+  "runtime": [
+    {
+      "url": "/assets/js/main.js",
+      "sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+      "matches_build": true
+    }
+  ]
+}

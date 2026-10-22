@@ -1,6 +1,9 @@
 package web
 
 import (
+	"html/template"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -33,7 +36,7 @@ func TestCollectionTemplateVariantsAndEscaping(t *testing.T) {
 	}
 	for _, want := range []string{
 		`class="ui-collection"`, `data-layout="grid"`, `data-variant="icon"`, `data-density="compact"`, `--ui-columns:3`,
-		`class="ui-collection__item is-active card-hover card-hover--spotlight"`, `aria-current="page"`, `--ui-item-depth:2`,
+		`class="ui-collection__item is-active ui-interactive card-hover card-hover--spotlight"`, `aria-current="page"`, `--ui-item-depth:2`,
 		`title="标题 &lt;危险&gt;"`,
 	} {
 		if !strings.Contains(html, want) {
@@ -94,7 +97,7 @@ func TestRegressionWidgetsUseCollectionContract(t *testing.T) {
 	}
 	for _, want := range []string{
 		`data-layout="grid"`, `data-variant="nav"`, `--ui-columns:2`,
-		`class="ui-collection__item is-active card-hover card-hover--spotlight"`,
+		`class="ui-collection__item is-active ui-interactive card-hover card-hover--spotlight"`,
 		`文库 &lt;查看&gt;`, `aria-current="page"`,
 	} {
 		if !strings.Contains(welcome, want) {
@@ -124,7 +127,7 @@ func TestRegressionWidgetsUseCollectionContract(t *testing.T) {
 	}
 	for _, want := range []string{
 		`data-layout="grid"`, `data-variant="icon"`, `--ui-columns:3`,
-		`class="ui-collection__item is-active card-hover card-hover--spotlight"`, `title="图标 &lt;一&gt;"`,
+		`class="ui-collection__item is-active ui-interactive card-hover card-hover--spotlight"`, `title="图标 &lt;一&gt;"`,
 	} {
 		if !strings.Contains(linklist, want) {
 			t.Errorf("linklist output missing %q: %s", want, linklist)
@@ -186,11 +189,57 @@ func TestFooterSocialRenderingLinksDropdownAndFallbackIcon(t *testing.T) {
 		`href="/about/" rel="noopener noreferrer"`,
 		`class="social-spacer"`,
 		`<details class="dropdown social-dropdown"`,
-		`<div class="dropdown-menu ui-collection"`,
-		`class="dropdown-item ui-collection__item"`,
+		`<div class="dropdown-menu ui-collection ui-surface"`,
+		`class="dropdown-item ui-collection__item ui-interactive"`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("social output missing %q: %s", want, html)
+		}
+	}
+}
+
+// 2.0 的组件尺寸只消费 .ui-icon；原始 SVG 的固有宽高不能代替容器。
+func TestWidgetsUseStellarIconSizingContainers(t *testing.T) {
+	engine := testEngine(t)
+	view := &ViewData{Site: &Site{}, TOC: template.HTML(`<nav class="toc"><a class="toc-link" href="#heading">标题</a></nav>`)}
+	wrappedSVG := regexp.MustCompile(`<span class="ui-icon">\s*<svg\b`)
+	for _, tc := range []struct {
+		layout string
+		params settings.WidgetDef
+		icons  int
+		href   string
+	}{
+		{"toc", nil, 2, `href="#heading"`},
+		{"recent", settings.WidgetDef{"rss": "/custom.xml"}, 1, `href="/custom.xml"`},
+		{"author", nil, 1, `href="/"`},
+		{"ghrepo", settings.WidgetDef{"repo": "example/project"}, 4, `href="https://github.com/example/project"`},
+		{"ghuser", settings.WidgetDef{"username": "example", "header": true}, 2, `href="https://github.com/example"`},
+	} {
+		t.Run(tc.layout, func(t *testing.T) {
+			html, err := engine.RenderValue("partial/widgets/"+tc.layout, &settings.WidgetInstance{Layout: tc.layout, Params: tc.params, V: view})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := len(wrappedSVG.FindAllStringIndex(html, -1)); got != tc.icons || strings.Count(html, "<svg") != tc.icons {
+				t.Errorf("widget icons must all use sizing containers: got %d wrapped SVGs, want %d", got, tc.icons)
+			}
+			if !strings.Contains(html, tc.href) {
+				t.Errorf("widget lost existing link %s", tc.href)
+			}
+		})
+	}
+	css, err := os.ReadFile("assets/css/main.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, selector := range []string{
+		".widget-wrapper .widget-header .cap-action .ui-icon",
+		".widget-wrapper.ghrepo .repo .ui-icon",
+		".widgets .widget-wrapper.user-card .follow .ui-icon",
+		".widget-wrapper.toc .widget-footer a .ui-icon",
+	} {
+		if !strings.Contains(string(css), selector) {
+			t.Errorf("Stellar CSS missing icon size consumer %s", selector)
 		}
 	}
 }

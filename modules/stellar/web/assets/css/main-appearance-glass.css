@@ -1,0 +1,416 @@
+.site-shell {
+  --shell-gap: var(--gap-page);
+  --shell-edge-inset: 16px;
+  --hoverable-card-hover-shadow: 0 1px 2px 0px rgba(0,0,0,0.1);
+  --hoverable-card-hover-transform: none;
+}
+.ui-surface {
+  border: 0;
+  border-radius: var(--radius-card-l, var(--radius-card, 24px));
+  corner-shape: var(--corner-shape, superellipse(1.25));
+  isolation: isolate;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 0 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+}
+.ui-surface:before,
+.ui-surface:after {
+  z-index: -1;
+  position: absolute;
+  pointer-events: none;
+  content: '';
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-card-l, var(--radius-card, 24px));
+  corner-shape: var(--corner-shape, superellipse(1.25));
+}
+.ui-surface:before {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.3);
+}
+:root[data-theme="dark"] .ui-surface:before {
+  background: rgba(255,255,255,0.15);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .ui-surface:before {
+    background: rgba(255,255,255,0.15);
+  }
+}
+.ui-surface:after {
+  --blur-px: 16px;
+  --blur-sat: 300%;
+  backdrop-filter: saturate(var(--blur-sat)) blur(var(--blur-px));
+  -webkit-backdrop-filter: saturate(var(--blur-sat)) blur(var(--blur-px));
+  mask: linear-gradient(#fff, 20%, transparent, 80%, #fff), linear-gradient(90deg, #fff, 20%, transparent, 80%, #fff);
+  -webkit-mask-image: linear-gradient(#fff, 20%, transparent, 80%, #fff), linear-gradient(90deg, #fff, 20%, transparent, 80%, #fff);
+  box-shadow: inset 0 0 32px 4px rgba(255,255,255,0.5);
+  transition: all 0.2s ease-out;
+  -moz-transition: all 0.2s ease-out;
+  -webkit-transition: all 0.2s ease-out;
+  -o-transition: all 0.2s ease-out;
+}
+:root[data-theme="dark"] .ui-surface:after {
+  box-shadow: inset 0 0 16px 4px rgba(255,255,255,0.1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .ui-surface:after {
+    box-shadow: inset 0 0 16px 4px rgba(255,255,255,0.1);
+  }
+}
+.ui-surface > * {
+  position: relative;
+  z-index: 0;
+}
+.ui-surface > .site-region__decoration {
+  z-index: -2;
+}
+.ui-interactive {
+  background: transparent;
+  box-shadow: none;
+}
+.ui-interactive:focus-visible {
+  outline: 2px solid var(--theme);
+  outline-offset: 2px;
+}
+.ui-interactive.has-hover-surface,
+.ui-interactive:hover,
+.ui-interactive:focus-visible,
+.ui-interactive:active,
+.ui-interactive.active,
+.ui-interactive.is-active,
+details[open] > .ui-interactive {
+  background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0) 50%), var(--bg-a50);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
+}
+table:not([class]) th {
+  background: var(--block);
+  border-top: 1px solid var(--block-border);
+  border-bottom: 1px solid var(--block-border);
+}
+table:not([class]) tr {
+  border-bottom: 1px dashed var(--block-border);
+}
+table:not([class]) tr:hover {
+  background: var(--block);
+}
+blockquote:before {
+  background: var(--text-meta);
+}
+p > code:not([class]),
+li > code:not([class]),
+.md-text .highlight,
+pre:not([class]):has(> code),
+.md-text .highlight figcaption span,
+.md-text .gist .highlight,
+.md-text .gist .gist-meta {
+  background: var(--block);
+}
+.md-text .gist .gist-file {
+  border-color: var(--block-border);
+}
+.md-text .gist .gist-data {
+  --bgColor-default: var(--block);
+  border-bottom-color: var(--block-border);
+}
+.md-text .link-card {
+  background: var(--card);
+}
+.listing-nav__surface {
+  background: var(--card);
+  box-shadow: 0 1px 2px 0px rgba(0,0,0,0.1);
+}
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial):not(:hover) {
+  background: var(--bg-a20);
+  box-shadow: none;
+}
+.site-region--rightbar .widget-wrapper.toc .toc-link.active:not(:hover):not(:focus-visible):not(:active) {
+  background: transparent;
+  box-shadow: none;
+}
+.widget-wrapper.markdown .ui-interactive {
+  background: var(--bg-a10);
+}
+.site-region--topbar.ui-surface,
+.site-region--leftbar .ui-surface {
+  border: 0;
+  border-radius: var(--radius-card-l, var(--radius-card, 24px));
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.site-region--leftbar .site-region__surface.ui-surface {
+  box-shadow: none;
+}
+@media screen and (max-width: 1180px) {
+  .site-region--rightbar .site-region__surface.ui-drawer-surface {
+    border: 0;
+    border-radius: var(--radius-card-l, var(--radius-card, 24px));
+    corner-shape: var(--corner-shape, superellipse(1.25));
+    isolation: isolate;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 0 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+    background: var(--bg-a50);
+    box-shadow: none;
+  }
+  .site-region--rightbar .site-region__surface.ui-drawer-surface:before,
+  .site-region--rightbar .site-region__surface.ui-drawer-surface:after {
+    z-index: -1;
+    position: absolute;
+    pointer-events: none;
+    content: '';
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: var(--radius-card-l, var(--radius-card, 24px));
+    corner-shape: var(--corner-shape, superellipse(1.25));
+  }
+  .site-region--rightbar .site-region__surface.ui-drawer-surface:before {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(255,255,255,0.3);
+  }
+  :root[data-theme="dark"] .site-region--rightbar .site-region__surface.ui-drawer-surface:before {
+    background: rgba(255,255,255,0.15);
+  }
+  .site-region--rightbar .site-region__surface.ui-drawer-surface:after {
+    --blur-px: 16px;
+    --blur-sat: 300%;
+    backdrop-filter: saturate(var(--blur-sat)) blur(var(--blur-px));
+    -webkit-backdrop-filter: saturate(var(--blur-sat)) blur(var(--blur-px));
+    mask: linear-gradient(#fff, 20%, transparent, 80%, #fff), linear-gradient(90deg, #fff, 20%, transparent, 80%, #fff);
+    -webkit-mask-image: linear-gradient(#fff, 20%, transparent, 80%, #fff), linear-gradient(90deg, #fff, 20%, transparent, 80%, #fff);
+    box-shadow: inset 0 0 32px 4px rgba(255,255,255,0.5);
+    transition: all 0.2s ease-out;
+    -moz-transition: all 0.2s ease-out;
+    -webkit-transition: all 0.2s ease-out;
+    -o-transition: all 0.2s ease-out;
+  }
+  :root[data-theme="dark"] .site-region--rightbar .site-region__surface.ui-drawer-surface:after {
+    box-shadow: inset 0 0 16px 4px rgba(255,255,255,0.1);
+  }
+  .site-region--rightbar .site-region__surface.ui-drawer-surface > * {
+    position: relative;
+    z-index: 0;
+  }
+  .site-region--rightbar .site-region__surface.ui-drawer-surface > .site-region__decoration {
+    z-index: -2;
+  }
+}
+@media screen and (max-width: 768px) {
+  .site-region--leftbar .site-region__surface.ui-surface {
+    background: var(--bg-a50);
+  }
+}
+.site-region--topbar > .site-region__viewport {
+  border-radius: inherit;
+  corner-shape: inherit;
+}
+.site-region--leftbar .search-wrapper > .search-form:before {
+  background: #fff;
+}
+.site-region--leftbar .widgets .loading-wrap,
+.site-region--leftbar .widget-wrapper.markdown .widget-body,
+.site-region--leftbar .widget-wrapper.tagcloud .widget-body,
+.site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body .highlight,
+.site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body pre:not([class]):has(> code),
+.site-region--leftbar .widget-wrapper.timeline .body {
+  background: rgba(255,255,255,0.5);
+}
+.site-region--leftbar .search-no-result {
+  background: rgba(255,255,255,0.2);
+}
+.site-region--leftbar .site-region__decoration {
+  display: none;
+  display: block;
+  pointer-events: none;
+  position: absolute;
+  --inset: 16px;
+  top: var(--inset);
+  bottom: var(--inset);
+  left: var(--inset);
+  right: var(--inset);
+  border-radius: inherit;
+  --saturate: 350%;
+  --blur-px: 100px;
+  --background-opacity: 1;
+  --background-opacity: 1;
+  filter: blur(var(--blur-px)) opacity(var(--background-opacity));
+  background-color: hsl(210 32% 84%);
+  background-image: radial-gradient(ellipse at 28% 24%, hsl(188 44% 84%) 0%, hsl(188 44% 84%) 65%, transparent 100%), radial-gradient(ellipse at 60% 50%, hsl(12 64% 73%) 0%, hsl(12 64% 73%) 60%, transparent 100%), conic-gradient(from 210deg at 32% 72%, hsl(35 100% 82%) 0deg, hsl(35 100% 82%) 110deg, transparent 190deg, hsl(188 44% 84%) 270deg, transparent 360deg);
+  background-position: left top, right 42%, left bottom;
+  background-size: 56% 34%, 52% 30%, 60% 38%;
+  background-repeat: no-repeat;
+}
+:root[data-theme='dark'] .site-region--leftbar .site-region__decoration {
+  --background-opacity: 1;
+  filter: blur(var(--blur-px)) opacity(var(--background-opacity));
+  background-color: hsl(210 16% 48%);
+  background-image: radial-gradient(ellipse at 28% 24%, hsl(188 18% 50%) 0%, hsl(188 18% 50%) 65%, transparent 100%), radial-gradient(ellipse at 60% 50%, hsl(12 30% 42%) 0%, hsl(12 30% 42%) 60%, transparent 100%), conic-gradient(from 210deg at 32% 72%, hsl(35 36% 49%) 0deg, hsl(35 36% 49%) 110deg, transparent 190deg, hsl(188 18% 50%) 270deg, transparent 360deg);
+  background-position: left top, right 42%, left bottom;
+  background-size: 56% 34%, 52% 30%, 60% 38%;
+  background-repeat: no-repeat;
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .site-region--leftbar .site-region__decoration {
+    --background-opacity: 1;
+    filter: blur(var(--blur-px)) opacity(var(--background-opacity));
+    background-color: hsl(210 16% 48%);
+    background-image: radial-gradient(ellipse at 28% 24%, hsl(188 18% 50%) 0%, hsl(188 18% 50%) 65%, transparent 100%), radial-gradient(ellipse at 60% 50%, hsl(12 30% 42%) 0%, hsl(12 30% 42%) 60%, transparent 100%), conic-gradient(from 210deg at 32% 72%, hsl(35 36% 49%) 0deg, hsl(35 36% 49%) 110deg, transparent 190deg, hsl(188 18% 50%) 270deg, transparent 360deg);
+    background-position: left top, right 42%, left bottom;
+    background-size: 56% 34%, 52% 30%, 60% 38%;
+    background-repeat: no-repeat;
+  }
+}
+@media screen and (min-width: 769px) {
+  html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .site-region__decoration {
+    --inset: 0px;
+    --blur-px: 50px;
+  }
+}
+:root[data-theme='dark'] .ui-interactive.has-hover-surface,
+:root[data-theme='dark'] .ui-interactive:hover,
+:root[data-theme='dark'] .ui-interactive:focus-visible,
+:root[data-theme='dark'] .ui-interactive:active,
+:root[data-theme='dark'] .ui-interactive.active,
+:root[data-theme='dark'] .ui-interactive.is-active,
+:root[data-theme='dark'] details[open] > .ui-interactive {
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 50%), var(--bg-a20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+:root[data-theme='dark'] .site-region--leftbar .search-wrapper > .search-form:before {
+  background: rgba(0,0,0,0.2);
+}
+:root[data-theme='dark'] .site-region--leftbar .widgets .loading-wrap,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.markdown .widget-body,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.tagcloud .widget-body,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body .highlight,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body pre:not([class]):has(> code),
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.timeline .body {
+  background: rgba(0,0,0,0.5);
+}
+:root[data-theme='dark'] .site-region--leftbar .search-no-result {
+  background: rgba(0,0,0,0.2);
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .ui-interactive.has-hover-surface,
+  :root:not([data-theme]) .ui-interactive:hover,
+  :root:not([data-theme]) .ui-interactive:focus-visible,
+  :root:not([data-theme]) .ui-interactive:active,
+  :root:not([data-theme]) .ui-interactive.active,
+  :root:not([data-theme]) .ui-interactive.is-active,
+  :root:not([data-theme]) details[open] > .ui-interactive {
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 50%), var(--bg-a20);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  :root:not([data-theme]) .site-region--leftbar .search-wrapper > .search-form:before {
+    background: rgba(0,0,0,0.2);
+  }
+  :root:not([data-theme]) .site-region--leftbar .widgets .loading-wrap,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.markdown .widget-body,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.tagcloud .widget-body,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body .highlight,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body pre:not([class]):has(> code),
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.timeline .body {
+    background: rgba(0,0,0,0.5);
+  }
+  :root:not([data-theme]) .site-region--leftbar .search-no-result {
+    background: rgba(0,0,0,0.2);
+  }
+}
+.listing-nav__surface.is-pinned {
+  border-radius: calc(var(--radius-bar, var(--radius-navbar, 12px)) + 4px);
+  corner-shape: var(--corner-shape, superellipse(1.25));
+  box-shadow: 0 0 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+  transition: all 0.2s ease-out;
+  -moz-transition: all 0.2s ease-out;
+  -webkit-transition: all 0.2s ease-out;
+  -o-transition: all 0.2s ease-out;
+  text-shadow: 0 0 4px #fff, 0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.6);
+  background: transparent;
+}
+.listing-nav__surface.is-pinned:before,
+.listing-nav__surface.is-pinned:after {
+  z-index: -1;
+  position: absolute;
+  pointer-events: none;
+  content: '';
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: calc(var(--radius-bar, var(--radius-navbar, 12px)) + 4px);
+  corner-shape: var(--corner-shape, superellipse(1.25));
+}
+.listing-nav__surface.is-pinned:before {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.3);
+}
+:root[data-theme="dark"] .listing-nav__surface.is-pinned:before {
+  background: rgba(255,255,255,0.15);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .listing-nav__surface.is-pinned:before {
+    background: rgba(255,255,255,0.15);
+  }
+}
+.listing-nav__surface.is-pinned:after {
+  --blur-px: 16px;
+  --blur-sat: 300%;
+  backdrop-filter: saturate(var(--blur-sat)) blur(var(--blur-px));
+  -webkit-backdrop-filter: saturate(var(--blur-sat)) blur(var(--blur-px));
+  mask: linear-gradient(#fff, 20%, transparent, 80%, #fff), linear-gradient(90deg, #fff, 20%, transparent, 80%, #fff);
+  -webkit-mask-image: linear-gradient(#fff, 20%, transparent, 80%, #fff), linear-gradient(90deg, #fff, 20%, transparent, 80%, #fff);
+  box-shadow: inset 0 0 32px 4px rgba(255,255,255,0.5);
+  transition: all 0.2s ease-out;
+  -moz-transition: all 0.2s ease-out;
+  -webkit-transition: all 0.2s ease-out;
+  -o-transition: all 0.2s ease-out;
+}
+:root[data-theme="dark"] .listing-nav__surface.is-pinned:after {
+  box-shadow: inset 0 0 16px 4px rgba(255,255,255,0.1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .listing-nav__surface.is-pinned:after {
+    box-shadow: inset 0 0 16px 4px rgba(255,255,255,0.1);
+  }
+}
+:root[data-theme="dark"] .listing-nav__surface.is-pinned {
+  text-shadow: 0 0 2px rgba(0,0,0,0.2), 0 0 4px rgba(0,0,0,0.4);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .listing-nav__surface.is-pinned {
+    text-shadow: 0 0 2px rgba(0,0,0,0.2), 0 0 4px rgba(0,0,0,0.4);
+  }
+}
+.listing-nav__surface.is-pinned nav a:not(.active,
+.listing-nav__surface.is-pinned :hover) {
+  filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 4px #fff);
+}
+:root[data-theme="dark"] .listing-nav__surface.is-pinned nav a:not(.active,
+:root[data-theme="dark"] .listing-nav__surface.is-pinned :hover) {
+  filter: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .listing-nav__surface.is-pinned nav a:not(.active,
+  :root:not([data-theme]) .listing-nav__surface.is-pinned :hover) {
+    filter: none;
+  }
+}
+@media screen and (max-width: 1180px) and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    background: rgba(255,255,255,0.15);
+  }
+}
+@media screen and (max-width: 1180px) and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    box-shadow: inset 0 0 16px 4px rgba(255,255,255,0.1);
+  }
+}

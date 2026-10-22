@@ -1,0 +1,6 @@
+{{if eq .Stellar.Layout "post-password"}}{{template "partial/post_password" .ViewData}}{{else}}{{sf_content .}}{{end}}
+{{sf_blog_share .}}
+{{if and (sf_truth (sf_get .Stellar.Data "blogReading")) (sf_reading_content .)}}<div class="reading-progress" id="reading-progress" aria-hidden="true"></div>{{end}}
+{{sf_comments .}}
+{{if .Stellar.BlogNativeComments}}{{template "partial/stellar/blog_comments" .}}{{end}}
+{{if and .Stellar.BlogContent (sf_blog_detail .)}}{{template "partial/stellar/blog_reward" .}}{{end}}

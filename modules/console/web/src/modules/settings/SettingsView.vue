@@ -5,12 +5,14 @@ import { Icon } from "@iconify/vue";
 import { getApiErrorMessage, settingsApi } from "@/api";
 import { Toast, VButton, VCard, VPageHeader, VTabbar } from "@/components/ui";
 import BasicSettings from "./tabs/BasicSettings.vue";
-import PostSettings from "./tabs/PostSettings.vue";
-import CommentSettings from "./tabs/CommentSettings.vue";
 import SeoSettings from "./tabs/SeoSettings.vue";
-import SearchSettings from "./tabs/SearchSettings.vue";
 import FeedbackSettings from "./tabs/FeedbackSettings.vue";
-import AdvancedSettings from "./tabs/AdvancedSettings.vue";
+import Stellar2Tab from "./Stellar2Tab.vue";
+import CanonicalSettingsForm from "./CanonicalSettingsForm.vue";
+import StellarSettingsStatus from "./StellarSettingsStatus.vue";
+import { canonicalSettingsPaths, type CanonicalSettingsTab } from "./settings-canonical-fields";
+import { useStellarSettings } from "./useStellarSettings";
+import { readJSONFieldRaw } from "@/components/editor/stellar-form-json";
 import { ALL_SETTINGS_SECTIONS, ensureSettingsDefaults, sortWikiProjects, deepCloneJsonSafe } from "./settings-state";
 import { useSettingsPreview } from "./useSettingsPreview";
 import "./settings-form.css";
@@ -18,13 +20,14 @@ import "./settings-form.css";
 // Shared defaults retain the existing frontend enhancement safety boundary: card_hover.enable = false; card_hover.max_tilt = 3.
 
 const tabs = [
+  { key: "stellar2", label: "Stellar 2", icon: "ri:settings-3-line", description: "完整主题配置与独立 Blog 扩展" },
   { key: "basic", label: "基本", icon: "ri:global-line", description: "站点身份、标题与品牌资源" },
   { key: "post", label: "文章", icon: "ri:article-line", description: "文章排版、卡片、版权、分享与打赏" },
   { key: "comments", label: "评论", icon: "ri:chat-3-line", description: "评论开关、审核与邮件通知" },
   { key: "seo", label: "SEO", icon: "ri:search-eye-line", description: "站点来源、社交卡片与搜索引擎设置" },
-  { key: "search", label: "搜索", icon: "ri:search-line", description: "本地索引范围与排除路径" },
+  { key: "search", label: "搜索", icon: "ri:search-line", description: "搜索服务、索引范围与正文检索" },
   { key: "feedback", label: "反馈", icon: "ri:feedback-line", description: "Feedback 反馈组件接入与入口外观" },
-  { key: "advanced", label: "高级", icon: "ri:code-line", description: "代码注入、缓存与原始 JSON 兜底" },
+  { key: "advanced", label: "高级", icon: "ri:code-line", description: "页面代码注入与完整配置入口" },
 ] as const;
 
 const tabSectionsMap: Record<string, string[]> = {
@@ -72,7 +75,21 @@ const data = ref<Record<string, any>>({});
 const rawText = ref<Record<string, string>>({});
 const loading = ref(true);
 const loadError = ref("");
-const savingKey = ref("");
+const hostSavingKey = ref("");
+const stellar = useStellarSettings();
+const {
+  draft: stellarDraft, saved: stellarSaved, loading: stellarLoading, busy: stellarBusy,
+  loadError: stellarLoadError, dirty: stellarDirty, parseError: stellarParseError,
+  pendingInput, loadRevision,
+} = stellar;
+const savingKey = computed(() => hostSavingKey.value || (stellarBusy.value ? "stellar2" : ""));
+const pendingTabs = ref<Record<string, boolean>>({});
+const canonicalTabs = new Set<string>(["post", "comments", "seo", "search", "advanced"]);
+function isCanonicalTab(tab: string): tab is CanonicalSettingsTab {
+  return canonicalTabs.has(tab);
+}
+watch(pendingTabs, (tabs) => { pendingInput.value = Object.values(tabs).some(Boolean); }, { deep: true, flush: "sync" });
+watch(loadRevision, () => { pendingTabs.value = {}; });
 const savedSnapshot = ref<string>("");
 const savedJsonBaseline = ref<Record<string, string>>({});
 
@@ -93,20 +110,24 @@ const dirtySections = computed<Set<string>>(() => {
 });
 
 const isTabDirty = (tabKey: string) => {
-  if (tabKey === "advanced") {
-    if (dirtySections.value.has("inject") || dirtySections.value.has("data_cache")) return true;
-    for (const key of ALL_SETTINGS_SECTIONS) {
-      if ((rawText.value[key] ?? "") !== (savedJsonBaseline.value[key] ?? "")) {
-        return true;
-      }
+  if (tabKey === "stellar2") return stellarDirty.value;
+  if (isCanonicalTab(tabKey)) {
+    if (pendingTabs.value[tabKey]) return true;
+    try {
+      if (canonicalSettingsPaths(tabKey).some((path) =>
+        readJSONFieldRaw(stellarDraft.value, path) !== readJSONFieldRaw(stellarSaved.value, path),
+      )) return true;
+    } catch {
+      return stellarDirty.value;
     }
-    return false;
+    return tabKey === "seo" && dirtySections.value.has("site");
   }
   const sections = tabSectionsMap[tabKey] || [];
   return sections.some((s) => dirtySections.value.has(s));
 };
 
 const isDirty = computed(() => {
+  if (stellarDirty.value) return true;
   if (dirtySections.value.size > 0) return true;
   for (const key of ALL_SETTINGS_SECTIONS) {
     if ((rawText.value[key] ?? "") !== (savedJsonBaseline.value[key] ?? "")) {
@@ -132,7 +153,7 @@ function takeSnapshot() {
 const { previewOpen, previewViewport, previewHtml, previewLoading, previewFocus, refreshPreview } = useSettingsPreview(
   data,
   active,
-  ALL_SETTINGS_SECTIONS,
+  stellarDraft,
 );
 
 function routeQuery(tab: string) {
@@ -185,8 +206,12 @@ function updateSectionSnapshot(section: string, savedData: any) {
 }
 
 async function save(section: string, payload?: unknown): Promise<boolean> {
+  if (section !== "site" && section !== "feedback") {
+    Toast.error("旧主题分段停止保存，请打开 Stellar 2 配置");
+    return false;
+  }
   if (savingKey.value) return false;
-  savingKey.value = section;
+  hostSavingKey.value = section;
   try {
     const rawToSave = payload !== undefined ? payload : data.value[section];
     const body = deepCloneJsonSafe(rawToSave ?? {});
@@ -211,59 +236,13 @@ async function save(section: string, payload?: unknown): Promise<boolean> {
     Toast.error(getApiErrorMessage(error, "保存失败，请检查参数或网络后重试"));
     return false;
   } finally {
-    savingKey.value = "";
+    hostSavingKey.value = "";
   }
 }
 
-async function saveComments() {
+async function saveStellar() {
   if (savingKey.value) return;
-  const commentsSaved = await save("comments");
-  if (commentsSaved) await save("site_tree");
-}
-
-async function saveJson(section: string) {
-  if (savingKey.value) return;
-  const rawAtStart = rawText.value[section] ?? "";
-  let payload: any;
-  try {
-    payload = JSON.parse(rawAtStart);
-  } catch (error) {
-    Toast.error("JSON 格式错误，请检查语法后再保存");
-    return;
-  }
-
-  savingKey.value = "json:" + section;
-  const formAtStart = JSON.stringify(data.value[section]);
-  try {
-    const payloadToSubmit = deepCloneJsonSafe(payload);
-    await settingsApi.updateSection(section, payloadToSubmit);
-
-    const normalizedTarget = ensureSettingsDefaults({ [section]: deepCloneJsonSafe(payloadToSubmit) });
-    const savedNormalized = normalizedTarget[section];
-
-    // 更新成功快照（使用本次提交内容规范化后的副本）
-    updateSectionSnapshot(section, savedNormalized);
-
-    const formatted = JSON.stringify(savedNormalized, null, 2);
-    // 比较文本：若自请求开始未被再次修改，回填规范化文本并更新基线；否则保留新草稿，仅更新基线
-    if (rawText.value[section] === rawAtStart) {
-      rawText.value[section] = formatted;
-      savedJsonBaseline.value[section] = formatted;
-    } else {
-      savedJsonBaseline.value[section] = formatted;
-    }
-
-    // 比较表单：若保存期间结构化表单未发生变化，回填新的规范化表单数据；若发生变化，绝对不覆盖新的表单数据！
-    if (JSON.stringify(data.value[section]) === formAtStart) {
-      data.value[section] = deepCloneJsonSafe(savedNormalized);
-    }
-
-    Toast.success("设置已保存，前台已生效");
-  } catch (error) {
-    Toast.error(getApiErrorMessage(error, "保存失败，请检查参数或网络后重试"));
-  } finally {
-    savingKey.value = "";
-  }
+  if (await stellar.submit("save")) Toast.success("主题设置已保存，前台已生效");
 }
 
 function navigateToTab(tab: string) {
@@ -271,6 +250,7 @@ function navigateToTab(tab: string) {
 }
 
 watch(active, (tab) => {
+  if (tab === "stellar2") previewOpen.value = false;
   if (route.query.tab !== tab) void router.push({ query: routeQuery(tab) });
 });
 watch(
@@ -288,6 +268,7 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 onMounted(() => {
   void applyRouteQuery();
   void load();
+  void stellar.load();
   window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
@@ -318,11 +299,16 @@ onBeforeRouteLeave((to, from, next) => {
     <VPageHeader title="系统设置">
       <template #icon><Icon icon="ri:settings-3-line" class="text-primary" /></template>
       <template #subtitle>
-        <span>基本、文章、评论、SEO、搜索、反馈与高级系统配置</span>
+        <span>Stellar 2、基本、文章、评论、SEO、搜索、反馈与高级系统配置</span>
         <span v-if="isDirty" class="settings-dirty-badge">（有未保存修改）</span>
       </template>
       <template #actions>
-        <VButton size="sm" :type="previewOpen ? 'primary' : 'secondary'" @click="previewOpen = !previewOpen">
+        <VButton
+          v-if="previewFocus"
+          size="sm"
+          :type="previewOpen ? 'primary' : 'secondary'"
+          @click="previewOpen = !previewOpen"
+        >
           <template #icon><Icon icon="ri:eye-line" /></template><span>前端预览</span>
         </VButton>
       </template>
@@ -362,32 +348,35 @@ onBeforeRouteLeave((to, from, next) => {
               class="settings-tab-panel outline-none"
               :hidden="active !== tab.key"
             >
-              <template v-if="active === tab.key">
+              <Stellar2Tab
+                v-if="tab.key === 'stellar2'"
+                class="settings-tab-content"
+                :editor="stellar"
+                :saving="savingKey"
+              />
+              <div v-else-if="isCanonicalTab(tab.key)" class="settings-tab-content">
+                <SeoSettings v-if="tab.key === 'seo'" :data="data" :saving="savingKey" host-only @save="save" />
+                <div class="canonical-settings-status">
+                  <StellarSettingsStatus :editor="stellar" :saving="savingKey" />
+                  <p v-if="stellarParseError" class="text-sm text-state-error" role="alert">
+                    完整配置暂时无法用于表单编辑：{{ stellarParseError }}。请在 Stellar 2 标签修正后继续。
+                  </p>
+                </div>
+                <CanonicalSettingsForm
+                  v-if="!stellarLoading && !stellarLoadError && !stellarParseError"
+                  :key="`${tab.key}-${loadRevision}`"
+                  :tab="tab.key"
+                  :document="stellarDraft"
+                  :saving="savingKey || (pendingInput ? 'pending-input' : '')"
+                  @change="stellar.updateField"
+                  @pending="pendingTabs[tab.key] = $event"
+                  @save="saveStellar"
+                />
+              </div>
+              <template v-else-if="active === tab.key">
                 <BasicSettings v-if="tab.key === 'basic'" :data="data" :saving="savingKey" @save="save" />
-                <div v-else class="settings-tab-content">
-                  <PostSettings v-if="tab.key === 'post'" :data="data" :saving="savingKey" @save="save" />
-                  <CommentSettings
-                    v-else-if="tab.key === 'comments'"
-                    :data="data"
-                    :saving="savingKey"
-                    @save="saveComments"
-                  />
-                  <SeoSettings v-else-if="tab.key === 'seo'" :data="data" :saving="savingKey" @save="save" />
-                  <SearchSettings v-else-if="tab.key === 'search'" :data="data" :saving="savingKey" @save="save" />
-                  <FeedbackSettings
-                    v-else-if="tab.key === 'feedback'"
-                    :data="data"
-                    :saving="savingKey"
-                    @save="save"
-                  />
-                  <AdvancedSettings
-                    v-else-if="tab.key === 'advanced'"
-                    :data="data"
-                    :raw-text="rawText"
-                    :saving="savingKey"
-                    @save="save"
-                    @save-json="saveJson"
-                  />
+                <div v-else-if="tab.key === 'feedback'" class="settings-tab-content">
+                  <FeedbackSettings :data="data" :saving="savingKey" @save="save" />
                 </div>
               </template>
             </div>
@@ -526,6 +515,20 @@ onBeforeRouteLeave((to, from, next) => {
 }
 .settings-tab-content :deep(.card-body) {
   padding: 0 28px 28px;
+}
+.canonical-settings-status {
+  padding: 0 28px;
+}
+.canonical-settings-status:has([role="status"]),
+.canonical-settings-status:has([role="alert"]) {
+  padding-top: 24px;
+  padding-bottom: 12px;
+}
+@media (max-width: 767px) {
+  .canonical-settings-status {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 .settings-card-tabs {
   width: 100%;

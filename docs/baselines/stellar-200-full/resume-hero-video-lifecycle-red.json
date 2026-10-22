@@ -1,0 +1,39 @@
+{
+  "scope": "real browser red evidence before Hero video lifecycle repair",
+  "url": "http://127.0.0.1:8103/wiki/video/intro",
+  "running_binary_sha256": "c0ef7e6c5d88d95cb2db5e282ef5a1c158cce93933f133a9b7bf68c3287a891a",
+  "runtime_query": "71bc6f7a",
+  "before": {
+    "paused": false,
+    "current_time": 3.151906,
+    "ready_state": 4
+  },
+  "navigation_action": "click visible 打开笔记 link to /journal/alpha",
+  "events": [
+    {
+      "kind": "before-leave",
+      "time": 48206.39999997616,
+      "paused": false
+    },
+    {
+      "kind": "pagehide",
+      "time": 48368.59999996424,
+      "persisted": false
+    },
+    {
+      "kind": "after-pagehide",
+      "time": 48368.59999996424,
+      "paused": false
+    }
+  ],
+  "hero_pause_calls": 0,
+  "history_back": {
+    "time_origin_changed": true,
+    "navigation_type": "back_forward",
+    "video_paused": false,
+    "current_time": 0.167863
+  },
+  "native_bfcache_observed": false,
+  "native_bfcache_reason_event_received": false,
+  "synthetic_lifecycle_events_used": false
+}

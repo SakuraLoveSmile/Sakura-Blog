@@ -1,0 +1,16 @@
+{
+  "expected": "http://127.0.0.1:8103/uploads/avatar.png",
+  "src": "http://127.0.0.1:8103/uploads/avatar.png",
+  "currentSrc": "http://127.0.0.1:8103/uploads/avatar.png",
+  "width": 960,
+  "html": "<img class=\"no-lazy loaded\" data-profile-avatar=\"\" src=\"http://127.0.0.1:8103/uploads/avatar.png\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\">",
+  "identity": {
+    "provider": "artalk",
+    "supported": true,
+    "name": "Avatar fixture",
+    "email": "",
+    "url": "",
+    "avatar": "http://127.0.0.1:8103/uploads/avatar.png"
+  },
+  "lazy": "function"
+}

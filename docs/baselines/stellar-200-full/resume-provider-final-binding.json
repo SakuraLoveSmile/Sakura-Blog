@@ -1,0 +1,12 @@
+{
+  "fixture_only": true,
+  "built_head": "5b92b246",
+  "binary_sha256": "dc8f18d60ca5fb5862e9ae46dd4d784a7e078bb4ada0d3d488dda26d1bf7e7c7",
+  "nativeCDP": {
+    "src": "http://127.0.0.1:8112/assets/js/search/algolia-search.js?v=deae89e4",
+    "actual_queryPageKey": true,
+    "deferredJSONExample": []
+  },
+  "behavior_evidence": "resume-algolia-partial-current.json",
+  "same_provider_bytes_as_behavior_build": true
+}
