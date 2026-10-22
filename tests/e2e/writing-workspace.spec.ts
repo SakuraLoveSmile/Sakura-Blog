@@ -13,7 +13,15 @@ test("首页草稿入口、状态筛选与浏览器返回保持一致", async ({
   const token = `workspace-${Date.now()}`;
   for (const status of ["draft", "published"]) {
     const response = await page.request.post("/api/v1/posts", {
-      data: { slug: `${token}-${status}`, title: `${token} ${status}`, content_md: "写作夹具", status },
+      data: {
+        slug: `${token}-${status}`,
+        title: `${token} ${status}`,
+        content_md: "写作夹具",
+        status,
+        stellar_version: 2,
+        stellar_config: "{}",
+        blog_extensions: "{}",
+      },
     });
     expect(response.ok()).toBeTruthy();
   }
@@ -53,7 +61,15 @@ test("文章视图偏好刷新后保留，滚动时页头操作可用", async ({
   await login(page);
   for (let i = 0; i < 8; i++) {
     const response = await page.request.post("/api/v1/posts", {
-      data: { slug: `workspace-scroll-${Date.now()}-${i}`, title: `文章 ${i}`, content_md: "正文", status: "draft" },
+      data: {
+        slug: `workspace-scroll-${Date.now()}-${i}`,
+        title: `文章 ${i}`,
+        content_md: "正文",
+        status: "draft",
+        stellar_version: 2,
+        stellar_config: "{}",
+        blog_extensions: "{}",
+      },
     });
     expect(response.ok()).toBeTruthy();
   }

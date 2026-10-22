@@ -86,7 +86,15 @@ test("真实整站恢复撤销当前凭据，使用备份账号登录后查询�
   expect(
     (
       await page.request.post("/api/v1/posts", {
-        data: { slug: extra, title: "备份之后的新文章", content_md: "将被恢复移除", status: "draft" },
+        data: {
+          slug: extra,
+          title: "备份之后的新文章",
+          content_md: "将被恢复移除",
+          status: "draft",
+          stellar_version: 2,
+          stellar_config: "{}",
+          blog_extensions: "{}",
+        },
       })
     ).status(),
   ).toBe(201);

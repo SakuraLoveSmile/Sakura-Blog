@@ -11,7 +11,15 @@ async function login(page: Page) {
 async function createPost(page: Page, status = "draft") {
   const slug = `writing-state-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const result = await page.request.post("/api/v1/posts", {
-    data: { slug, title: "写作状态夹具", content_md: "原始正文", status },
+    data: {
+      slug,
+      title: "写作状态夹具",
+      content_md: "原始正文",
+      status,
+      stellar_version: 2,
+      stellar_config: "{}",
+      blog_extensions: "{}",
+    },
   });
   expect(result.ok()).toBeTruthy();
   await page.goto(`/console/posts/edit/${slug}`);
@@ -241,7 +249,15 @@ test("同组件切换文章时迟到的加载响应不能覆盖当前文章", as
   expect(
     (
       await page.request.post("/api/v1/posts", {
-        data: { slug: second, title: "迟到文章标题", content_md: "迟到文章正文", status: "draft" },
+        data: {
+          slug: second,
+          title: "迟到文章标题",
+          content_md: "迟到文章正文",
+          status: "draft",
+          stellar_version: 2,
+          stellar_config: "{}",
+          blog_extensions: "{}",
+        },
       })
     ).ok(),
   ).toBeTruthy();

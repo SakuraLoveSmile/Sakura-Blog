@@ -5,10 +5,10 @@ import { expect, test, type Page } from "@playwright/test";
 // internal/post/shortcode_edit_test.go 的 58 条 fixture + 渲染 round-trip 机械覆盖。
 //   1. note   普通 inline（named + positional + content）
 //   2. tabs   marker 块级（正文结构保留，不做子编辑器）
-//   3. navbar hybrid：块级 / 单行都要保持 variant
-//   4. frame  hybrid + 两套字段（块级 device/width/content，单行 device/img/video/focus/alt）
+//   3. navbar：V2 官方形式只认单行；块级原文回退源码编辑，不被改写
+//   4. frame  ：V2 单行五字段（device/img/video/focus/alt）；块级原文回退源码编辑
 //   5. emoji  特殊 inline（source/name/url 两种模式）
-//   6. links  零参数（不再误判 unsupported）
+//   6. links  旧标签名：V2 目录未登记，回退源码编辑（Blog 扩展走 blog_ 前缀）
 
 type EditorHook = {
   commands: {
@@ -98,9 +98,8 @@ test("note（普通 inline）：初始值回填 → 改标题 → raw 与预览�
   await expect(dialog.locator("#schema-field-content")).toHaveValue("这是一条提示");
 
   await dialog.locator("#schema-field-title").fill("新标题");
-  // builder 规则：positional 先于 named，所以 color:green 被移到标题之后。
-  // 二者渲染等价（Go 侧 TestShortcodeEditRoundTripKeepsRender 已断言），此处锁定实际输出防回归。
-  await expectMarkdownContains(page, "{% note 新标题 color:green 这是一条提示 %}");
+  // 编辑只改被修改字段的值；序列化沿用 V2 规范顺序（命名参数在前，位置参数在后）。
+  await expectMarkdownContains(page, "{% note color:green 新标题 这是一条提示 %}");
   await expectPreviewContains(page, "新标题");
 });
 
@@ -124,17 +123,15 @@ test("tabs（marker 块级）：正文结构原样保留，只改外层属性", 
   await expectPreviewContains(page, "第二页内容。");
 });
 
-test("navbar（hybrid 块级）：改 active 后仍保持块级包装", async ({ page }) => {
+test("navbar（旧块级形式）：V2 只认单行官方形式，块级原文回退源码编辑且不被改写", async ({ page }) => {
   await setMarkdown(page, "{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}");
+  const original = await getMarkdown(page);
   const dialog = await openPropertyPanel(page);
 
-  await expect(dialog.locator("#schema-field-active")).toHaveValue("首页");
-  await expect(dialog.locator("#schema-field-content")).toHaveValue("[首页](/)\n[关于](/about)");
-
-  await dialog.locator("#schema-field-active").fill("关于");
-  await expectMarkdownContains(page, "{% navbar active:关于 %}");
-  await expectMarkdownContains(page, "{% endnavbar %}");
-  await expectPreviewContains(page, "关于");
+  await expect(dialog.getByText("属性解析失败，可直接编辑源码。")).toBeVisible();
+  await expect(dialog.locator("#schema-field-active")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "取消" }).click();
+  expect(await getMarkdown(page)).toBe(original);
 });
 
 test("navbar（hybrid 单行）：改 active 后仍保持单行，不被改写成块级", async ({ page }) => {
@@ -149,19 +146,18 @@ test("navbar（hybrid 单行）：改 active 后仍保持单行，不被改写�
   expect(markdown).not.toContain("{% endnavbar %}");
 });
 
-test("frame（hybrid 块级）：device/width/content 三字段", async ({ page }) => {
+test("frame（旧块级形式）：V2 只认单行官方形式，块级原文回退源码编辑且不被改写", async ({ page }) => {
   await setMarkdown(
     page,
     "{% frame device:iphone width:320px %}\n![截图](/assets/img/preview/frame-shot.jpg)\n{% endframe %}",
   );
+  const original = await getMarkdown(page);
   const dialog = await openPropertyPanel(page);
 
-  await expect(dialog.locator("#schema-field-device")).toHaveValue("iphone");
-  await expect(dialog.locator("#schema-field-width")).toHaveValue("320px");
-
-  await dialog.locator("#schema-field-width").fill("480px");
-  await expectMarkdownContains(page, "width:480px");
-  await expectMarkdownContains(page, "{% endframe %}");
+  await expect(dialog.getByText("属性解析失败，可直接编辑源码。")).toBeVisible();
+  await expect(dialog.locator("#schema-field-width")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "取消" }).click();
+  expect(await getMarkdown(page)).toBe(original);
 });
 
 test("frame（hybrid 单行）：切到 inline 专属五字段且不带 content", async ({ page }) => {
@@ -190,7 +186,7 @@ test("emoji（特殊 inline）：source/name 模式字段回填与改值", async
   await expect(dialog.locator("#schema-field-url")).toHaveValue("");
 
   await dialog.locator("#schema-field-height").fill("32px");
-  await expectMarkdownContains(page, "{% emoji twemoji 1f44d height:32px %}");
+  await expectMarkdownContains(page, "{% emoji height:32px twemoji 1f44d %}");
 });
 
 test("emoji URL 模式：修改其他字段后保留外链与 alt", async ({ page }) => {
@@ -200,9 +196,26 @@ test("emoji URL 模式：修改其他字段后保留外链与 alt", async ({ pag
   await expect(dialog.locator("#schema-field-url")).toHaveValue("https://example.com/e.png");
   await expect(dialog.locator("#schema-field-name")).toHaveValue("原表情");
   await dialog.locator("#schema-field-height").fill("32px");
-  await expectMarkdownContains(page, "{% emoji url:https://example.com/e.png name:原表情 height:32px %}");
+  await expectMarkdownContains(page, "{% emoji name:原表情 url:https://example.com/e.png height:32px %}");
   const markdown = await getMarkdown(page);
   expect(markdown).not.toContain("emoji twemoji");
+});
+
+test("编辑器侧栏插入：必填参数缺失时禁用插入并提示原因，补齐后可插入", async ({ page }) => {
+  await page.locator("button[aria-pressed]", { hasText: "设置" }).click();
+  await page
+    .locator("select")
+    .filter({ has: page.locator("option", { hasText: "选择插件" }) })
+    .selectOption("button");
+  const insert = page.getByRole("button", { name: "插入到正文", exact: true });
+  await page.locator("#schema-field-text").fill("按钮文字");
+  await expect(page.getByText("请填写必填参数“url”。")).toBeVisible();
+  await expect(insert).toBeDisabled();
+  await page.locator("#schema-field-url").fill("https://example.com/docs");
+  await expect(page.getByText("请填写必填参数")).toHaveCount(0);
+  await expect(insert).toBeEnabled();
+  await insert.click();
+  await expectMarkdownContains(page, "https://example.com/docs");
 });
 
 test("结构化编辑校验：清空必填字段时禁用应用且不提交无效 raw", async ({ page }) => {
@@ -229,13 +242,13 @@ test("结构化编辑回退：含单双引号的参数不提交并提示源码�
   expect(await getMarkdown(page)).toBe(original);
 });
 
-test("links（零参数）：面板提示无属性但保留源码编辑", async ({ page }) => {
+test("links（旧标签名）：V2 目录未登记 links，面板说明并回退源码编辑", async ({ page }) => {
   await setMarkdown(page, "{% links %}");
   const dialog = await openPropertyPanel(page);
 
-  await expect(dialog.getByText("该组件没有可编辑属性")).toBeVisible();
-  // 源码编辑通道仍在
-  await expect(dialog.getByRole("button", { name: "源码编辑" })).toBeVisible();
+  // links 是独立 Blog 扩展（V2 官方目录排除，扩展形式为 blog_links），未登记时只保留源码编辑。
+  await expect(dialog.getByText("当前标签未在 shortcode catalog 中登记，可直接编辑源码。")).toBeVisible();
+  await expect(dialog.locator("#stellar-shortcode-source")).toHaveValue("{% links %}");
   await expectMarkdownContains(page, "{% links %}");
 });
 
@@ -243,13 +256,13 @@ test("编辑已有组件不会注入 catalog default（folding 未写的 open �
   await setMarkdown(page, "{% folding color:cyan 标题 %}\n折叠正文\n{% endfolding %}");
   const dialog = await openPropertyPanel(page);
 
-  // open 未在 raw 中出现，开关必须是未勾选状态（catalog default 为 true）
-  await expect(dialog.locator("#schema-field-open")).not.toBeChecked();
+  // open 未在 raw 中出现：三态选择保持未设置（""），不写入 catalog default。
+  await expect(dialog.locator("#schema-field-open")).toHaveValue("");
   await expect(dialog.locator("#schema-field-color")).toHaveValue("cyan");
 
-  // 只改标题，flag 仍不应被写进 shortcode（同上：positional 先于 named）
+  // 只改标题，open 仍不应被写进 shortcode（命名参数在前，位置参数在后）
   await dialog.locator("#schema-field-title").fill("新折叠标题");
-  await expectMarkdownContains(page, "{% folding 新折叠标题 color:cyan %}");
+  await expectMarkdownContains(page, "{% folding color:cyan 新折叠标题 %}");
   const markdown = await getMarkdown(page);
   expect(markdown).not.toContain("open");
   await expectPreviewContains(page, "新折叠标题");
@@ -279,14 +292,16 @@ test("image download：空值、true、false 和 URL 保持回写与预览语义
 
   await download.fill("false");
   await expectMarkdownContains(page, "download:false");
-  await expect.poll(previewDownload).toBeNull();
+  // 上游官方渲染对 download:false 仍输出 href="false"（oracle 049_image 锁定），预览与之保持一致。
+  await expect.poll(previewDownload).toBe("false");
 
   await download.fill("https://example.com/full.png");
   await expectMarkdownContains(page, "download:https://example.com/full.png");
   await expect.poll(previewDownload).toBe("https://example.com/full.png");
 
+  // 清空后保留精确存在性，回写为 download:""，与序列化契约一致。
   await download.fill("");
-  await expect.poll(() => getMarkdown(page)).not.toContain("download:");
+  await expectMarkdownContains(page, 'download:""');
   await expect.poll(previewDownload).toBeNull();
 });
 
@@ -295,18 +310,17 @@ test("布尔参数：缺失值不落盘，开关回写与预览同步", async ({
   const dialog = await openPropertyPanel(page);
   const autoplay = dialog.locator("#schema-field-autoplay");
 
-  await expect(autoplay).not.toBeChecked();
+  await expect(autoplay).toHaveValue("");
   await dialog.locator("#schema-field-width").fill("80%");
   await expectMarkdownContains(page, "width:80%");
   expect(await getMarkdown(page)).not.toContain("autoplay:");
   await expectPreviewContains(page, "autoplay=false");
 
-  await autoplay.check();
+  await autoplay.fill("true");
   await expectMarkdownContains(page, "autoplay:true");
   await expectPreviewContains(page, "autoplay=true");
 
-  await autoplay.uncheck();
-  // flag 关闭时省略参数，渲染器按 false 处理。
-  await expect.poll(() => getMarkdown(page)).not.toContain("autoplay:");
+  await autoplay.fill("false");
+  await expectMarkdownContains(page, "autoplay:false");
   await expectPreviewContains(page, "autoplay=false");
 });
