@@ -23,7 +23,7 @@ const emit = defineEmits<{
 }>();
 
 const values = ref<SchemaValues>({});
-const present = ref<string[] | undefined>();
+const presentKeys = ref<string[] | undefined>();
 const validation = ref<{ valid: boolean; error?: string }>({ valid: true });
 
 const fields = computed<SchemaField[]>(() =>
@@ -43,7 +43,7 @@ const fields = computed<SchemaField[]>(() =>
 
 function initValues() {
   values.value = initFormValues(props.plugin.form || [], props.initialValues);
-  present.value = props.present === undefined ? undefined : [...props.present];
+  presentKeys.value = props.present === undefined ? undefined : [...props.present];
   updateValidation(values.value, false);
 }
 
@@ -63,7 +63,7 @@ async function updateValidation(next: SchemaValues, emitUpdate: boolean) {
   validation.value = { valid: false };
   emit("validation", validation.value);
   try {
-    const { data } = await pluginApi.serializeShortcode(props.plugin.name, shortcodeValues(next), present.value);
+    const { data } = await pluginApi.serializeShortcode(props.plugin.name, shortcodeValues(next), presentKeys.value);
     if (current !== generation) return;
     validation.value = { valid: true };
     emit("validation", validation.value);
@@ -79,7 +79,7 @@ onBeforeUnmount(() => {
 });
 
 function onSchemaUpdate(next: SchemaValues) {
-  present.value = editedFormPresence(props.plugin.form || [], present.value, values.value, next);
+  presentKeys.value = editedFormPresence(props.plugin.form || [], presentKeys.value, values.value, next);
   values.value = next;
   updateValidation(next, true);
 }

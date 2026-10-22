@@ -36,9 +36,13 @@ export function validateJSONText(raw: string, label: string): void {
   }
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${label}必须是 JSON 对象`);
 }
+// 控制字符 U+0000–U+001F 逐字符判断，避免在正则字面量里书写它们（no-control-regex）。
+function hasControlCharacter(value: string): boolean {
+  return value.split("").some((char) => char.charCodeAt(0) < 0x20);
+}
 export function validateNotebookID(id: string): string {
   const result = id.trim();
-  if (!result || result === "." || result === ".." || /[<>:"/\\|?*\x00-\x1f]/.test(result))
+  if (!result || result === "." || result === ".." || /[<>:"/\\|?*]/.test(result) || hasControlCharacter(result))
     throw new Error("笔记本 ID 必须是不含路径分隔符的有效名称");
   return result;
 }
@@ -46,7 +50,8 @@ export function validateNoteSlug(slug: string): string {
   const result = slug.trim();
   if (
     !result ||
-    /[<>:"\\|?*\x00-\x1f]/.test(result) ||
+    /[<>:"\\|?*]/.test(result) ||
+    hasControlCharacter(result) ||
     result.split("/").some((part) => !part || part === "." || part === "..")
   )
     throw new Error("Slug 必须是有效相对路径，不能包含空段、. 或 ..");

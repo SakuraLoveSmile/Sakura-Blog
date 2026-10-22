@@ -100,7 +100,9 @@ func TestRemoteMarkdownRequestCancellation(t *testing.T) {
 	<-finished
 }
 func TestRemoteMarkdownProductionFetchRejectsDNSAndRedirectPrivate(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "http://127.0.0.1/private", http.StatusFound) }))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://127.0.0.1/private", http.StatusFound)
+	}))
 	defer server.Close()
 	addr := strings.TrimPrefix(server.URL, "http://")
 	client := safefetch.New(safefetch.Options{MaxRedirects: 5, ResolveIP: func(_ context.Context, host string) ([]net.IP, error) {

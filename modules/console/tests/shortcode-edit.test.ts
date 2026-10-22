@@ -47,11 +47,11 @@ test("shortcode visual editor supports hybrid variants (navbar / frame)", () => 
   assert.match(popoverSource, /:variant="variant"/);
   assert.match(
     formSource,
-    /pluginApi\.serializeShortcode\(props\.plugin\.name,\s*shortcodeValues\(next\),\s*present\.value\)/,
+    /pluginApi\.serializeShortcode\(props\.plugin\.name,\s*shortcodeValues\(next\),\s*presentKeys\.value\)/,
   );
   assert.match(
     formSource,
-    /present\.value = editedFormPresence\(props\.plugin\.form \|\| \[\], present\.value, values\.value, next\)/,
+    /presentKeys\.value = editedFormPresence\(props\.plugin\.form \|\| \[\], presentKeys\.value, values\.value, next\)/,
   );
   assert.match(viewSource, /editingPresent\.value = data\.present \|\| \[\]/);
   assert.match(formSource, /"validation"/);
