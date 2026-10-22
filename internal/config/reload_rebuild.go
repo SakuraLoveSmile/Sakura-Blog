@@ -11,6 +11,23 @@ import (
 
 var siteUpdateMu sync.Mutex
 
+// LoadPersistedStellarSite只读加载完整持久化配置；缺少旧初始化文件时不能
+// 导入默认配置或重新迁移身份。同一settings快照同时约束宿主段和strict主题。
+func LoadPersistedStellarSite(st *store.Store) (*tmpl.Site, error) {
+	snapshot, err := st.ReadSettingsSnapshot()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := LoadStellarV2Snapshot(snapshot); err != nil {
+		return nil, err
+	}
+	var basic map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(snapshot[SectionSite]), &basic); err != nil || basic == nil {
+		return nil, fmt.Errorf("persisted settings.site must be an object")
+	}
+	return buildSite(st, &tmpl.Site{}, snapshot)
+}
+
 // RebuildSite 从 DB 重新加载 settings/links，构建全新 *tmpl.Site 后经 atomic.Pointer
 // 复制-交换发布，消除前台渲染（无锁读）与热更新写入之间的数据竞争。
 // 未覆盖字段（LogoIcon/SiteTree 等启动后不再变化）沿用当前值，读-only 共享安全。
@@ -61,8 +78,22 @@ func buildSite(st *store.Store, current *tmpl.Site, settings map[string]string) 
 		return nil, fmt.Errorf("site snapshot is nil")
 	}
 	next := *current // 浅拷贝当前站点，settings 覆盖字段在 rebuildFromValues 中整体替换为全新值
+	// 显式版本文档一旦存在就必须通过 strict；恢复和其他本地设置热更新
+	// 不能丢弃新主题快照或因校验失败退回旧主题。
+	if _, exists := settings[SectionStellarV2]; exists {
+		configuration, err := LoadStellarV2Snapshot(settings)
+		if err != nil {
+			return nil, err
+		}
+		next.StellarV2 = configuration
+	}
 	groups := LinksToGroups(links)
 	rebuildFromValues(&next, settings)
+	if next.StellarV2 != nil {
+		if err := ApplyStellarBlogRuntime(&next); err != nil {
+			return nil, err
+		}
+	}
 	next.Links = groups
 	// AuthEnabled 派生（Spec 61 阶段 4）：users 表 admin 用户存在且密码哈希非空 ⇒ 需要密码登录；
 	// 无密码站点（哈希为空/无 admin 用户）保持全放行语义。

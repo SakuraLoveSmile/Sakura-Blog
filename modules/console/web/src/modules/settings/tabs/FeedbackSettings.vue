@@ -324,9 +324,7 @@ function handleSubmit() {
   height: 128px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg, 12px);
-  background:
-    linear-gradient(color-mix(in srgb, var(--color-border) 45%, transparent) 1px, transparent 1px) 0 0 / 100% 32px,
-    color-mix(in srgb, var(--color-background) 60%, var(--color-card));
+  background: var(--color-card);
   overflow: hidden;
 }
 .feedback-stage-url {

@@ -288,9 +288,7 @@ function handleSubmit() {
   z-index: 10;
   padding: 16px 28px calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-card) 92%, transparent);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  background: var(--color-card);
 }
 
 .settings-basic-actions-inner {

@@ -1,0 +1,37 @@
+[
+  {
+    "archive": "jpeg.tar.gz",
+    "sha256": "560f6338b547544c4f9721b18d8b87685d433ec78b3c644c70d77adad22c55e6",
+    "url": "https://codeload.github.com/libjpeg-turbo/libjpeg-turbo/tar.gz/refs/tags/3.1.2"
+  },
+  {
+    "archive": "lcms.tar.gz",
+    "sha256": "6e6f6411db50e85ae8ff7777f01b2da0614aac13b7b9fcbea66dc56a1bc71418",
+    "url": "https://codeload.github.com/mm2/Little-CMS/tar.gz/refs/tags/lcms2.17"
+  },
+  {
+    "archive": "mozjpeg.tar.gz",
+    "sha256": "1dc1e510d1f0a550f5dfc6f6924ba01143cbb427a02d17f102701d4d427d135d",
+    "url": "https://codeload.github.com/mozilla/mozjpeg/tar.gz/0826579"
+  },
+  {
+    "archive": "tiff.tar.gz",
+    "sha256": "f698d94f3103da8ca7438d84e0344e453fe0ba3b7486e04c5bf7a9a3fabe9b69",
+    "url": "https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz"
+  },
+  {
+    "archive": "wasi-sdk.tar.gz",
+    "sha256": "e11552913e3f99e834d7fe7da1bd081abaf764759ed76b6097a34c63fc83665e",
+    "url": "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-29/wasi-sdk-29.0-arm64-macos.tar.gz"
+  },
+  {
+    "archive": "webp.tar.gz",
+    "sha256": "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564",
+    "url": "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz"
+  },
+  {
+    "archive": "zlib.tar.gz",
+    "sha256": "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23",
+    "url": "https://zlib.net/fossils/zlib-1.3.1.tar.gz"
+  }
+]

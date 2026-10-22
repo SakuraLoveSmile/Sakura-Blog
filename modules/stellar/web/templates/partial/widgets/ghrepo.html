@@ -10,20 +10,20 @@
     <div class="items data-service ds-ghinfo" data-api="/api/gh/widget/repo?repo={{$repo}}">
       <a class="repo" href="https://github.com/{{$repo}}" target="_blank" rel="external nofollow noopener noreferrer">
         <div class="repo-name flex-row">
-          {{icon "github:repo"}}{{$repo}}
+          <span class="ui-icon">{{icon "github:repo"}}</span>{{$repo}}
         </div>
         <div class="repo-desc"><span type="text" id="description">&nbsp;</span></div>
         <div class="grid">
           <div class="flex-row">
-            {{icon "github:star"}}
+            <span class="ui-icon">{{icon "github:star"}}</span>
             <span type="text" id="stargazers_count"></span>
           </div>
           <div class="flex-row">
-            {{icon "github:fork"}}
+            <span class="ui-icon">{{icon "github:fork"}}</span>
             <span type="text" id="forks_count"></span>
           </div>
           <div class="flex-row data-service ds-ghinfo" index="0" data-api="/api/gh/widget/tags?repo={{$repo}}">
-            {{icon "github:tag"}}
+            <span class="ui-icon">{{icon "github:tag"}}</span>
             <span type="text" id="latest-tag-name">0</span>
           </div>
         </div>

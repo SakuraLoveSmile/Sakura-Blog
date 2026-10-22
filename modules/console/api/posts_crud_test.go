@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/config"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
@@ -17,12 +18,12 @@ import (
 // TestPostCRUDFlow 文章生命周期：创建（slug 自动生成）→ 列表筛选 → 详情 →
 // 更新（生成 revision）→ 草稿头 → 发布 → 回收站 → 恢复 → 彻底删除。
 func TestPostCRUDFlow(t *testing.T) {
-	r, st, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
 
 	// 创建：空 slug 从标题自动生成，中文标题保留
 	w := do2FA(r, http.MethodPost, "/api/v1/posts",
-		`{"title":"Hello World","content_md":"# 标题\n\n正文","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"Hello World","content_md":"# 标题\n\n正文","status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create post: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -41,7 +42,7 @@ func TestPostCRUDFlow(t *testing.T) {
 	}
 
 	// 创建：slug 冲突 → 409
-	w = do2FA(r, http.MethodPost, "/api/v1/posts", `{"title":"x","slug":"hello-world"}`, cookie)
+	w = do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"x","slug":"hello-world"}`, cookie)
 	if w.Code != http.StatusConflict {
 		t.Errorf("duplicate slug: status = %d, want 409", w.Code)
 	}
@@ -88,7 +89,7 @@ func TestPostCRUDFlow(t *testing.T) {
 
 	// 更新：改标题 → 200，revision 落库
 	w = do2FA(r, http.MethodPut, "/api/v1/posts/hello-world",
-		`{"title":"Hello Updated","content_md":"# 新版\n\n正文","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"Hello Updated","content_md":"# 新版\n\n正文","status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("update post: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -102,22 +103,22 @@ func TestPostCRUDFlow(t *testing.T) {
 	}
 
 	// 更新：slug 被占用 → 409（先造第二篇）
-	do2FA(r, http.MethodPost, "/api/v1/posts", `{"title":"Second Post","slug":"second-post"}`, cookie)
+	do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"Second Post","slug":"second-post"}`, cookie)
 	w = do2FA(r, http.MethodPut, "/api/v1/posts/hello-world",
-		`{"title":"x","slug":"second-post","content_md":"c"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"x","slug":"second-post","content_md":"c"}`, cookie)
 	if w.Code != http.StatusConflict {
 		t.Errorf("update to occupied slug: status = %d, want 409", w.Code)
 	}
 
 	// 更新：不存在 → 404
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/no-such", `{"title":"x","content_md":"c"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/no-such", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"x","content_md":"c"}`, cookie)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("update missing post: status = %d, want 404", w.Code)
 	}
 
 	// 草稿头：保存后详情 has_draft=true 且带 draft 字段
 	w = do2FA(r, http.MethodPut, "/api/v1/posts/hello-world/draft",
-		`{"title":"草稿中","content_md":"未保存内容"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"草稿中","content_md":"未保存内容"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("save draft: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -134,7 +135,7 @@ func TestPostCRUDFlow(t *testing.T) {
 
 	// 发布（已发布状态再发布幂等）
 	w = do2FA(r, http.MethodPost, "/api/v1/posts/hello-world/publish",
-		`{"title":"Hello Updated","content_md":"# 新版\n\n正文","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"Hello Updated","content_md":"# 新版\n\n正文","status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("publish: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -184,11 +185,14 @@ func TestPostCRUDFlow(t *testing.T) {
 	}
 }
 
-func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
-	r, _, user, _ := newFullEnv(t)
+func TestPostAuthorsAPIRoundTripAndStrictRequest(t *testing.T) {
+	r, st, user, _ := newFullStellarEnv(t)
+	if err := st.PutSetting(config.SectionBlogExtensions, `{"data":{"authors":{"alice":{"name":"Alice"},"bob":{"name":"Bob"}}}}`); err != nil {
+		t.Fatal(err)
+	}
 	cookie := authCookie(user)
 
-	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"slug":"api-multi-author","title":"多作者 API","authors":["alice","bob"],"status":"published"}`, cookie)
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","slug":"api-multi-author","title":"多作者 API","authors":["alice","bob"],"status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create multi-author post: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -200,8 +204,8 @@ func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
 		t.Fatalf("create authors=%#v primary=%q", created.Authors, created.Author)
 	}
 
-	// 旧客户端不发送 authors 时，更新正文不能误删已有多作者关联。
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"title":"旧客户端更新","status":"published"}`, cookie)
+	// 不发送宿主 authors 时，严格原文的公开署名与编辑权限关系保持不变。
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","title":"正文更新","status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("legacy update: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -213,7 +217,7 @@ func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
 		t.Fatalf("legacy update authors=%#v", updated.Authors)
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"authors":["bob"],"status":"published"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"bob\"}}","blog_extensions":"{\"content\":{\"authors\":[\"bob\"]}}","authors":["bob"],"status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("replace authors: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -223,10 +227,13 @@ func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
 }
 
 func TestPostSlugUpdatePreservesIdentityAndAssociations(t *testing.T) {
-	r, st, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullStellarEnv(t)
+	if err := st.PutSetting(config.SectionBlogExtensions, `{"data":{"authors":{"alice":{"name":"Alice"},"bob":{"name":"Bob"}}}}`); err != nil {
+		t.Fatal(err)
+	}
 	cookie := authCookie(user)
 
-	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"slug":"api-slug-old","title":"旧文章","content_md":"旧正文","authors":["alice","bob"],"categories":["技术/Go"],"status":"published"}`, cookie)
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","slug":"api-slug-old","title":"旧文章","content_md":"旧正文","authors":["alice","bob"],"categories":["技术/Go"],"status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create post: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -235,7 +242,7 @@ func TestPostSlugUpdatePreservesIdentityAndAssociations(t *testing.T) {
 		t.Fatalf("get created post: %v nil=%v", err, before == nil)
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-slug-old", `{"slug":"api-slug-new","title":"新文章","content_md":"新正文","status":"published"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-slug-old", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","slug":"api-slug-new","title":"新文章","content_md":"新正文","status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("rename post: status=%d body=%s", w.Code, w.Body.String())
 	}

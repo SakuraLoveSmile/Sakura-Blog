@@ -359,7 +359,7 @@ function statusBadge(status: string) {
         <div
           v-for="p in pages"
           :key="p.slug"
-          class="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 transition-all hover:border-border-strong sm:p-5"
+          class="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 transition-colors duration-150 hover:border-border-strong sm:p-5"
           :class="{ 'border-primary ring-1 ring-primary bg-primary/5': selectedSlugs.has(p.slug) }"
         >
           <div>
@@ -468,7 +468,7 @@ function statusBadge(status: string) {
         <div class="overflow-x-auto">
           <table class="w-full min-w-[760px] text-left">
             <thead>
-              <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+              <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                 <th class="w-12 px-4 py-3 text-center">
                   <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                   <input
@@ -619,7 +619,7 @@ function statusBadge(status: string) {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {

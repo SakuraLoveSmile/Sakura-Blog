@@ -10,7 +10,15 @@ test("公开页面 canonical、OG 与 sitemap 地址一致且编码路径可访�
   ).toBeTruthy();
   const slug = `url-${Date.now()}-中文#?%`;
   const create = await request.post("/api/v1/posts", {
-    data: { slug, title: "阶段 A URL 验证", content_md: "URL 验证正文", status: "published" },
+    data: {
+      slug,
+      title: "阶段 A URL 验证",
+      content_md: "URL 验证正文",
+      status: "published",
+      stellar_version: 2,
+      stellar_config: "{}",
+      blog_extensions: "{}",
+    },
   });
   expect(create.status()).toBe(201);
   const path = `/post/${encodeURIComponent(slug)}`;

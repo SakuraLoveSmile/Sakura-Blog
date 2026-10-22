@@ -101,9 +101,9 @@ function createRuntime({ finePointer = true, reduceMotion = false } = {}) {
       return media.get(query);
     },
   };
-  const context = vm.createContext({ console, ctx: { card_hover: { maxTilt: 3, spotlightColor: "rgba(255, 255, 255, 0.25)" } }, document, stellar, window });
+  const context = vm.createContext({ console, ctx: { card_hover: { spotlight: true, tilt: true } }, document, stellar, window });
   vm.runInContext(SOURCE, context, { filename: SOURCE_PATH });
-  return { api: stellar.cardHover, document, documentListeners, windowListeners, media };
+  return { api: { ...stellar.cardHover, mountAll: root => stellar.cardHover.mountAll(root, { spotlight: true, tilt: true }) }, document, documentListeners, windowListeners, media };
 }
 
 test("Card Hover 可挂载动态卡片并完整清理", () => {

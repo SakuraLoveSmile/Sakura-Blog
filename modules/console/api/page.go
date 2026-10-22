@@ -29,6 +29,7 @@ type PageBannerInfoJSON struct {
 // PageJSON 页面详情 API 响应模型。leftbar_widgets / rightbar_widgets：
 // null = 未配置（继承全局 page 级默认）；[] = 明确空侧栏；[{name, params}, ...] = 自定义序列。
 type PageJSON struct {
+	StellarContentMetadata
 	Slug            string             `json:"slug"`
 	Title           string             `json:"title"`
 	ContentMD       string             `json:"content_md,omitempty"`
@@ -51,6 +52,7 @@ type pageJSON = PageJSON
 
 // PageListJSON 页面列表响应模型，不包含正文与横幅大字段。
 type PageListJSON struct {
+	StellarContentMetadata
 	Slug      string `json:"slug"`
 	Title     string `json:"title"`
 	Status    string `json:"status"`
@@ -68,6 +70,7 @@ type PageListResponse struct {
 
 // pageRequest 是创建/更新共用的页面输入；新增字段使用指针以区分缺失和显式清空。
 type pageRequest struct {
+	StellarContentMetadata
 	Slug            string              `json:"slug"`
 	Title           string              `json:"title"`
 	ContentMD       string              `json:"content_md"`
@@ -83,11 +86,12 @@ type pageRequest struct {
 
 func toPageJSON(p *store.Page) *PageJSON {
 	j := &PageJSON{
-		Slug:      p.Slug,
-		Title:     p.Title,
-		ContentMD: p.ContentMD,
-		Status:    p.Status,
-		Banner:    p.Banner,
+		StellarContentMetadata: StellarContentMetadata{p.StellarVersion, p.StellarConfig, p.BlogExtensions},
+		Slug:                   p.Slug,
+		Title:                  p.Title,
+		ContentMD:              p.ContentMD,
+		Status:                 p.Status,
+		Banner:                 p.Banner,
 		BannerInfo: PageBannerInfoJSON{
 			Title:    p.BannerInfo.Title,
 			Subtitle: p.BannerInfo.Subtitle,
@@ -123,13 +127,14 @@ func toPageJSON(p *store.Page) *PageJSON {
 // toPageListJSON 列表用，不包含大字段 content_md
 func toPageListJSON(p *store.Page) *PageListJSON {
 	j := &PageListJSON{
-		Slug:      p.Slug,
-		Title:     p.Title,
-		Status:    p.Status,
-		IsSystem:  p.IsSystem,
-		Views:     p.Views,
-		CreatedAt: p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: p.UpdatedAt.Format(time.RFC3339),
+		StellarContentMetadata: StellarContentMetadata{p.StellarVersion, p.StellarConfig, p.BlogExtensions},
+		Slug:                   p.Slug,
+		Title:                  p.Title,
+		Status:                 p.Status,
+		IsSystem:               p.IsSystem,
+		Views:                  p.Views,
+		CreatedAt:              p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:              p.UpdatedAt.Format(time.RFC3339),
 	}
 	return j
 }
@@ -270,6 +275,7 @@ func (h *Handler) createPage(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
+	projectPageForm(&req)
 	if strings.TrimSpace(req.Slug) == "" {
 		Fail(c, http.StatusBadRequest, "slug 不能为空")
 		return
@@ -284,9 +290,13 @@ func (h *Handler) createPage(c *gin.Context) {
 		return
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "page", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "page")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -297,6 +307,7 @@ func (h *Handler) createPage(c *gin.Context) {
 
 	banner, bannerInfo, breadcrumb, author, publishedAt := pageHeaderValues(req, nil, true)
 	p := &store.Page{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		Slug:            strings.TrimSpace(req.Slug),
 		Title:           strings.TrimSpace(req.Title),
 		ContentMD:       req.ContentMD,
@@ -314,6 +325,7 @@ func (h *Handler) createPage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusCreated, toPageJSON(p))
 }
 
@@ -335,6 +347,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
+	projectPageForm(&req)
 	if err := h.validatePageHeader(req.Banner, req.BannerInfo, req.Breadcrumb, req.Author, req.Date); err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -351,9 +364,13 @@ func (h *Handler) updatePage(c *gin.Context) {
 		}
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "page", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "page")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -374,6 +391,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 	banner, bannerInfo, breadcrumb, author, publishedAt := pageHeaderValues(req, existing, false)
 
 	p := &store.Page{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ID:              existing.ID,
 		Slug:            newSlug,
 		Title:           strings.TrimSpace(req.Title),
@@ -396,6 +414,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "更新失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, toPageJSON(p))
 }
 
@@ -406,6 +425,7 @@ func (h *Handler) deletePage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -416,6 +436,7 @@ func (h *Handler) restorePage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 

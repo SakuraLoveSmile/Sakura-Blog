@@ -1,0 +1,93 @@
+[
+  {
+    "layout": "index",
+    "main": true,
+    "path": "/",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "post",
+    "main": true,
+    "path": "/post/141-stellar-141",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "page",
+    "main": true,
+    "path": "/stellar-200-page",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "wiki",
+    "main": true,
+    "path": "/wiki",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "wiki-doc",
+    "main": true,
+    "path": "/wiki/stellar-test/intro",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "notes",
+    "main": true,
+    "path": "/notes",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "categories",
+    "main": true,
+    "path": "/categories",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "tags",
+    "main": true,
+    "path": "/tags",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "archive",
+    "main": true,
+    "path": "/archives",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "topics",
+    "main": true,
+    "path": "/topic",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "page",
+    "main": true,
+    "path": "/friends",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "moments",
+    "main": true,
+    "path": "/moments",
+    "scrollWidth": 1272,
+    "width": 1280
+  },
+  {
+    "layout": "404",
+    "main": true,
+    "path": "/missing-stellar-200",
+    "scrollWidth": 1272,
+    "width": 1280
+  }
+]

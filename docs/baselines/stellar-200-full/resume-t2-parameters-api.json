@@ -1,0 +1,5828 @@
+{
+  "task": "T2 parameter branches",
+  "syntheticFixture": true,
+  "baseURL": "http://127.0.0.1:8112",
+  "root": "Blog-stellar-200/.tmp/stellar-final-brand-root",
+  "binaryCommitFromParent": "7ca5a989",
+  "reference": "docs/baselines/stellar-200-full/upstream-home.png",
+  "createdAt": "2026-10-13T18:14:10.528893+00:00",
+  "browserAvailability": [
+    {
+      "operation": "cua.getState",
+      "browsers": []
+    },
+    {
+      "operation": "cua.getBrowser({id:\"2\"})",
+      "error": "Browser is not available: 2"
+    },
+    {
+      "operation": "cua.createBrowserTab(\"iab\",...)",
+      "error": "Browser is not available: iab"
+    }
+  ],
+  "browserStatus": "NOT RUN - parent must execute in connected browser session",
+  "cases": [
+    {
+      "id": "brand-regular-avatar",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "cdf7fdf2ad4600993484b8efa9fbf829742892e4e148fe063b1b19769606b93f",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "brand style",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "image variant",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "brand-regular-icon",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "b73c0bbedd836cc8e556eb33d4b8d369a5831ae880bde9c08eaf20b4579f6eb2",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--icon",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "brand style",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "image variant",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "brand-regular-plain",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "e0ae40b5d99a1b413358a30e0e147b60d9f18f4836b981678d6f08f606177abe",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--plain",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "brand style",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "image variant",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "brand-compact-avatar",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "97b06fb4ebcc2c3a40a56283496b7de05f5c9a6ef030348eb562b951fe7ba8cf",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--compact brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "brand style",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "image variant",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "brand-compact-icon",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "a2603a72287cc3c007f3890cf6b1e23317d955dd1b7926016b3cb2629c50b874",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--compact brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--icon",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "brand style",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "image variant",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "brand-compact-plain",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "093f26500f67290a44d28ef5243a115bab52ad4781b243a2401c2ce5bf7becd8",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--compact brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--plain",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "brand style",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "image variant",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "menu-columns-1",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "reopenStatus": 200,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "246558b49653a59a4e6618a0473d83de6a0f481d3e64c6bff5d065277525bb33",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "aria-current": "page",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "menu layout",
+          "actual": "list",
+          "expected": "list",
+          "pass": true
+        },
+        {
+          "name": "menu variant",
+          "actual": "nav",
+          "expected": "nav",
+          "pass": true
+        },
+        {
+          "name": "menu columns",
+          "actual": "",
+          "expected": "",
+          "pass": true
+        },
+        {
+          "name": "selected menu",
+          "actual": [
+            "/about/"
+          ],
+          "expected": [
+            "/about/"
+          ],
+          "pass": true
+        },
+        {
+          "name": "active aria-current",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "button onclick descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "dropdown descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:43:51.521401+00:00",
+      "binaryCommitFromParent": "cd3d7e65",
+      "historicalRedEvidence": "resume-t2-parameters-api-history-red.json"
+    },
+    {
+      "id": "menu-columns-2",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "reopenStatus": 200,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "f09562eb30fec91bbe6e9afa0371bfa1ac1a1b491c91122ce7a6bde1ce149406",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "grid",
+            "data-variant": "nav",
+            "data-density": "auto",
+            "style": "--ui-columns:2"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "aria-current": "page",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "menu layout",
+          "actual": "grid",
+          "expected": "grid",
+          "pass": true
+        },
+        {
+          "name": "menu variant",
+          "actual": "nav",
+          "expected": "nav",
+          "pass": true
+        },
+        {
+          "name": "menu columns",
+          "actual": "--ui-columns:2",
+          "expected": "--ui-columns:2",
+          "pass": true
+        },
+        {
+          "name": "selected menu",
+          "actual": [
+            "/about/"
+          ],
+          "expected": [
+            "/about/"
+          ],
+          "pass": true
+        },
+        {
+          "name": "active aria-current",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "button onclick descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "dropdown descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:43:51.521401+00:00",
+      "binaryCommitFromParent": "cd3d7e65",
+      "historicalRedEvidence": "resume-t2-parameters-api-history-red.json"
+    },
+    {
+      "id": "menu-columns-3",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "reopenStatus": 200,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "8ec1a710dc5ca3b8424442c7ce2f67ff86f41a00fe76dfd2b72ff050b2a44b36",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "grid",
+            "data-variant": "icon",
+            "data-density": "auto",
+            "style": "--ui-columns:3"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "aria-current": "page",
+              "aria-label": "T2 about",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 wiki",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 topic",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 settings",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 post",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "menu layout",
+          "actual": "grid",
+          "expected": "grid",
+          "pass": true
+        },
+        {
+          "name": "menu variant",
+          "actual": "icon",
+          "expected": "icon",
+          "pass": true
+        },
+        {
+          "name": "menu columns",
+          "actual": "--ui-columns:3",
+          "expected": "--ui-columns:3",
+          "pass": true
+        },
+        {
+          "name": "selected menu",
+          "actual": [
+            "/about/"
+          ],
+          "expected": [
+            "/about/"
+          ],
+          "pass": true
+        },
+        {
+          "name": "active aria-current",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "button onclick descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "dropdown descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:43:51.521401+00:00",
+      "binaryCommitFromParent": "cd3d7e65",
+      "historicalRedEvidence": "resume-t2-parameters-api-history-red.json"
+    },
+    {
+      "id": "menu-columns-4",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "reopenStatus": 200,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "1e455cb139524bd9472333c8ab70260a563fa726f21f54110b777ec25fabbe41",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "grid",
+            "data-variant": "icon",
+            "data-density": "auto",
+            "style": "--ui-columns:4"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "aria-current": "page",
+              "aria-label": "T2 about",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 wiki",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 topic",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 settings",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 post",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "menu layout",
+          "actual": "grid",
+          "expected": "grid",
+          "pass": true
+        },
+        {
+          "name": "menu variant",
+          "actual": "icon",
+          "expected": "icon",
+          "pass": true
+        },
+        {
+          "name": "menu columns",
+          "actual": "--ui-columns:4",
+          "expected": "--ui-columns:4",
+          "pass": true
+        },
+        {
+          "name": "selected menu",
+          "actual": [
+            "/about/"
+          ],
+          "expected": [
+            "/about/"
+          ],
+          "pass": true
+        },
+        {
+          "name": "active aria-current",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "button onclick descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "dropdown descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:43:51.521401+00:00",
+      "binaryCommitFromParent": "cd3d7e65",
+      "historicalRedEvidence": "resume-t2-parameters-api-history-red.json"
+    },
+    {
+      "id": "menu-columns-5",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "reopenStatus": 200,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "1eacff60a117a8fd1d4cc6b1787abf49c7a55e8f735b3927c59f802468ec8bf3",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "grid",
+            "data-variant": "icon",
+            "data-density": "auto",
+            "style": "--ui-columns:5"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "aria-current": "page",
+              "aria-label": "T2 about",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 wiki",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 topic",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 settings",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "aria-label": "T2 post",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "menu layout",
+          "actual": "grid",
+          "expected": "grid",
+          "pass": true
+        },
+        {
+          "name": "menu variant",
+          "actual": "icon",
+          "expected": "icon",
+          "pass": true
+        },
+        {
+          "name": "menu columns",
+          "actual": "--ui-columns:5",
+          "expected": "--ui-columns:5",
+          "pass": true
+        },
+        {
+          "name": "selected menu",
+          "actual": [
+            "/about/"
+          ],
+          "expected": [
+            "/about/"
+          ],
+          "pass": true
+        },
+        {
+          "name": "active aria-current",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "button onclick descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "dropdown descriptor",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:43:51.521401+00:00",
+      "binaryCommitFromParent": "cd3d7e65",
+      "historicalRedEvidence": "resume-t2-parameters-api-history-red.json"
+    },
+    {
+      "id": "mobile-card",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "22eb06df7c7395aa38c05087ad021e72fa65a0429b3c9137c70c428b9ca27872",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "aria-current": "page",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings"
+        ],
+        "markers": [],
+        "stylesheets": [
+          "/assets/css/main-card.css?v=aa6b222e",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-card.css?v=3c0edfe1"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "preset stylesheet",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "mobile-glass",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "b3bf473cac6d895752a0fab9f6d6a3a6726f7bcd5dbae0a29fd4f40bc05fd71f",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "aria-current": "page",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings"
+        ],
+        "markers": [],
+        "stylesheets": [
+          "/assets/css/main-glass.css?v=36102bda",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-glass.css?v=316b61b2"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "preset stylesheet",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "mobile-minimal",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "ea2318a7b3e9b7d767073ceed789d096473713867df3b720c611801f6ea3295e",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "aria-current": "page",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings"
+        ],
+        "markers": [],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "preset stylesheet",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "mobile-flat",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "bae270dc1652c53a69d27dbaebdb2be7b736d51b48875e0b905de47d368686e9",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "aria-current": "page",
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings"
+        ],
+        "markers": [],
+        "stylesheets": [
+          "/assets/css/main-flat.css?v=5cc07d11",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-flat.css?v=e23beb98"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "preset stylesheet",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "widget-placement-warning-skip",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "50d6c9dd0aa4a5b080898269cf5e23f5d9e2e86e03b906b8e9667b7f41c5e577",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular brand-header--site"
+          }
+        ],
+        "brandImages": [
+          {
+            "class": "brand-image brand-image--avatar",
+            "href": "/about/"
+          }
+        ],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "T2 about"
+            },
+            "text": "T2 about"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "title": "T2 wiki"
+            },
+            "text": "T2 wiki"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "T2 topic"
+            },
+            "text": "T2 topic"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/settings/",
+              "title": "T2 settings"
+            },
+            "text": "T2 settings"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "T2 post"
+            },
+            "text": "T2 post"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/",
+              "rel": "noopener noreferrer",
+              "title": "T2 link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 button",
+              "aria-label": "T2 button",
+              "onclick": "document.documentElement.dataset.t2Action='clicked'"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:copy"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "social-spacer",
+              "aria-hidden": "true"
+            },
+            "text": ""
+          },
+          {
+            "tag": "details",
+            "attrs": {
+              "class": "dropdown social-dropdown"
+            },
+            "text": "T2 nested linkT2 nested button"
+          },
+          {
+            "tag": "summary",
+            "attrs": {
+              "class": "dropdown-trigger ui-interactive social ui-collection__item card-hover card-hover--spotlight is-icon-only",
+              "title": "T2 dropdown",
+              "aria-label": "T2 dropdown"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:settings"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/wiki/",
+              "rel": "noopener noreferrer",
+              "title": "T2 nested link"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested link"
+          },
+          {
+            "tag": "button",
+            "attrs": {
+              "type": "button",
+              "class": "dropdown-item ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "title": "T2 nested button",
+              "aria-label": "T2 nested button",
+              "onclick": "document.documentElement.dataset.t2NestedAction='clicked'"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__content"
+            },
+            "text": "T2 nested button"
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-collection__title"
+            },
+            "text": "T2 nested button"
+          }
+        ],
+        "widgetIds": [
+          "topbar:0:spacer",
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:1:markdown",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:0:toc"
+        ],
+        "markers": [
+          "T2_GOOD_LEFTBAR",
+          "纯本地测试"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "allowed widget instances",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "name": "unsupported widgets skipped",
+          "actual": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-global-omit",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "931060aef62e9e4ed22f769437308eb1904cdd9a213d146909821e0da8a73c67",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/",
+              "title": "博客"
+            },
+            "text": "博客"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/blog/categories/",
+              "title": "分类"
+            },
+            "text": "分类"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/blog/tags/",
+              "title": "标签"
+            },
+            "text": "标签"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/topic/",
+              "title": "专栏"
+            },
+            "text": "专栏"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/blog/archives/",
+              "title": "归档"
+            },
+            "text": "归档"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/friends/",
+              "title": "友链"
+            },
+            "text": "友链"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/",
+              "title": "关于"
+            },
+            "text": "关于"
+          }
+        ],
+        "actions": [],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-global-empty",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "c62fd0f37910c0a8f28a017ed5465bafd721ac950a71ea396b94700a8b432031",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [],
+        "menuItems": [],
+        "actions": [],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-global-replace",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "c3be2cb216ecfba50771bf09b2ee09cf85e4a55f617acec5b360dd3dbf921e4a",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=GLOBAL_REPLACED0",
+              "title": "T2_MENU_GLOBAL_REPLACED_0"
+            },
+            "text": "T2_MENU_GLOBAL_REPLACED_0"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=GLOBAL_REPLACED0",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_GLOBAL_REPLACED_0"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:0:markdown",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2_WIDGET_GLOBAL_REPLACED_0",
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [
+            "T2_WIDGET_GLOBAL_REPLACED_0"
+          ],
+          "expected": [
+            "T2_WIDGET_GLOBAL_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [
+            "T2_MENU_GLOBAL_REPLACED_0"
+          ],
+          "expected": [
+            "T2_MENU_GLOBAL_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [
+            "T2_ACTION_GLOBAL_REPLACED_0"
+          ],
+          "expected": [
+            "T2_ACTION_GLOBAL_REPLACED_0"
+          ],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-profile-omit",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "fd82bc1a365ebbc4d340692adc44c9ca7b9026e424aedaaecffc9a3bb2f6b5af",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [],
+        "menuItems": [],
+        "actions": [],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-profile-empty",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "fd82bc1a365ebbc4d340692adc44c9ca7b9026e424aedaaecffc9a3bb2f6b5af",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [],
+        "menuItems": [],
+        "actions": [],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-profile-replace",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "fce079d40b9d2bddde404d85940f6c341f3556e8585ecb2befb654ea5873fe13",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=PROFILE_REPLACED0",
+              "title": "T2_MENU_PROFILE_REPLACED_0"
+            },
+            "text": "T2_MENU_PROFILE_REPLACED_0"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=PROFILE_REPLACED0",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_PROFILE_REPLACED_0"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:0:markdown",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2_WIDGET_PROFILE_REPLACED_0",
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [
+            "T2_WIDGET_PROFILE_REPLACED_0"
+          ],
+          "expected": [
+            "T2_WIDGET_PROFILE_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [
+            "T2_MENU_PROFILE_REPLACED_0"
+          ],
+          "expected": [
+            "T2_MENU_PROFILE_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [
+            "T2_ACTION_PROFILE_REPLACED_0"
+          ],
+          "expected": [
+            "T2_ACTION_PROFILE_REPLACED_0"
+          ],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-collection-omit",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "4fd5e9f7bd7b7e9151ba33db59ecfcd5604669f02f67b76e2e571ef443f180a1",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=PROFILE0",
+              "title": "T2_MENU_PROFILE_0"
+            },
+            "text": "T2_MENU_PROFILE_0"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=PROFILE1",
+              "title": "T2_MENU_PROFILE_1"
+            },
+            "text": "T2_MENU_PROFILE_1"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=PROFILE0",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_PROFILE_0"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=PROFILE1",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_PROFILE_1"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:0:markdown",
+          "leftbar:1:markdown",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2_WIDGET_PROFILE_0",
+          "T2_WIDGET_PROFILE_1",
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [
+            "T2_WIDGET_PROFILE_0",
+            "T2_WIDGET_PROFILE_1"
+          ],
+          "expected": [
+            "T2_WIDGET_PROFILE_0",
+            "T2_WIDGET_PROFILE_1"
+          ],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [
+            "T2_MENU_PROFILE_0",
+            "T2_MENU_PROFILE_1"
+          ],
+          "expected": [
+            "T2_MENU_PROFILE_0",
+            "T2_MENU_PROFILE_1"
+          ],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [
+            "T2_ACTION_PROFILE_0",
+            "T2_ACTION_PROFILE_1"
+          ],
+          "expected": [
+            "T2_ACTION_PROFILE_0",
+            "T2_ACTION_PROFILE_1"
+          ],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-collection-empty",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "3dee5b3e3d3df957f89a0e5ebe1e95446feafc9c9e56c838cc4eb5a6b8b6b297",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [],
+        "menuItems": [],
+        "actions": [],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-collection-replace",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "2759b82a59d1eacc52bf60a6190435d31b03d38a96af93c28e63aba2a95be560",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=COLLECTION_REPLACED0",
+              "title": "T2_MENU_COLLECTION_REPLACED_0"
+            },
+            "text": "T2_MENU_COLLECTION_REPLACED_0"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=COLLECTION_REPLACED0",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_COLLECTION_REPLACED_0"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:0:markdown",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2_WIDGET_COLLECTION_REPLACED_0",
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [
+            "T2_WIDGET_COLLECTION_REPLACED_0"
+          ],
+          "expected": [
+            "T2_WIDGET_COLLECTION_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [
+            "T2_MENU_COLLECTION_REPLACED_0"
+          ],
+          "expected": [
+            "T2_MENU_COLLECTION_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [
+            "T2_ACTION_COLLECTION_REPLACED_0"
+          ],
+          "expected": [
+            "T2_ACTION_COLLECTION_REPLACED_0"
+          ],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-page-omit",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "5fe2c29215d51660b8b73a76ed975e6529a14e12a8ae9b24c49fac350fba06a6",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=COLLECTION0",
+              "title": "T2_MENU_COLLECTION_0"
+            },
+            "text": "T2_MENU_COLLECTION_0"
+          },
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=COLLECTION1",
+              "title": "T2_MENU_COLLECTION_1"
+            },
+            "text": "T2_MENU_COLLECTION_1"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=COLLECTION0",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_COLLECTION_0"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=COLLECTION1",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_COLLECTION_1"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:0:markdown",
+          "leftbar:1:markdown",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2_WIDGET_COLLECTION_0",
+          "T2_WIDGET_COLLECTION_1",
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [
+            "T2_WIDGET_COLLECTION_0",
+            "T2_WIDGET_COLLECTION_1"
+          ],
+          "expected": [
+            "T2_WIDGET_COLLECTION_0",
+            "T2_WIDGET_COLLECTION_1"
+          ],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [
+            "T2_MENU_COLLECTION_0",
+            "T2_MENU_COLLECTION_1"
+          ],
+          "expected": [
+            "T2_MENU_COLLECTION_0",
+            "T2_MENU_COLLECTION_1"
+          ],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [
+            "T2_ACTION_COLLECTION_0",
+            "T2_ACTION_COLLECTION_1"
+          ],
+          "expected": [
+            "T2_ACTION_COLLECTION_0",
+            "T2_ACTION_COLLECTION_1"
+          ],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-page-empty",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "c8fbdaaeb2d81cf1aebcaf409626ea4f38c5d7225a97356fed624246cd821426",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [],
+        "menuItems": [],
+        "actions": [],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [],
+          "expected": [],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    },
+    {
+      "id": "cascade-page-replace",
+      "validateStatus": 200,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "saveStatus": 200,
+      "reopenExact": true,
+      "contentReopen": [
+        {
+          "path": "/api/v1/wiki/projects/t2-cascade",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        },
+        {
+          "path": "/api/v1/wiki/t2-cascade/docs/entry",
+          "saveStatus": 200,
+          "getStatus": 200,
+          "stellarConfigExact": true
+        }
+      ],
+      "httpDOM": {
+        "status": 200,
+        "sha256": "1bf27565bfd30f7d686d591b61ebaba92ec2659a401ee4012abdf63619cca939",
+        "brandHeaders": [
+          {
+            "class": "brand-header brand-header--regular"
+          }
+        ],
+        "brandImages": [],
+        "menuCollections": [
+          {
+            "class": "ui-collection",
+            "data-layout": "list",
+            "data-variant": "nav",
+            "data-density": "auto"
+          }
+        ],
+        "menuItems": [
+          {
+            "attrs": {
+              "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight",
+              "href": "/about/?t2=PAGE_REPLACED0",
+              "title": "T2_MENU_PAGE_REPLACED_0"
+            },
+            "text": "T2_MENU_PAGE_REPLACED_0"
+          }
+        ],
+        "actions": [
+          {
+            "tag": "a",
+            "attrs": {
+              "class": "social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only",
+              "href": "/about/?t2action=PAGE_REPLACED0",
+              "rel": "noopener noreferrer",
+              "title": "T2_ACTION_PAGE_REPLACED_0"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "ui-icon"
+            },
+            "text": ""
+          },
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "icon-missing",
+              "data-icon": "default:link"
+            },
+            "text": ""
+          }
+        ],
+        "widgetIds": [
+          "leftbar:fixed:brand",
+          "leftbar:fixed:menu",
+          "leftbar:0:markdown",
+          "leftbar:fixed:actions",
+          "leftbar:fixed:settings",
+          "rightbar:1:toc"
+        ],
+        "markers": [
+          "T2_WIDGET_PAGE_REPLACED_0",
+          "T2 cascade"
+        ],
+        "stylesheets": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/comments.css?v=397c6802",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ]
+      },
+      "httpAssertions": [
+        {
+          "name": "widgets array inheritance/replacement",
+          "actual": [
+            "T2_WIDGET_PAGE_REPLACED_0"
+          ],
+          "expected": [
+            "T2_WIDGET_PAGE_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "menu array inheritance/replacement",
+          "actual": [
+            "T2_MENU_PAGE_REPLACED_0"
+          ],
+          "expected": [
+            "T2_MENU_PAGE_REPLACED_0"
+          ],
+          "pass": true
+        },
+        {
+          "name": "actions array inheritance/replacement",
+          "actual": [
+            "T2_ACTION_PAGE_REPLACED_0"
+          ],
+          "expected": [
+            "T2_ACTION_PAGE_REPLACED_0"
+          ],
+          "pass": true
+        }
+      ],
+      "browserStatus": "NOT RUN",
+      "checkedAt": "2026-10-13T18:14:10.528893+00:00",
+      "binaryCommitFromParent": "7ca5a989"
+    }
+  ],
+  "updatedAt": "2026-10-13T18:43:51.521401+00:00",
+  "historicalRedEvidence": "resume-t2-parameters-api-history-red.json",
+  "latestRerun": {
+    "checkedAt": "2026-10-13T18:43:51.521401+00:00",
+    "binaryCommitFromParent": "cd3d7e65",
+    "scope": [
+      "menu-columns-1",
+      "menu-columns-2",
+      "menu-columns-3",
+      "menu-columns-4",
+      "menu-columns-5"
+    ],
+    "settingsRestoredExact": true,
+    "note": "Only five menu columns rerun on current binary; other API/HTTP cases retain prior timestamps and binary identity. Browser remains NOT RUN.",
+    "runtimeEvidence": {
+      "listenAddress": "127.0.0.1:8112",
+      "pid": 44343,
+      "executablePathObservedWithLsof": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "commandObservedWithPs": "./blog -root .tmp/stellar-final-brand-root",
+      "executableSHA256": "b13df06e64d1817ab3d0f81159e767b3fc6ab00705e0a1a2bdd100ec3fb58939",
+      "observedAt": "2026-10-13T18:44:54.076489+00:00",
+      "commitIdentity": "cd3d7e65 reported by parent after rebuild/restart"
+    }
+  }
+}

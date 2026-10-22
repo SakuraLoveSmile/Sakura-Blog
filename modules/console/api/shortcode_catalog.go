@@ -15,5 +15,5 @@ type ShortcodeCatalogResponse struct {
 
 // shortcodeCatalog GET /api/v1/plugins/catalog returns the parser-owned shortcode schema.
 func (h *Handler) shortcodeCatalog(c *gin.Context) {
-	c.JSON(http.StatusOK, ShortcodeCatalogResponse{Items: post.ShortcodeCatalog()})
+	c.JSON(http.StatusOK, ShortcodeCatalogResponse{Items: append(post.ShortcodeCatalogStellarV2(), post.ShortcodeCatalogBlogExtensions()...)})
 }

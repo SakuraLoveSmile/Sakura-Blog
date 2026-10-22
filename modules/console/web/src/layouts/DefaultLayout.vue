@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { useAuthStore } from "@/stores/auth";
 import { useModulesStore, type ModuleNav } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
-import { VTag, Dialog } from "@/components/ui";
+import { VTag, VButton, Dialog } from "@/components/ui";
 import FeedbackLauncher from "@/components/FeedbackLauncher.vue";
 import { searchApi, notificationApi, type SearchResultItem } from "@/api";
 import { queryKeys } from "@/api/query-client";
@@ -62,6 +62,9 @@ const allNavItems = computed<NavItem[]>(() =>
     .filter((item): item is NavItem => item !== null),
 );
 const navGroups = computed(() => ["", ...new Set(allNavItems.value.map((item) => item.group).filter(Boolean))]);
+const canWritePost = computed(
+  () => auth.hasPermission("content:write") && allNavItems.value.some((item) => item.path === "/posts"),
+);
 const minimenus = computed(() => allNavItems.value.filter((item) => item.mobile));
 
 // 搜索用扁平列表（展开子菜单，保证 ⌘K 仍能搜到分享链接）
@@ -305,19 +308,32 @@ function closeProfileDropdown() {
     <aside
       :class="sidebarCollapsed ? 'sidebar-collapsed w-16' : 'w-64'"
       class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto overflow-x-hidden border-r border-border transition-[width] duration-150 md:flex"
-      style="background: var(--color-sidebar); backdrop-filter: saturate(180%) blur(24px)"
+      style="background: var(--color-sidebar);"
     >
       <!-- Logo -->
-      <div class="flex justify-center pb-7 pt-5">
+      <div class="flex justify-center pb-5 pt-5">
         <a
           href="/"
           target="_blank"
           title="访问首页"
-          class="flex items-center gap-2 transition-all hover:brightness-125"
+          class="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
-          <img src="/favicon.svg" alt="Logo" class="h-8 w-8 cursor-pointer select-none" />
+          <img src="/favicon.svg" alt="Logo" class="h-6 w-6 cursor-pointer select-none" />
           <span v-if="!sidebarCollapsed" class="text-lg font-bold text-foreground">Console</span>
         </a>
+      </div>
+
+      <div v-if="canWritePost" class="shrink-0 px-3 pb-3">
+        <VButton
+          type="primary"
+          :route="{ path: '/posts/new' }"
+          class="min-h-11 w-full justify-center"
+          :aria-label="sidebarCollapsed ? '开始写作' : undefined"
+          :title="sidebarCollapsed ? '开始写作' : undefined"
+        >
+          <template #icon><Icon icon="ri:quill-pen-line" /></template>
+          <span v-if="!sidebarCollapsed">开始写作</span>
+        </VButton>
       </div>
 
       <div class="flex-1 overflow-y-auto">
@@ -325,7 +341,7 @@ function closeProfileDropdown() {
         <div class="px-3">
           <button
             type="button"
-            class="flex w-full cursor-pointer items-center rounded-base bg-secondary p-2 text-text-quaternary transition-all hover:text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            class="flex w-full cursor-pointer items-center rounded-base bg-secondary p-2 text-text-quaternary transition-colors duration-150 hover:text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             :class="{ 'justify-center': sidebarCollapsed }"
             :title="sidebarCollapsed ? '搜索 (⌘+K)' : ''"
             aria-label="搜索"
@@ -333,7 +349,7 @@ function closeProfileDropdown() {
           >
             <span :class="{ 'mr-3': !sidebarCollapsed }"><Icon icon="ri:search-line" /></span>
             <template v-if="!sidebarCollapsed">
-              <span class="flex-1 select-none text-left text-base font-normal">搜索</span>
+              <span class="flex-1 select-none text-left text-sm font-normal">搜索内容与菜单</span>
               <div class="text-sm">{{ isMac ? "⌘" : "Ctrl" }}+K</div>
             </template>
           </button>
@@ -354,7 +370,6 @@ function closeProfileDropdown() {
                 :class="{ active: isNavActive(item), 'justify-center': sidebarCollapsed }"
                 class="menu-item-title"
                 :title="sidebarCollapsed ? item.label : ''"
-                @click="navigateTo(item.path)"
               >
                 <span class="menu-icon self-center" :class="{ 'mr-3': !sidebarCollapsed }">
                   <Icon :icon="item.icon" width="20" height="20" />
@@ -373,7 +388,7 @@ function closeProfileDropdown() {
               <!-- 收起模式下的 Hover Floating Tooltip -->
               <div
                 v-if="sidebarCollapsed"
-                class="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-lg backdrop-blur-md group-hover/item:block"
+                class="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-lg group-hover/item:block"
               >
                 {{ item.label }}
               </div>
@@ -383,7 +398,6 @@ function closeProfileDropdown() {
                     :to="child.path"
                     :class="{ active: route.path.startsWith(child.path) }"
                     class="menu-subitem"
-                    @click="navigateTo(child.path)"
                   >
                     <span class="menu-icon mr-3 self-center">
                       <Icon :icon="child.icon" width="18" height="18" />
@@ -400,7 +414,7 @@ function closeProfileDropdown() {
       <!-- 收起/展开切换 -->
       <div class="px-3 pb-1">
         <button
-          class="flex w-full items-center rounded-base p-2 text-text-quaternary transition-all hover:text-foreground hover:bg-accent"
+          class="flex w-full items-center rounded-base p-2 text-text-quaternary transition-colors duration-150 hover:text-foreground hover:bg-accent"
           :class="{ 'justify-center': sidebarCollapsed }"
           :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
           @click="toggleSidebar"
@@ -420,7 +434,7 @@ function closeProfileDropdown() {
             <button
               type="button"
               aria-label="未读通知"
-              class="cursor-pointer rounded p-1 transition-all hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              class="cursor-pointer rounded p-1 transition-colors duration-150 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               @click="router.push('/notifications')"
             >
               <Icon icon="ri:notification-3-line" class="text-text-tertiary" />
@@ -466,7 +480,7 @@ function closeProfileDropdown() {
               aria-label="更多操作"
               aria-haspopup="menu"
               :aria-expanded="profileDropdownOpen"
-              class="cursor-pointer rounded p-1 transition-all hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              class="cursor-pointer rounded p-1 transition-colors duration-150 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               @click.stop="profileDropdownOpen = !profileDropdownOpen"
             >
               <Icon icon="ri:more-fill" class="text-text-tertiary" />
@@ -521,7 +535,7 @@ function closeProfileDropdown() {
     <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary，按菜单项数动态布局） -->
     <nav
       aria-label="移动端底部导航"
-      class="fixed bottom-0 left-0 right-0 z-40 grid border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden"
+      class="fixed bottom-0 left-0 right-0 z-40 grid border-t border-border bg-card md:hidden"
       :style="{
         gridTemplateColumns: `repeat(${minimenus.length + 1}, minmax(0, 1fr))`,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -531,11 +545,12 @@ function closeProfileDropdown() {
         v-for="menu in minimenus"
         :key="menu.path"
         :to="menu.path"
-        :class="{ 'bg-black': route.path.startsWith(menu.path) }"
+        :class="{ 'bg-primary/10 text-primary': isNavActive(menu) }"
+        :aria-current="isNavActive(menu) ? 'page' : undefined"
         class="nav-item min-w-0"
       >
-        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
-          <div class="flex h-10 w-10 flex-col items-center justify-center">
+        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-inherit">
+          <div class="flex min-h-12 w-full min-w-0 flex-col items-center justify-center">
             <div class="text-base"><Icon :icon="menu.icon" /></div>
             <div class="mt-0.5 text-xs">{{ menu.label }}</div>
           </div>
@@ -550,8 +565,8 @@ function closeProfileDropdown() {
         class="nav-item min-w-0 bg-transparent border-0 text-inherit focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         @click="openMoreMenu"
       >
-        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
-          <div class="flex h-10 w-10 flex-col items-center justify-center">
+        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-inherit">
+          <div class="flex min-h-12 w-full min-w-0 flex-col items-center justify-center">
             <div class="text-base"><Icon icon="ri:more-fill" /></div>
             <div class="mt-0.5 text-xs">更多</div>
           </div>
@@ -651,12 +666,12 @@ function closeProfileDropdown() {
         @click.self="closeSearch"
       >
         <div
-          class="absolute inset-0 backdrop-blur-md"
+          class="absolute inset-0 bg-black/70"
           style="background: color-mix(in srgb, #000 65%, transparent)"
           @click="closeSearch"
         />
         <div
-          class="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl transition-all"
+          class="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl transition-opacity duration-150"
           style="box-shadow: var(--shadow-2xl)"
         >
           <!-- 搜索输入头 -->
@@ -678,7 +693,7 @@ function closeProfileDropdown() {
           <div class="max-h-80 overflow-y-auto py-2">
             <!-- 菜单区 -->
             <template v-if="searchResults.length">
-              <p class="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">
+              <p class="px-4 pb-1 pt-2 text-xs font-medium text-text-quaternary">
                 系统菜单
               </p>
               <button
@@ -705,7 +720,7 @@ function closeProfileDropdown() {
             <!-- 内容结果区（≥2 字符启用；接口异常时静默降级为仅菜单搜索） -->
             <template v-if="contentActive">
               <template v-if="postResults.length">
-                <p class="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">
+                <p class="px-4 pb-1 pt-3 text-xs font-medium text-text-quaternary">
                   文章内容
                 </p>
                 <button
@@ -741,7 +756,7 @@ function closeProfileDropdown() {
                 </button>
               </template>
               <template v-if="pageResults.length">
-                <p class="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">
+                <p class="px-4 pb-1 pt-3 text-xs font-medium text-text-quaternary">
                   独立页面
                 </p>
                 <button
@@ -837,7 +852,7 @@ function closeProfileDropdown() {
 }
 
 .menu-item-title {
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
   font-size: 0.9rem;
   display: flex;
   user-select: none;
@@ -881,12 +896,11 @@ function closeProfileDropdown() {
 .sidebar-collapsed .menu-item-title.active {
   background: color-mix(in srgb, var(--color-primary) 18%, transparent);
   color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 /* 缩进子菜单项 */
 .menu-subitem {
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
   font-size: 0.85rem;
   display: flex;
   user-select: none;
@@ -917,7 +931,7 @@ function closeProfileDropdown() {
   display: flex;
   gap: 0.75rem;
   background: var(--color-sidebar);
-  backdrop-filter: saturate(180%) blur(24px);
+  /* solid background without blur */
   padding: 0.75rem;
   z-index: 10;
   border-top: 1px solid var(--color-border);
@@ -967,7 +981,7 @@ function closeProfileDropdown() {
 
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: all var(--duration-normal) var(--ease-standard);
+  transition: opacity var(--duration-normal) var(--ease-standard), transform var(--duration-normal) var(--ease-standard);
 }
 .dropdown-enter-from,
 .dropdown-leave-to {

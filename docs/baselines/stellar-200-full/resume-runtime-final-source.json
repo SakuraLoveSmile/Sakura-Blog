@@ -1,0 +1,258 @@
+{
+  "source_commit": "5b92b24650c30c71d783ef35c494e897a3535fce",
+  "binary_sha256": "dc8f18d60ca5fb5862e9ae46dd4d784a7e078bb4ada0d3d488dda26d1bf7e7c7",
+  "services": [
+    {
+      "port": 8103,
+      "pid": 16540,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-v2-tools/.tmp/stellar-200-browser-root-2808603452",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "matches_dist": true
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "/assets/js/main.js",
+          "sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/search/algolia-search.js",
+          "sha256": "8d1b6d30ae91532b58aaa954a204ac06c4b52fb6bc362bc272860f14e93822e7",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f",
+          "matches_source": true
+        }
+      ],
+      "runtime_url": "/assets/js/runtime/index.js?v=deae89e4"
+    },
+    {
+      "port": 8112,
+      "pid": 16541,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-brand-root",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "matches_dist": true
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "/assets/js/main.js",
+          "sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/search/algolia-search.js",
+          "sha256": "8d1b6d30ae91532b58aaa954a204ac06c4b52fb6bc362bc272860f14e93822e7",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f",
+          "matches_source": true
+        }
+      ],
+      "runtime_url": "/assets/js/runtime/index.js?v=deae89e4"
+    },
+    {
+      "port": 8113,
+      "pid": 16542,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-content-root",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "matches_dist": true
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "/assets/js/main.js",
+          "sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/search/algolia-search.js",
+          "sha256": "8d1b6d30ae91532b58aaa954a204ac06c4b52fb6bc362bc272860f14e93822e7",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f",
+          "matches_source": true
+        }
+      ],
+      "runtime_url": "/assets/js/runtime/index.js?v=deae89e4"
+    },
+    {
+      "port": 8114,
+      "pid": 16543,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-plugins-root",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "matches_dist": true
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "/assets/js/main.js",
+          "sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/search/algolia-search.js",
+          "sha256": "8d1b6d30ae91532b58aaa954a204ac06c4b52fb6bc362bc272860f14e93822e7",
+          "matches_source": true
+        },
+        {
+          "path": "/assets/js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f",
+          "matches_source": true
+        }
+      ],
+      "runtime_url": "/assets/js/runtime/index.js?v=deae89e4"
+    }
+  ],
+  "graceful_previous_shutdown": true,
+  "wasm": {
+    "sha256": "d254aaa66ab23393a76492428b2baa967d6f298ee73e597c8b25585ccd065000",
+    "matches_git": true,
+    "binary_contains_exact_bytes": true,
+    "http_route": false,
+    "measurement": "current tracked/local and exact embedded binary bytes"
+  },
+  "isolation": {
+    "roots": [
+      "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-v2-tools/.tmp/stellar-200-browser-root-2808603452",
+      "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-brand-root",
+      "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-content-root",
+      "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-plugins-root"
+    ],
+    "process_arguments_verified_before_restart": true,
+    "separate_db_config_content_uploads_cache_runtime": true,
+    "fixed_lifetime_registry_is_not_business_runtime": true,
+    "real_root_service_not_touched": true
+  }
+}

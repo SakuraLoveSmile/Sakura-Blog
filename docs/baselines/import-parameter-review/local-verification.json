@@ -1,0 +1,33 @@
+{
+  "environment": "isolated localhost:8106; independent config, DB, content, uploads and maintenance root",
+  "cancel_initial_parameter_review_zero_writes": true,
+  "escape_and_zip_close_zero_additional_writes": true,
+  "topic_confirmation_cancel_zero_additional_writes": true,
+  "confirmed_ignore_import_success": true,
+  "final_nested_alias_and_discriminator_import_success": true,
+  "ignore_then_create_topic_success": true,
+  "original_body_hashes": {
+    "Perfdog": "87f7ec8d8cb3141ae76efc9c1ddbab1ac2ea5e4fec08fe7b25acbd24334b29e5",
+    "兼容字段验证": "df8a882b39eb58131e42471dee8e17862bbdd54a7b2cc9602a40f9904827bfbc",
+    "缺失专栏验证": "87f7ec8d8cb3141ae76efc9c1ddbab1ac2ea5e4fec08fe7b25acbd24334b29e5"
+  },
+  "lifecycle_ignored_posts_are_draft": true,
+  "ignored_values_absent_from_imported_configuration": true,
+  "zip_grouped_files": 2,
+  "zip_parameter_count": 4,
+  "mobile": {
+    "width": 390,
+    "height": 844,
+    "modal_width": 358,
+    "horizontal_overflow": false,
+    "buttons_visible": true,
+    "scroll_height": 1623,
+    "client_height": 591,
+    "end_scroll_top": 1032,
+    "escape_closes": true
+  },
+  "final_posts": 3,
+  "final_topics": 1,
+  "integrity_check": "ok",
+  "current_browser_spa_verified": true
+}

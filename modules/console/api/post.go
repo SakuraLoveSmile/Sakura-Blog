@@ -53,6 +53,7 @@ func (h *Handler) ensureUniqueSlug(slug string) string {
 
 // postJSON 文章 API 响应模型。
 type postJSON struct {
+	StellarContentMetadata
 	Slug        string   `json:"slug"`
 	Title       string   `json:"title"`
 	Excerpt     string   `json:"excerpt"`
@@ -96,30 +97,31 @@ type posterJ struct {
 
 func toPostJSON(p *store.Post, views int64) *postJSON {
 	pj := &postJSON{
-		Slug:            p.Slug,
-		Title:           p.Title,
-		Excerpt:         p.Excerpt,
-		Banner:          p.Banner,
-		Cover:           p.Cover,
-		Category:        p.Category,
-		Categories:      append([]string(nil), p.Categories...),
-		TopicID:         p.TopicID,
-		Topic:           p.Topic,
-		Tags:            p.Tags,
-		ContentMD:       p.ContentMD,
-		Status:          p.Status,
-		Pinned:          p.Pinned,
-		Password:        p.Password,
-		MetaDescription: p.MetaDescription,
-		MetaKeywords:    p.MetaKeywords,
-		AILabel:         p.AILabel,
-		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
-		Views:           views,
-		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
-		Authors:         normalizedPostAuthors(p),
-		Author:          p.Author,
-		AISummary:       p.AISummary,
+		StellarContentMetadata: StellarContentMetadata{p.StellarVersion, p.StellarConfig, p.BlogExtensions},
+		Slug:                   p.Slug,
+		Title:                  p.Title,
+		Excerpt:                p.Excerpt,
+		Banner:                 p.Banner,
+		Cover:                  p.Cover,
+		Category:               p.Category,
+		Categories:             append([]string(nil), p.Categories...),
+		TopicID:                p.TopicID,
+		Topic:                  p.Topic,
+		Tags:                   p.Tags,
+		ContentMD:              p.ContentMD,
+		Status:                 p.Status,
+		Pinned:                 p.Pinned,
+		Password:               p.Password,
+		MetaDescription:        p.MetaDescription,
+		MetaKeywords:           p.MetaKeywords,
+		AILabel:                p.AILabel,
+		CreatedAt:              p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:              p.UpdatedAt.Format(time.RFC3339),
+		Views:                  views,
+		HasDraft:               strings.TrimSpace(p.DraftJSON) != "",
+		Authors:                normalizedPostAuthors(p),
+		Author:                 p.Author,
+		AISummary:              p.AISummary,
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -133,6 +135,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 // postListJSON 文章列表响应模型。列表页不需要正文、阅读口令或草稿内容，
 // 与详情用的 postJSON 分开，避免大字段随每次分页/搜索请求返回。
 type postListJSON struct {
+	StellarContentMetadata
 	Slug            string   `json:"slug"`
 	Title           string   `json:"title"`
 	Excerpt         string   `json:"excerpt"`
@@ -165,28 +168,29 @@ func toPostListJSON(p *store.Post) *postListJSON {
 		status = "trashed"
 	}
 	pj := &postListJSON{
-		Slug:            p.Slug,
-		Title:           p.Title,
-		Excerpt:         p.Excerpt,
-		Banner:          p.Banner,
-		Cover:           p.Cover,
-		Category:        p.Category,
-		Categories:      append([]string(nil), p.Categories...),
-		TopicID:         p.TopicID,
-		Topic:           p.Topic,
-		Tags:            p.Tags,
-		Status:          status,
-		Pinned:          p.Pinned,
-		MetaDescription: p.MetaDescription,
-		MetaKeywords:    p.MetaKeywords,
-		AILabel:         p.AILabel,
-		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
-		Views:           p.Views,
-		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
-		AISummary:       p.AISummary,
-		Authors:         normalizedPostAuthors(p),
-		Author:          p.Author,
+		StellarContentMetadata: StellarContentMetadata{p.StellarVersion, p.StellarConfig, p.BlogExtensions},
+		Slug:                   p.Slug,
+		Title:                  p.Title,
+		Excerpt:                p.Excerpt,
+		Banner:                 p.Banner,
+		Cover:                  p.Cover,
+		Category:               p.Category,
+		Categories:             append([]string(nil), p.Categories...),
+		TopicID:                p.TopicID,
+		Topic:                  p.Topic,
+		Tags:                   p.Tags,
+		Status:                 status,
+		Pinned:                 p.Pinned,
+		MetaDescription:        p.MetaDescription,
+		MetaKeywords:           p.MetaKeywords,
+		AILabel:                p.AILabel,
+		CreatedAt:              p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:              p.UpdatedAt.Format(time.RFC3339),
+		Views:                  p.Views,
+		HasDraft:               strings.TrimSpace(p.DraftJSON) != "",
+		AISummary:              p.AISummary,
+		Authors:                normalizedPostAuthors(p),
+		Author:                 p.Author,
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -225,13 +229,45 @@ func decodeTopicID(raw json.RawMessage) (provided bool, id int64, err error) {
 	return true, id, nil
 }
 
-// normalizePostTopic resolves the formal topic_id field and mirrors the
-// selected topic name into posts.topic. An omitted field remains compatible
-// with older clients that only sent topic text.
+// 严格文章以 collection 原文为唯一归属真值；旧版本保留既有宿主关系语义。
 func (h *Handler) normalizePostTopic(req *postRequest, fallbackID int64) error {
 	provided, id, err := decodeTopicID(req.TopicID)
 	if err != nil {
 		return err
+	}
+	if req.StellarVersion == 2 {
+		var raw struct {
+			Collection *struct {
+				Profile string `json:"profile"`
+				ID      string `json:"id"`
+			} `json:"collection"`
+		}
+		if err := json.Unmarshal([]byte(req.StellarConfig), &raw); err != nil {
+			return errTopicMembershipConfig
+		}
+		canonicalID := int64(0)
+		if raw.Collection != nil && raw.Collection.Profile == "topic" {
+			topic, err := h.store.GetTopicBySlug(raw.Collection.ID)
+			if err != nil {
+				return err
+			}
+			if topic == nil {
+				return errTopicMembershipMissing
+			}
+			canonicalID = topic.ID
+		}
+		if provided && id != canonicalID {
+			if id > 0 {
+				if topic, err := h.store.GetTopicByID(id); err != nil {
+					return err
+				} else if topic == nil {
+					return errTopicNotFound
+				}
+			}
+			return errTopicMembershipConflict
+		}
+		id = canonicalID
+		provided = true
 	}
 	if !provided {
 		id = fallbackID
@@ -258,8 +294,20 @@ func (h *Handler) normalizePostTopic(req *postRequest, fallbackID int64) error {
 	return nil
 }
 
+var errTopicMembershipMissing = errors.New("strict topic collection missing")
+
+var errTopicMembershipConfig = errors.New("invalid strict collection config")
+
+var errTopicMembershipConflict = errors.New("topic_id conflicts with strict collection")
+
 func failPostTopic(c *gin.Context, err error) bool {
 	switch {
+	case errors.Is(err, errTopicMembershipMissing):
+		Fail(c, http.StatusBadRequest, "collection_not_found: 严格配置所属专栏不存在")
+	case errors.Is(err, errTopicMembershipConfig):
+		Fail(c, http.StatusBadRequest, "严格配置 JSON 原文无效")
+	case errors.Is(err, errTopicMembershipConflict):
+		Fail(c, http.StatusBadRequest, "topic_id 与严格配置 collection 归属冲突，请以原文为准")
 	case errors.Is(err, errTopicIDInvalid):
 		Fail(c, http.StatusBadRequest, "无效的 topic_id")
 	case errors.Is(err, errTopicNotFound):
@@ -336,6 +384,7 @@ func (h *Handler) createPost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, 0); err != nil {
 		failPostTopic(c, err)
 		return
@@ -364,9 +413,13 @@ func (h *Handler) createPost(c *gin.Context) {
 		return
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -376,9 +429,14 @@ func (h *Handler) createPost(c *gin.Context) {
 		p.Cover = defaultCover(req.Slug)
 	}
 	if _, err := h.store.Create(p); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusCreated, toPostJSON(p, 0))
 }
 
@@ -403,6 +461,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
 		return
@@ -437,9 +496,13 @@ func (h *Handler) updatePost(c *gin.Context) {
 		}
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -451,6 +514,10 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		if errors.Is(err, store.ErrPostSlugConflict) {
 			Fail(c, http.StatusConflict, "slug 已被占用: "+newSlug)
 			return
@@ -464,6 +531,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 	if newSlug != existing.Slug {
 		views = 0
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
 
@@ -497,6 +565,7 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
 		return
@@ -505,12 +574,24 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	if _, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post"); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	b, err := json.Marshal(req)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "草稿序列化失败: "+err.Error())
 		return
 	}
 	if err := h.store.SaveDraft(slug, string(b)); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		Fail(c, http.StatusInternalServerError, "保存草稿失败: "+err.Error())
 		return
 	}
@@ -539,6 +620,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
 		return
@@ -565,9 +647,13 @@ func (h *Handler) publishPost(c *gin.Context) {
 		}
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -578,6 +664,10 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		Fail(c, http.StatusInternalServerError, "发布失败: "+err.Error())
 		return
 	}
@@ -597,6 +687,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 		views = 0
 	}
 	h.notifySEOPublished(newSlug)
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
 
@@ -634,6 +725,7 @@ func (h *Handler) deletePost(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -647,6 +739,7 @@ func (h *Handler) restorePost(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -691,12 +784,14 @@ func (h *Handler) updateAISummary(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true, "ai_summary": summary})
 }
 
 // --- 辅助 ---
 
 type postRequest struct {
+	StellarContentMetadata
 	Slug        string          `json:"slug"`
 	Title       string          `json:"title"`
 	Excerpt     string          `json:"excerpt"`
@@ -737,6 +832,7 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		status = store.StatusDraft
 	}
 	p := &store.Post{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		Slug:        strings.TrimSpace(req.Slug),
 		Title:       strings.TrimSpace(req.Title),
 		Excerpt:     strings.TrimSpace(req.Excerpt),
@@ -852,9 +948,29 @@ func normalizeAuthorIDs(ids []string) []string {
 	return out
 }
 
-// normalizePostAuthorsRequest 对管理员兼容 authors/author 请求；普通作者新建时绑定自己，
-// 更新时保留已授权文章的完整署名关系，忽略客户端提供的作者替换。
+// 严格署名只读原文，并与编辑权限关联分开；旧版本保留既有请求约定。
 func (h *Handler) normalizePostAuthorsRequest(c *gin.Context, req *postRequest, existing *store.Post) error {
+	if req.StellarVersion == 2 {
+		public := &store.Post{StellarVersion: 2, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions}
+		if err := h.store.ValidateStellarPostPublicAuthors(public); err != nil {
+			return err
+		}
+		// 公开作者不是登录账号；已有文章保留权限关联，新文章归属当前创建者。
+		if existing != nil {
+			req.authorIDs = append([]int64(nil), existing.AuthorIDs...)
+		} else {
+			id := c.GetInt64("userID")
+			if id <= 0 {
+				return fmt.Errorf("invalid author user id")
+			}
+			req.authorIDs = []int64{id}
+		}
+		req.Author, req.authorRefs = public.Author, public.Authors
+		raw, err := json.Marshal(public.Authors)
+		req.Authors = raw
+		return err
+	}
+
 	if !contextHasPermission(c, store.PermissionContentManageAny) {
 		if existing == nil {
 			return forceCurrentAuthor(c, req)

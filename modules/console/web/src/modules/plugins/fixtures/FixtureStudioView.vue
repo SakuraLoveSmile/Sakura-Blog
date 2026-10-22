@@ -525,13 +525,12 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
   color: var(--color-foreground);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .studio-search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .studio-search-clear {
@@ -586,7 +585,7 @@ onBeforeUnmount(() => {
   gap: 10px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   box-sizing: border-box;
 }
 
@@ -661,7 +660,6 @@ onBeforeUnmount(() => {
   height: 7px;
   border-radius: 50%;
   background: #30d158;
-  box-shadow: 0 0 6px rgba(48, 209, 88, 0.6);
   flex-shrink: 0;
 }
 
@@ -690,7 +688,7 @@ onBeforeUnmount(() => {
 
 /* 顶部 Hero 概览卡片 */
 .studio-hero-card {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-background) 40%, var(--color-card)), var(--color-card));
+  background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl, 14px);
   padding: 20px 24px;
@@ -742,7 +740,7 @@ onBeforeUnmount(() => {
   font-family: var(--font-mono, monospace);
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .studio-hero-shortcode-tag:hover {
@@ -782,7 +780,7 @@ onBeforeUnmount(() => {
   color: var(--color-text-secondary);
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .studio-header-btn:hover {
@@ -920,7 +918,7 @@ onBeforeUnmount(() => {
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .studio-segmented-btn:hover {
@@ -945,7 +943,7 @@ onBeforeUnmount(() => {
 }
 
 .state-dot--empty {
-  background: #ffd60a;
+  background: #ff9f0a;
 }
 
 .state-dot--error {
@@ -980,15 +978,15 @@ onBeforeUnmount(() => {
 }
 
 .dot-red {
-  background: #ff5f56;
+  background: #ff453a;
 }
 
 .dot-yellow {
-  background: #ffbd2e;
+  background: #ff9f0a;
 }
 
 .dot-green {
-  background: #27c93f;
+  background: #30d158;
 }
 
 .studio-window-filename {
@@ -1016,7 +1014,7 @@ onBeforeUnmount(() => {
   padding: 3px 8px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .studio-copy-action:hover {

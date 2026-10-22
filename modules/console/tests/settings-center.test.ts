@@ -16,7 +16,10 @@ test("settings center exposes one six-tab system settings surface", () => {
   assert.match(view, /settings-tabs/);
   assert.match(view, /settings-basic-panel/);
   assert.match(view, /VTabbar/);
-  assert.match(view, /@save="saveComments"/);
+  assert.match(view, /CanonicalSettingsForm/);
+  assert.doesNotMatch(view, /CanonicalSettingsNotice/);
+  assert.match(view, /<SeoSettings[^>]*host-only/);
+  assert.match(read("modules/settings/tabs/SeoSettings.vue"), /<template v-if="!hostOnly">/);
   assert.match(view, /ALL_SETTINGS_SECTIONS/);
 });
 
@@ -76,13 +79,13 @@ test("appearance, menu, author, assistant and friend settings routes are wired",
   const core = read("modules/core/module.ts");
   for (const marker of ['path: "/appearance"', 'path: "/menus"', 'path: "/authors"'])
     assert.match(core, new RegExp(marker));
-  assert.match(read("modules/appearance/AppearanceView.vue"), /enhancements/);
-  assert.match(read("modules/appearance/MenuView.vue"), /updateSection\("menubar"/);
-  assert.match(read("modules/authors/AuthorsView.vue"), /updateSection\("authors"/);
+  assert.match(read("modules/appearance/AppearanceView.vue"), /CanonicalSettingsNotice/);
+  assert.match(read("modules/appearance/MenuView.vue"), /CanonicalSettingsNotice/);
+  assert.match(read("modules/authors/AuthorsView.vue"), /CanonicalSettingsNotice/);
   assert.match(read("modules/assistant/AssistantView.vue"), /tab === "settings"/);
-  assert.match(read("modules/assistant/AiSettings.vue"), /updateSection\("ai"/);
+  assert.match(read("modules/assistant/AiSettings.vue"), /CanonicalSettingsForm/);
   assert.match(read("modules/friends/FriendList.vue"), /activeTab.*settings/);
-  assert.match(read("modules/friends/FriendSettings.vue"), /updateSection\("friends"/);
+  assert.match(read("modules/friends/FriendSettings.vue"), /CanonicalSettingsNotice/);
 });
 
 test("basic settings validates site title and supports native form submit", () => {

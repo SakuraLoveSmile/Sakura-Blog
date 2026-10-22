@@ -61,6 +61,7 @@ type ShortcodeParamSchema struct {
 	Default     any                `json:"default,omitempty"`
 	Options     []string           `json:"options,omitempty"`
 	Placeholder string             `json:"placeholder,omitempty"`
+	NamedAlias  bool               `json:"named_alias,omitempty"`
 }
 
 // ShortcodeParamDoc is the human-readable parameter reference for the editor.
@@ -102,8 +103,10 @@ type ShortcodeCatalogEntry struct {
 }
 
 type shortcodeRegistration struct {
-	entry  ShortcodeCatalogEntry
-	parser *regexp.Regexp
+	entry     ShortcodeCatalogEntry
+	parser    *regexp.Regexp
+	stellarV2 *ShortcodeCatalogEntry
+	v2Only    bool
 }
 
 var (
@@ -366,6 +369,9 @@ var shortcodeRegistry = []shortcodeRegistration{
 func ShortcodeCatalog() []ShortcodeCatalogEntry {
 	items := make([]ShortcodeCatalogEntry, 0, len(shortcodeRegistry))
 	for _, registration := range shortcodeRegistry {
+		if registration.v2Only {
+			continue
+		}
 		entry := registration.entry
 		if display, ok := shortcodeDisplayMetadata[entry.Name]; ok {
 			if display.PreviewSet {

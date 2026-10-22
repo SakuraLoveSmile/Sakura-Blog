@@ -283,7 +283,7 @@ async function doBulk(action: "spam" | "delete") {
         <div v-else class="overflow-x-auto">
           <table class="w-full min-w-[760px] text-left">
             <thead>
-              <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+              <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                 <th class="px-4 py-3">读者账号</th>
                 <th class="px-4 py-3">发表评论数</th>
                 <th class="px-4 py-3">最后活跃时间</th>
@@ -460,7 +460,7 @@ async function doBulk(action: "spam" | "delete") {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -477,7 +477,6 @@ async function doBulk(action: "spam" | "delete") {
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {
@@ -504,7 +503,7 @@ async function doBulk(action: "spam" | "delete") {
   font-size: 12px;
   font-weight: 500;
   background: transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 

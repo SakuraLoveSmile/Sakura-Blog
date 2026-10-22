@@ -24,6 +24,8 @@ const search = ref("");
 const activeCategory = ref<PluginCategory | "全部">("全部");
 const selected = ref<PluginMeta | null>(null);
 const example = ref("");
+const formValid = ref(true);
+const formError = ref("");
 
 watch(runtimePlugins, (next) => {
   const refreshed = next.find((plugin) => selected.value && plugin.name === selected.value.name);
@@ -61,6 +63,9 @@ function typeBadge(type: PluginMeta["type"]): string {
 function selectPlugin(p: PluginMeta) {
   selected.value = p;
   example.value = p.example;
+  // 无 form 时 PluginParamForm 不挂载、不会发出 validation，这里复位；有 form 时由初始化的 validation 重新判定
+  formValid.value = true;
+  formError.value = "";
   preview.resetHeight(); // 选中标签先应用推荐高度，再按 iframe 实际内容高度回传调整
   preview.scheduleRender(example.value, true);
 }
@@ -68,6 +73,12 @@ function selectPlugin(p: PluginMeta) {
 // 结构化参数表单产出 shortcode（Spec 29）：同步驱动示例/预览/复制
 function onFormCode(code: string) {
   example.value = code;
+}
+
+// 必填缺失时示例保留上一次有效值，但复制入口需禁用并提示原因
+function onFormValidation(state: { valid: boolean; error?: string }) {
+  formValid.value = state.valid;
+  formError.value = state.error || "";
 }
 
 // ---------- 实时预览（Spec 63：共享预览运行时） ----------
@@ -236,7 +247,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                       :title="`点击复制 {% ${selected.name} %}`"
                       @click="copyText('name', `{% ${selected.name} %}`)"
                     >
-                      <code>&#123;% {{ selected.name }} %&#125;</code>
+                      <code>{{ "{%" }} {{ selected.name }} {{ "%}" }}</code>
                       <Icon :icon="copied === 'name' ? 'ri:check-line' : 'ri:file-copy-line'" class="tag-copy-icon" />
                     </button>
                     <span class="studio-pill-badge badge-category">{{ selected.category }}</span>
@@ -315,7 +326,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                   <p>调整参数将自动同步拼装 Shortcode 示例与下方渲染效果。</p>
                 </div>
                 <div class="studio-panel studio-form-panel">
-                  <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
+                  <PluginParamForm
+                    :plugin="selected"
+                    :model-value="example"
+                    @update:model-value="onFormCode"
+                    @validation="onFormValidation"
+                  />
+                  <p v-if="formError" style="color: var(--color-state-error, #ff453a)">{{ formError }}</p>
                 </div>
               </section>
 
@@ -334,6 +351,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                     <button
                       type="button"
                       class="studio-copy-action"
+                      :disabled="!formValid"
                       @click="copyText('example', example)"
                     >
                       <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
@@ -413,7 +431,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                       :srcdoc="preview.srcdoc.value"
                       class="studio-preview-iframe"
                       :style="{ height: preview.frameHeight.value + 'px' }"
-                      sandbox="allow-same-origin allow-scripts"
+                      sandbox="allow-scripts"
                     ></iframe>
                   </div>
 
@@ -482,13 +500,12 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
   color: var(--color-foreground);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .studio-search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .studio-search-clear {
@@ -520,7 +537,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
   color: var(--color-text-tertiary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -559,7 +576,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   gap: 8px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .studio-list-item:hover {
@@ -708,7 +725,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   font-family: var(--font-mono, monospace);
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .studio-hero-shortcode-tag:hover {
@@ -818,7 +835,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   padding: 3px 8px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .studio-copy-action:hover {
@@ -988,9 +1005,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   border-radius: 50%;
 }
 
-.dot-red { background: #ff5f56; }
-.dot-yellow { background: #ffbd2e; }
-.dot-green { background: #27c93f; }
+.dot-red { background: #ff453a; }
+.dot-yellow { background: #ff9f0a; }
+.dot-green { background: #30d158; }
 
 .canvas-header-meta {
   display: flex;
@@ -1042,7 +1059,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .canvas-refresh-btn:hover {
@@ -1053,7 +1070,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-canvas-body {
   position: relative;
-  background: #121316;
+  background: #101012;
   min-height: 120px;
 }
 

@@ -1,0 +1,70 @@
+{
+  "built_head": "cd3d7e65f023e9f5efe0117900690ee78070dc14",
+  "observed_checkout_head": "5066e6c45fc8e2532a4cc402f50844b73b22b2bf",
+  "binary_sha256": "b13df06e64d1817ab3d0f81159e767b3fc6ab00705e0a1a2bdd100ec3fb58939",
+  "binary_arch": "Mach-O arm64",
+  "runtime_processes": [
+    {
+      "port": 8103,
+      "pid": 44328,
+      "ppid": 3190,
+      "started": "2026-10-14T02:42:31+08:00",
+      "argv": ["./blog", "-root", "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-v2-tools/.tmp/stellar-200-browser-root-2808603452"],
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-v2-tools/.tmp/stellar-200-browser-root-2808603452"
+    },
+    {
+      "port": 8112,
+      "pid": 44343,
+      "ppid": 3190,
+      "started": "2026-10-14T02:42:32+08:00",
+      "argv": ["./blog", "-root", ".tmp/stellar-final-brand-root"],
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-brand-root"
+    },
+    {
+      "port": 8113,
+      "pid": 44360,
+      "ppid": 3190,
+      "started": "2026-10-14T02:42:33+08:00",
+      "argv": ["./blog", "-root", ".tmp/stellar-final-content-root"],
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-content-root"
+    },
+    {
+      "port": 8114,
+      "pid": 44377,
+      "ppid": 3190,
+      "started": "2026-10-14T02:42:34+08:00",
+      "argv": ["./blog", "-root", ".tmp/stellar-final-plugins-root"],
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-plugins-root"
+    }
+  ],
+  "isolation": {
+    "verified": true,
+    "evidence": "ps/lsof showed each process using the same checkout binary; command-line -root resolves to the listed distinct fixture root. Each root contains its own config, data/blog.db, data/blog.db-wal, data/blog.db-shm, content, uploads, runtime, and cache directories. Startup code applies explicit -root before ResolveApp, and relative db_path/upload_dir resolve under it.",
+    "config_root_override": "The app.yml root value in ports 8112-8114 points to the 8103 fixture, but explicit -root takes precedence in StellarMigrationConfig; this stale field does not redirect those processes.",
+    "production_root_accessed": false
+  },
+  "console": {
+    "entry_path": "/console/",
+    "http_status_by_port": {"8103": 200, "8112": 200, "8113": 200, "8114": 200},
+    "entry_sha256": "b467b3ea36319b1c94f547b61a72761154e625db20dcf969783789e1e4252fd0",
+    "entry_matches_disk": true,
+    "assets": [
+      {"path": "/console/assets/index-CNdq9mXm.js", "sha256": "ef5b4b8460147bd9ed59ac6aedda822f94b79359e9321e3dc74eba25c2758926", "matches_disk": true},
+      {"path": "/console/assets/api-CMeGK4tt.js", "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea", "matches_disk": true},
+      {"path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js", "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb", "matches_disk": true},
+      {"path": "/console/assets/pinia-BDaR9qFm.js", "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9", "matches_disk": true},
+      {"path": "/console/assets/preload-helper-l0U7FUPx.js", "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b", "matches_disk": true},
+      {"path": "/console/assets/index-DhwoxVyW.css", "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be", "matches_disk": true}
+    ]
+  },
+  "stellar_runtime": {
+    "path": "/assets/js/main.js",
+    "sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+    "matches_disk": true,
+    "wasm_http_route": "not exposed as a standalone asset",
+    "embedded_wasm_path": "internal/stellarimages/native/librsvg.wasm",
+    "embedded_wasm_sha256": "d254aaa66ab23393a76492428b2baa967d6f298ee73e597c8b25585ccd065000",
+    "embedded_wasm_matches_cd3_source": true
+  },
+  "check_method": "Read-only ps, lsof, filesystem hashes, git object hash, and loopback HTTP GETs; no service restart/stop and no real DB/config access."
+}

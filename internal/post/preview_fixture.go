@@ -235,3 +235,35 @@ func (s *Service) RenderComponentPreview(body string) (string, error) {
 	}
 	return rewritePreviewDataAPIs(sb.String()), nil
 }
+
+// RenderComponentPreviewStellarV2 仅在隔离组件库使用确定性公开数据。
+// 克隆服务避免修改共享客户端；标签语义仍由正式 v2 renderer 处理。
+func (s *Service) RenderComponentPreviewStellarV2(body string, renderContext StellarRenderContext) (string, error) {
+	fixture := *s
+	fixture.ghClient = fixtureGHClient{}
+	fixture.plugins = nil
+	fixture.settings = tmpl.NewManager(&tmpl.Site{Avatar: "/assets/img/preview/avatar-blog.svg", LogoTitle: "Fixture Blog"})
+	fixture.linksFunc = fixtureLinksRender
+	fixture.momentsFunc = func(limit int) []*tmpl.MomentItem {
+		return []*tmpl.MomentItem{{ID: 1001, ContentHTML: "<p>隔离预览动态</p>", TimeAgo: "刚刚", Date: "2026-08-27"}}
+	}
+	fixture.albumsLinksFunc = fixtureLinksRender
+	fixture.wikiTreeProvider = nil
+	renderContext.BlogExtensions = true
+	renderContext.Theme = v2Merge(renderContext.Theme, map[string]any{"services": map[string]any{
+		"rating":     map[string]any{"provider": "fixture", "fixture": map[string]any{"endpoint": "/api/rating"}},
+		"vote":       map[string]any{"provider": "fixture", "fixture": map[string]any{"endpoint": "/api/vote"}},
+		"githubCard": map[string]any{"provider": "fixture", "fixture": map[string]any{"endpoint": "https://fixture.invalid"}},
+	}})
+	renderContext.Data = map[string]any{"links": map[string]any{"default": []any{
+		map[string]any{"title": "Fixture Blog", "url": "https://example.com", "avatar": "/assets/img/preview/avatar-blog.svg", "cover": "/assets/img/preview/avatar-blog.svg", "description": "隔离预览"},
+	}}}
+	output, err := fixture.RenderStellarV2WithContext(body, renderContext)
+	if err != nil {
+		return "", err
+	}
+	output = rewritePreviewDataAPIs(output)
+	// 官方 ghcard 使用图像服务，组件库固定为本地公开夹具，避免访问公网。
+	output = regexp.MustCompile(`(<div class="tag-plugin ghcard">[\s\S]*?<img) src="[^"]*"`).ReplaceAllString(output, `${1} src="/assets/img/preview/avatar-gh-vuejs.svg"`)
+	return output, nil
+}

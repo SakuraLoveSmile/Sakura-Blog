@@ -1,0 +1,18 @@
+{
+  "scope": "main-agent independent read-only check of successful isolated stage",
+  "non_migration_tables_verified": 41,
+  "all_expected_settings_equal": true,
+  "only_host_site_url_changed": true,
+  "host_and_blog_url_match": true,
+  "canonical_db_records_equal": 30,
+  "approved_body_hashes_equal": 7,
+  "query_only": true,
+  "quick_check": "ok",
+  "foreign_key_violations": 0,
+  "no_source_db_opened": true,
+  "sql_objects_and_index_shapes_match": 67,
+  "non_derived_rowid_sets_match": 46,
+  "tracked_documents_match": 2,
+  "fts_identities_and_original_titles_match": true,
+  "archived_capture_matches": true
+}

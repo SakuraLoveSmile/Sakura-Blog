@@ -1,0 +1,117 @@
+--- a/meson.build
++++ b/meson.build
+@@ -2112,7 +2112,7 @@
+     error('GLib must be built with -march=i486 or later.')
+   endif
+ endif
+-glibconfig_conf.set('G_ATOMIC_LOCK_FREE', have_atomic_lock_free)
++glibconfig_conf.set('G_ATOMIC_LOCK_FREE', have_atomic_lock_free and host_system != 'wasi')
+ 
+ # === Threads ===
+ 
+@@ -2753,6 +2753,12 @@
+   endif
+ endif
+ 
++if host_system == 'wasi'
++  # WASI single-thread libc declares but does not implement these POSIX features.
++  foreach feature : ['HAVE_PTHREAD_GETAFFINITY_NP', 'HAVE_SYS_RESOURCE_H', 'HAVE_PTHREAD_ATTR_SETINHERITSCHED', 'HAVE_PTHREAD_GETNAME_NP']
++    glib_conf.set(feature, false)
++  endforeach
++endif
+ configure_file(output : 'config.h', configuration : glib_conf)
+ 
+ rst2man = find_program('rst2man', 'rst2man.py', required: get_option('man-pages'))
+--- a/gio/meson.build
++++ b/gio/meson.build
+@@ -633,6 +633,12 @@
+ gio_sources += portal_sources
+ gio_sources += local_sources
+ 
++
++if host_system == 'wasi'
++  # Synchronous renderer: retain real stream/converter types; omit OS backends.
++  gio_sources = files('gfileinfo.c','gfileattribute.c','gicon.c','gasynchelper.c','gasyncinitable.c','gasyncresult.c','gbufferedinputstream.c','gbufferedoutputstream.c','gcancellable.c','gcharsetconverter.c','gconverter.c','gconverterinputstream.c','gconverteroutputstream.c','gdatainputstream.c','gdataoutputstream.c','gfilterinputstream.c','gfilteroutputstream.c','ginitable.c','ginputstream.c','gioerror.c','giostream.c','gmarshal-internal.c','gmemoryinputstream.c','gmemoryoutputstream.c','goutputstream.c','gpollableinputstream.c','gpollableoutputstream.c','gpollableutils.c','gseekable.c','gsimpleasyncresult.c','gsimpleiostream.c','gtask.c','gzlibcompressor.c','gzlibdecompressor.c','glistmodel.c','gliststore.c')
++endif
++
+ MISSING_STUFF = '''
+ # This is read by gobject-introspection/misc/ and gtk-doc
+ gio-public-headers.txt: Makefile
+--- a/gobject/gtype.c
++++ b/gobject/gtype.c
+@@ -22,6 +22,8 @@
+  */
+ 
+ #include "config.h"
++__attribute__((import_module("stellar_ffi"), import_name("type_init")))
++extern void stellar_type_init(void *callback, void *instance, void *data);
+ 
+ #include "../glib/gvalgrind.h"
+ #include <string.h>
+@@ -1891,13 +1893,13 @@
+       if (pnode->data->instance.instance_init)
+ 	{
+ 	  instance->g_class = pnode->data->instance.class;
+-	  pnode->data->instance.instance_init (instance, class);
++	  stellar_type_init ((void *) pnode->data->instance.instance_init, instance, class);
+ 	}
+     }
+ 
+   instance->g_class = class;
+   if (node->data->instance.instance_init)
+-    node->data->instance.instance_init (instance, class);
++    stellar_type_init ((void *) node->data->instance.instance_init, instance, class);
+ 
+ #ifdef	G_ENABLE_DEBUG
+   IF_DEBUG (INSTANCE_COUNT)
+@@ -2004,7 +2006,7 @@
+           if (iface->data->iface.vtable_init_base)
+             iface->data->iface.vtable_init_base (vtable);
+           if (iface->data->iface.dflt_init)
+-            iface->data->iface.dflt_init (vtable, (gpointer) iface->data->iface.dflt_data);
++            stellar_type_init ((void *) iface->data->iface.dflt_init, vtable, (gpointer) iface->data->iface.dflt_data);
+           G_WRITE_LOCK (&type_rw_lock);
+         }
+     }
+@@ -2091,7 +2093,7 @@
+     {
+       G_WRITE_UNLOCK (&type_rw_lock);
+       if (iholder->info->interface_init)
+-	iholder->info->interface_init (vtable, iholder->info->interface_data);
++	stellar_type_init ((void *) iholder->info->interface_init, vtable, iholder->info->interface_data);
+       G_WRITE_LOCK (&type_rw_lock);
+     }
+   
+@@ -2228,7 +2230,7 @@
+   G_WRITE_UNLOCK (&type_rw_lock);
+ 
+   if (node->data->class.class_init)
+-    node->data->class.class_init (class, (gpointer) node->data->class.class_data);
++    stellar_type_init ((void *) node->data->class.class_init, class, (gpointer) node->data->class.class_data);
+   
+   G_WRITE_LOCK (&type_rw_lock);
+   
+--- a/glib/gslist.c
++++ b/glib/gslist.c
+@@ -146,7 +146,8 @@
+ g_slist_free_full (GSList         *list,
+ 		   GDestroyNotify  free_func)
+ {
+-  g_slist_foreach (list, (GFunc) free_func, NULL);
++  for (GSList *node = list; node != NULL; node = node->next)
++    free_func (node->data);
+   g_slist_free (list);
+ }
+ 
+--- a/glib/glist.c
++++ b/glib/glist.c
+@@ -159,7 +159,8 @@
+ g_list_free_full (GList          *list,
+                   GDestroyNotify  free_func)
+ {
+-  g_list_foreach (list, (GFunc) free_func, NULL);
++  for (GList *node = list; node != NULL; node = node->next)
++    free_func (node->data);
+   g_list_free (list);
+ }
+ 

@@ -195,7 +195,7 @@ func TestBaseRendersFeedbackWidget(t *testing.T) {
 		`/assets/vendor/feedback/feedback-web.js?v=`,
 		`type="module"`,
 		// html2canvas-pro 兼容覆盖：头像 border-radius calc 乘法降级为字面值
-		`.logo-wrap a.avatar img.avatar { border-radius: 50%; }`,
+		`.brand-image--avatar img { border-radius: 50%; }`,
 	} {
 		if !strings.Contains(on, want) {
 			t.Errorf("enabled document missing %q", want)

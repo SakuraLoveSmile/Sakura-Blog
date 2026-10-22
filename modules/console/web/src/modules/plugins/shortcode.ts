@@ -38,7 +38,7 @@ export function serializeShortcodeArgument(value: unknown): { value: string; err
   return { value: `${quote}${trimmed}${quote}` };
 }
 
-function validateEditValues(plugin: PluginMeta, values: Record<string, string | boolean>): string | undefined {
+export function validateEditValues(plugin: PluginMeta, values: Record<string, string | boolean>): string | undefined {
   const edit = plugin.edit;
   if (!edit?.enabled) return undefined;
   const text = (key: string) => valueString(values[key]).trim();
@@ -126,6 +126,21 @@ export function buildShortcode(
 export { buildShortcodeResult };
 
 export type ShortcodeFormValues = Record<string, string | boolean>;
+
+/** 保留原文存在性；SchemaForm 返回整袋值，只把实际修改的字段加入精确序列化。 */
+export function editedFormPresence(
+  form: PluginFormField[],
+  present: string[] | undefined,
+  previous: Record<string, unknown>,
+  next: Record<string, unknown>,
+): string[] | undefined {
+  if (present === undefined) return undefined;
+  const updated = new Set(present);
+  for (const field of form) {
+    if (next[field.key] !== previous[field.key]) updated.add(field.key);
+  }
+  return [...updated];
+}
 
 /**
  * 初始化属性表单的值。

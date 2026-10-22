@@ -19,7 +19,7 @@ func bearerAttachmentRequest(r *gin.Engine, method, path, token string) *httptes
 	return w
 }
 
-func TestBearerAttachmentOwnershipAcrossConsoleAndUC(t *testing.T) {
+func TestConsoleBearerAndPublicUCAttachmentOwnership(t *testing.T) {
 	r, st, _, _ := newFullEnv(t)
 	alice, err := st.GetUserByUsername("alice")
 	if err != nil || alice == nil {
@@ -45,6 +45,12 @@ func TestBearerAttachmentOwnershipAcrossConsoleAndUC(t *testing.T) {
 	bobID := create(bob.ID, "bob.png")
 	for _, path := range []string{"/api/v1/attachments", "/api/v1/uc/attachments"} {
 		w := bearerAttachmentRequest(r, http.MethodGet, path, token)
+		if path == "/api/v1/uc/attachments" {
+			if w.Code != http.StatusUnauthorized {
+				t.Fatalf("UC must reject Bearer without public cookie: status=%d", w.Code)
+			}
+			w = doUserReq(r, http.MethodGet, path, "", signReaderCookie(alice))
+		}
 		if w.Code != http.StatusOK {
 			t.Fatalf("%s list status=%d body=%s", path, w.Code, w.Body.String())
 		}
@@ -68,6 +74,12 @@ func TestBearerAttachmentOwnershipAcrossConsoleAndUC(t *testing.T) {
 	}
 	for _, path := range []string{"/api/v1/attachments/", "/api/v1/uc/attachments/"} {
 		w := bearerAttachmentRequest(r, http.MethodDelete, path+itoa(bobID), token)
+		if path == "/api/v1/uc/attachments/" {
+			if w.Code != http.StatusUnauthorized {
+				t.Fatalf("UC Bearer cross-owner delete: status=%d, want 401", w.Code)
+			}
+			w = doUserReq(r, http.MethodDelete, path+itoa(bobID), "", signReaderCookie(alice))
+		}
 		if w.Code != http.StatusForbidden {
 			t.Fatalf("%s cross-owner delete status=%d body=%s", path, w.Code, w.Body.String())
 		}
@@ -77,6 +89,10 @@ func TestBearerAttachmentOwnershipAcrossConsoleAndUC(t *testing.T) {
 		t.Fatalf("Console owned delete status=%d body=%s", w.Code, w.Body.String())
 	}
 	w = bearerAttachmentRequest(r, http.MethodDelete, "/api/v1/uc/attachments/"+itoa(aliceSecondID), token)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("UC Bearer owned delete status=%d, want 401", w.Code)
+	}
+	w = doUserReq(r, http.MethodDelete, "/api/v1/uc/attachments/"+itoa(aliceSecondID), "", signReaderCookie(alice))
 	if w.Code != http.StatusOK {
 		t.Fatalf("UC owned delete status=%d", w.Code)
 	}

@@ -1,0 +1,34 @@
+{
+  "head": "c161a63",
+  "method": "Console saved isolated config, native frontend navigation",
+  "proof": {
+    "result": {
+      "type": "object",
+      "value": {
+        "assets": [
+          "https://unpkg.com/heti@0.9/umd/heti.min.css",
+          "https://unpkg.com/heti@0.9/umd/heti-addon.min.js"
+        ],
+        "available": "function",
+        "class": "md-text content slide-up heti",
+        "extension": {
+          "config": {
+            "assets": {
+              "css": "https://unpkg.com/heti@0.9/umd/heti.min.css",
+              "js": "https://unpkg.com/heti@0.9/umd/heti-addon.min.js"
+            }
+          },
+          "id": "heti",
+          "module": "/assets/js/runtime/extensions/heti.js",
+          "scope": "region",
+          "when": {
+            "selector": ".heti"
+          }
+        },
+        "heti": 1,
+        "spacing": 8,
+        "url": "http://127.0.0.1:8103/post/t5-plugins-c"
+      }
+    }
+  }
+}

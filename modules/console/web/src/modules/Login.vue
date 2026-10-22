@@ -265,7 +265,7 @@ function backToStep1() {
   width: 56px;
   height: 56px;
   border-radius: 12px;
-  background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary-active) 100%);
+  background: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,10 +326,10 @@ function backToStep1() {
   padding: 0 16px;
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--color-foreground);
-  transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
   outline: none;
   box-sizing: border-box;
 }
@@ -340,7 +340,6 @@ function backToStep1() {
 
 .apple-input:focus {
   border-color: var(--color-primary-active);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 20%, transparent);
 }
 
 .password-wrapper {

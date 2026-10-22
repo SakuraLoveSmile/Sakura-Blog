@@ -1,0 +1,26 @@
+{
+  "modulePreloads": [
+    "http://localhost:8108/console/assets/api-C-H7IBEY.js",
+    "http://localhost:8108/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+    "http://localhost:8108/console/assets/pinia-CXeiBUD1.js",
+    "http://localhost:8108/console/assets/preload-helper-l0U7FUPx.js",
+    "http://localhost:8108/console/assets/registry-DhQgNSY5.js",
+    "http://localhost:8108/console/assets/chart-init-BhrNxZ3G.js",
+    "http://localhost:8108/console/assets/format-DaBMN9QY.js",
+    "http://localhost:8108/console/assets/DefaultLayout-CaW0ZOpu.js",
+    "http://localhost:8108/console/assets/useQuery-gOJyKPZ4.js",
+    "http://localhost:8108/console/assets/useQueryClient-WYZggzf6.js",
+    "http://localhost:8108/console/assets/BackupView-m1DaOETt.js",
+    "http://localhost:8108/console/assets/VEmpty-B8HxL7vI.js",
+    "http://localhost:8108/console/assets/VLoading-zdiV8KT-.js",
+    "http://localhost:8108/console/assets/ConsoleStatsCard-B3yRKS6Z.js"
+  ],
+  "scripts": [
+    "http://localhost:8108/console/assets/index-CLZZptlt.js"
+  ],
+  "styles": [
+    "http://localhost:8108/console/assets/index-BihGOG2u.css",
+    "http://localhost:8108/console/assets/registry-BYJksN3f.css",
+    "http://localhost:8108/console/assets/DefaultLayout-C-a137it.css"
+  ]
+}

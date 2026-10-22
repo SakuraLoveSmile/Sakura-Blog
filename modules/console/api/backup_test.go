@@ -5,8 +5,61 @@ import (
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
+	"os"
+	"reflect"
+	"strings"
 	"testing"
+
+	"blog/internal/config"
 )
+
+func TestLegacyMarkdownMissingTopicsMultipartConfirmation(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	source, err := os.ReadFile("../../../internal/stellarmigration/testdata/teamspeak-legacy.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	upload := func(legacy, topics string) *httptest.ResponseRecorder {
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		_ = writer.WriteField("legacy", legacy)
+		if topics != "" {
+			_ = writer.WriteField("create_topics", topics)
+		}
+		entry, _ := writer.CreateFormFile("file", "TeamSpeak使用指南.md")
+		_, _ = entry.Write(source)
+		_ = writer.Close()
+		return do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, writer.FormDataContentType(), authCookie(user))
+	}
+	w := upload("true", "")
+	var missing MarkdownImportMissingTopicsProblem
+	if err := json.Unmarshal(w.Body.Bytes(), &missing); err != nil || w.Code != http.StatusBadRequest || missing.Type != "legacy_markdown_topics_required" || !reflect.DeepEqual(missing.MissingTopics, []string{"zero_tech"}) {
+		t.Fatalf("missing topic prompt: %d %s %v", w.Code, w.Body.String(), err)
+	}
+	if value, _ := st.GetBySlug("TeamSpeak使用指南"); value != nil {
+		t.Fatal("missing topic prompt wrote a post")
+	}
+	if topics, _ := st.ListTopics(); len(topics) != 0 {
+		t.Fatal("missing topic prompt created a topic")
+	}
+	for _, test := range [][2]string{{"false", `["zero_tech"]`}, {"true", `true`}, {"true", `{"zero_tech":true}`}} {
+		if w := upload(test[0], test[1]); w.Code != http.StatusBadRequest {
+			t.Fatalf("invalid creation request accepted: %d %s", w.Code, w.Body.String())
+		}
+	}
+	if w := upload("true", `["zero_tech"]`); w.Code != http.StatusOK {
+		t.Fatalf("approved import failed: %d %s", w.Code, w.Body.String())
+	}
+	topic, _ := st.GetTopicBySlug("zero_tech")
+	value, _ := st.GetBySlug("TeamSpeak使用指南")
+	if topic == nil || value == nil || value.TopicID != topic.ID || value.Status != "draft" {
+		t.Fatal("approved import did not persist topic with draft")
+	}
+}
 
 // Wave 4 测试覆盖补强：备份导出/状态/导入/恢复。
 
@@ -60,7 +113,7 @@ func TestBackupExportStatus(t *testing.T) {
 
 // TestBackupRestoreValidation 恢复/导入参数校验：缺文件、缺 name、空 body。
 func TestBackupRestoreValidation(t *testing.T) {
-	r, _, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullEnv(t)
 	cookie := authCookie(user)
 
 	// 缺上传文件 → 400
@@ -94,11 +147,27 @@ func TestBackupRestoreValidation(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("import without file: status = %d, want 400", w.Code)
 	}
-	// 上传 .md（二进制内容也被当作正文导入，slug 取文件名 x）→ 200 + imported
+	// 未迁移配置拒绝导入，不能通过上传绕过迁移预览。
 	body.Reset()
 	mw = multipart.NewWriter(&body)
 	fw, _ = mw.CreateFormFile("file", "x.md")
-	fw.Write([]byte{0xff, 0xfe})
+	fw.Write([]byte("---\ntitle: Strict\n---\n正文"))
+	mw.Close()
+	w = do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, mw.FormDataContentType(), cookie)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("legacy configuration import: status=%d", w.Code)
+	}
+	if value, _ := st.GetBySlug("x"); value != nil {
+		t.Fatal("unmigrated import wrote data")
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	// 新格式上传成功；实际经过完整候选和恢复任务，不用旧轻量 parser。
+	body.Reset()
+	mw = multipart.NewWriter(&body)
+	fw, _ = mw.CreateFormFile("file", "x.md")
+	fw.Write([]byte(";;;\n{\"title\":\"Strict\",\"blog\":{\"status\":\"draft\"}}\n;;;\n正文"))
 	mw.Close()
 	w = do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, mw.FormDataContentType(), cookie)
 	if w.Code != http.StatusOK {
@@ -109,5 +178,80 @@ func TestBackupRestoreValidation(t *testing.T) {
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &imp); err != nil || imp.Imported != 1 {
 		t.Errorf("import result: %s (err %v), want imported=1", w.Body.String(), err)
+	}
+	value, err := st.GetBySlug("x")
+	if err != nil || value == nil || value.StellarVersion != 2 || value.Status != "draft" {
+		t.Fatal("strict upload did not persist canonical/draft metadata")
+	}
+}
+
+func TestLegacyMarkdownMultipartRequiresExplicitFlagAndMigration(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	upload := func(legacy, cookie string) *httptest.ResponseRecorder {
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		_ = writer.WriteField("legacy", legacy)
+		entry, _ := writer.CreateFormFile("file", "original.md")
+		_, _ = entry.Write([]byte("---\nslug: imported\npin: true\n---\nbody"))
+		_ = writer.Close()
+		return do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, writer.FormDataContentType(), cookie)
+	}
+	if w := upload("true", ""); w.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous import=%d", w.Code)
+	}
+	if w := upload("true", authCookie(user)); w.Code != http.StatusBadRequest {
+		t.Fatalf("unmigrated import=%d", w.Code)
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if w := upload("false", authCookie(user)); w.Code != http.StatusBadRequest {
+		t.Fatalf("strict fell back=%d", w.Code)
+	} else {
+		var problem Problem
+		if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || problem.Type != "legacy_markdown_requires_conversion" || !strings.Contains(problem.Detail, "1.x") {
+			t.Fatalf("missing actionable legacy conversion response: %s (%v)", w.Body.String(), err)
+		}
+		if value, _ := st.GetBySlug("imported"); value != nil {
+			t.Fatal("conversion suggestion wrote a post before confirmation")
+		}
+	}
+	if w := upload("true", authCookie(user)); w.Code != http.StatusOK {
+		t.Fatalf("legacy import=%d %s", w.Code, w.Body.String())
+	}
+	value, _ := st.GetBySlug("imported")
+	if value == nil || value.Status != "draft" || value.StellarVersion != 2 {
+		t.Fatal("legacy multipart did not safely import new draft")
+	}
+}
+
+func TestMarkdownImportConversionHintKeepsStrictErrors(t *testing.T) {
+	for _, test := range []struct {
+		name, header, problemType string
+	}{
+		{"legacy-render", "mathjax: true", "legacy_markdown_requires_conversion"},
+		{"legacy-banner", "banner: /banner.jpg", "legacy_markdown_requires_conversion"},
+		{"unknown-field", "mystery: true", "validation_error"},
+		{"invalid-v2-render", "render: {math: true}", "validation_error"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r, st, user, _ := newFullEnv(t)
+			if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+				t.Fatal(err)
+			}
+			var body bytes.Buffer
+			writer := multipart.NewWriter(&body)
+			entry, _ := writer.CreateFormFile("file", "hint.md")
+			_, _ = entry.Write([]byte("---\n" + test.header + "\n---\nbody"))
+			_ = writer.Close()
+			w := do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, writer.FormDataContentType(), authCookie(user))
+			var problem Problem
+			if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || w.Code != http.StatusBadRequest || problem.Type != test.problemType {
+				t.Fatalf("unexpected conversion hint: %d %s (%v)", w.Code, w.Body.String(), err)
+			}
+			if value, _ := st.GetBySlug("hint"); value != nil {
+				t.Fatal("rejected import wrote data")
+			}
+		})
 	}
 }

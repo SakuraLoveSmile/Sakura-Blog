@@ -145,7 +145,7 @@ onMounted(loadIcons);
           </button>
         </div>
         <p class="asset-search-hint">
-          点击图标卡片可直接复制 <code class="hint-code">&#123;% icon key %&#125;</code>，key 亦可直接用于分类与标签图标配置。
+          点击图标卡片可直接复制 <code class="hint-code">{{ "{%" }} icon key {{ "%}" }}</code>，key 亦可直接用于分类与标签图标配置。
         </p>
       </div>
 
@@ -221,7 +221,7 @@ onMounted(loadIcons);
         </div>
         <p class="asset-search-hint">
           点击表情卡片可直接复制
-          <code class="hint-code">&#123;% emoji {{ currentEmojiSource.id === "default" ? "名称" : currentEmojiSource.id + " 名称" }} %&#125;</code>
+          <code class="hint-code">{{ "{%" }} emoji {{ currentEmojiSource.id === "default" ? "名称" : currentEmojiSource.id + " 名称" }} {{ "%}" }}</code>
         </p>
       </div>
 
@@ -300,13 +300,12 @@ onMounted(loadIcons);
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
   color: var(--color-foreground);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .asset-search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .asset-search-clear {
@@ -408,7 +407,7 @@ onMounted(loadIcons);
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
 }
 
@@ -489,7 +488,7 @@ onMounted(loadIcons);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .emoji-source-pill:hover {

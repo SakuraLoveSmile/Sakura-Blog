@@ -1,0 +1,578 @@
+{
+  "date": "2026-10-14",
+  "review": "Independent Sol reviewer checked 30 previously untracked screenshots and JSON for sensitive data; fixture-only. Later additions reviewed by primary agent.",
+  "format_note": "Historical .png names may contain JPEG/JFIF; original bytes preserved. Actual narrow-screen PNG samples identified separately.",
+  "corrections": [
+    "Algolia early samples invalid for leave timing and cached script",
+    "Wiki card selector corrected from .post-card to main a.wiki-card (5)",
+    "Topbar global replacement resampled with topbar:0:menu",
+    "Component historical opaque scope unspecified; current native CDP appended"
+  ],
+  "images": [
+    {
+      "path": "after-resume-algolia-partial-current.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-algolia-partial-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-algolia-races.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-appearance-custom.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-author-widget.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-avatar-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-avatar-red.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-brand-compact-plain.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-canonical-official.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-card-auto.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-card-dark.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-card-light.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-cascade-page-replace.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-code-copy.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-component-mode-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-cover-ratio-125.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-cover-ratio-24.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-editor-hydration.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-editor-new-parameter-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-editor-switch-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-ferrofluid.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-final-wiki.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-flat-auto.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-flat-dark.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-flat-light.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-footer-widget-context.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-friends-defaults.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-galaxy-terminal.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-gist-formal.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-gist-handshake-fixed.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-gist-visible-auto.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-glass-auto.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-glass-dark.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-glass-light.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-global-expiry.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-go-search.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-heti.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-light-rays.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-menu-5-columns.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-minimal-auto.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-minimal-dark.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-minimal-light.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-card-drawer.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-card-full.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-drawer.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-flat-drawer.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-flat-full.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-glass-drawer.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-glass-full.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-minimal-drawer.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-mobile-minimal-full.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-moments-avatar-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-moments-avatar-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-multiple-swiper-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-multiple-swiper-red.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-note-saved-search.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-notebook-sorting.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-notebook-ssr-filter.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-page-author.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-page-explicit-seo.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-page-flush-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-page-svg.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-partial-rapid-cancel.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-plugins-math-diagram.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-post-authors.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-000-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-000-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-000-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-001-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-001-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-001-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-010-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-010-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-010-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-011-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-011-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-011-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-100-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-100-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-100-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-101-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-101-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-101-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-110-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-110-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-110-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-111-1280.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-111-390.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-regions-111-800.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-settings-about-cache.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-settings-mobile.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-share-qrcode.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-share-svg-green.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-strands.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t4-katex.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t4-lightbox-on.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t4-multiple-swiper.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t4-reveal-on.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t5-chat-media.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t5-chat-public-file.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t5-controls.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t5-github-services.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t5-memos.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t5-remote-md-blocked.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-t5-services-extra.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-tags-showcase-full.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-upper-regions.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-video.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-visitor-settings.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-wiki-index-mobile-transition.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-wiki-index-mobile.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-wiki-saved-terminal.png",
+      "format": "PNG",
+      "bytes_preserved": true
+    },
+    {
+      "path": "after-resume-wiki-unique-name.png",
+      "format": "JPEG",
+      "bytes_preserved": true
+    }
+  ]
+}

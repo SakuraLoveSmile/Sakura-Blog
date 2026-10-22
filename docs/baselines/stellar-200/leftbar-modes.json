@@ -1,0 +1,28 @@
+[
+  {
+    "block": "hsla(210deg 24% 72% / 0.08)",
+    "display": "none",
+    "image": "none",
+    "mode": "card",
+    "surface": "rgba(166, 184, 201, 0.08)"
+  },
+  {
+    "display": "block",
+    "filter": "blur(60px) opacity(0.6)",
+    "image": "url(\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg\")",
+    "mode": "glass",
+    "surface": "rgba(0, 0, 0, 0)"
+  },
+  {
+    "display": "block",
+    "image": "url(\"http://127.0.0.1:8100/assets/img/preview/banner-bg.jpg\")",
+    "mode": "saved-glass",
+    "surface": "rgba(0, 0, 0, 0)"
+  },
+  {
+    "display": "none",
+    "image": "none",
+    "mode": "saved-card",
+    "surface": "rgba(166, 184, 201, 0.08)"
+  }
+]

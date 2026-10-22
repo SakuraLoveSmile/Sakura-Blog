@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
 import { previewApi } from "@/api";
+import { VModal, VButton } from "@/components/ui";
 import { type PluginMeta } from "@/modules/plugins/plugin-types";
 import { PLUGIN_CATEGORIES } from "@/modules/plugins/plugin-types";
 import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCatalog";
@@ -25,7 +26,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "format", id: string): void;
   (e: "insert", text: string): void;
-  (e: "import", file: File): void;
+  (e: "import", file: File, legacy: boolean): void;
   (e: "upload"): void;
   (e: "pick"): void;
   (e: "update:mode", mode: ViewMode): void;
@@ -70,8 +71,12 @@ function toolsById(ids: string[]) {
 const insertOpen = ref(false);
 const dropdownRef = ref<HTMLElement | null>(null);
 const importInput = ref<HTMLInputElement | null>(null);
+const importFormatOpen = ref(false);
+const legacyImport = ref(false);
 
-function chooseImportFile() {
+function chooseImportFile(legacy: boolean) {
+  legacyImport.value = legacy;
+  importFormatOpen.value = false;
   importInput.value?.click();
 }
 
@@ -80,7 +85,7 @@ function onImportFileChange(event: Event) {
   const file = input.files?.[0];
   // Reset immediately so selecting the same file twice still emits an event.
   input.value = "";
-  if (file) emit("import", file);
+  if (file) emit("import", file, legacyImport.value);
 }
 
 // 按分类分组（保持 PLUGIN_CATEGORIES 顺序）
@@ -260,7 +265,7 @@ const btnActive = "btn-active";
         class="hidden"
         @change="onImportFileChange"
       />
-      <button type="button" title="导入 Markdown 文件" :class="[btnBase, btnChrome]" @click="chooseImportFile">
+      <button type="button" title="导入 Markdown 文件" :class="[btnBase, btnChrome]" @click="importFormatOpen = true">
         <Icon icon="ri:file-upload-line" class="text-lg" />
       </button>
     </div>
@@ -379,6 +384,19 @@ const btnActive = "btn-active";
       </div>
     </div>
   </div>
+  <VModal v-model:visible="importFormatOpen" title="选择 Markdown 格式" :width="480">
+    <div class="space-y-4 text-sm text-text-secondary">
+      <p>选择文件后会先显示预览，确认回填后仍需保存。</p>
+      <div class="space-y-2">
+        <VButton class="w-full" @click="chooseImportFile(false)">Stellar 2 / 普通 Markdown</VButton>
+        <p class="text-xs text-text-tertiary">适用于 2.0 导出的文件，或没有旧配置字段的 Markdown。</p>
+      </div>
+      <div class="space-y-2">
+        <VButton class="w-full" type="primary" @click="chooseImportFile(true)">从 1.x 转换</VButton>
+        <p class="text-xs text-text-tertiary">转换旧版状态、分类、置顶和标签；无法转换的字段会说明原因。</p>
+      </div>
+    </div>
+  </VModal>
 </template>
 
 <style scoped>

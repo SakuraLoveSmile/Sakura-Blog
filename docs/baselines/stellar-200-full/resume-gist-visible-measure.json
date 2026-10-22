@@ -1,0 +1,16 @@
+{
+  "builtHead": "b0d9b93",
+  "kind": "ordinary page reload and native wheel scroll; no manual measurement message",
+  "offscreen": {
+    "height": 200,
+    "top": 2045.1875
+  },
+  "visible": {
+    "height": 200,
+    "opaque": true,
+    "sandbox": "allow-scripts",
+    "top": 245.1875
+  },
+  "interpretation": "visible resize not yet verified",
+  "verified": false
+}

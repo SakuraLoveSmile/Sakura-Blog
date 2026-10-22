@@ -11,7 +11,7 @@ import (
 )
 
 func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
-	r, st, admin, _ := newFullEnv(t)
+	r, st, admin, _ := newFullStellarEnv(t)
 	alice, err := st.GetUserByUsername("alice")
 	if err != nil {
 		t.Fatal(err)
@@ -36,19 +36,26 @@ func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
 	} {
 		prefixes := []string{"/api/v1/posts/", "/api/v1/uc/posts/"}
 		for _, prefix := range prefixes {
+			if testCase.actor.ID == admin.ID && prefix == "/api/v1/uc/posts/" {
+				continue // 后台管理员身份不能替换 UC 的公共作者会话。
+			}
 			t.Run(testCase.name+prefix, func(t *testing.T) {
 				slug := fmt.Sprintf("owners-%s-%d", testCase.name, len(prefix))
 				if _, err := st.Create(&store.Post{Slug: slug, Title: "原文", ContentMD: "正文", Status: store.StatusPublished, AuthorIDs: testCase.owners}); err != nil {
 					t.Fatal(err)
 				}
-				body := `{"title":"更新正文","content_md":"新正文","authors":["bob"],"status":"published"}`
+				body := `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"更新正文","content_md":"新正文","authors":["bob"],"status":"published"}`
 				if testCase.actor.ID == admin.ID {
-					body = `{"title":"更新正文","content_md":"新正文","status":"published"}`
+					body = `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"更新正文","content_md":"新正文","status":"published"}`
 				}
 				for _, operation := range []struct{ method, suffix string }{
 					{http.MethodPut, ""}, {http.MethodPut, "/draft"}, {http.MethodPost, "/publish"},
 				} {
-					w := do2FA(r, operation.method, prefix+slug+operation.suffix, body, authorCookie(testCase.actor))
+					consoleCookie, publicCookie := authorCookie(testCase.actor), ""
+					if prefix == "/api/v1/uc/posts/" {
+						consoleCookie, publicCookie = "", signReaderCookie(testCase.actor)
+					}
+					w := doUCSessionReq(r, operation.method, prefix+slug+operation.suffix, body, consoleCookie, publicCookie, "")
 					if w.Code != http.StatusOK {
 						t.Fatalf("%s %s: status %d", operation.method, prefix+operation.suffix, w.Code)
 					}
@@ -66,12 +73,8 @@ func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
 						if err := json.Unmarshal([]byte(saved.DraftJSON), &draft); err != nil {
 							t.Fatal(err)
 						}
-						want := make([]string, len(testCase.owners))
-						for i, id := range testCase.owners {
-							want[i] = fmt.Sprint(id)
-						}
-						if !slices.Equal(draft.Authors, want) {
-							t.Fatalf("draft authors changed: %v", draft.Authors)
+						if len(draft.Authors) != 0 {
+							t.Fatalf("ownership IDs leaked into strict public draft authors: %v", draft.Authors)
 						}
 					}
 				}

@@ -24,7 +24,13 @@ func newTestHandler(t *testing.T, posts []*store.Post) *FeedHandler {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
+	ensureRouteSchema(t, st)
 	for _, p := range posts {
+		p.StellarVersion, p.BlogExtensions = 2, `{}`
+		if p.StellarConfig == "" {
+			p.StellarConfig = `{}`
+		}
+		p.ContentMD = p.ContentHTML
 		if p.CreatedAt.IsZero() {
 			p.CreatedAt = p.UpdatedAt
 		}
@@ -33,7 +39,9 @@ func newTestHandler(t *testing.T, posts []*store.Post) *FeedHandler {
 		}
 	}
 	sitePtr := &atomic.Pointer[tmpl.Site]{}
-	sitePtr.Store(&tmpl.Site{URL: "https://example.com", Title: "测试站", Description: "描述"})
+	site := canonicalRouteSite(t, "测试站", nil, nil)
+	site.URL, site.Description = "https://example.com", "描述"
+	sitePtr.Store(site)
 	return NewFeedHandler(st, sitePtr)
 }
 
@@ -48,7 +56,7 @@ func doGET(t *testing.T, h *FeedHandler, path string) *httptest.ResponseRecorder
 	return w
 }
 
-// TestFeedBodyPasswordProtected 密码保护文章正文不得泄漏进 feed（占位文案替代）。
+// TestFeedBodyPasswordProtected 密码保护文章完全排除公开 feed。
 func TestFeedBodyPasswordProtected(t *testing.T) {
 	h := newTestHandler(t, []*store.Post{{
 		Slug: "secret", Title: "机密文章", Status: store.StatusPublished,
@@ -58,12 +66,26 @@ func TestFeedBodyPasswordProtected(t *testing.T) {
 	if strings.Contains(atom.Body.String(), "这是不该出现在 feed 里的正文") {
 		t.Fatal("atom feed leaked password-protected content")
 	}
-	if !strings.Contains(atom.Body.String(), "本文受密码保护") {
-		t.Fatal("atom feed should show password placeholder")
+	if atom.Code != http.StatusOK || strings.Contains(atom.Body.String(), "机密文章") || strings.Contains(atom.Body.String(), "/post/secret") {
+		t.Fatalf("protected article must not be included: status=%d body=%s", atom.Code, atom.Body.String())
+	}
+	var atomDocument atomFeed
+	if err := xml.Unmarshal(atom.Body.Bytes(), &atomDocument); err != nil {
+		t.Fatal(err)
+	}
+	if len(atomDocument.Entries) != 0 {
+		t.Fatal("protected atom entry must be excluded")
 	}
 	jf := doGET(t, h, "/feed.json")
-	if strings.Contains(jf.Body.String(), "这是不该出现在 feed 里的正文") {
+	if jf.Code != http.StatusOK || strings.Contains(jf.Body.String(), "机密文章") || strings.Contains(jf.Body.String(), "这是不该出现在 feed 里的正文") {
 		t.Fatal("json feed leaked password-protected content")
+	}
+	var jsonDocument jsonFeed
+	if err := json.Unmarshal(jf.Body.Bytes(), &jsonDocument); err != nil {
+		t.Fatal(err)
+	}
+	if len(jsonDocument.Items) != 0 {
+		t.Fatal("protected JSON feed entry must be excluded")
 	}
 }
 
@@ -126,7 +148,7 @@ func TestJSONFeedStructure(t *testing.T) {
 // TestCategoryRSS 分类 RSS：条目、Channel 元信息。
 func TestCategoryRSS(t *testing.T) {
 	h := newTestHandler(t, []*store.Post{
-		{Slug: "a", Title: "文章甲", Category: "Go", Status: store.StatusPublished, ContentHTML: "<p>甲</p>", CreatedAt: mustTime(t, "2026-08-01T00:00:00Z")},
+		{Slug: "a", Title: "文章甲", Category: "Go", StellarConfig: `{"categories":["Go"]}`, Status: store.StatusPublished, ContentHTML: "<p>甲</p>", CreatedAt: mustTime(t, "2026-08-01T00:00:00Z")},
 	})
 	w := doGET(t, h, "/categories/Go/rss.xml")
 	if w.Code != http.StatusOK {

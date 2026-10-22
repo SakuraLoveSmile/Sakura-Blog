@@ -1,0 +1,25 @@
+{
+  "method": "actual clipboard write wrapped only to delay resolution; native click and partial navigation; wrapper restored",
+  "before": {
+    "result": {
+      "type": "object",
+      "value": {
+        "calls": 1,
+        "oldButtonConnected": false,
+        "partial": true,
+        "pending": true,
+        "url": "http://127.0.0.1:8103/post/t5-code-copy-d"
+      }
+    }
+  },
+  "after": {
+    "result": {
+      "type": "object",
+      "value": {
+        "buttons": 0,
+        "oldButtonConnected": false,
+        "toast": false
+      }
+    }
+  }
+}

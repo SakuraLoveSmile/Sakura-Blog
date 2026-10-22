@@ -210,7 +210,7 @@ function showDialog(type: DialogType, options: DialogOptions) {
                     {
                       type: "button",
                       "data-dialog-action": "cancel",
-                      class: "h-8 px-4 text-xs transition-all hover:bg-secondary",
+                      class: "h-8 px-4 text-xs transition-colors duration-150 hover:bg-secondary",
                       style: {
                         color: "var(--color-foreground)",
                         background: "transparent",
@@ -227,7 +227,7 @@ function showDialog(type: DialogType, options: DialogOptions) {
                     {
                       type: "button",
                       "data-dialog-action": "confirm",
-                      class: "h-8 px-4 text-xs transition-all hover:opacity-90",
+                      class: "h-8 px-4 text-xs transition-colors duration-150 hover:opacity-90",
                       style: {
                         color: confirmTextColor(options.confirmType),
                         background: confirmBackground(options.confirmType),

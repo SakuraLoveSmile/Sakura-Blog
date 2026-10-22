@@ -1,0 +1,1503 @@
+{
+  "evidence_layer": "isolated API and HTTP, no browser",
+  "base_url": "http://127.0.0.1:8113",
+  "service_source_commit": "5f944882",
+  "source_commit_verified_by": "parent build and restart handoff",
+  "browser_unavailable": [
+    "chrome",
+    "2",
+    "iab"
+  ],
+  "checks": [
+    {
+      "case": "t3-ai-manual",
+      "operation": "updated known fixture",
+      "status": 200,
+      "api_reopened_equal": true,
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 1,
+      "reading_count": 1,
+      "ai_labels": [
+        {
+          "class": "cap ai-label"
+        }
+      ],
+      "indent": true,
+      "references": true,
+      "license": true,
+      "share_services": {
+        "qrcode": true,
+        "weibo": true,
+        "x": true,
+        "telegram": true,
+        "whatsapp": true,
+        "email": true
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": true,
+        "page_head_end": true,
+        "page_body_begin": true,
+        "page_body_end": true
+      },
+      "sha256": "a42c7688ab9d814cca012d2a18c1f22dfa84cc92bc93ccc25795e231b6c8cc90",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-ai-manual-opaque-preview",
+      "body_present": true,
+      "document_title": true,
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": true,
+        "page_head_end": true,
+        "page_body_begin": true,
+        "page_body_end": true
+      },
+      "sha256": "e3e9166cc7bb3533ae19427168bd6f22a526221bd7ad7c6cae332b7d3cdfe22c",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-ai-reviewed",
+      "operation": "updated known fixture",
+      "status": 200,
+      "api_reopened_equal": true,
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 1,
+      "reading_count": 1,
+      "ai_labels": [
+        {
+          "class": "cap ai-label"
+        }
+      ],
+      "indent": false,
+      "references": true,
+      "license": true,
+      "share_services": {
+        "qrcode": true,
+        "weibo": true,
+        "x": true,
+        "telegram": true,
+        "whatsapp": true,
+        "email": true
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "3256fef8721ada1980aed0ff09853519fd36eda9d10f7871ab57e3a05bd45959",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-ai-reviewed-opaque-preview",
+      "body_present": true,
+      "document_title": true,
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "3a5654978921e97ac4d3886faffd974b5b88b8ec777c47a727b639d6a90f1a44",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-ai-polished",
+      "operation": "updated known fixture",
+      "status": 200,
+      "api_reopened_equal": true,
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 1,
+      "reading_count": 1,
+      "ai_labels": [
+        {
+          "class": "cap ai-label"
+        }
+      ],
+      "indent": false,
+      "references": true,
+      "license": true,
+      "share_services": {
+        "qrcode": true,
+        "weibo": true,
+        "x": true,
+        "telegram": true,
+        "whatsapp": true,
+        "email": true
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "3e555b07844f4f91dfe33972482482e075c83ec6f32723a199008f51d9f441c6",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-ai-polished-opaque-preview",
+      "body_present": true,
+      "document_title": true,
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "a7905ebf6f67b9c7f11436ff0ed0ed5d4ebaefc3c35682ae00738db7b27d7064",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-ai-generated",
+      "operation": "updated known fixture",
+      "status": 200,
+      "api_reopened_equal": true,
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 1,
+      "reading_count": 1,
+      "ai_labels": [
+        {
+          "class": "cap ai-label"
+        }
+      ],
+      "indent": false,
+      "references": true,
+      "license": true,
+      "share_services": {
+        "qrcode": true,
+        "weibo": true,
+        "x": true,
+        "telegram": true,
+        "whatsapp": true,
+        "email": true
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "69dd7af30d42b271af33ca2e942c59abecb632fd041f378e76af52bfce429a70",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-ai-generated-opaque-preview",
+      "body_present": true,
+      "document_title": true,
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "8f7729d96954351ae8e2dea191a1e079bcf72dbbb3a0d1a9c77a6f703233d681",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-banner-disabled",
+      "operation": "read existing candidate",
+      "status": 200,
+      "api_reopened_equal": true,
+      "banner_count": 0,
+      "background_count": 0,
+      "h1_count": 0,
+      "reading_count": 0,
+      "ai_labels": [],
+      "indent": false,
+      "references": false,
+      "license": false,
+      "share_services": {
+        "qrcode": false,
+        "weibo": false,
+        "x": false,
+        "telegram": false,
+        "whatsapp": false,
+        "email": false
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "bfe1be6d752393065feb25aa084a12004c9ba7dd62c8a46b92760db2706359f4",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-banner-no-bg",
+      "operation": "read existing candidate",
+      "status": 200,
+      "api_reopened_equal": true,
+      "banner_count": 1,
+      "background_count": 0,
+      "h1_count": 1,
+      "reading_count": 1,
+      "ai_labels": [],
+      "indent": false,
+      "references": false,
+      "license": false,
+      "share_services": {
+        "qrcode": false,
+        "weibo": false,
+        "x": false,
+        "telegram": false,
+        "whatsapp": false,
+        "email": false
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "d3c5342d77afa37ba32b20ced82aa4ca472673c867baefb21af00eb880c01bb1",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-banner-empty-headline",
+      "operation": "read existing candidate",
+      "status": 200,
+      "api_reopened_equal": true,
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 0,
+      "reading_count": 1,
+      "ai_labels": [],
+      "indent": false,
+      "references": false,
+      "license": false,
+      "share_services": {
+        "qrcode": false,
+        "weibo": false,
+        "x": false,
+        "telegram": false,
+        "whatsapp": false,
+        "email": false
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "5f3568315449e650a8d613ee6760a6e84f57ded5d368a09e4ae6b6621dec4875",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-pin-9",
+      "operation": "read existing candidate",
+      "status": 200,
+      "api_reopened_equal": null,
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 1,
+      "reading_count": 1,
+      "ai_labels": [],
+      "indent": false,
+      "references": false,
+      "license": true,
+      "share_services": {
+        "qrcode": false,
+        "weibo": false,
+        "x": false,
+        "telegram": false,
+        "whatsapp": false,
+        "email": false
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "4d38da8520d67e3155da8033fa1021b25d10936eb8825a0d07e96cf4ee03d497",
+      "browser_verified": false
+    },
+    {
+      "case": "t3-pin-7",
+      "operation": "read existing candidate",
+      "status": 200,
+      "api_reopened_equal": null,
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 1,
+      "reading_count": 1,
+      "ai_labels": [],
+      "indent": false,
+      "references": false,
+      "license": true,
+      "share_services": {
+        "qrcode": false,
+        "weibo": false,
+        "x": false,
+        "telegram": false,
+        "whatsapp": false,
+        "email": false
+      },
+      "inject_markers": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": false,
+        "page_head_end": false,
+        "page_body_begin": false,
+        "page_body_end": false
+      },
+      "sha256": "9605db44bfc680dc1d06cf710cd53fe66ec7f9310cf7b38cb9b4791834728474",
+      "browser_verified": false
+    },
+    {
+      "case": "notebook-route",
+      "path": "/notebooks",
+      "status": 200,
+      "notebook_links": [
+        "/journal",
+        "/reading"
+      ],
+      "tagtree_widgets": 0,
+      "tagtree_nodes": [],
+      "active_tags": [],
+      "note_links": [],
+      "indent": false,
+      "sha256": "535c8d5a6b8be19a1c91afaf354828a100e9726272036edc9ecb7fdf498e921f",
+      "browser_verified": false
+    },
+    {
+      "case": "notebook-route",
+      "path": "/journal",
+      "status": 200,
+      "notebook_links": [
+        "/journal",
+        "/journal/tags/技术",
+        "/journal/tags/技术/go",
+        "/journal/tags/技术/go/ssr",
+        "/journal/tags/生活",
+        "/journal/tags/生活/阅读",
+        "/journal/beta",
+        "/journal/alpha",
+        "/journal/alpha",
+        "/journal/page/2/",
+        "/journal/page/2/"
+      ],
+      "tagtree_widgets": 1,
+      "tagtree_nodes": [
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读"
+        }
+      ],
+      "active_tags": [],
+      "note_links": [],
+      "indent": false,
+      "sha256": "57f5b4dadbf1eb9557b812e82e25b37def9ba5b683769577da4dc880bf53cb16",
+      "browser_verified": false
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading",
+      "status": 200,
+      "notebook_links": [
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评",
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading/alpha",
+        "/reading/beta",
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评"
+      ],
+      "tagtree_widgets": 2,
+      "tagtree_nodes": [
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        },
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        }
+      ],
+      "active_tags": [
+        {
+          "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active tag-tree__link",
+          "href": "/reading",
+          "title": "所有笔记",
+          "aria-current": "page"
+        },
+        {
+          "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active tag-tree__link",
+          "href": "/reading",
+          "title": "所有笔记",
+          "aria-current": "page"
+        }
+      ],
+      "note_links": [
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading/alpha",
+        "/reading/beta"
+      ],
+      "indent": false,
+      "sha256": "a42c137b36f373c9d7d5dd4f3a9fe86e2438d59a0d8c7b3647ab61eff120f47c",
+      "browser_verified": false,
+      "listing_cards": [
+        {
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt",
+          "href": "/reading/alpha"
+        },
+        {
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt",
+          "href": "/reading/beta"
+        }
+      ],
+      "listing_filter_and_sort_match": true
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading/alpha",
+      "status": 200,
+      "notebook_links": [
+        "/reading/",
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评",
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活/阅读",
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评"
+      ],
+      "tagtree_widgets": 2,
+      "tagtree_nodes": [
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        },
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        }
+      ],
+      "active_tags": [],
+      "note_links": [
+        "/reading/beta",
+        "/reading/alpha"
+      ],
+      "indent": true,
+      "sha256": "c3d8e87a0ee785d49eb6abb4e3826b9ce9a3812780639ec0e20d6e772f79d4c1",
+      "browser_verified": false
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading/beta",
+      "status": 200,
+      "notebook_links": [
+        "/reading/",
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评",
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading",
+        "/reading/tags/技术/go",
+        "/reading/tags/生活/阅读/书评",
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评"
+      ],
+      "tagtree_widgets": 2,
+      "tagtree_nodes": [
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        },
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        }
+      ],
+      "active_tags": [],
+      "note_links": [
+        "/reading/beta",
+        "/reading/alpha"
+      ],
+      "indent": true,
+      "sha256": "eef17f6a99b25790a607387d270f0e5509ca0a2280584f393f8b78848f16a920",
+      "browser_verified": false
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading/tags/技术/go/ssr",
+      "status": 200,
+      "notebook_links": [
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评",
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading/alpha?tag=%E6%8A%80%E6%9C%AF%2Fgo%2Fssr",
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评"
+      ],
+      "tagtree_widgets": 2,
+      "tagtree_nodes": [
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "生活/阅读/书评"
+        }
+      ],
+      "active_tags": [
+        {
+          "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active tag-tree__link",
+          "href": "/reading/tags/技术/go/ssr",
+          "title": "SSR",
+          "aria-current": "page",
+          "style": "--ui-item-depth:2;"
+        },
+        {
+          "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active tag-tree__link",
+          "href": "/reading/tags/技术/go/ssr",
+          "title": "SSR",
+          "aria-current": "page",
+          "style": "--ui-item-depth:2;"
+        }
+      ],
+      "note_links": [
+        "/reading/beta",
+        "/reading/alpha"
+      ],
+      "indent": false,
+      "sha256": "49164d386910485f88fe8d4d85e68792b58a6463816571392ce3c487a6d14a04",
+      "browser_verified": false,
+      "listing_cards": [
+        {
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt",
+          "href": "/reading/alpha?tag=%E6%8A%80%E6%9C%AF%2Fgo%2Fssr"
+        }
+      ],
+      "listing_filter_and_sort_match": true
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading/tags/生活/阅读/书评",
+      "status": 200,
+      "notebook_links": [
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评",
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading/beta?tag=%E7%94%9F%E6%B4%BB%2F%E9%98%85%E8%AF%BB%2F%E4%B9%A6%E8%AF%84",
+        "/reading",
+        "/reading/tags/技术",
+        "/reading/tags/技术/go",
+        "/reading/tags/技术/go/ssr",
+        "/reading/tags/生活",
+        "/reading/tags/生活/阅读",
+        "/reading/tags/生活/阅读/书评"
+      ],
+      "tagtree_widgets": 2,
+      "tagtree_nodes": [
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": "生活/阅读/书评"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": ""
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术"
+        },
+        {
+          "class": "tag-subtree is-parent",
+          "data-tag": "技术/go"
+        },
+        {
+          "class": "tag-subtree is-leaf",
+          "data-tag": "技术/go/ssr"
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "生活"
+        },
+        {
+          "class": "tag-subtree is-parent is-expanded",
+          "data-tag": "生活/阅读"
+        },
+        {
+          "class": "tag-subtree is-leaf is-expanded",
+          "data-tag": "生活/阅读/书评"
+        }
+      ],
+      "active_tags": [
+        {
+          "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active tag-tree__link",
+          "href": "/reading/tags/生活/阅读/书评",
+          "title": "书评",
+          "aria-current": "page",
+          "style": "--ui-item-depth:2;"
+        },
+        {
+          "class": "ui-collection__item ui-interactive card-hover card-hover--spotlight is-active tag-tree__link",
+          "href": "/reading/tags/生活/阅读/书评",
+          "title": "书评",
+          "aria-current": "page",
+          "style": "--ui-item-depth:2;"
+        }
+      ],
+      "note_links": [
+        "/reading/beta",
+        "/reading/alpha"
+      ],
+      "indent": false,
+      "sha256": "07023594537fed4cccfef1866d153705215b3185a45fc37c02e4568e290d9aa9",
+      "browser_verified": false,
+      "listing_cards": [
+        {
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt",
+          "href": "/reading/beta?tag=%E7%94%9F%E6%B4%BB%2F%E9%98%85%E8%AF%BB%2F%E4%B9%A6%E8%AF%84"
+        }
+      ],
+      "listing_filter_and_sort_match": true
+    },
+    {
+      "case": "listing-carousel-hero",
+      "expected_cover_ratio": 2.4,
+      "runtime_css_ratios": {
+        ".post-list .post-card .post-cover img": "2.4",
+        ".post-list .post-card.post.photo .cover img": "2.4",
+        ".pin-slide.post-slide": "2.4"
+      },
+      "all_runtime_ratios_match": true,
+      "inline_style_sha256": "15e53da28f01cb3746bfe675fcad0046f741e1a515525ee0f17b5d8d37e3e4cd",
+      "pin_slider_count": 1,
+      "pin_order": [
+        "/post/technical",
+        "/post/t3-pin-9",
+        "/post/t3-pin-7"
+      ],
+      "listing_cards": [
+        {
+          "href": "/post/t3-ai-generated",
+          "class": "post-card post photo card-hover card-hover--spotlight card-hover--tilt"
+        },
+        {
+          "href": "/post/t3-ai-polished",
+          "class": "post-card post photo card-hover card-hover--spotlight card-hover--tilt"
+        }
+      ],
+      "preconnect": [
+        "http://127.0.0.1:8111/path",
+        "http://127.0.0.1:8111"
+      ],
+      "theme_and_page_inject": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": true,
+        "page_head_end": true,
+        "page_body_begin": true,
+        "page_body_end": true
+      },
+      "contributor_edit": [
+        {
+          "class": "edit",
+          "href": "https://github.com/fixture/narrow/blob/narrow/ai-manual.md"
+        }
+      ],
+      "contributor_api": [
+        {
+          "class": "ds-contributors users-wrap",
+          "api-type": "commits",
+          "data-api": "http://127.0.0.1:8113/t3-github/repos/fixture/narrow/commits?path=ai-manual.md"
+        }
+      ],
+      "contributors_evidence": "isolated 404 fixture endpoint; source matching only, no GitHub service acceptance",
+      "browser_verified": false
+    },
+    {
+      "case": "listing-flat-classic",
+      "expected_cover_ratio": 1.25,
+      "runtime_css_ratios": {
+        ".post-list .post-card .post-cover img": "1.25",
+        ".post-list .post-card.post.photo .cover img": "1.25",
+        ".pin-slide.post-slide": "1.25"
+      },
+      "all_runtime_ratios_match": true,
+      "inline_style_sha256": "3095ba3e77ace5ebafce8a50d53f6a2313d88e32fe8729b14ed55f87c952849f",
+      "pin_slider_count": 0,
+      "pin_order": [],
+      "listing_cards": [
+        {
+          "href": "/post/technical",
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt"
+        },
+        {
+          "href": "/post/t3-pin-9",
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt"
+        }
+      ],
+      "preconnect": [
+        "http://127.0.0.1:8111/path",
+        "http://127.0.0.1:8111"
+      ],
+      "theme_and_page_inject": {
+        "theme_head_begin": true,
+        "theme_head_end": true,
+        "theme_body_begin": true,
+        "theme_body_end": true,
+        "page_head_begin": true,
+        "page_head_end": true,
+        "page_body_begin": true,
+        "page_body_end": true
+      },
+      "contributor_edit": [
+        {
+          "class": "edit",
+          "href": "https://github.com/fixture/narrow/blob/narrow/ai-manual.md"
+        }
+      ],
+      "contributor_api": [
+        {
+          "class": "ds-contributors users-wrap",
+          "api-type": "commits",
+          "data-api": "http://127.0.0.1:8113/t3-github/repos/fixture/narrow/commits?path=ai-manual.md"
+        }
+      ],
+      "contributors_evidence": "isolated 404 fixture endpoint; source matching only, no GitHub service acceptance",
+      "browser_verified": false
+    },
+    {
+      "case": "allowed-host-http",
+      "host": "127.0.0.1:8113",
+      "status": 200,
+      "canonical_config": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://127.0.0.1:8113/post/t3-pin-9\"}"
+      ],
+      "browser_tip_verified": false
+    },
+    {
+      "case": "allowed-host-http",
+      "host": "t3-mirror.test",
+      "status": 200,
+      "canonical_config": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://t3-mirror.test/post/t3-pin-9\"}"
+      ],
+      "browser_tip_verified": false
+    },
+    {
+      "case": "allowed-host-http",
+      "host": "unlisted-t3.test",
+      "status": 200,
+      "canonical_config": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://unlisted-t3.test/post/t3-pin-9\"}"
+      ],
+      "browser_tip_verified": false
+    }
+  ],
+  "historical_checks_before_raw_fix": [
+    {
+      "case": "ai-manual",
+      "save_status": 400,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_error": {
+        "type": "stellar_schema_error",
+        "title": "Stellar 配置不符合上游规则",
+        "status": 400,
+        "detail": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "error": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "instance": "/api/v1/posts",
+        "issues": [
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "article.aiLabel",
+            "expected": "known field",
+            "actual_type": "string"
+          },
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "footer.showTags",
+            "expected": "known field",
+            "actual_type": "boolean"
+          }
+        ]
+      },
+      "browser_verified": false
+    },
+    {
+      "case": "ai-reviewed",
+      "save_status": 400,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_error": {
+        "type": "stellar_schema_error",
+        "title": "Stellar 配置不符合上游规则",
+        "status": 400,
+        "detail": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "error": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "instance": "/api/v1/posts",
+        "issues": [
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "article.aiLabel",
+            "expected": "known field",
+            "actual_type": "string"
+          },
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "footer.showTags",
+            "expected": "known field",
+            "actual_type": "boolean"
+          }
+        ]
+      },
+      "browser_verified": false
+    },
+    {
+      "case": "ai-polished",
+      "save_status": 400,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_error": {
+        "type": "stellar_schema_error",
+        "title": "Stellar 配置不符合上游规则",
+        "status": 400,
+        "detail": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "error": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "instance": "/api/v1/posts",
+        "issues": [
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "article.aiLabel",
+            "expected": "known field",
+            "actual_type": "string"
+          },
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "footer.showTags",
+            "expected": "known field",
+            "actual_type": "boolean"
+          }
+        ]
+      },
+      "browser_verified": false
+    },
+    {
+      "case": "ai-generated",
+      "save_status": 400,
+      "validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_error": {
+        "type": "stellar_schema_error",
+        "title": "Stellar 配置不符合上游规则",
+        "status": 400,
+        "detail": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "error": "Stellar v2 schema validation failed: editor.stellar_config: article.aiLabel (unknown_field): expected known field, actual string; editor.stellar_config: footer.showTags (unknown_field): expected known field, actual boolean",
+        "instance": "/api/v1/posts",
+        "issues": [
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "article.aiLabel",
+            "expected": "known field",
+            "actual_type": "string"
+          },
+          {
+            "code": "unknown_field",
+            "source": "editor.stellar_config",
+            "path": "footer.showTags",
+            "expected": "known field",
+            "actual_type": "boolean"
+          }
+        ]
+      },
+      "browser_verified": false
+    },
+    {
+      "case": "banner-disabled",
+      "banner_count": 0,
+      "background_count": 0,
+      "h1_count": 0,
+      "share_count": 0,
+      "license_count": 0
+    },
+    {
+      "case": "banner-no-bg",
+      "banner_count": 1,
+      "background_count": 0,
+      "h1_count": 1,
+      "share_count": 0,
+      "license_count": 0
+    },
+    {
+      "case": "banner-empty-headline",
+      "banner_count": 1,
+      "background_count": 1,
+      "h1_count": 0,
+      "share_count": 0,
+      "license_count": 0
+    },
+    {
+      "case": "listing-carousel-hero",
+      "pin_slider_count": 1,
+      "pin_order": [
+        "/post/technical",
+        "/post/t3-pin-9",
+        "/post/t3-pin-7"
+      ],
+      "listing_cards": [
+        {
+          "href": "/post/t3-banner-empty-headline",
+          "class": "post-card post photo card-hover card-hover--spotlight card-hover--tilt"
+        },
+        {
+          "href": "/post/t3-banner-no-bg",
+          "class": "post-card post photo card-hover card-hover--spotlight card-hover--tilt"
+        }
+      ],
+      "inline_style_blocks": [
+        ":root{--text-loading:\"正在加载\";--text-loading-error:\"加载失败，请稍后重试。\"}:root{--accent:#ff5724;--alpha:1;--checkbox-pointer-events:none;--code-scrollbar-width:4px;--content-align:left;--corner-shape:superellipse(1.25);--font-family-body:system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif;--font-family-code:Menlo, Monaco, Consolas, system-ui, monospace, sans-serif;--font-size-code-block:0.8125rem;--font-size-inline-code:85%;--font-size-root:16px;--font-smoothing:antialiased;--font-weight-100:100;--font-weight-200:200;--font-weight-300:300;--font-weight-400:400;--font-weight-500:500;--font-weight-600:600;--font-weight-700:700;--font-weight-800:800;--font-weight-900:900;--gradient-searchbar:linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff);--gradient-start:linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%));--hue:192deg;--light:55%;--link:hsla(207deg 90% 54% / 1);--link-a20:hsla(207deg 90% 54% / 0.2);--note-border:1px solid var(--theme-border);--radius-bar:12px;--radius-card:16px;--radius-card-l:24px;--radius-card-s:12px;--radius-image:16px;--radius-image-l:24px;--radius-image-s:8px;--sat:98%;--stellar-source-color:hsl(192 98% 55%);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);}.colorful[color='red']{--alpha:1;--hue:4.10526315789474deg;--light:58.43137254901961%;--link:hsla(4.10526315789474deg 95% 32% / 1);--link-a20:hsla(4.10526315789474deg 95% 32% / 0.2);--sat:89.62264150943398%;--stellar-source-color:#f44336;--text:hsla(4.10526315789474deg 55% 16% / 1);--text-p1:hsla(4.10526315789474deg 90% 20% / 1);--text-p2:hsla(4.10526315789474deg 90% 20% / 0.8);--text-p3:hsla(4.10526315789474deg 90% 20% / 0.6);--text-p4:hsla(4.10526315789474deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(4.10526315789474deg 90% 92% / var(--alpha));--theme-border:hsla(4.10526315789474deg 50% 80% / var(--alpha));--theme-codeblock:hsla(4.10526315789474deg 50% 95% / var(--alpha));--theme-mark:hsla(4.10526315789474deg 95% 80% / var(--alpha));}.colorful[color='orange']{--alpha:1;--hue:24deg;--light:49.01960784313725%;--link:hsla(24deg 95% 32% / 1);--link-a20:hsla(24deg 95% 32% / 0.2);--sat:100%;--stellar-source-color:#fa6400;--text:hsla(24deg 55% 16% / 1);--text-p1:hsla(24deg 90% 20% / 1);--text-p2:hsla(24deg 90% 20% / 0.8);--text-p3:hsla(24deg 90% 20% / 0.6);--text-p4:hsla(24deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(24deg 90% 92% / var(--alpha));--theme-border:hsla(24deg 50% 80% / var(--alpha));--theme-codeblock:hsla(24deg 50% 95% / var(--alpha));--theme-mark:hsla(24deg 95% 80% / var(--alpha));}.colorful[color='amber']{--alpha:1;--hue:41.32075471698113deg;--light:58.43137254901961%;--link:hsla(41.32075471698113deg 95% 32% / 1);--link-a20:hsla(41.32075471698113deg 95% 32% / 0.2);--sat:100%;--stellar-source-color:#ffbd2b;--text:hsla(41.32075471698113deg 55% 16% / 1);--text-p1:hsla(41.32075471698113deg 90% 20% / 1);--text-p2:hsla(41.32075471698113deg 90% 20% / 0.8);--text-p3:hsla(41.32075471698113deg 90% 20% / 0.6);--text-p4:hsla(41.32075471698113deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(41.32075471698113deg 90% 92% / var(--alpha));--theme-border:hsla(41.32075471698113deg 50% 80% / var(--alpha));--theme-codeblock:hsla(41.32075471698113deg 50% 95% / var(--alpha));--theme-mark:hsla(41.32075471698113deg 95% 80% / var(--alpha));}.colorful[color='yellow']{--alpha:1;--hue:50.96385542168673deg;--light:67.45098039215686%;--link:hsla(50.96385542168673deg 95% 32% / 1);--link-a20:hsla(50.96385542168673deg 95% 32% / 0.2);--sat:100.00000000000003%;--stellar-source-color:#ffe659;--text:hsla(50.96385542168673deg 55% 16% / 1);--text-p1:hsla(50.96385542168673deg 90% 20% / 1);--text-p2:hsla(50.96385542168673deg 90% 20% / 0.8);--text-p3:hsla(50.96385542168673deg 90% 20% / 0.6);--text-p4:hsla(50.96385542168673deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(50.96385542168673deg 90% 92% / var(--alpha));--theme-border:hsla(50.96385542168673deg 50% 80% / var(--alpha));--theme-codeblock:hsla(50.96385542168673deg 50% 95% / var(--alpha));--theme-mark:hsla(50.96385542168673deg 95% 80% / var(--alpha));}.colorful[color='green']{--alpha:1;--hue:128.38235294117646deg;--light:50.588235294117645%;--link:hsla(128.38235294117646deg 95% 32% / 1);--link-a20:hsla(128.38235294117646deg 95% 32% / 0.2);--sat:53.96825396825397%;--stellar-source-color:#3dc550;--text:hsla(128.38235294117646deg 55% 16% / 1);--text-p1:hsla(128.38235294117646deg 90% 20% / 1);--text-p2:hsla(128.38235294117646deg 90% 20% / 0.8);--text-p3:hsla(128.38235294117646deg 90% 20% / 0.6);--text-p4:hsla(128.38235294117646deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(128.38235294117646deg 90% 92% / var(--alpha));--theme-border:hsla(128.38235294117646deg 50% 80% / var(--alpha));--theme-codeblock:hsla(128.38235294117646deg 50% 95% / var(--alpha));--theme-mark:hsla(128.38235294117646deg 95% 80% / var(--alpha));}.colorful[color='cyan']{--alpha:1;--hue:192.5333333333333deg;--light:54.70588235294118%;--link:hsla(192.5333333333333deg 95% 32% / 1);--link-a20:hsla(192.5333333333333deg 95% 32% / 0.2);--sat:97.40259740259742%;--stellar-source-color:#1bcdfc;--text:hsla(192.5333333333333deg 55% 16% / 1);--text-p1:hsla(192.5333333333333deg 90% 20% / 1);--text-p2:hsla(192.5333333333333deg 90% 20% / 0.8);--text-p3:hsla(192.5333333333333deg 90% 20% / 0.6);--text-p4:hsla(192.5333333333333deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192.5333333333333deg 90% 92% / var(--alpha));--theme-border:hsla(192.5333333333333deg 50% 80% / var(--alpha));--theme-codeblock:hsla(192.5333333333333deg 50% 95% / var(--alpha));--theme-mark:hsla(192.5333333333333deg 95% 80% / var(--alpha));}.colorful[color='blue']{--alpha:1;--hue:206.57142857142856deg;--light:54.11764705882353%;--link:hsla(206.57142857142856deg 95% 32% / 1);--link-a20:hsla(206.57142857142856deg 95% 32% / 0.2);--sat:89.74358974358974%;--stellar-source-color:#2196f3;--text:hsla(206.57142857142856deg 55% 16% / 1);--text-p1:hsla(206.57142857142856deg 90% 20% / 1);--text-p2:hsla(206.57142857142856deg 90% 20% / 0.8);--text-p3:hsla(206.57142857142856deg 90% 20% / 0.6);--text-p4:hsla(206.57142857142856deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(206.57142857142856deg 90% 92% / var(--alpha));--theme-border:hsla(206.57142857142856deg 50% 80% / var(--alpha));--theme-codeblock:hsla(206.57142857142856deg 50% 95% / var(--alpha));--theme-mark:hsla(206.57142857142856deg 95% 80% / var(--alpha));}.colorful[color='purple']{--alpha:1;--hue:291.2408759124087deg;--light:42.15686274509804%;--link:hsla(291.2408759124087deg 95% 32% / 1);--link-a20:hsla(291.2408759124087deg 95% 32% / 0.2);--sat:63.72093023255814%;--stellar-source-color:#9c27b0;--text:hsla(291.2408759124087deg 55% 16% / 1);--text-p1:hsla(291.2408759124087deg 90% 20% / 1);--text-p2:hsla(291.2408759124087deg 90% 20% / 0.8);--text-p3:hsla(291.2408759124087deg 90% 20% / 0.6);--text-p4:hsla(291.2408759124087deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(291.2408759124087deg 90% 92% / var(--alpha));--theme-border:hsla(291.2408759124087deg 50% 80% / var(--alpha));--theme-codeblock:hsla(291.2408759124087deg 50% 95% / var(--alpha));--theme-mark:hsla(291.2408759124087deg 95% 80% / var(--alpha));}.colorful[color='theme']{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 95% 32% / 1);--link-a20:hsla(192deg 95% 32% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 55% 16% / 1);--text-p1:hsla(192deg 90% 20% / 1);--text-p2:hsla(192deg 90% 20% / 0.8);--text-p3:hsla(192deg 90% 20% / 0.6);--text-p4:hsla(192deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 90% 92% / var(--alpha));--theme-border:hsla(192deg 50% 80% / var(--alpha));--theme-codeblock:hsla(192deg 50% 95% / var(--alpha));--theme-mark:hsla(192deg 95% 80% / var(--alpha));}.colorful[color='accent']{--alpha:1;--hue:14deg;--light:57%;--link:hsla(14deg 95% 32% / 1);--link-a20:hsla(14deg 95% 32% / 0.2);--sat:100%;--stellar-source-color:hsl(14 100% 57%);--text:hsla(14deg 55% 16% / 1);--text-p1:hsla(14deg 90% 20% / 1);--text-p2:hsla(14deg 90% 20% / 0.8);--text-p3:hsla(14deg 90% 20% / 0.6);--text-p4:hsla(14deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(14deg 90% 92% / var(--alpha));--theme-border:hsla(14deg 50% 80% / var(--alpha));--theme-codeblock:hsla(14deg 50% 95% / var(--alpha));--theme-mark:hsla(14deg 95% 80% / var(--alpha));}:root[data-theme='dark'] .tag-plugin.tag{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='red']{--alpha:1;--hue:4.10526315789474deg;--light:58.43137254901961%;--link:hsla(4.10526315789474deg 80% 60% / 1);--link-a20:hsla(4.10526315789474deg 80% 60% / 0.2);--sat:89.62264150943398%;--stellar-source-color:#f44336;--text:hsla(4.10526315789474deg 50% 75% / 1);--text-p1:hsla(4.10526315789474deg 80% 80% / 1);--text-p2:hsla(4.10526315789474deg 80% 80% / 0.8);--text-p3:hsla(4.10526315789474deg 80% 80% / 0.6);--text-p4:hsla(4.10526315789474deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(4.10526315789474deg 24% 24% / var(--alpha));--theme-border:hsla(4.10526315789474deg 40% 24% / var(--alpha));--theme-codeblock:hsla(4.10526315789474deg 12% 24% / var(--alpha));--theme-mark:hsla(4.10526315789474deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='orange']{--alpha:1;--hue:24deg;--light:49.01960784313725%;--link:hsla(24deg 80% 60% / 1);--link-a20:hsla(24deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#fa6400;--text:hsla(24deg 50% 75% / 1);--text-p1:hsla(24deg 80% 80% / 1);--text-p2:hsla(24deg 80% 80% / 0.8);--text-p3:hsla(24deg 80% 80% / 0.6);--text-p4:hsla(24deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(24deg 24% 24% / var(--alpha));--theme-border:hsla(24deg 40% 24% / var(--alpha));--theme-codeblock:hsla(24deg 12% 24% / var(--alpha));--theme-mark:hsla(24deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='amber']{--alpha:1;--hue:41.32075471698113deg;--light:58.43137254901961%;--link:hsla(41.32075471698113deg 80% 60% / 1);--link-a20:hsla(41.32075471698113deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#ffbd2b;--text:hsla(41.32075471698113deg 50% 75% / 1);--text-p1:hsla(41.32075471698113deg 80% 80% / 1);--text-p2:hsla(41.32075471698113deg 80% 80% / 0.8);--text-p3:hsla(41.32075471698113deg 80% 80% / 0.6);--text-p4:hsla(41.32075471698113deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(41.32075471698113deg 24% 24% / var(--alpha));--theme-border:hsla(41.32075471698113deg 40% 24% / var(--alpha));--theme-codeblock:hsla(41.32075471698113deg 12% 24% / var(--alpha));--theme-mark:hsla(41.32075471698113deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='yellow']{--alpha:1;--hue:50.96385542168673deg;--light:67.45098039215686%;--link:hsla(50.96385542168673deg 80% 60% / 1);--link-a20:hsla(50.96385542168673deg 80% 60% / 0.2);--sat:100.00000000000003%;--stellar-source-color:#ffe659;--text:hsla(50.96385542168673deg 50% 75% / 1);--text-p1:hsla(50.96385542168673deg 80% 80% / 1);--text-p2:hsla(50.96385542168673deg 80% 80% / 0.8);--text-p3:hsla(50.96385542168673deg 80% 80% / 0.6);--text-p4:hsla(50.96385542168673deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(50.96385542168673deg 24% 24% / var(--alpha));--theme-border:hsla(50.96385542168673deg 40% 24% / var(--alpha));--theme-codeblock:hsla(50.96385542168673deg 12% 24% / var(--alpha));--theme-mark:hsla(50.96385542168673deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='green']{--alpha:1;--hue:128.38235294117646deg;--light:50.588235294117645%;--link:hsla(128.38235294117646deg 80% 60% / 1);--link-a20:hsla(128.38235294117646deg 80% 60% / 0.2);--sat:53.96825396825397%;--stellar-source-color:#3dc550;--text:hsla(128.38235294117646deg 50% 75% / 1);--text-p1:hsla(128.38235294117646deg 80% 80% / 1);--text-p2:hsla(128.38235294117646deg 80% 80% / 0.8);--text-p3:hsla(128.38235294117646deg 80% 80% / 0.6);--text-p4:hsla(128.38235294117646deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(128.38235294117646deg 24% 24% / var(--alpha));--theme-border:hsla(128.38235294117646deg 40% 24% / var(--alpha));--theme-codeblock:hsla(128.38235294117646deg 12% 24% / var(--alpha));--theme-mark:hsla(128.38235294117646deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='cyan']{--alpha:1;--hue:192.5333333333333deg;--light:54.70588235294118%;--link:hsla(192.5333333333333deg 80% 60% / 1);--link-a20:hsla(192.5333333333333deg 80% 60% / 0.2);--sat:97.40259740259742%;--stellar-source-color:#1bcdfc;--text:hsla(192.5333333333333deg 50% 75% / 1);--text-p1:hsla(192.5333333333333deg 80% 80% / 1);--text-p2:hsla(192.5333333333333deg 80% 80% / 0.8);--text-p3:hsla(192.5333333333333deg 80% 80% / 0.6);--text-p4:hsla(192.5333333333333deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192.5333333333333deg 24% 24% / var(--alpha));--theme-border:hsla(192.5333333333333deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192.5333333333333deg 12% 24% / var(--alpha));--theme-mark:hsla(192.5333333333333deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='blue']{--alpha:1;--hue:206.57142857142856deg;--light:54.11764705882353%;--link:hsla(206.57142857142856deg 80% 60% / 1);--link-a20:hsla(206.57142857142856deg 80% 60% / 0.2);--sat:89.74358974358974%;--stellar-source-color:#2196f3;--text:hsla(206.57142857142856deg 50% 75% / 1);--text-p1:hsla(206.57142857142856deg 80% 80% / 1);--text-p2:hsla(206.57142857142856deg 80% 80% / 0.8);--text-p3:hsla(206.57142857142856deg 80% 80% / 0.6);--text-p4:hsla(206.57142857142856deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(206.57142857142856deg 24% 24% / var(--alpha));--theme-border:hsla(206.57142857142856deg 40% 24% / var(--alpha));--theme-codeblock:hsla(206.57142857142856deg 12% 24% / var(--alpha));--theme-mark:hsla(206.57142857142856deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='purple']{--alpha:1;--hue:291.2408759124087deg;--light:42.15686274509804%;--link:hsla(291.2408759124087deg 80% 60% / 1);--link-a20:hsla(291.2408759124087deg 80% 60% / 0.2);--sat:63.72093023255814%;--stellar-source-color:#9c27b0;--text:hsla(291.2408759124087deg 50% 75% / 1);--text-p1:hsla(291.2408759124087deg 80% 80% / 1);--text-p2:hsla(291.2408759124087deg 80% 80% / 0.8);--text-p3:hsla(291.2408759124087deg 80% 80% / 0.6);--text-p4:hsla(291.2408759124087deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(291.2408759124087deg 24% 24% / var(--alpha));--theme-border:hsla(291.2408759124087deg 40% 24% / var(--alpha));--theme-codeblock:hsla(291.2408759124087deg 12% 24% / var(--alpha));--theme-mark:hsla(291.2408759124087deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='theme']{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='accent']{--alpha:1;--hue:14deg;--light:57%;--link:hsla(14deg 80% 60% / 1);--link-a20:hsla(14deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:hsl(14 100% 57%);--text:hsla(14deg 50% 75% / 1);--text-p1:hsla(14deg 80% 80% / 1);--text-p2:hsla(14deg 80% 80% / 0.8);--text-p3:hsla(14deg 80% 80% / 0.6);--text-p4:hsla(14deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(14deg 24% 24% / var(--alpha));--theme-border:hsla(14deg 40% 24% / var(--alpha));--theme-codeblock:hsla(14deg 12% 24% / var(--alpha));--theme-mark:hsla(14deg 50% 32% / var(--alpha));}@media (prefers-color-scheme:dark){:root:not([data-theme]) .tag-plugin.tag{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='red']{--alpha:1;--hue:4.10526315789474deg;--light:58.43137254901961%;--link:hsla(4.10526315789474deg 80% 60% / 1);--link-a20:hsla(4.10526315789474deg 80% 60% / 0.2);--sat:89.62264150943398%;--stellar-source-color:#f44336;--text:hsla(4.10526315789474deg 50% 75% / 1);--text-p1:hsla(4.10526315789474deg 80% 80% / 1);--text-p2:hsla(4.10526315789474deg 80% 80% / 0.8);--text-p3:hsla(4.10526315789474deg 80% 80% / 0.6);--text-p4:hsla(4.10526315789474deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(4.10526315789474deg 24% 24% / var(--alpha));--theme-border:hsla(4.10526315789474deg 40% 24% / var(--alpha));--theme-codeblock:hsla(4.10526315789474deg 12% 24% / var(--alpha));--theme-mark:hsla(4.10526315789474deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='orange']{--alpha:1;--hue:24deg;--light:49.01960784313725%;--link:hsla(24deg 80% 60% / 1);--link-a20:hsla(24deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#fa6400;--text:hsla(24deg 50% 75% / 1);--text-p1:hsla(24deg 80% 80% / 1);--text-p2:hsla(24deg 80% 80% / 0.8);--text-p3:hsla(24deg 80% 80% / 0.6);--text-p4:hsla(24deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(24deg 24% 24% / var(--alpha));--theme-border:hsla(24deg 40% 24% / var(--alpha));--theme-codeblock:hsla(24deg 12% 24% / var(--alpha));--theme-mark:hsla(24deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='amber']{--alpha:1;--hue:41.32075471698113deg;--light:58.43137254901961%;--link:hsla(41.32075471698113deg 80% 60% / 1);--link-a20:hsla(41.32075471698113deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#ffbd2b;--text:hsla(41.32075471698113deg 50% 75% / 1);--text-p1:hsla(41.32075471698113deg 80% 80% / 1);--text-p2:hsla(41.32075471698113deg 80% 80% / 0.8);--text-p3:hsla(41.32075471698113deg 80% 80% / 0.6);--text-p4:hsla(41.32075471698113deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(41.32075471698113deg 24% 24% / var(--alpha));--theme-border:hsla(41.32075471698113deg 40% 24% / var(--alpha));--theme-codeblock:hsla(41.32075471698113deg 12% 24% / var(--alpha));--theme-mark:hsla(41.32075471698113deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='yellow']{--alpha:1;--hue:50.96385542168673deg;--light:67.45098039215686%;--link:hsla(50.96385542168673deg 80% 60% / 1);--link-a20:hsla(50.96385542168673deg 80% 60% / 0.2);--sat:100.00000000000003%;--stellar-source-color:#ffe659;--text:hsla(50.96385542168673deg 50% 75% / 1);--text-p1:hsla(50.96385542168673deg 80% 80% / 1);--text-p2:hsla(50.96385542168673deg 80% 80% / 0.8);--text-p3:hsla(50.96385542168673deg 80% 80% / 0.6);--text-p4:hsla(50.96385542168673deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(50.96385542168673deg 24% 24% / var(--alpha));--theme-border:hsla(50.96385542168673deg 40% 24% / var(--alpha));--theme-codeblock:hsla(50.96385542168673deg 12% 24% / var(--alpha));--theme-mark:hsla(50.96385542168673deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='green']{--alpha:1;--hue:128.38235294117646deg;--light:50.588235294117645%;--link:hsla(128.38235294117646deg 80% 60% / 1);--link-a20:hsla(128.38235294117646deg 80% 60% / 0.2);--sat:53.96825396825397%;--stellar-source-color:#3dc550;--text:hsla(128.38235294117646deg 50% 75% / 1);--text-p1:hsla(128.38235294117646deg 80% 80% / 1);--text-p2:hsla(128.38235294117646deg 80% 80% / 0.8);--text-p3:hsla(128.38235294117646deg 80% 80% / 0.6);--text-p4:hsla(128.38235294117646deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(128.38235294117646deg 24% 24% / var(--alpha));--theme-border:hsla(128.38235294117646deg 40% 24% / var(--alpha));--theme-codeblock:hsla(128.38235294117646deg 12% 24% / var(--alpha));--theme-mark:hsla(128.38235294117646deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='cyan']{--alpha:1;--hue:192.5333333333333deg;--light:54.70588235294118%;--link:hsla(192.5333333333333deg 80% 60% / 1);--link-a20:hsla(192.5333333333333deg 80% 60% / 0.2);--sat:97.40259740259742%;--stellar-source-color:#1bcdfc;--text:hsla(192.5333333333333deg 50% 75% / 1);--text-p1:hsla(192.5333333333333deg 80% 80% / 1);--text-p2:hsla(192.5333333333333deg 80% 80% / 0.8);--text-p3:hsla(192.5333333333333deg 80% 80% / 0.6);--text-p4:hsla(192.5333333333333deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192.5333333333333deg 24% 24% / var(--alpha));--theme-border:hsla(192.5333333333333deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192.5333333333333deg 12% 24% / var(--alpha));--theme-mark:hsla(192.5333333333333deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='blue']{--alpha:1;--hue:206.57142857142856deg;--light:54.11764705882353%;--link:hsla(206.57142857142856deg 80% 60% / 1);--link-a20:hsla(206.57142857142856deg 80% 60% / 0.2);--sat:89.74358974358974%;--stellar-source-color:#2196f3;--text:hsla(206.57142857142856deg 50% 75% / 1);--text-p1:hsla(206.57142857142856deg 80% 80% / 1);--text-p2:hsla(206.57142857142856deg 80% 80% / 0.8);--text-p3:hsla(206.57142857142856deg 80% 80% / 0.6);--text-p4:hsla(206.57142857142856deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(206.57142857142856deg 24% 24% / var(--alpha));--theme-border:hsla(206.57142857142856deg 40% 24% / var(--alpha));--theme-codeblock:hsla(206.57142857142856deg 12% 24% / var(--alpha));--theme-mark:hsla(206.57142857142856deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='purple']{--alpha:1;--hue:291.2408759124087deg;--light:42.15686274509804%;--link:hsla(291.2408759124087deg 80% 60% / 1);--link-a20:hsla(291.2408759124087deg 80% 60% / 0.2);--sat:63.72093023255814%;--stellar-source-color:#9c27b0;--text:hsla(291.2408759124087deg 50% 75% / 1);--text-p1:hsla(291.2408759124087deg 80% 80% / 1);--text-p2:hsla(291.2408759124087deg 80% 80% / 0.8);--text-p3:hsla(291.2408759124087deg 80% 80% / 0.6);--text-p4:hsla(291.2408759124087deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(291.2408759124087deg 24% 24% / var(--alpha));--theme-border:hsla(291.2408759124087deg 40% 24% / var(--alpha));--theme-codeblock:hsla(291.2408759124087deg 12% 24% / var(--alpha));--theme-mark:hsla(291.2408759124087deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='theme']{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='accent']{--alpha:1;--hue:14deg;--light:57%;--link:hsla(14deg 80% 60% / 1);--link-a20:hsla(14deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:hsl(14 100% 57%);--text:hsla(14deg 50% 75% / 1);--text-p1:hsla(14deg 80% 80% / 1);--text-p2:hsla(14deg 80% 80% / 0.8);--text-p3:hsla(14deg 80% 80% / 0.6);--text-p4:hsla(14deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(14deg 24% 24% / var(--alpha));--theme-border:hsla(14deg 40% 24% / var(--alpha));--theme-codeblock:hsla(14deg 12% 24% / var(--alpha));--theme-mark:hsla(14deg 50% 32% / var(--alpha));}}.colorful[color='warning']{--stellar-source-color:#ffe659;}.colorful[color='error']{--stellar-source-color:#f44336;}.tag-plugin.ds-vote .body button.vote-up{--stellar-source-color:#3dc550;}.tag-plugin.ds-vote .body button.vote-down{--stellar-source-color:#f44336;}.related-wrap#comments .cmt-title p a{--link-a20:hsl(from var(--stellar-source-color) h s l / 0.2);}.md-text .tag-plugin.copy span{background:hsl(from var(--stellar-source-color) h s l / 0.2);}body[data-article-style='story'] .md-text.content h3:not([class]):before,body[data-article-style='story'] .md-text.content h3:not([class]):after{background-color:hsl(from var(--stellar-source-color) h s l / 0.5);}body[data-article-style='story'] .md-text.content h4:not([class]):before{background:hsl(from var(--stellar-source-color) h s l / 0.3);}body[data-article-style='story'] .md-text.content h4:not([class]):hover:before{background:hsl(from var(--stellar-source-color) h s l / 1);}body[data-article-style='story'] .md-text.content>blockquote:before,.md-text.content .tag-plugin.blockquote:before,body[data-article-style='story'] .md-text.content>blockquote:after,.md-text.content .tag-plugin.blockquote:after{background-color:hsl(from var(--stellar-source-color) h s l / 0.25);}body[data-article-style='story'] .md-text.content>blockquote:hover:before,.md-text.content .tag-plugin.blockquote:hover:before,body[data-article-style='story'] .md-text.content>blockquote:hover:after,.md-text.content .tag-plugin.blockquote:hover:after{background-color:hsl(from var(--stellar-source-color) h s l / 0.5);}.highlight .code .copy-btn:hover{color:hsl(from var(--stellar-source-color) h s l / 1);}body[data-article-style='story'] .md-text.content h2:not([class]):before,body[data-article-style='story'] .md-text.content h2:not([class]):after,.post-list.topic .post-card.topic article .topic-title:before,.post-list.topic .post-card.topic article .topic-title:after{background:var(--accent);}body > .site-background{background-image:none;}body > .site-background .site-background__blur{--blur-bg:var(--bg-a75);--blur-px:100px;--blur-sat:300%;}.cmt-body .artalk,.cmt-body .atk-layer-wrap,.cmt-body .artalk.atk-dark-mode,.cmt-body .atk-layer-wrap.atk-dark-mode{--at-color-border:var(--block-border);}"
+      ],
+      "preconnect": [
+        "http://127.0.0.1:8111/path",
+        "http://127.0.0.1:8111"
+      ],
+      "inject_markers": {
+        "head_begin": true,
+        "head_end": true,
+        "body_begin": true,
+        "body_end": true
+      },
+      "contributor_edit": [
+        {
+          "class": "edit",
+          "href": "https://github.com/fixture/narrow/blob/narrow/pin-9.md"
+        }
+      ],
+      "contributor_api": [
+        {
+          "class": "ds-contributors users-wrap",
+          "api-type": "commits",
+          "data-api": "http://127.0.0.1:8113/t3-github/repos/fixture/narrow/commits?path=pin-9.md"
+        }
+      ],
+      "runtime_canonical": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://127.0.0.1:8113/blog\"}"
+      ]
+    },
+    {
+      "case": "listing-flat-classic",
+      "pin_slider_count": 0,
+      "pin_order": [],
+      "listing_cards": [
+        {
+          "href": "/post/technical",
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt"
+        },
+        {
+          "href": "/post/t3-pin-9",
+          "class": "post-card post card-hover card-hover--spotlight card-hover--tilt"
+        }
+      ],
+      "inline_style_blocks": [
+        ":root{--text-loading:\"正在加载\";--text-loading-error:\"加载失败，请稍后重试。\"}:root{--accent:#ff5724;--alpha:1;--checkbox-pointer-events:none;--code-scrollbar-width:4px;--content-align:left;--corner-shape:superellipse(1.25);--font-family-body:system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif;--font-family-code:Menlo, Monaco, Consolas, system-ui, monospace, sans-serif;--font-size-code-block:0.8125rem;--font-size-inline-code:85%;--font-size-root:16px;--font-smoothing:antialiased;--font-weight-100:100;--font-weight-200:200;--font-weight-300:300;--font-weight-400:400;--font-weight-500:500;--font-weight-600:600;--font-weight-700:700;--font-weight-800:800;--font-weight-900:900;--gradient-searchbar:linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff);--gradient-start:linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%));--hue:192deg;--light:55%;--link:hsla(207deg 90% 54% / 1);--link-a20:hsla(207deg 90% 54% / 0.2);--note-border:1px solid var(--theme-border);--radius-bar:12px;--radius-card:16px;--radius-card-l:24px;--radius-card-s:12px;--radius-image:16px;--radius-image-l:24px;--radius-image-s:8px;--sat:98%;--stellar-source-color:hsl(192 98% 55%);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);}.colorful[color='red']{--alpha:1;--hue:4.10526315789474deg;--light:58.43137254901961%;--link:hsla(4.10526315789474deg 95% 32% / 1);--link-a20:hsla(4.10526315789474deg 95% 32% / 0.2);--sat:89.62264150943398%;--stellar-source-color:#f44336;--text:hsla(4.10526315789474deg 55% 16% / 1);--text-p1:hsla(4.10526315789474deg 90% 20% / 1);--text-p2:hsla(4.10526315789474deg 90% 20% / 0.8);--text-p3:hsla(4.10526315789474deg 90% 20% / 0.6);--text-p4:hsla(4.10526315789474deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(4.10526315789474deg 90% 92% / var(--alpha));--theme-border:hsla(4.10526315789474deg 50% 80% / var(--alpha));--theme-codeblock:hsla(4.10526315789474deg 50% 95% / var(--alpha));--theme-mark:hsla(4.10526315789474deg 95% 80% / var(--alpha));}.colorful[color='orange']{--alpha:1;--hue:24deg;--light:49.01960784313725%;--link:hsla(24deg 95% 32% / 1);--link-a20:hsla(24deg 95% 32% / 0.2);--sat:100%;--stellar-source-color:#fa6400;--text:hsla(24deg 55% 16% / 1);--text-p1:hsla(24deg 90% 20% / 1);--text-p2:hsla(24deg 90% 20% / 0.8);--text-p3:hsla(24deg 90% 20% / 0.6);--text-p4:hsla(24deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(24deg 90% 92% / var(--alpha));--theme-border:hsla(24deg 50% 80% / var(--alpha));--theme-codeblock:hsla(24deg 50% 95% / var(--alpha));--theme-mark:hsla(24deg 95% 80% / var(--alpha));}.colorful[color='amber']{--alpha:1;--hue:41.32075471698113deg;--light:58.43137254901961%;--link:hsla(41.32075471698113deg 95% 32% / 1);--link-a20:hsla(41.32075471698113deg 95% 32% / 0.2);--sat:100%;--stellar-source-color:#ffbd2b;--text:hsla(41.32075471698113deg 55% 16% / 1);--text-p1:hsla(41.32075471698113deg 90% 20% / 1);--text-p2:hsla(41.32075471698113deg 90% 20% / 0.8);--text-p3:hsla(41.32075471698113deg 90% 20% / 0.6);--text-p4:hsla(41.32075471698113deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(41.32075471698113deg 90% 92% / var(--alpha));--theme-border:hsla(41.32075471698113deg 50% 80% / var(--alpha));--theme-codeblock:hsla(41.32075471698113deg 50% 95% / var(--alpha));--theme-mark:hsla(41.32075471698113deg 95% 80% / var(--alpha));}.colorful[color='yellow']{--alpha:1;--hue:50.96385542168673deg;--light:67.45098039215686%;--link:hsla(50.96385542168673deg 95% 32% / 1);--link-a20:hsla(50.96385542168673deg 95% 32% / 0.2);--sat:100.00000000000003%;--stellar-source-color:#ffe659;--text:hsla(50.96385542168673deg 55% 16% / 1);--text-p1:hsla(50.96385542168673deg 90% 20% / 1);--text-p2:hsla(50.96385542168673deg 90% 20% / 0.8);--text-p3:hsla(50.96385542168673deg 90% 20% / 0.6);--text-p4:hsla(50.96385542168673deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(50.96385542168673deg 90% 92% / var(--alpha));--theme-border:hsla(50.96385542168673deg 50% 80% / var(--alpha));--theme-codeblock:hsla(50.96385542168673deg 50% 95% / var(--alpha));--theme-mark:hsla(50.96385542168673deg 95% 80% / var(--alpha));}.colorful[color='green']{--alpha:1;--hue:128.38235294117646deg;--light:50.588235294117645%;--link:hsla(128.38235294117646deg 95% 32% / 1);--link-a20:hsla(128.38235294117646deg 95% 32% / 0.2);--sat:53.96825396825397%;--stellar-source-color:#3dc550;--text:hsla(128.38235294117646deg 55% 16% / 1);--text-p1:hsla(128.38235294117646deg 90% 20% / 1);--text-p2:hsla(128.38235294117646deg 90% 20% / 0.8);--text-p3:hsla(128.38235294117646deg 90% 20% / 0.6);--text-p4:hsla(128.38235294117646deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(128.38235294117646deg 90% 92% / var(--alpha));--theme-border:hsla(128.38235294117646deg 50% 80% / var(--alpha));--theme-codeblock:hsla(128.38235294117646deg 50% 95% / var(--alpha));--theme-mark:hsla(128.38235294117646deg 95% 80% / var(--alpha));}.colorful[color='cyan']{--alpha:1;--hue:192.5333333333333deg;--light:54.70588235294118%;--link:hsla(192.5333333333333deg 95% 32% / 1);--link-a20:hsla(192.5333333333333deg 95% 32% / 0.2);--sat:97.40259740259742%;--stellar-source-color:#1bcdfc;--text:hsla(192.5333333333333deg 55% 16% / 1);--text-p1:hsla(192.5333333333333deg 90% 20% / 1);--text-p2:hsla(192.5333333333333deg 90% 20% / 0.8);--text-p3:hsla(192.5333333333333deg 90% 20% / 0.6);--text-p4:hsla(192.5333333333333deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192.5333333333333deg 90% 92% / var(--alpha));--theme-border:hsla(192.5333333333333deg 50% 80% / var(--alpha));--theme-codeblock:hsla(192.5333333333333deg 50% 95% / var(--alpha));--theme-mark:hsla(192.5333333333333deg 95% 80% / var(--alpha));}.colorful[color='blue']{--alpha:1;--hue:206.57142857142856deg;--light:54.11764705882353%;--link:hsla(206.57142857142856deg 95% 32% / 1);--link-a20:hsla(206.57142857142856deg 95% 32% / 0.2);--sat:89.74358974358974%;--stellar-source-color:#2196f3;--text:hsla(206.57142857142856deg 55% 16% / 1);--text-p1:hsla(206.57142857142856deg 90% 20% / 1);--text-p2:hsla(206.57142857142856deg 90% 20% / 0.8);--text-p3:hsla(206.57142857142856deg 90% 20% / 0.6);--text-p4:hsla(206.57142857142856deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(206.57142857142856deg 90% 92% / var(--alpha));--theme-border:hsla(206.57142857142856deg 50% 80% / var(--alpha));--theme-codeblock:hsla(206.57142857142856deg 50% 95% / var(--alpha));--theme-mark:hsla(206.57142857142856deg 95% 80% / var(--alpha));}.colorful[color='purple']{--alpha:1;--hue:291.2408759124087deg;--light:42.15686274509804%;--link:hsla(291.2408759124087deg 95% 32% / 1);--link-a20:hsla(291.2408759124087deg 95% 32% / 0.2);--sat:63.72093023255814%;--stellar-source-color:#9c27b0;--text:hsla(291.2408759124087deg 55% 16% / 1);--text-p1:hsla(291.2408759124087deg 90% 20% / 1);--text-p2:hsla(291.2408759124087deg 90% 20% / 0.8);--text-p3:hsla(291.2408759124087deg 90% 20% / 0.6);--text-p4:hsla(291.2408759124087deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(291.2408759124087deg 90% 92% / var(--alpha));--theme-border:hsla(291.2408759124087deg 50% 80% / var(--alpha));--theme-codeblock:hsla(291.2408759124087deg 50% 95% / var(--alpha));--theme-mark:hsla(291.2408759124087deg 95% 80% / var(--alpha));}.colorful[color='theme']{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 95% 32% / 1);--link-a20:hsla(192deg 95% 32% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 55% 16% / 1);--text-p1:hsla(192deg 90% 20% / 1);--text-p2:hsla(192deg 90% 20% / 0.8);--text-p3:hsla(192deg 90% 20% / 0.6);--text-p4:hsla(192deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 90% 92% / var(--alpha));--theme-border:hsla(192deg 50% 80% / var(--alpha));--theme-codeblock:hsla(192deg 50% 95% / var(--alpha));--theme-mark:hsla(192deg 95% 80% / var(--alpha));}.colorful[color='accent']{--alpha:1;--hue:14deg;--light:57%;--link:hsla(14deg 95% 32% / 1);--link-a20:hsla(14deg 95% 32% / 0.2);--sat:100%;--stellar-source-color:hsl(14 100% 57%);--text:hsla(14deg 55% 16% / 1);--text-p1:hsla(14deg 90% 20% / 1);--text-p2:hsla(14deg 90% 20% / 0.8);--text-p3:hsla(14deg 90% 20% / 0.6);--text-p4:hsla(14deg 90% 20% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(14deg 90% 92% / var(--alpha));--theme-border:hsla(14deg 50% 80% / var(--alpha));--theme-codeblock:hsla(14deg 50% 95% / var(--alpha));--theme-mark:hsla(14deg 95% 80% / var(--alpha));}:root[data-theme='dark'] .tag-plugin.tag{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='red']{--alpha:1;--hue:4.10526315789474deg;--light:58.43137254901961%;--link:hsla(4.10526315789474deg 80% 60% / 1);--link-a20:hsla(4.10526315789474deg 80% 60% / 0.2);--sat:89.62264150943398%;--stellar-source-color:#f44336;--text:hsla(4.10526315789474deg 50% 75% / 1);--text-p1:hsla(4.10526315789474deg 80% 80% / 1);--text-p2:hsla(4.10526315789474deg 80% 80% / 0.8);--text-p3:hsla(4.10526315789474deg 80% 80% / 0.6);--text-p4:hsla(4.10526315789474deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(4.10526315789474deg 24% 24% / var(--alpha));--theme-border:hsla(4.10526315789474deg 40% 24% / var(--alpha));--theme-codeblock:hsla(4.10526315789474deg 12% 24% / var(--alpha));--theme-mark:hsla(4.10526315789474deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='orange']{--alpha:1;--hue:24deg;--light:49.01960784313725%;--link:hsla(24deg 80% 60% / 1);--link-a20:hsla(24deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#fa6400;--text:hsla(24deg 50% 75% / 1);--text-p1:hsla(24deg 80% 80% / 1);--text-p2:hsla(24deg 80% 80% / 0.8);--text-p3:hsla(24deg 80% 80% / 0.6);--text-p4:hsla(24deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(24deg 24% 24% / var(--alpha));--theme-border:hsla(24deg 40% 24% / var(--alpha));--theme-codeblock:hsla(24deg 12% 24% / var(--alpha));--theme-mark:hsla(24deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='amber']{--alpha:1;--hue:41.32075471698113deg;--light:58.43137254901961%;--link:hsla(41.32075471698113deg 80% 60% / 1);--link-a20:hsla(41.32075471698113deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#ffbd2b;--text:hsla(41.32075471698113deg 50% 75% / 1);--text-p1:hsla(41.32075471698113deg 80% 80% / 1);--text-p2:hsla(41.32075471698113deg 80% 80% / 0.8);--text-p3:hsla(41.32075471698113deg 80% 80% / 0.6);--text-p4:hsla(41.32075471698113deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(41.32075471698113deg 24% 24% / var(--alpha));--theme-border:hsla(41.32075471698113deg 40% 24% / var(--alpha));--theme-codeblock:hsla(41.32075471698113deg 12% 24% / var(--alpha));--theme-mark:hsla(41.32075471698113deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='yellow']{--alpha:1;--hue:50.96385542168673deg;--light:67.45098039215686%;--link:hsla(50.96385542168673deg 80% 60% / 1);--link-a20:hsla(50.96385542168673deg 80% 60% / 0.2);--sat:100.00000000000003%;--stellar-source-color:#ffe659;--text:hsla(50.96385542168673deg 50% 75% / 1);--text-p1:hsla(50.96385542168673deg 80% 80% / 1);--text-p2:hsla(50.96385542168673deg 80% 80% / 0.8);--text-p3:hsla(50.96385542168673deg 80% 80% / 0.6);--text-p4:hsla(50.96385542168673deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(50.96385542168673deg 24% 24% / var(--alpha));--theme-border:hsla(50.96385542168673deg 40% 24% / var(--alpha));--theme-codeblock:hsla(50.96385542168673deg 12% 24% / var(--alpha));--theme-mark:hsla(50.96385542168673deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='green']{--alpha:1;--hue:128.38235294117646deg;--light:50.588235294117645%;--link:hsla(128.38235294117646deg 80% 60% / 1);--link-a20:hsla(128.38235294117646deg 80% 60% / 0.2);--sat:53.96825396825397%;--stellar-source-color:#3dc550;--text:hsla(128.38235294117646deg 50% 75% / 1);--text-p1:hsla(128.38235294117646deg 80% 80% / 1);--text-p2:hsla(128.38235294117646deg 80% 80% / 0.8);--text-p3:hsla(128.38235294117646deg 80% 80% / 0.6);--text-p4:hsla(128.38235294117646deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(128.38235294117646deg 24% 24% / var(--alpha));--theme-border:hsla(128.38235294117646deg 40% 24% / var(--alpha));--theme-codeblock:hsla(128.38235294117646deg 12% 24% / var(--alpha));--theme-mark:hsla(128.38235294117646deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='cyan']{--alpha:1;--hue:192.5333333333333deg;--light:54.70588235294118%;--link:hsla(192.5333333333333deg 80% 60% / 1);--link-a20:hsla(192.5333333333333deg 80% 60% / 0.2);--sat:97.40259740259742%;--stellar-source-color:#1bcdfc;--text:hsla(192.5333333333333deg 50% 75% / 1);--text-p1:hsla(192.5333333333333deg 80% 80% / 1);--text-p2:hsla(192.5333333333333deg 80% 80% / 0.8);--text-p3:hsla(192.5333333333333deg 80% 80% / 0.6);--text-p4:hsla(192.5333333333333deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192.5333333333333deg 24% 24% / var(--alpha));--theme-border:hsla(192.5333333333333deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192.5333333333333deg 12% 24% / var(--alpha));--theme-mark:hsla(192.5333333333333deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='blue']{--alpha:1;--hue:206.57142857142856deg;--light:54.11764705882353%;--link:hsla(206.57142857142856deg 80% 60% / 1);--link-a20:hsla(206.57142857142856deg 80% 60% / 0.2);--sat:89.74358974358974%;--stellar-source-color:#2196f3;--text:hsla(206.57142857142856deg 50% 75% / 1);--text-p1:hsla(206.57142857142856deg 80% 80% / 1);--text-p2:hsla(206.57142857142856deg 80% 80% / 0.8);--text-p3:hsla(206.57142857142856deg 80% 80% / 0.6);--text-p4:hsla(206.57142857142856deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(206.57142857142856deg 24% 24% / var(--alpha));--theme-border:hsla(206.57142857142856deg 40% 24% / var(--alpha));--theme-codeblock:hsla(206.57142857142856deg 12% 24% / var(--alpha));--theme-mark:hsla(206.57142857142856deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='purple']{--alpha:1;--hue:291.2408759124087deg;--light:42.15686274509804%;--link:hsla(291.2408759124087deg 80% 60% / 1);--link-a20:hsla(291.2408759124087deg 80% 60% / 0.2);--sat:63.72093023255814%;--stellar-source-color:#9c27b0;--text:hsla(291.2408759124087deg 50% 75% / 1);--text-p1:hsla(291.2408759124087deg 80% 80% / 1);--text-p2:hsla(291.2408759124087deg 80% 80% / 0.8);--text-p3:hsla(291.2408759124087deg 80% 80% / 0.6);--text-p4:hsla(291.2408759124087deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(291.2408759124087deg 24% 24% / var(--alpha));--theme-border:hsla(291.2408759124087deg 40% 24% / var(--alpha));--theme-codeblock:hsla(291.2408759124087deg 12% 24% / var(--alpha));--theme-mark:hsla(291.2408759124087deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='theme']{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root[data-theme='dark'] .colorful[color='accent']{--alpha:1;--hue:14deg;--light:57%;--link:hsla(14deg 80% 60% / 1);--link-a20:hsla(14deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:hsl(14 100% 57%);--text:hsla(14deg 50% 75% / 1);--text-p1:hsla(14deg 80% 80% / 1);--text-p2:hsla(14deg 80% 80% / 0.8);--text-p3:hsla(14deg 80% 80% / 0.6);--text-p4:hsla(14deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(14deg 24% 24% / var(--alpha));--theme-border:hsla(14deg 40% 24% / var(--alpha));--theme-codeblock:hsla(14deg 12% 24% / var(--alpha));--theme-mark:hsla(14deg 50% 32% / var(--alpha));}@media (prefers-color-scheme:dark){:root:not([data-theme]) .tag-plugin.tag{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='red']{--alpha:1;--hue:4.10526315789474deg;--light:58.43137254901961%;--link:hsla(4.10526315789474deg 80% 60% / 1);--link-a20:hsla(4.10526315789474deg 80% 60% / 0.2);--sat:89.62264150943398%;--stellar-source-color:#f44336;--text:hsla(4.10526315789474deg 50% 75% / 1);--text-p1:hsla(4.10526315789474deg 80% 80% / 1);--text-p2:hsla(4.10526315789474deg 80% 80% / 0.8);--text-p3:hsla(4.10526315789474deg 80% 80% / 0.6);--text-p4:hsla(4.10526315789474deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(4.10526315789474deg 24% 24% / var(--alpha));--theme-border:hsla(4.10526315789474deg 40% 24% / var(--alpha));--theme-codeblock:hsla(4.10526315789474deg 12% 24% / var(--alpha));--theme-mark:hsla(4.10526315789474deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='orange']{--alpha:1;--hue:24deg;--light:49.01960784313725%;--link:hsla(24deg 80% 60% / 1);--link-a20:hsla(24deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#fa6400;--text:hsla(24deg 50% 75% / 1);--text-p1:hsla(24deg 80% 80% / 1);--text-p2:hsla(24deg 80% 80% / 0.8);--text-p3:hsla(24deg 80% 80% / 0.6);--text-p4:hsla(24deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(24deg 24% 24% / var(--alpha));--theme-border:hsla(24deg 40% 24% / var(--alpha));--theme-codeblock:hsla(24deg 12% 24% / var(--alpha));--theme-mark:hsla(24deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='amber']{--alpha:1;--hue:41.32075471698113deg;--light:58.43137254901961%;--link:hsla(41.32075471698113deg 80% 60% / 1);--link-a20:hsla(41.32075471698113deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:#ffbd2b;--text:hsla(41.32075471698113deg 50% 75% / 1);--text-p1:hsla(41.32075471698113deg 80% 80% / 1);--text-p2:hsla(41.32075471698113deg 80% 80% / 0.8);--text-p3:hsla(41.32075471698113deg 80% 80% / 0.6);--text-p4:hsla(41.32075471698113deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(41.32075471698113deg 24% 24% / var(--alpha));--theme-border:hsla(41.32075471698113deg 40% 24% / var(--alpha));--theme-codeblock:hsla(41.32075471698113deg 12% 24% / var(--alpha));--theme-mark:hsla(41.32075471698113deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='yellow']{--alpha:1;--hue:50.96385542168673deg;--light:67.45098039215686%;--link:hsla(50.96385542168673deg 80% 60% / 1);--link-a20:hsla(50.96385542168673deg 80% 60% / 0.2);--sat:100.00000000000003%;--stellar-source-color:#ffe659;--text:hsla(50.96385542168673deg 50% 75% / 1);--text-p1:hsla(50.96385542168673deg 80% 80% / 1);--text-p2:hsla(50.96385542168673deg 80% 80% / 0.8);--text-p3:hsla(50.96385542168673deg 80% 80% / 0.6);--text-p4:hsla(50.96385542168673deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(50.96385542168673deg 24% 24% / var(--alpha));--theme-border:hsla(50.96385542168673deg 40% 24% / var(--alpha));--theme-codeblock:hsla(50.96385542168673deg 12% 24% / var(--alpha));--theme-mark:hsla(50.96385542168673deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='green']{--alpha:1;--hue:128.38235294117646deg;--light:50.588235294117645%;--link:hsla(128.38235294117646deg 80% 60% / 1);--link-a20:hsla(128.38235294117646deg 80% 60% / 0.2);--sat:53.96825396825397%;--stellar-source-color:#3dc550;--text:hsla(128.38235294117646deg 50% 75% / 1);--text-p1:hsla(128.38235294117646deg 80% 80% / 1);--text-p2:hsla(128.38235294117646deg 80% 80% / 0.8);--text-p3:hsla(128.38235294117646deg 80% 80% / 0.6);--text-p4:hsla(128.38235294117646deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(128.38235294117646deg 24% 24% / var(--alpha));--theme-border:hsla(128.38235294117646deg 40% 24% / var(--alpha));--theme-codeblock:hsla(128.38235294117646deg 12% 24% / var(--alpha));--theme-mark:hsla(128.38235294117646deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='cyan']{--alpha:1;--hue:192.5333333333333deg;--light:54.70588235294118%;--link:hsla(192.5333333333333deg 80% 60% / 1);--link-a20:hsla(192.5333333333333deg 80% 60% / 0.2);--sat:97.40259740259742%;--stellar-source-color:#1bcdfc;--text:hsla(192.5333333333333deg 50% 75% / 1);--text-p1:hsla(192.5333333333333deg 80% 80% / 1);--text-p2:hsla(192.5333333333333deg 80% 80% / 0.8);--text-p3:hsla(192.5333333333333deg 80% 80% / 0.6);--text-p4:hsla(192.5333333333333deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192.5333333333333deg 24% 24% / var(--alpha));--theme-border:hsla(192.5333333333333deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192.5333333333333deg 12% 24% / var(--alpha));--theme-mark:hsla(192.5333333333333deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='blue']{--alpha:1;--hue:206.57142857142856deg;--light:54.11764705882353%;--link:hsla(206.57142857142856deg 80% 60% / 1);--link-a20:hsla(206.57142857142856deg 80% 60% / 0.2);--sat:89.74358974358974%;--stellar-source-color:#2196f3;--text:hsla(206.57142857142856deg 50% 75% / 1);--text-p1:hsla(206.57142857142856deg 80% 80% / 1);--text-p2:hsla(206.57142857142856deg 80% 80% / 0.8);--text-p3:hsla(206.57142857142856deg 80% 80% / 0.6);--text-p4:hsla(206.57142857142856deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(206.57142857142856deg 24% 24% / var(--alpha));--theme-border:hsla(206.57142857142856deg 40% 24% / var(--alpha));--theme-codeblock:hsla(206.57142857142856deg 12% 24% / var(--alpha));--theme-mark:hsla(206.57142857142856deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='purple']{--alpha:1;--hue:291.2408759124087deg;--light:42.15686274509804%;--link:hsla(291.2408759124087deg 80% 60% / 1);--link-a20:hsla(291.2408759124087deg 80% 60% / 0.2);--sat:63.72093023255814%;--stellar-source-color:#9c27b0;--text:hsla(291.2408759124087deg 50% 75% / 1);--text-p1:hsla(291.2408759124087deg 80% 80% / 1);--text-p2:hsla(291.2408759124087deg 80% 80% / 0.8);--text-p3:hsla(291.2408759124087deg 80% 80% / 0.6);--text-p4:hsla(291.2408759124087deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(291.2408759124087deg 24% 24% / var(--alpha));--theme-border:hsla(291.2408759124087deg 40% 24% / var(--alpha));--theme-codeblock:hsla(291.2408759124087deg 12% 24% / var(--alpha));--theme-mark:hsla(291.2408759124087deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='theme']{--alpha:1;--hue:192deg;--light:55%;--link:hsla(192deg 80% 60% / 1);--link-a20:hsla(192deg 80% 60% / 0.2);--sat:98%;--stellar-source-color:hsl(192 98% 55%);--text:hsla(192deg 50% 75% / 1);--text-p1:hsla(192deg 80% 80% / 1);--text-p2:hsla(192deg 80% 80% / 0.8);--text-p3:hsla(192deg 80% 80% / 0.6);--text-p4:hsla(192deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(192deg 24% 24% / var(--alpha));--theme-border:hsla(192deg 40% 24% / var(--alpha));--theme-codeblock:hsla(192deg 12% 24% / var(--alpha));--theme-mark:hsla(192deg 50% 32% / var(--alpha));}:root:not([data-theme]) .colorful[color='accent']{--alpha:1;--hue:14deg;--light:57%;--link:hsla(14deg 80% 60% / 1);--link-a20:hsla(14deg 80% 60% / 0.2);--sat:100%;--stellar-source-color:hsl(14 100% 57%);--text:hsla(14deg 50% 75% / 1);--text-p1:hsla(14deg 80% 80% / 1);--text-p2:hsla(14deg 80% 80% / 0.8);--text-p3:hsla(14deg 80% 80% / 0.6);--text-p4:hsla(14deg 80% 80% / 0.4);--theme:hsla(var(--hue) var(--sat) var(--light) / 1);--theme-a10:hsla(var(--hue) var(--sat) var(--light) / 0.1);--theme-a20:hsla(var(--hue) var(--sat) var(--light) / 0.2);--theme-a30:hsla(var(--hue) var(--sat) var(--light) / 0.3);--theme-block:hsla(14deg 24% 24% / var(--alpha));--theme-border:hsla(14deg 40% 24% / var(--alpha));--theme-codeblock:hsla(14deg 12% 24% / var(--alpha));--theme-mark:hsla(14deg 50% 32% / var(--alpha));}}.colorful[color='warning']{--stellar-source-color:#ffe659;}.colorful[color='error']{--stellar-source-color:#f44336;}.tag-plugin.ds-vote .body button.vote-up{--stellar-source-color:#3dc550;}.tag-plugin.ds-vote .body button.vote-down{--stellar-source-color:#f44336;}.related-wrap#comments .cmt-title p a{--link-a20:hsl(from var(--stellar-source-color) h s l / 0.2);}.md-text .tag-plugin.copy span{background:hsl(from var(--stellar-source-color) h s l / 0.2);}body[data-article-style='story'] .md-text.content h3:not([class]):before,body[data-article-style='story'] .md-text.content h3:not([class]):after{background-color:hsl(from var(--stellar-source-color) h s l / 0.5);}body[data-article-style='story'] .md-text.content h4:not([class]):before{background:hsl(from var(--stellar-source-color) h s l / 0.3);}body[data-article-style='story'] .md-text.content h4:not([class]):hover:before{background:hsl(from var(--stellar-source-color) h s l / 1);}body[data-article-style='story'] .md-text.content>blockquote:before,.md-text.content .tag-plugin.blockquote:before,body[data-article-style='story'] .md-text.content>blockquote:after,.md-text.content .tag-plugin.blockquote:after{background-color:hsl(from var(--stellar-source-color) h s l / 0.25);}body[data-article-style='story'] .md-text.content>blockquote:hover:before,.md-text.content .tag-plugin.blockquote:hover:before,body[data-article-style='story'] .md-text.content>blockquote:hover:after,.md-text.content .tag-plugin.blockquote:hover:after{background-color:hsl(from var(--stellar-source-color) h s l / 0.5);}.highlight .code .copy-btn:hover{color:hsl(from var(--stellar-source-color) h s l / 1);}body[data-article-style='story'] .md-text.content h2:not([class]):before,body[data-article-style='story'] .md-text.content h2:not([class]):after,.post-list.topic .post-card.topic article .topic-title:before,.post-list.topic .post-card.topic article .topic-title:after{background:var(--accent);}body > .site-background{background-image:none;}body > .site-background .site-background__blur{--blur-bg:var(--bg-a75);--blur-px:100px;--blur-sat:300%;}.cmt-body .artalk,.cmt-body .atk-layer-wrap,.cmt-body .artalk.atk-dark-mode,.cmt-body .atk-layer-wrap.atk-dark-mode{--at-color-border:var(--block-border);}"
+      ],
+      "preconnect": [
+        "http://127.0.0.1:8111/path",
+        "http://127.0.0.1:8111"
+      ],
+      "inject_markers": {
+        "head_begin": true,
+        "head_end": true,
+        "body_begin": true,
+        "body_end": true
+      },
+      "contributor_edit": [
+        {
+          "class": "edit",
+          "href": "https://github.com/fixture/narrow/blob/narrow/pin-9.md"
+        }
+      ],
+      "contributor_api": [
+        {
+          "class": "ds-contributors users-wrap",
+          "api-type": "commits",
+          "data-api": "http://127.0.0.1:8113/t3-github/repos/fixture/narrow/commits?path=pin-9.md"
+        }
+      ],
+      "runtime_canonical": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://127.0.0.1:8113/blog\"}"
+      ]
+    },
+    {
+      "case": "page-inject",
+      "browser_verified": false,
+      "status": "blocked by normalized Page reparsing; candidate retained"
+    },
+    {
+      "case": "notebook-route",
+      "path": "/notebooks",
+      "status": 200,
+      "notebook_links": [
+        "/journal",
+        "/reading"
+      ],
+      "tagtree_nodes": [],
+      "sha256": "21d25133ceada1e7c46336d2a562ad3966427e24760295d5b4e8fc275df2daee"
+    },
+    {
+      "case": "notebook-route",
+      "path": "/journal",
+      "status": 200,
+      "notebook_links": [
+        "/journal",
+        "/journal/tags/技术",
+        "/journal/tags/技术/go",
+        "/journal/tags/技术/go/ssr",
+        "/journal/tags/生活",
+        "/journal/tags/生活/阅读",
+        "/journal/beta",
+        "/journal/alpha",
+        "/journal/alpha",
+        "/journal/page/2/",
+        "/journal/page/2/"
+      ],
+      "tagtree_nodes": [],
+      "sha256": "1c40899d21e8aa443a9c3c26bd72cb46e10e6201d9507e65c06922f8cae360e9"
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading",
+      "status": 200,
+      "notebook_links": [
+        "/reading",
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading/alpha",
+        "/reading/beta"
+      ],
+      "tagtree_nodes": [],
+      "sha256": "bb99a0a195d43c5ffbed0e612eb050be5e03cd18486044dd6cab6e743aef1aaa"
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading/alpha",
+      "status": 200,
+      "notebook_links": [
+        "/reading/",
+        "/reading",
+        "/reading/beta",
+        "/reading/alpha",
+        "/reading"
+      ],
+      "tagtree_nodes": [],
+      "sha256": "07ac794e66e0bca1e2692f0ce48ada28f08642ea3a4e94b3ece9808665e712e5"
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading/tags/技术/go/ssr",
+      "status": 200,
+      "notebook_links": [
+        "/reading",
+        "/reading/beta",
+        "/reading/alpha"
+      ],
+      "tagtree_nodes": [],
+      "sha256": "399167eaa768e574cf67df8a2b6510487c9cd9172dff15a1c858440377e61472"
+    },
+    {
+      "case": "notebook-route",
+      "path": "/reading/tags/生活/阅读/书评",
+      "status": 200,
+      "notebook_links": [
+        "/reading",
+        "/reading/beta",
+        "/reading/alpha"
+      ],
+      "tagtree_nodes": [],
+      "sha256": "48875117b0d77ad0b0d356aea032850f30a0f7eb0791f330ab3fc1b1345270d4"
+    },
+    {
+      "case": "allowed-host-http",
+      "host": "127.0.0.1:8113",
+      "status": 200,
+      "canonical_config": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://127.0.0.1:8113/post/t3-pin-9\"}"
+      ],
+      "browser_tip_verified": false
+    },
+    {
+      "case": "allowed-host-http",
+      "host": "t3-mirror.test",
+      "status": 200,
+      "canonical_config": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://t3-mirror.test/post/t3-pin-9\"}"
+      ],
+      "browser_tip_verified": false
+    },
+    {
+      "case": "allowed-host-http",
+      "host": "unlisted-t3.test",
+      "status": 200,
+      "canonical_config": [
+        "\"canonical\":{\"allowedHosts\":[\"localhost\",\"127.0.0.1\",\"t3-mirror.test\"],\"encoded\":\"MTI3LjAuMC4x\",\"host\":\"127.0.0.1\",\"param\":{\"checklink\":\"/assets/js/plugins/video.js\",\"permalink\":\"http://unlisted-t3.test/post/t3-pin-9\"}"
+      ],
+      "browser_tip_verified": false
+    }
+  ],
+  "configuration_handoff": "carousel/hero cover_ratio=2.4; baseline preserved in cases; no further writes after handoff",
+  "notebook_fixture_note": "Tags are explicit raw upstream stellar_config.tags; the legacy host tags field alone is not used as an implicit compatibility source. Both leftbar default and explicit rightbar tagtree are visible."
+}

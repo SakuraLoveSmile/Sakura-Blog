@@ -19,10 +19,13 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
-      # vet/test/编译验证不需要真实前端产物，占位文件即可。
-      - name: Stub modules/console/web/dist for go:embed
-        run: mkdir -p modules/console/web/dist && echo '<!doctype html>' > modules/console/web/dist/index.html
+      # modules/console/web/embed.go 的 //go:embed all:dist 与 all:dist-uc 编译期要求非空；
+      # vet/test 不需要真实前端产物，占位文件即可；cmd/blog 的 /uc/ 挂载用例需要 dist-uc/uc.html。
+      - name: Stub Console and User Center dist for go:embed
+        run: |
+          mkdir -p modules/console/web/dist modules/console/web/dist-uc
+          echo '<!doctype html>' > modules/console/web/dist/index.html
+          echo '<!doctype html>' > modules/console/web/dist-uc/uc.html
 
       - name: Check Go formatting
         run: test -z "$(gofmt -l .)"
@@ -192,6 +195,17 @@ jobs:
 
       - name: Build binary (embed real modules/console/web dist)
         run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o blog ./cmd/blog
+
+  # 镜像门禁：Dockerfile 只在打 tag 时由 docker-release.yml 构建，破坏会等到发布才暴露。
+  # 在晋级 release 的 PR 上提前构建（不推送），与 release-source 同一触发条件。
+  image:
+    if: github.event_name == 'pull_request' && github.base_ref == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release image without pushing
+        run: docker build --file Dockerfile --tag sakura-blog:ci .
 
   # release 只能由 main 晋级；该检查只在目标分支为 release 的 PR 上运行。
   release-source:

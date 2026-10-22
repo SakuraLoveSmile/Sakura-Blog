@@ -297,7 +297,7 @@ function openCategory(name: string) {
         <div
           v-for="(a, i) in arcs"
           :key="i"
-          class="p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] transition-all cursor-pointer"
+          class="p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] transition-colors duration-150 cursor-pointer"
           :class="hoveredIdx === i && 'ring-1 ring-primary/50 border-primary/30'"
           role="button"
           tabindex="0"
@@ -315,7 +315,7 @@ function openCategory(name: string) {
             <span class="text-muted-foreground font-semibold tabular-nums flex-shrink-0">{{ a.count }} 篇 · {{ a.pct }}%</span>
           </div>
           <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-300" :style="{ width: `${a.pct}%`, backgroundColor: a.color, boxShadow: `0 0 4px ${a.color}` }" />
+            <div class="h-full rounded-full transition-colors duration-150 duration-300" :style="{ width: `${a.pct}%`, backgroundColor: a.color, boxShadow: `0 0 4px ${a.color}` }" />
           </div>
         </div>
       </div>

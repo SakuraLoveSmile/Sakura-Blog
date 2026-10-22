@@ -1,0 +1,102 @@
+{
+  "strands": {
+    "module": "/js/runtime/hero-effects/strands.js",
+    "defaults": {
+      "colors": [
+        "#F97316",
+        "#7C3AED",
+        "#06B6D4"
+      ],
+      "count": 3,
+      "speed": 0.5,
+      "amplitude": 1,
+      "waviness": 1,
+      "thickness": 0.7,
+      "glow": 2.6,
+      "taper": 3,
+      "spread": 1,
+      "hueShift": 0,
+      "intensity": 0.6,
+      "saturation": 1.5,
+      "opacity": 1,
+      "scale": 1.5,
+      "glass": false,
+      "refraction": 1,
+      "dispersion": 1,
+      "glassSize": 1
+    }
+  },
+  "galaxy": {
+    "module": "/js/runtime/hero-effects/galaxy.js",
+    "defaults": {
+      "focal": [
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        1,
+        0
+      ],
+      "starSpeed": 2,
+      "density": 2,
+      "hueShift": 140,
+      "disableAnimation": false,
+      "speed": 0.5,
+      "mouseInteraction": true,
+      "glowIntensity": 0.2,
+      "saturation": 0.1,
+      "mouseRepulsion": true,
+      "twinkleIntensity": 0.1,
+      "rotationSpeed": 0.1,
+      "repulsionStrength": 0.1,
+      "autoCenterRepulsion": 0,
+      "transparent": true
+    }
+  },
+  "light-rays": {
+    "module": "/js/runtime/hero-effects/light-rays.js",
+    "defaults": {
+      "raysOrigin": "top-center",
+      "raysColor": "#ffffff",
+      "raysSpeed": 1,
+      "lightSpread": 0.5,
+      "rayLength": 3,
+      "pulsating": false,
+      "fadeDistance": 1,
+      "saturation": 1,
+      "followMouse": true,
+      "mouseInfluence": 0.1,
+      "noiseAmount": 0,
+      "distortion": 0,
+      "lightMode": false
+    }
+  },
+  "ferrofluid": {
+    "module": "/js/runtime/hero-effects/ferrofluid.js",
+    "defaults": {
+      "colors": [
+        "#ffffff",
+        "#ffffff",
+        "#ffffff"
+      ],
+      "backgroundColor": "#03010A",
+      "speed": 0.5,
+      "scale": 1.6,
+      "turbulence": 1,
+      "fluidity": 0.1,
+      "rimWidth": 0.2,
+      "sharpness": 2.5,
+      "shimmer": 1.5,
+      "glow": 2,
+      "flowDirection": "down",
+      "opacity": 1,
+      "mouseInteraction": true,
+      "mouseStrength": 1,
+      "mouseRadius": 0.35,
+      "mouseDampening": 0.15,
+      "paused": false,
+      "dpr": null,
+      "mixBlendMode": null
+    }
+  }
+}

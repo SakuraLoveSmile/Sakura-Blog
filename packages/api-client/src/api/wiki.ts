@@ -1,5 +1,5 @@
 import { http } from "../transport";
-import type { WikiDocPayload } from "./contracts";
+import type { StellarContentMetadata, WikiDocPayload } from "./contracts";
 
 // --- Wiki 项目与文档（Spec 35a） ---
 export interface WikiHeroPreview {
@@ -29,7 +29,7 @@ export interface WikiHero {
   actions?: WikiHeroAction[];
 }
 
-export interface WikiProject {
+export interface WikiProject extends StellarContentMetadata {
   id: string;
   name: string;
   title: string;

@@ -1,0 +1,16 @@
+{
+  "head": "c161a63",
+  "expected": [
+    {
+      "buttons": 1,
+      "text": "package main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"T5_COPYCODE_ALPHA\")\n}\n"
+    },
+    {
+      "buttons": 1,
+      "text": "printf '%s\\n' 'T5_COPYCODE_BETA'\n"
+    }
+  ],
+  "clipboard": "package main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"T5_COPYCODE_ALPHA\")\n}\n",
+  "exact": true,
+  "method": "native coordinate click on hover-only official button; browser clipboard read; original clipboard restored"
+}

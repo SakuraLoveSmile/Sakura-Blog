@@ -40,7 +40,8 @@ test("UC 401 清空身份并提示重新登录，不被守卫跳回文章页", a
   await page.getByLabel("密码", { exact: true }).fill("e2e-author-password");
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(page).toHaveURL(/\/uc\/posts/);
-  await page.route("**/api/v1/profile", (route) => route.fulfill({ status: 401, json: { error: "未认证" } }));
+  // UC 资料页读取 /uc/profile（packages/api-client ucProfileApi），不是 Console 的 /profile。
+  await page.route("**/api/v1/uc/profile", (route) => route.fulfill({ status: 401, json: { error: "未认证" } }));
   await page.getByRole("link", { name: "资料", exact: true }).click();
   await expect(page).toHaveURL(/\/uc\/login/);
   await expect(page.getByText("登录已过期，请重新登录。", { exact: true })).toBeVisible();

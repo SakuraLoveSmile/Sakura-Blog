@@ -1,0 +1,19 @@
+{
+  "source_commit": "fe7246d05e2e08a429f723f77b3d0e4c1c1fa01c",
+  "normal_hook_exit_code": 0,
+  "feature_merge_check_exit_code": 0,
+  "dev_combination_test_exit_code": 0,
+  "dev_real_build_exit_code": 0,
+  "console_tests": 261,
+  "stellar_tests": 213,
+  "failures": 0,
+  "skips": 0,
+  "go_vet": true,
+  "staticcheck": true,
+  "go_tests_all": true,
+  "runtime_binding": "resume-native-comment-dev-runtime-binding.json",
+  "browser_evidence": "resume-native-comment-dev-browser.json",
+  "real_source_migrated": false,
+  "pushed": false,
+  "deployed": false
+}

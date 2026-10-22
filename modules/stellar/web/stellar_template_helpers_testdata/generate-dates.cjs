@@ -1,0 +1,5 @@
+/* Development-only differential fixture: Moment 2.31.0 used by Hexo 8.0.0. */
+const fs=require('fs'),moment=require('moment');require('moment/locale/zh-cn');require('moment/locale/zh-tw');
+const dates=['2025-03-04T11:30:25.123+08:00','2025-03-04T00:01:02.090Z','2020-12-31T23:59:59.001Z','2021-01-01T10:00:00Z','2021-12-31T18:00:00Z','2022-01-01T18:00:00Z','2019-12-29T18:00:00Z'];
+const formats=['YYYY-MM-DD','dddd, MMMM Do YYYY','L LL LLL LLLL LT LTS l ll lll llll','Y YY YYYY M MM MMM MMMM Mo Q Qo D DD Do DDD DDDD DDDo d dd ddd dddd do e E','W WW Wo w ww wo GGGG GG gggg gg','H HH h hh k kk m mm s ss S SS SSS SSSS SSSSSSSSS A a Z ZZ z zz X x','[literal YYYY] \\Y [2025] HH:mm:ss'];let cases=[];for(const value of dates)for(const locale of ['en','zh-CN','zh-TW'])for(const format of formats){cases.push({value,locale,format,want:moment.parseZone(value).locale(locale).format(format)})}
+fs.writeFileSync('modules/stellar/web/stellar_template_helpers_testdata/dates.json',JSON.stringify({moment:moment.version,cases},null,2)+'\n');

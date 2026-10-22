@@ -506,7 +506,7 @@ function formatMimeBadge(mime: string): string {
         <VCard class="w-full lg:w-[260px] shrink-0" :bodyClass="['!p-2']">
           <template #header>
             <div class="flex items-center justify-between w-full">
-              <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary">附件分组</span>
+              <span class="text-xs font-bold text-text-tertiary">附件分组</span>
               <button type="button" class="text-xs text-primary hover:underline" @click="openCreateGroup">
                 + 新建
               </button>
@@ -639,7 +639,7 @@ function formatMimeBadge(mime: string): string {
             <div
               v-for="a in attachments"
               :key="a.id"
-              class="attachment-card group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-border-strong hover:shadow-sm"
+              class="attachment-card group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card transition-colors duration-150 hover:border-border-strong hover:shadow-sm"
               :class="{ 'border-primary ring-1 ring-primary': selectedIds.has(a.id) }"
               @click="openDetail(a)"
             >
@@ -666,7 +666,7 @@ function formatMimeBadge(mime: string): string {
 
                 <!-- 格式角标 -->
                 <span
-                  class="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white/90 backdrop-blur-md"
+                  class="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white/90"
                 >
                   {{ formatMimeBadge(a.mime) }}
                 </span>
@@ -683,7 +683,7 @@ function formatMimeBadge(mime: string): string {
 
                 <!-- 悬浮操作按钮组 -->
                 <div
-                  class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/50 opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100"
+                  class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
                   @click.stop
                 >
                   <button
@@ -731,7 +731,7 @@ function formatMimeBadge(mime: string): string {
             <div class="overflow-x-auto">
               <table class="w-full min-w-[760px] text-left">
                 <thead>
-                  <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                  <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                     <th class="w-12 px-4 py-3 text-center">
                       <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                       <input
@@ -788,7 +788,7 @@ function formatMimeBadge(mime: string): string {
                       </div>
                     </td>
                     <td class="px-4 py-3 text-xs font-mono text-text-secondary">
-                      <span class="rounded bg-secondary px-2 py-0.5 font-bold uppercase">
+                      <span class="rounded bg-secondary px-2 py-0.5 font-bold">
                         {{ formatMimeBadge(a.mime) }}
                       </span>
                     </td>
@@ -1042,7 +1042,7 @@ function formatMimeBadge(mime: string): string {
   color: var(--color-text-secondary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .group-item-btn:hover {
@@ -1074,7 +1074,7 @@ function formatMimeBadge(mime: string): string {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {

@@ -42,26 +42,30 @@ type RestoreTask struct {
 }
 
 type RestoreInput struct {
-	Data           []byte
-	Snapshot       string
-	Strict         bool
-	IdempotencyKey string
+	Data                    []byte
+	Snapshot                string
+	Strict                  bool
+	IdempotencyKey          string
+	ContentImport           bool
+	ContentMergeDefinitions bool
 }
 
 // restoreJournal 的前像路径均由任务 ID 派生，不信任磁盘 JSON 提供任意目标路径。
 type restoreJournal struct {
 	Version int `json:"version"`
 	RestoreTask
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
-	ContentHash    string `json:"content_hash"`
-	Strict         bool   `json:"strict"`
-	DatabaseOnly   bool   `json:"database_only"`
-	RestoreSite    bool   `json:"restore_site"`
-	UploadsExisted bool   `json:"uploads_existed"`
-	SiteExisted    bool   `json:"site_existed"`
-	SiteMode       uint32 `json:"site_mode"`
-	PreimageReady  bool   `json:"preimage_ready"`
-	Step           string `json:"step"`
+	IdempotencyKey          string `json:"idempotency_key,omitempty"`
+	ContentHash             string `json:"content_hash"`
+	Strict                  bool   `json:"strict"`
+	DatabaseOnly            bool   `json:"database_only"`
+	ContentImport           bool   `json:"content_import,omitempty"`
+	ContentMergeDefinitions bool   `json:"content_merge_definitions,omitempty"`
+	RestoreSite             bool   `json:"restore_site"`
+	UploadsExisted          bool   `json:"uploads_existed"`
+	SiteExisted             bool   `json:"site_existed"`
+	SiteMode                uint32 `json:"site_mode"`
+	PreimageReady           bool   `json:"preimage_ready"`
+	Step                    string `json:"step"`
 }
 
 func (s *Service) SetRestoreHook(fn func())                   { s.restoreHook = fn }
@@ -187,9 +191,24 @@ func (s *Service) StartRestore(ctx context.Context, input RestoreInput) (Restore
 	if err != nil {
 		return RestoreTask{}, err
 	}
+	if input.ContentImport {
+		if input.Snapshot != "" || !hasStellarContentManifest(data) {
+			return RestoreTask{}, fmt.Errorf("content import requires a portable content archive")
+		}
+		dbOnly = true
+	}
+	if input.ContentMergeDefinitions && !input.ContentImport {
+		return RestoreTask{}, fmt.Errorf("content merge requires a content import")
+	}
 	hash := sha256.New()
 	_, _ = hash.Write(data)
 	_, _ = fmt.Fprintf(hash, "\x00%t\x00%t", input.Strict, dbOnly)
+	if input.ContentImport {
+		_, _ = hash.Write([]byte("\x00content-import-v1"))
+		if input.ContentMergeDefinitions {
+			_, _ = hash.Write([]byte("\x00preserve-definitions"))
+		}
+	}
 	fingerprint := hex.EncodeToString(hash.Sum(nil))
 	keyHash := ""
 	if input.IdempotencyKey != "" {
@@ -234,7 +253,7 @@ func (s *Service) StartRestore(ctx context.Context, input RestoreInput) (Restore
 		finishActive()
 		return RestoreTask{}, ErrRestoreConflict
 	}
-	journal := restoreJournal{Version: 1, RestoreTask: RestoreTask{ID: id, Status: RestorePreparing, CreatedAt: time.Now().UTC()}, IdempotencyKey: keyHash, ContentHash: fingerprint, Strict: input.Strict, DatabaseOnly: dbOnly}
+	journal := restoreJournal{Version: 1, RestoreTask: RestoreTask{ID: id, Status: RestorePreparing, CreatedAt: time.Now().UTC()}, IdempotencyKey: keyHash, ContentHash: fingerprint, Strict: input.Strict, DatabaseOnly: dbOnly, ContentImport: input.ContentImport, ContentMergeDefinitions: input.ContentMergeDefinitions}
 	if err := os.MkdirAll(filepath.Join(s.taskRoot(id), "input"), 0700); err != nil {
 		release()
 		finishActive()

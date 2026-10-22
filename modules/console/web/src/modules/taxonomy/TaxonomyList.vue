@@ -53,8 +53,8 @@ const APPLE_PRESET_COLORS = [
   { label: "Apple 蓝", value: "#007AFF" },
   { label: "极光紫", value: "#AF52DE" },
   { label: "深邃靛", value: "#5856D6" },
-  { label: "湖泊青", value: "#30B0C7" },
-  { label: "薄荷绿", value: "#00C7BE" },
+  { label: "湖泊青", value: "#2e8dff" },
+  { label: "薄荷绿", value: "#34c759" },
   { label: "荧光绿", value: "#30D158" },
   { label: "琥珀橙", value: "#FF9500" },
   { label: "珊瑚红", value: "#FF453A" },
@@ -626,7 +626,7 @@ onMounted(load);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
+            <div class="stats-icon text-primary bg-primary/10">
               <Icon icon="ri:price-tag-3-line" />
             </div>
             <div>
@@ -749,10 +749,7 @@ onMounted(load);
 
                   <!-- 图标块 -->
                   <div
-                    :class="[
-                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-foreground transition-transform group-hover:scale-105',
-                      categoryIconGradients[idx % categoryIconGradients.length],
-                    ]"
+                    :class="[ 'flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-foreground transition-transform group-hover:scale-105', categoryIconGradients[idx % categoryIconGradients.length], ]"
                   >
                     <img
                       v-if="isIconUrl(catIcons[categoryKey(c)])"
@@ -939,7 +936,7 @@ onMounted(load);
             <div class="overflow-x-auto">
               <table class="w-full min-w-[640px] text-left">
                 <thead>
-                  <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                  <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                     <th v-if="mergeMode" class="w-12 px-4 py-3 text-center">选择</th>
                     <th class="px-4 py-3">标签名称</th>
                     <th class="px-4 py-3">前台图标</th>
@@ -1199,7 +1196,7 @@ onMounted(load);
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -1216,7 +1213,6 @@ onMounted(load);
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {
@@ -1265,7 +1261,7 @@ onMounted(load);
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .row-action-btn:hover {
@@ -1287,7 +1283,7 @@ onMounted(load);
   font-size: 13px;
   font-weight: 500;
   color: var(--color-foreground);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
   user-select: none;
 }
@@ -1300,7 +1296,6 @@ onMounted(load);
 .apple-tag-pill.selected-for-merge {
   border-color: var(--color-primary);
   background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .tag-name {
@@ -1334,7 +1329,7 @@ onMounted(load);
   opacity: 0;
   max-width: 0;
   overflow: hidden;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 .apple-tag-pill:hover .tag-hover-actions {
   opacity: 1;
@@ -1348,7 +1343,7 @@ onMounted(load);
   height: 20px;
   border-radius: var(--radius-full);
   color: var(--color-text-tertiary);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 .tag-hover-actions button:hover {
   background: var(--color-card);
@@ -1371,7 +1366,6 @@ onMounted(load);
 }
 .color-preset-dot.active {
   border-color: #fff;
-  box-shadow: 0 0 0 2px var(--color-primary);
   transform: scale(1.15);
 }
 
@@ -1388,7 +1382,7 @@ onMounted(load);
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .apple-sort-btn:hover {

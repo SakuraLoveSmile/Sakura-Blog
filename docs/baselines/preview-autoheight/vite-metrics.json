@@ -1,0 +1,11 @@
+{
+  "parent": {
+    "bridge": "<script src=\"/assets/js/blog-preview.js?v=371f4a2d\" defer=\"\" data-stellar-script=\"blog-preview\">",
+    "height": 1304
+  },
+  "child": {
+    "bridge": "http://127.0.0.1:5179/assets/js/blog-preview.js?v=371f4a2d",
+    "height": 1303.8046875
+  },
+  "errors": []
+}

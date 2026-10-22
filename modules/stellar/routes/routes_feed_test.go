@@ -60,8 +60,8 @@ func TestFeedsUseCanonicalOriginalHost(t *testing.T) {
 	ws, st := newWikiVerifyServer(t)
 	site := ws.site.Load()
 	site.URL = "https://mirror.example/"
-	site.SEO.Canonical.OriginalHost = "origin.example"
-	if _, err := st.Create(&store.Post{Slug: "hello", Title: "Hello", Status: store.StatusPublished, CreatedAt: time.Now(), ContentHTML: "<p>body</p>"}); err != nil {
+	site.StellarV2 = canonicalRouteSite(t, "测试站点", map[string]any{"canonical": map[string]any{"host": "origin.example"}}, nil).StellarV2
+	if _, err := st.Create(&store.Post{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, Slug: "hello", Title: "Hello", Status: store.StatusPublished, CreatedAt: time.Now(), ContentHTML: "<p>body</p>"}); err != nil {
 		t.Fatalf("create post: %v", err)
 	}
 	r := gin.New()
@@ -84,11 +84,11 @@ func TestSitemapIncludesWikidocs(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
 	// published 文档
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Status: store.StatusPublished}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "intro", Title: "引言", Status: store.StatusPublished}); err != nil {
 		t.Fatal(err)
 	}
 	// draft 文档不应被收录
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "secret", Title: "草稿", Status: store.StatusDraft}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "secret", Title: "草稿", Status: store.StatusDraft}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -125,7 +125,7 @@ func TestCanonicalAndFeedsEscapeStoredSlugs(t *testing.T) {
 	router := gin.New()
 	ws.registerFeedRoutes(router)
 	for _, slug := range []string{"中文", "a#b", "a?b", "a%b"} {
-		if _, err := st.Create(&store.Post{Slug: slug, Title: slug, Status: store.StatusPublished, ContentHTML: "<p>body</p>", CreatedAt: time.Now()}); err != nil {
+		if _, err := st.Create(&store.Post{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, Slug: slug, Title: slug, Status: store.StatusPublished, ContentMD: "<p>body</p>", CreatedAt: time.Now()}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -148,7 +148,7 @@ func TestCanonicalAndFeedsEscapeStoredSlugs(t *testing.T) {
 		}
 	}
 	// Wiki 项目和文档分别编码，不把分隔字符带入另一个路径段。
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "文档#1", Title: "文档", Status: store.StatusPublished}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "文档#1", Title: "文档", Status: store.StatusPublished}); err != nil {
 		t.Fatal(err)
 	}
 	ws.contentCache.invalidate()

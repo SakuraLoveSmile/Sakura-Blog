@@ -1,0 +1,264 @@
+{
+  "sdk": "3.33.0",
+  "network": "official SDK with synthetic intercepted API responses; no real account",
+  "runtime": "resume-runtime-cd3.json",
+  "cases": [
+    {
+      "name": "new-before-old",
+      "requests": [
+        {
+          "hasPostData": true,
+          "headers": {
+            "Origin": "http://127.0.0.1:8112",
+            "Referer": "http://127.0.0.1:8112/",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+            "accept": "application/json",
+            "content-type": "application/x-www-form-urlencoded",
+            "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\""
+          },
+          "initialPriority": "High",
+          "method": "POST",
+          "postData": "{\"params\":\"query=batch-R1&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+          "postDataEntries": [
+            {
+              "bytes": "eyJwYXJhbXMiOiJxdWVyeT1iYXRjaC1SMSZoaXRzUGVyUGFnZT0xMDAmYXR0cmlidXRlc1RvSGlnaGxpZ2h0PSU1QiUyMmNvbnRlbnQlMjIlNUQmYXR0cmlidXRlc1RvU25pcHBldD0lNUIlMjJjb250ZW50JTNBMzAlMjIlNUQmaGlnaGxpZ2h0UHJlVGFnPSUzQ3NwYW4lMjBjbGFzcyUzRCUyMnNlYXJjaC1rZXl3b3JkJTIyJTNFJmhpZ2hsaWdodFBvc3RUYWc9JTNDJTJGc3BhbiUzRSZyZXN0cmljdFNlYXJjaGFibGVBdHRyaWJ1dGVzPSU1QiUyMmNvbnRlbnQlMjIlNUQifQ=="
+            }
+          ],
+          "referrerPolicy": "strict-origin-when-cross-origin",
+          "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+        },
+        {
+          "hasPostData": true,
+          "headers": {
+            "Origin": "http://127.0.0.1:8112",
+            "Referer": "http://127.0.0.1:8112/",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+            "accept": "application/json",
+            "content-type": "application/x-www-form-urlencoded",
+            "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\""
+          },
+          "initialPriority": "High",
+          "method": "POST",
+          "postData": "{\"params\":\"query=batch-R2&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+          "postDataEntries": [
+            {
+              "bytes": "eyJwYXJhbXMiOiJxdWVyeT1iYXRjaC1SMiZoaXRzUGVyUGFnZT0xMDAmYXR0cmlidXRlc1RvSGlnaGxpZ2h0PSU1QiUyMmNvbnRlbnQlMjIlNUQmYXR0cmlidXRlc1RvU25pcHBldD0lNUIlMjJjb250ZW50JTNBMzAlMjIlNUQmaGlnaGxpZ2h0UHJlVGFnPSUzQ3NwYW4lMjBjbGFzcyUzRCUyMnNlYXJjaC1rZXl3b3JkJTIyJTNFJmhpZ2hsaWdodFBvc3RUYWc9JTNDJTJGc3BhbiUzRSZyZXN0cmljdFNlYXJjaGFibGVBdHRyaWJ1dGVzPSU1QiUyMmNvbnRlbnQlMjIlNUQifQ=="
+            }
+          ],
+          "referrerPolicy": "strict-origin-when-cross-origin",
+          "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+        }
+      ],
+      "after": "×\n站内搜索\nNEW R2 synthetic\n\nNEW R2 synthetic"
+    },
+    {
+      "name": "clear-before-response",
+      "request": {
+        "hasPostData": true,
+        "headers": {
+          "Origin": "http://127.0.0.1:8112",
+          "Referer": "http://127.0.0.1:8112/",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+          "accept": "application/json",
+          "content-type": "application/x-www-form-urlencoded",
+          "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"macOS\""
+        },
+        "initialPriority": "High",
+        "method": "POST",
+        "postData": "{\"params\":\"query=clear-pending&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+        "postDataEntries": [
+          {
+            "bytes": "eyJwYXJhbXMiOiJxdWVyeT1jbGVhci1wZW5kaW5nJmhpdHNQZXJQYWdlPTEwMCZhdHRyaWJ1dGVzVG9IaWdobGlnaHQ9JTVCJTIyY29udGVudCUyMiU1RCZhdHRyaWJ1dGVzVG9TbmlwcGV0PSU1QiUyMmNvbnRlbnQlM0EzMCUyMiU1RCZoaWdobGlnaHRQcmVUYWc9JTNDc3BhbiUyMGNsYXNzJTNEJTIyc2VhcmNoLWtleXdvcmQlMjIlM0UmaGlnaGxpZ2h0UG9zdFRhZz0lM0MlMkZzcGFuJTNFJnJlc3RyaWN0U2VhcmNoYWJsZUF0dHJpYnV0ZXM9JTVCJTIyY29udGVudCUyMiU1RCJ9"
+          }
+        ],
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+      },
+      "resultLinks": 0
+    },
+    {
+      "name": "A-B-A",
+      "requests": [
+        {
+          "cursor": 162262,
+          "events": [
+            {
+              "sequence": 162261,
+              "source": {
+                "tabId": 8
+              },
+              "method": "Fetch.requestPaused",
+              "params": {
+                "frameId": "93247182F7D588B7E8283D22BD943400",
+                "networkId": "59001.10369",
+                "request": {
+                  "hasPostData": true,
+                  "headers": {
+                    "Origin": "http://127.0.0.1:8112",
+                    "Referer": "http://127.0.0.1:8112/",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+                    "accept": "application/json",
+                    "content-type": "application/x-www-form-urlencoded",
+                    "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"macOS\""
+                  },
+                  "initialPriority": "High",
+                  "method": "POST",
+                  "postData": "{\"params\":\"query=ABA-a&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+                  "postDataEntries": [
+                    {
+                      "bytes": "eyJwYXJhbXMiOiJxdWVyeT1BQkEtYSZoaXRzUGVyUGFnZT0xMDAmYXR0cmlidXRlc1RvSGlnaGxpZ2h0PSU1QiUyMmNvbnRlbnQlMjIlNUQmYXR0cmlidXRlc1RvU25pcHBldD0lNUIlMjJjb250ZW50JTNBMzAlMjIlNUQmaGlnaGxpZ2h0UHJlVGFnPSUzQ3NwYW4lMjBjbGFzcyUzRCUyMnNlYXJjaC1rZXl3b3JkJTIyJTNFJmhpZ2hsaWdodFBvc3RUYWc9JTNDJTJGc3BhbiUzRSZyZXN0cmljdFNlYXJjaGFibGVBdHRyaWJ1dGVzPSU1QiUyMmNvbnRlbnQlMjIlNUQifQ=="
+                    }
+                  ],
+                  "referrerPolicy": "strict-origin-when-cross-origin",
+                  "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+                },
+                "requestId": "interception-job-6261.0",
+                "resourceType": "XHR"
+              }
+            }
+          ],
+          "hasMore": false,
+          "truncated": false
+        },
+        {
+          "cursor": 162265,
+          "events": [
+            {
+              "sequence": 162264,
+              "source": {
+                "tabId": 8
+              },
+              "method": "Fetch.requestPaused",
+              "params": {
+                "frameId": "93247182F7D588B7E8283D22BD943400",
+                "networkId": "59001.10370",
+                "request": {
+                  "hasPostData": true,
+                  "headers": {
+                    "Origin": "http://127.0.0.1:8112",
+                    "Referer": "http://127.0.0.1:8112/",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+                    "accept": "application/json",
+                    "content-type": "application/x-www-form-urlencoded",
+                    "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"macOS\""
+                  },
+                  "initialPriority": "High",
+                  "method": "POST",
+                  "postData": "{\"params\":\"query=ABA-b&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+                  "postDataEntries": [
+                    {
+                      "bytes": "eyJwYXJhbXMiOiJxdWVyeT1BQkEtYiZoaXRzUGVyUGFnZT0xMDAmYXR0cmlidXRlc1RvSGlnaGxpZ2h0PSU1QiUyMmNvbnRlbnQlMjIlNUQmYXR0cmlidXRlc1RvU25pcHBldD0lNUIlMjJjb250ZW50JTNBMzAlMjIlNUQmaGlnaGxpZ2h0UHJlVGFnPSUzQ3NwYW4lMjBjbGFzcyUzRCUyMnNlYXJjaC1rZXl3b3JkJTIyJTNFJmhpZ2hsaWdodFBvc3RUYWc9JTNDJTJGc3BhbiUzRSZyZXN0cmljdFNlYXJjaGFibGVBdHRyaWJ1dGVzPSU1QiUyMmNvbnRlbnQlMjIlNUQifQ=="
+                    }
+                  ],
+                  "referrerPolicy": "strict-origin-when-cross-origin",
+                  "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+                },
+                "requestId": "interception-job-6262.0",
+                "resourceType": "XHR"
+              }
+            }
+          ],
+          "hasMore": false,
+          "truncated": false
+        },
+        {
+          "cursor": 162268,
+          "events": [
+            {
+              "sequence": 162267,
+              "source": {
+                "tabId": 8
+              },
+              "method": "Fetch.requestPaused",
+              "params": {
+                "frameId": "93247182F7D588B7E8283D22BD943400",
+                "networkId": "59001.10371",
+                "request": {
+                  "hasPostData": true,
+                  "headers": {
+                    "Origin": "http://127.0.0.1:8112",
+                    "Referer": "http://127.0.0.1:8112/",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+                    "accept": "application/json",
+                    "content-type": "application/x-www-form-urlencoded",
+                    "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"macOS\""
+                  },
+                  "initialPriority": "High",
+                  "method": "POST",
+                  "postData": "{\"params\":\"query=ABA-a&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+                  "postDataEntries": [
+                    {
+                      "bytes": "eyJwYXJhbXMiOiJxdWVyeT1BQkEtYSZoaXRzUGVyUGFnZT0xMDAmYXR0cmlidXRlc1RvSGlnaGxpZ2h0PSU1QiUyMmNvbnRlbnQlMjIlNUQmYXR0cmlidXRlc1RvU25pcHBldD0lNUIlMjJjb250ZW50JTNBMzAlMjIlNUQmaGlnaGxpZ2h0UHJlVGFnPSUzQ3NwYW4lMjBjbGFzcyUzRCUyMnNlYXJjaC1rZXl3b3JkJTIyJTNFJmhpZ2hsaWdodFBvc3RUYWc9JTNDJTJGc3BhbiUzRSZyZXN0cmljdFNlYXJjaGFibGVBdHRyaWJ1dGVzPSU1QiUyMmNvbnRlbnQlMjIlNUQifQ=="
+                    }
+                  ],
+                  "referrerPolicy": "strict-origin-when-cross-origin",
+                  "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+                },
+                "requestId": "interception-job-6263.0",
+                "resourceType": "XHR"
+              }
+            }
+          ],
+          "hasMore": false,
+          "truncated": false
+        }
+      ],
+      "after": "×\n站内搜索\nCURRENT A2\n\nCURRENT A2"
+    },
+    {
+      "name": "partial-leave-response",
+      "request": {
+        "hasPostData": true,
+        "headers": {
+          "Origin": "http://127.0.0.1:8112",
+          "Referer": "http://127.0.0.1:8112/",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+          "accept": "application/json",
+          "content-type": "application/x-www-form-urlencoded",
+          "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"macOS\""
+        },
+        "initialPriority": "High",
+        "method": "POST",
+        "postData": "{\"params\":\"query=leave-pending&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+        "postDataEntries": [
+          {
+            "bytes": "eyJwYXJhbXMiOiJxdWVyeT1sZWF2ZS1wZW5kaW5nJmhpdHNQZXJQYWdlPTEwMCZhdHRyaWJ1dGVzVG9IaWdobGlnaHQ9JTVCJTIyY29udGVudCUyMiU1RCZhdHRyaWJ1dGVzVG9TbmlwcGV0PSU1QiUyMmNvbnRlbnQlM0EzMCUyMiU1RCZoaWdobGlnaHRQcmVUYWc9JTNDc3BhbiUyMGNsYXNzJTNEJTIyc2VhcmNoLWtleXdvcmQlMjIlM0UmaGlnaGxpZ2h0UG9zdFRhZz0lM0MlMkZzcGFuJTNFJnJlc3RyaWN0U2VhcmNoYWJsZUF0dHJpYnV0ZXM9JTVCJTIyY29udGVudCUyMiU1RCJ9"
+          }
+        ],
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+      },
+      "state": {
+        "result": {
+          "type": "object",
+          "value": {
+            "current": "STALE LEAVINGSTALE LEAVING",
+            "oldConnected": true,
+            "oldResult": "STALE LEAVINGSTALE LEAVING",
+            "sameDocument": true
+          }
+        }
+      }
+    }
+  ],
+  "note": "Earlier requests expired while held across tool/model calls; verification runs captured and fulfilled each sequence within one call, before SDK timeout.",
+  "restore": {
+    "matches": true,
+    "interceptionPatterns": []
+  },
+  "partial_leave_limit": "Historical partial leave lacked committed URL/heading timing. Not precise leave acceptance. Query races remain fixture-only; official SDK, synthetic API, no real account."
+}

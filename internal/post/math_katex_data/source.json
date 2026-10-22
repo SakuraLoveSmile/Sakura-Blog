@@ -1,0 +1,11 @@
+{
+  "version": "0.16.23",
+  "source": "https://registry.npmjs.org/katex/-/katex-0.16.23.tgz",
+  "archiveSha256": "ef389e2bf97444219974671612efba17c74088c1b2a0b1fa094cdf263f6bcd56",
+  "files": {
+    "LICENSE": "766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3",
+    "katex.min.js": "79bc41bf97a7e242ce992c20fb639d3f624000debf4cbd35d70b94e462f6d725"
+  },
+  "distIntegrity": "sha512-7VlC1hsEEolL9xNO05v9VjrvWZePkCVBJqj8ruICxYjZfHaHbaU53AlP+PODyFIXEnaEIEWi3wJy7FPZ95JAVg==",
+  "distShasum": "24f2655a7922d0efb388107743718a4fd176265c"
+}

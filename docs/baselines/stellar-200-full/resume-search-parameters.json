@@ -1,0 +1,181 @@
+{
+  "cases": [
+    {
+      "scope": "all",
+      "include": true,
+      "reopened": {
+        "cache_ttl_seconds": 0,
+        "include_content": true,
+        "scope": "all"
+      },
+      "query": "笔记",
+      "results": [
+        {
+          "href": "/journal/alpha/?kw=%E7%AC%94%E8%AE%B0#heading",
+          "text": "笔记 alpha笔记章节笔记章节 本地笔记内容，可用于编辑保存和搜索。..."
+        },
+        {
+          "href": "/journal/beta/?kw=%E7%AC%94%E8%AE%B0#heading",
+          "text": "笔记 beta · 保存重开实测笔记章节笔记章节 本地笔记内容，可用于编辑保存和搜索。..."
+        }
+      ]
+    },
+    {
+      "scope": "all",
+      "include": false,
+      "reopened": {
+        "cache_ttl_seconds": 0,
+        "include_content": false,
+        "scope": "all"
+      },
+      "query": "笔记",
+      "results": [
+        {
+          "href": "/journal/alpha/?kw=%E7%AC%94%E8%AE%B0",
+          "text": "笔记 alpha"
+        },
+        {
+          "href": "/journal/beta/?kw=%E7%AC%94%E8%AE%B0",
+          "text": "笔记 beta · 保存重开实测"
+        }
+      ]
+    },
+    {
+      "scope": "post",
+      "include": true,
+      "reopened": {
+        "cache_ttl_seconds": 0,
+        "include_content": true,
+        "scope": "post"
+      },
+      "query": "技术",
+      "results": [
+        {
+          "href": "/post/technical/?kw=%E6%8A%80%E6%9C%AF",
+          "text": "技术：完整 Go SSR 链路"
+        }
+      ]
+    },
+    {
+      "scope": "post",
+      "include": false,
+      "reopened": {
+        "cache_ttl_seconds": 0,
+        "include_content": false,
+        "scope": "post"
+      },
+      "query": "技术",
+      "results": [
+        {
+          "href": "/post/poster/?kw=%E6%8A%80%E6%9C%AF",
+          "text": "海报：走向星空"
+        },
+        {
+          "href": "/post/story/?kw=%E6%8A%80%E6%9C%AF",
+          "text": "随笔：保存重开与搜索实测"
+        },
+        {
+          "href": "/post/technical/?kw=%E6%8A%80%E6%9C%AF",
+          "text": "技术：完整 Go SSR 链路"
+        }
+      ]
+    },
+    {
+      "scope": "page",
+      "include": true,
+      "reopened": {
+        "cache_ttl_seconds": 0,
+        "include_content": true,
+        "scope": "page"
+      },
+      "query": "笔记",
+      "results": [
+        {
+          "href": "/journal/alpha/?kw=%E7%AC%94%E8%AE%B0#heading",
+          "text": "笔记 alpha笔记章节笔记章节 本地笔记内容，可用于编辑保存和搜索。..."
+        },
+        {
+          "href": "/journal/beta/?kw=%E7%AC%94%E8%AE%B0#heading",
+          "text": "笔记 beta · 保存重开实测笔记章节笔记章节 本地笔记内容，可用于编辑保存和搜索。..."
+        }
+      ]
+    },
+    {
+      "scope": "page",
+      "include": false,
+      "reopened": {
+        "cache_ttl_seconds": 0,
+        "include_content": false,
+        "scope": "page"
+      },
+      "query": "笔记",
+      "results": [
+        {
+          "href": "/journal/alpha/?kw=%E7%AC%94%E8%AE%B0",
+          "text": "笔记 alpha"
+        },
+        {
+          "href": "/journal/beta/?kw=%E7%AC%94%E8%AE%B0",
+          "text": "笔记 beta · 保存重开实测"
+        }
+      ]
+    }
+  ],
+  "ttl": [
+    {
+      "at": 1791914917527,
+      "requests": 1,
+      "cache": [
+        {
+          "key": "search_cache_v6:http://127.0.0.1:8103/search.json",
+          "ts": 1791914854406,
+          "ttl": 1,
+          "count": 35
+        }
+      ]
+    },
+    {
+      "at": 1791914918086,
+      "requests": 2,
+      "cache": [
+        {
+          "key": "search_cache_v6:http://127.0.0.1:8103/search.json",
+          "ts": 1791914917956,
+          "ttl": 1,
+          "count": 35
+        }
+      ]
+    }
+  ],
+  "contentDisabled": "×\n站内搜索\n没有找到内容！",
+  "domain": {
+    "collectionEmpty": "×\n全站\n技术笔记 · 保存复验\n站内搜索\n没有找到内容！",
+    "global": [
+      {
+        "href": "/wiki/ferrofluid/intro/?kw=intro",
+        "text": "ferrofluid · intro"
+      },
+      {
+        "href": "/wiki/galaxy/intro/?kw=intro",
+        "text": "galaxy · intro"
+      },
+      {
+        "href": "/wiki/light-rays/intro/?kw=intro",
+        "text": "light-rays · intro"
+      },
+      {
+        "href": "/wiki/strands/intro/?kw=intro",
+        "text": "strands · intro"
+      },
+      {
+        "href": "/wiki/video/intro/?kw=intro",
+        "text": "video · intro"
+      }
+    ]
+  },
+  "disabled": {
+    "searchInputs": 0,
+    "searchButtons": 0
+  },
+  "collection_provenance": "Historical browser observations from this implementation session, before current bdf10768. Original measurements retained; no new current-binary binding inferred."
+}

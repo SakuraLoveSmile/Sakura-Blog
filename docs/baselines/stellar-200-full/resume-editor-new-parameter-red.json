@@ -1,0 +1,9 @@
+{
+  "fixture_only": true,
+  "runtime": "resume-runtime-cd3.json",
+  "source": "# T5 parameter categories\n\n{% folding color:blue open 原折叠 %}\nFOLDING original\n{% endfolding %}\n\n{% copy prefix:SHELL echo-original %}\n\n{% swiper effect:fade %}\n![](/uploads/cover.png)\n![](/uploads/avatar.png)\n{% endswiper %}\n\n{% image /uploads/cover.png Original width:80% fancybox:false %}\n\n{% box color:green OriginalBox %}\nBOX original\n{% endbox %}",
+  "action": "image height absent; fill height60px then Apply and immediately switch Markdown",
+  "actual": "# T5 parameter categories\n\n{% folding color:blue open 原折叠 %}\nFOLDING original\n{% endfolding %}\n\n{% copy prefix:SHELL echo-original %}\n\n{% swiper effect:fade %}\n![](/uploads/cover.png)\n![](/uploads/avatar.png)\n{% endswiper %}\n\n{% image width:80% fancybox:false /uploads/cover.png Original %}\n\n{% box color:green OriginalBox %}\nBOX original\n{% endbox %}",
+  "newParameterPresent": false,
+  "saved": false
+}

@@ -1,0 +1,318 @@
+{
+  "working_tree_changes_present": true,
+  "source_commit": "2783db462a6303cac7542d1b18bff82a3bb7bac5",
+  "binary_sha256": "b3a9be1a190f51bb73841d576eb9664c857ffa95554aa6b3eb8408c08a1b3078",
+  "checks": [
+    {
+      "port": 8103,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-BcR9NwdS.js",
+          "sha256": "b93a92513108f142df407897584e83569b590bf16746011914dee3d8f47ef379"
+        },
+        {
+          "path": "/console/assets/index-BjKxu8Z5.js",
+          "sha256": "d9b6cebc05064b39ffc964a49a75bbee20d34431cefff615ccf8ddc43ceb41b4"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "uc_entry_matches": true,
+      "uc_assets": [
+        {
+          "path": "/uc/assets/auth-C9vlCJRa.js",
+          "sha256": "bfa9015146abf315e884588f67541b57fdec0d65e4fb75082b6be7e933e2da57"
+        },
+        {
+          "path": "/uc/assets/auth-wb_lNHgt.css",
+          "sha256": "c83ebd8c3e5364d123fbf3392fd15dcc17b0ab7973a663919a2f480c27190e57"
+        },
+        {
+          "path": "/uc/assets/index-C88V-AKX.css",
+          "sha256": "e1a7848b14793bd6066ec3fc5e90b7da6ba88527e44a2e62b56ff3d57b13b68a"
+        },
+        {
+          "path": "/uc/assets/index-_xXx_xAO.js",
+          "sha256": "11164df8613660caec16f66b4f17e9158abed5219d945ae64d6cdf968e4d7104"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "6c390793d10f41c878441f2c435fd285e21ea0ee33351d03708f1ff4ddf4c47e"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    },
+    {
+      "port": 8112,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-BcR9NwdS.js",
+          "sha256": "b93a92513108f142df407897584e83569b590bf16746011914dee3d8f47ef379"
+        },
+        {
+          "path": "/console/assets/index-BjKxu8Z5.js",
+          "sha256": "d9b6cebc05064b39ffc964a49a75bbee20d34431cefff615ccf8ddc43ceb41b4"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "uc_entry_matches": true,
+      "uc_assets": [
+        {
+          "path": "/uc/assets/auth-C9vlCJRa.js",
+          "sha256": "bfa9015146abf315e884588f67541b57fdec0d65e4fb75082b6be7e933e2da57"
+        },
+        {
+          "path": "/uc/assets/auth-wb_lNHgt.css",
+          "sha256": "c83ebd8c3e5364d123fbf3392fd15dcc17b0ab7973a663919a2f480c27190e57"
+        },
+        {
+          "path": "/uc/assets/index-C88V-AKX.css",
+          "sha256": "e1a7848b14793bd6066ec3fc5e90b7da6ba88527e44a2e62b56ff3d57b13b68a"
+        },
+        {
+          "path": "/uc/assets/index-_xXx_xAO.js",
+          "sha256": "11164df8613660caec16f66b4f17e9158abed5219d945ae64d6cdf968e4d7104"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "6c390793d10f41c878441f2c435fd285e21ea0ee33351d03708f1ff4ddf4c47e"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    },
+    {
+      "port": 8113,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-BcR9NwdS.js",
+          "sha256": "b93a92513108f142df407897584e83569b590bf16746011914dee3d8f47ef379"
+        },
+        {
+          "path": "/console/assets/index-BjKxu8Z5.js",
+          "sha256": "d9b6cebc05064b39ffc964a49a75bbee20d34431cefff615ccf8ddc43ceb41b4"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "uc_entry_matches": true,
+      "uc_assets": [
+        {
+          "path": "/uc/assets/auth-C9vlCJRa.js",
+          "sha256": "bfa9015146abf315e884588f67541b57fdec0d65e4fb75082b6be7e933e2da57"
+        },
+        {
+          "path": "/uc/assets/auth-wb_lNHgt.css",
+          "sha256": "c83ebd8c3e5364d123fbf3392fd15dcc17b0ab7973a663919a2f480c27190e57"
+        },
+        {
+          "path": "/uc/assets/index-C88V-AKX.css",
+          "sha256": "e1a7848b14793bd6066ec3fc5e90b7da6ba88527e44a2e62b56ff3d57b13b68a"
+        },
+        {
+          "path": "/uc/assets/index-_xXx_xAO.js",
+          "sha256": "11164df8613660caec16f66b4f17e9158abed5219d945ae64d6cdf968e4d7104"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "6c390793d10f41c878441f2c435fd285e21ea0ee33351d03708f1ff4ddf4c47e"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    },
+    {
+      "port": 8114,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-BcR9NwdS.js",
+          "sha256": "b93a92513108f142df407897584e83569b590bf16746011914dee3d8f47ef379"
+        },
+        {
+          "path": "/console/assets/index-BjKxu8Z5.js",
+          "sha256": "d9b6cebc05064b39ffc964a49a75bbee20d34431cefff615ccf8ddc43ceb41b4"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "uc_entry_matches": true,
+      "uc_assets": [
+        {
+          "path": "/uc/assets/auth-C9vlCJRa.js",
+          "sha256": "bfa9015146abf315e884588f67541b57fdec0d65e4fb75082b6be7e933e2da57"
+        },
+        {
+          "path": "/uc/assets/auth-wb_lNHgt.css",
+          "sha256": "c83ebd8c3e5364d123fbf3392fd15dcc17b0ab7973a663919a2f480c27190e57"
+        },
+        {
+          "path": "/uc/assets/index-C88V-AKX.css",
+          "sha256": "e1a7848b14793bd6066ec3fc5e90b7da6ba88527e44a2e62b56ff3d57b13b68a"
+        },
+        {
+          "path": "/uc/assets/index-_xXx_xAO.js",
+          "sha256": "11164df8613660caec16f66b4f17e9158abed5219d945ae64d6cdf968e4d7104"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "6c390793d10f41c878441f2c435fd285e21ea0ee33351d03708f1ff4ddf4c47e"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    }
+  ],
+  "librsvg_embedded_bytes_match": true,
+  "librsvg_sha256": "d254aaa66ab23393a76492428b2baa967d6f298ee73e597c8b25585ccd065000",
+  "real_source_database_opened": false
+}

@@ -11,6 +11,7 @@ import (
 )
 
 type wikiProjectRequest struct {
+	StellarContentMetadata
 	ID          string          `json:"id"`
 	Name        string          `json:"name"`
 	Title       string          `json:"title"`
@@ -41,7 +42,26 @@ func (h *Handler) wikiProjectFromRequest(req wikiProjectRequest, id string, curr
 	if id == "" {
 		id = strings.TrimSpace(req.ID)
 	}
+	if req.StellarVersion == 2 {
+		raw, blog := stellarFormObject(req.StellarConfig), stellarFormObject(req.BlogExtensions)
+		stellarFormString(raw, "name", &req.Name)
+		req.Title = req.Name
+		stellarFormString(raw, "headline", &req.Headline)
+		stellarFormString(raw, "tagline", &req.Subtitle)
+		stellarFormString(raw, "description", &req.Description)
+		stellarFormString(raw, "icon", &req.Icon)
+		stellarFormString(raw, "cover", &req.Cover)
+		stellarFormString(raw, "audience", &req.Available)
+		stellarFormString(raw, "source.repository", &req.Repo)
+		stellarFormString(raw, "source.branch", &req.Branch)
+		stellarFormString(blog, "content.wiki_external_url", &req.URL)
+		stellarFormInt(blog, "content.collection_order", &req.Sort)
+		if tags, exists := stellarFormStrings(raw, "tags"); exists {
+			req.Tags = tags
+		}
+	}
 	return &store.WikiProject{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ID: id, Name: strings.TrimSpace(req.Name), Title: strings.TrimSpace(req.Title),
 		Headline: strings.TrimSpace(req.Headline), Subtitle: strings.TrimSpace(req.Subtitle),
 		Description: strings.TrimSpace(req.Description), Icon: strings.TrimSpace(req.Icon),
@@ -86,6 +106,10 @@ func (h *Handler) createWikiProject(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "wiki", true); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	p := h.wikiProjectFromRequest(req, "", nil)
 	if err := h.store.CreateWikiProject(p); err != nil {
 		switch {
@@ -120,6 +144,10 @@ func (h *Handler) updateWikiProject(c *gin.Context) {
 	}
 	if strings.TrimSpace(req.ID) != "" && strings.TrimSpace(req.ID) != id {
 		Fail(c, http.StatusBadRequest, "项目 ID 创建后不可修改")
+		return
+	}
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "wiki", true); err != nil {
+		failEditorStellar(c, err)
 		return
 	}
 	p := h.wikiProjectFromRequest(req, id, current)

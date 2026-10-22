@@ -1,0 +1,3018 @@
+{
+  "sourceHashes": {
+    "layout/_partial/components/collection.ejs": "65be89d7a4d6fdf8ef8a57fd8a9e44a09fa0ca9b030d2aec7813dea84953cfd8",
+    "layout/_partial/components/collection-item.ejs": "f47fe760340f89ac2bea88d58bbc667bfa3c55419c2e4d93e287860e411d706c",
+    "scripts/lib/ui-capabilities.js": "f02c4d8fe3716c349a5f9f41799110d7849827bb0ae502a1589f96c1d31bf222"
+  },
+  "commit": "9d11978a24fe6610e3a7dbab741cf62634539d05",
+  "cases": [
+    {
+      "options": {
+        "layout": "list",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "list",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"summary\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"summary\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"summary\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"summary\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"icon\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"icon\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"icon\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"icon\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "grid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"grid\" data-variant=\"nav\" data-density=\"compact\" style=\"--ui-columns:4\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "inline",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"inline\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "nav",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "summary",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"summary\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "icon",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"icon\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": false,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  \n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": false,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">标</span>\n  \n    <span class=\"ui-collection__content\">\n      <span class=\"ui-collection__prefix\">前缀</span>\n      <span class=\"ui-collection__title\">标题&lt;&amp;&gt;</span>\n      <span class=\"ui-collection__description\">desc</span>\n      <span class=\"ui-collection__meta\">metadata</span>\n    </span>\n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    },
+    {
+      "options": {
+        "layout": "invalid",
+        "variant": "invalid",
+        "columns": 4,
+        "density": "compact",
+        "className": "custom",
+        "items": [
+          {
+            "href": "/example/",
+            "title": "标题<&>",
+            "description": "desc",
+            "meta": "metadata",
+            "prefix": "前缀",
+            "active": true,
+            "iconOnly": true,
+            "depth": 2,
+            "theme": "#123456",
+            "attrs": {
+              "data-example": "value\"",
+              "aria-label": "label",
+              "onclick": "bad()"
+            },
+            "className": "custom-item"
+          },
+          {
+            "type": "button",
+            "title": "Action",
+            "showTitle": false,
+            "description": "Description",
+            "attrs": {
+              "data-shell-action": "open-search"
+            }
+          },
+          {
+            "href": "/other/",
+            "title": "ßeta",
+            "active": false,
+            "indicator": false
+          },
+          {
+            "title": "ignored"
+          }
+        ]
+      },
+      "html": "\n<div class=\"ui-collection custom\" data-layout=\"list\" data-variant=\"nav\" data-density=\"compact\">\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only is-active custom-item\" href=\"/example/\" title=\"标题&lt;&amp;&gt;\" aria-current=\"page\" style=\"--item-theme:#123456;--ui-item-depth:2;\" data-example=\"value&quot;\" aria-label=\"label\">\n  \n  \n  \n  \n  \n  <span class=\"ui-collection__indicator\"></span>\n</a>\n\n  \n    \n<button class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" type=\"button\" title=\"Action\" data-shell-action=\"open-search\">\n  \n  \n  \n  \n    <span class=\"ui-collection__content\">\n      \n      \n      <span class=\"ui-collection__description\">Description</span>\n      \n    </span>\n  \n  \n  \n</button>\n\n  \n    \n<a class=\"ui-collection__item ui-interactive card-hover card-hover--spotlight\" href=\"/other/\" title=\"ßeta\">\n  \n  \n  <span class=\"ui-collection__initial\" aria-hidden=\"true\">ß</span>\n  \n    <span class=\"ui-collection__content\">\n      \n      <span class=\"ui-collection__title\">ßeta</span>\n      \n      \n    </span>\n  \n  \n  \n</a>\n\n  \n</div>\n\n"
+    }
+  ]
+}

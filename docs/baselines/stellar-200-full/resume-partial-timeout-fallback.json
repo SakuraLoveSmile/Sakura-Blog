@@ -1,0 +1,18 @@
+{
+  "built_head": "c2cee18",
+  "scope": "real timeout fallback after held navigation XHR, not an injected HTTP failure",
+  "before": {
+    "result": {
+      "description": "1791905247963.5",
+      "type": "number",
+      "value": 1791905247963.5
+    }
+  },
+  "after": {
+    "result": {
+      "type": "string",
+      "value": "{\"url\":\"http://127.0.0.1:8103/post/t5-lifecycle-b\",\"h1\":\"T5 生命周期 B\",\"canonical\":\"http://127.0.0.1:8103/post/t5-lifecycle-b\",\"timeOrigin\":1791905429465.1}"
+    }
+  },
+  "interceptionCleared": true
+}

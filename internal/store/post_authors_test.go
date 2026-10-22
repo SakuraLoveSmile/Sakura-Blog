@@ -1,6 +1,8 @@
 package store
 
 import (
+	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -85,5 +87,83 @@ func TestPostAuthorsMigrationUsesUserIDsAndQuarantinesUnmappedRows(t *testing.T)
 	}
 	if referencedTable != "users" || fromColumn != "author_id" || toColumn != "id" {
 		t.Fatalf("author foreign key = %s(%s -> %s), want users(author_id -> id)", referencedTable, fromColumn, toColumn)
+	}
+}
+
+func TestStrictPublicPostAuthorsRemainIndependentFromUserOwnership(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.EnsureSettingsTable(); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PutSetting("stellar_v2", `{"version":2,"theme":{}}`); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PutSetting("blog_extensions", `{"data":{"authors":{"alice":{"name":"Alice"},"writer":{"name":"Writer"},"bob":{"name":"Bob"}}},"private":"catalog-secret"}`); err != nil {
+		t.Fatal(err)
+	}
+	alice, _ := s.GetUserByUsername("alice")
+	bob, _ := s.GetUserByUsername("bob")
+	raw := ` {"article":{"author":"alice"},"comments":{"options":{"large":9007199254740993}}} `
+	blog := ` {"content":{"authors":["alice","writer"]},"opaque":{"large":9007199254740993,"flag":false,"nil":null}} `
+	p := &Post{Slug: "public-authors", Title: "Title", Status: StatusPublished, AuthorIDs: []int64{alice.ID}, StellarVersion: 2, StellarConfig: raw, BlogExtensions: blog}
+	if _, err := s.Create(p); err != nil {
+		t.Fatal(err)
+	}
+	for _, operation := range []string{"reopen", "draft", "update"} {
+		got, err := s.GetBySlug(p.Slug)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Join(got.Authors, ",") != "alice,writer" || got.Author != "alice" || len(got.AuthorIDs) != 1 || got.AuthorIDs[0] != alice.ID {
+			t.Fatalf("%s wrong public/owner projection: %+v", operation, got)
+		}
+		switch operation {
+		case "draft":
+			draft, _ := json.Marshal(got)
+			if err := s.SaveDraft(p.Slug, string(draft)); err != nil {
+				t.Fatal(err)
+			}
+		case "update":
+			got.Title = "Only title changed"
+			if err := s.UpdateSlugWithRevision(p.Slug, p.Slug, got); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if user, err := s.GetUserByUsername("writer"); err != nil || user != nil {
+		t.Fatal("public author invented a user")
+	}
+	got, _ := s.GetBySlug(p.Slug)
+	if got.StellarConfig != raw || got.BlogExtensions != blog {
+		t.Fatal("public author raw changed")
+	}
+	if ok, err := s.HasPostAuthor(p.Slug, bob.ID); err != nil || ok {
+		t.Fatal("public author changed editor ownership")
+	}
+	// 公开署名刚好等于用户姓名也不在启动回填时赋予编辑权限。
+	got.StellarConfig = `{"article":{"author":"bob"}}`
+	got.BlogExtensions = `{"content":{"authors":["bob"]}}`
+	if err := s.Update(p.Slug, got); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.EnsurePostAuthorsTable(); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := s.HasPostAuthor(p.Slug, bob.ID); err != nil || ok {
+		t.Fatal("restart backfill granted public author editor ownership")
+	}
+	before, _ := s.GetBySlug(p.Slug)
+	invalid := *before
+	invalid.BlogExtensions = `{"content":{"authors":["unknown-private"]}}`
+	if err := s.Update(p.Slug, &invalid); !errors.Is(err, ErrStellarPublicAuthorInvalid) {
+		t.Fatalf("invalid update: %v", err)
+	}
+	draft, _ := json.Marshal(invalid)
+	if err := s.SaveDraft(p.Slug, string(draft)); !errors.Is(err, ErrStellarPublicAuthorInvalid) {
+		t.Fatalf("invalid draft: %v", err)
+	}
+	after, _ := s.GetBySlug(p.Slug)
+	if after.BlogExtensions != before.BlogExtensions || after.DraftJSON != before.DraftJSON {
+		t.Fatal("invalid public author mutated stored content")
 	}
 }

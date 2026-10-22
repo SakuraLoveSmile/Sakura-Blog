@@ -10,6 +10,7 @@ const props = withDefaults(
   defineProps<{
     plugin: PluginMeta | null;
     initialValues?: Record<string, unknown>;
+    present?: string[];
     variant?: PluginVariant;
     raw: string;
     loading?: boolean;
@@ -169,6 +170,7 @@ onBeforeUnmount(() => {
         :plugin="plugin"
         :model-value="draft"
         :initial-values="initialValues"
+        :present="present"
         :variant="variant"
         @update:model-value="scheduleStructuredUpdate"
         @validation="onStructuredValidation"

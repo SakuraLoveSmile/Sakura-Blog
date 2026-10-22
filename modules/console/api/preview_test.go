@@ -40,13 +40,13 @@ func previewBody(t *testing.T, r *gin.Engine, cookie, body string) string {
 
 func TestPreviewMarkdownNormalUnchanged(t *testing.T) {
 	// 缺省（无 preview_profile）：渲染行为与线上一致，data-api 指向真实端点、ID 不加前缀。
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	out := previewBody(t, r, cookie, `{"markdown":"{% rating id:demo-post %}\n\n{% friends %}"}`)
+	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% rating id:demo-post %}\n\n{% friends %}"}`)
 	for _, want := range []string{
-		`data-api="/api/rating"`,
+		`class="tag-plugin ds-rating is-disabled"`,
 		`data-id="demo-post"`,
-		`data-api="/api/friends"`,
+		`class="tag-plugin users-wrap"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("normal preview missing %q: %s", want, out)
@@ -56,9 +56,9 @@ func TestPreviewMarkdownNormalUnchanged(t *testing.T) {
 
 func TestPreviewMarkdownComponentLibraryRewrites(t *testing.T) {
 	// Fixture 模式：rating/vote 端点改写 + preview- 隔离 ID；friends/sites 外部 URL 一律本地化。
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	out := previewBody(t, r, cookie, `{"markdown":"{% rating id:demo-post %}\n\n{% vote 有帮助吗 id:post-1 %}\n\n{% friends api:https://example.com/data.json %}\n\n{% sites api:https://example.com/sites.json %}\n\n{% md https://raw.githubusercontent.com/x/y/main/README.md %}","preview_profile":"component-library"}`)
+	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% rating id:demo-post %}\n\n{% vote 有帮助吗 id:post-1 %}\n\n{% friends api:https://example.com/data.json %}\n\n{% sites api:https://example.com/sites.json %}\n\n{% md https://raw.githubusercontent.com/x/y/main/README.md %}","preview_profile":"component-library"}`)
 	for _, want := range []string{
 		`data-api="/api/v1/preview/rating"`,
 		`data-id="preview-demo-post"`,
@@ -82,15 +82,15 @@ func TestPreviewMarkdownComponentLibraryRewrites(t *testing.T) {
 
 func TestPreviewMarkdownComponentLibraryGithubFixture(t *testing.T) {
 	// ghrepo/ghuser/ghcard 服务端使用确定性 Fixture 数据（不发公网请求）。
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	out := previewBody(t, r, cookie, `{"markdown":"{% ghrepo vuejs/vue %}\n\n{% ghuser octocat %}\n\n{% ghcard anuraghazra/github-readme-stats %}","preview_profile":"component-library"}`)
+	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% blog_ghrepo vuejs/vue %}\n\n{% blog_ghuser octocat %}\n\n{% ghcard anuraghazra/github-readme-stats %}","preview_profile":"component-library"}`)
 	for _, want := range []string{
 		`<span class="repo-name">vuejs/vue</span>`,
 		`>⭐ 12800<`,
 		`<span class="user-login">@octocat</span>`,
 		`<span>3200 followers</span>`,
-		`<span class="repo-name">anuraghazra/github-readme-stats</span>`,
+		`<img src="/assets/img/preview/avatar-gh-vuejs.svg"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("github fixture missing %q: %s", want, out)
@@ -100,17 +100,17 @@ func TestPreviewMarkdownComponentLibraryGithubFixture(t *testing.T) {
 
 func TestPreviewMarkdownComponentLibraryStaticPlugins(t *testing.T) {
 	// 代表性静态插件：note/banner/poetry/frame 结构完整。
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	out := previewBody(t, r, cookie, `{"markdown":"{% note color:green 提示 这是提示内容 %}\n\n{% banner title:我的博客 %}\n欢迎。\n{% endbanner %}\n\n{% poetry 静夜思 author:李白 %}\n床前明月光。\n{% endpoetry %}\n\n{% frame device:iphone width:320px %}\n![s](https://example.com/s.png)\n{% endframe %}","preview_profile":"component-library"}`)
+	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% note color:green 提示 这是提示内容 %}\n\n{% banner 我的博客 %}\n欢迎。\n{% endbanner %}\n\n{% poetry 静夜思 author:李白 %}\n床前明月光。\n{% endpoetry %}\n\n{% frame iphone img:https://example.com/s.png %}","preview_profile":"component-library"}`)
 	for _, want := range []string{
 		`class="tag-plugin colorful note"`,
 		`color="green"`,
-		`class="tag-plugin banner"`,
+		`class="tag-plugin banner no-bg"`,
 		`class="tag-plugin poetry"`,
 		`<div class="meta"><span>李白</span></div>`,
-		`device="iphone"`,
-		`class="tag-plugin frame"`,
+		`id="iphone"`,
+		`class="frame-wrap"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("static plugin preview missing %q: %s", want, out)
@@ -120,9 +120,9 @@ func TestPreviewMarkdownComponentLibraryStaticPlugins(t *testing.T) {
 
 func TestPreviewMarkdownComponentLibraryInteractivePlugins(t *testing.T) {
 	// 代表性交互插件：tabs/folding/swiper 结构完整（交互初始化由前端预览运行时负责）。
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	out := previewBody(t, r, cookie, `{"markdown":"{% tabs %}\n<!-- tab 标签一 -->\n第一页。\n<!-- tab 标签二 -->\n第二页。\n{% endtabs %}\n\n{% folding color:cyan open:true 详情 %}\n折叠内容。\n{% endfolding %}\n\n{% swiper %}\n![](https://example.com/1.png)\n![](https://example.com/2.png)\n{% endswiper %}","preview_profile":"component-library"}`)
+	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% tabs %}\n<!-- tab 标签一 -->\n第一页。\n<!-- tab 标签二 -->\n第二页。\n{% endtabs %}\n\n{% folding color:cyan open:true 详情 %}\n折叠内容。\n{% endfolding %}\n\n{% swiper %}\n![](https://example.com/1.png)\n![](https://example.com/2.png)\n{% endswiper %}","preview_profile":"component-library"}`)
 	for _, want := range []string{
 		`class="tag-plugin tabs"`,
 		`nav-tabs`,
@@ -138,13 +138,11 @@ func TestPreviewMarkdownComponentLibraryInteractivePlugins(t *testing.T) {
 }
 
 func TestPreviewMarkdownComponentLibraryExternalPlugins(t *testing.T) {
-	// mermaid：源码保留在容器内（客户端加载器失败时降级为源码）；
 	// md：渲染为 ds-mdrender 容器，src 指向本地 Fixture 端点。
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	out := previewBody(t, r, cookie, `{"markdown":"{% mermaid %}\ngraph TB\n A --> B\n{% endmermaid %}\n\n{% md https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/main/README.md %}","preview_profile":"component-library"}`)
+	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% md https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/main/README.md %}","preview_profile":"component-library"}`)
 	for _, want := range []string{
-		`<div class="mermaid">graph TB`,
 		`class="data-service ds-mdrender"`,
 		`src="/api/v1/preview/md?src=`,
 	} {
@@ -155,10 +153,10 @@ func TestPreviewMarkdownComponentLibraryExternalPlugins(t *testing.T) {
 }
 
 func TestPreviewMarkdownComponentLibraryLinksFixture(t *testing.T) {
-	// {% links %} 在 Fixture 模式服务端直出确定性分组。
-	r, _, user, _ := newFullEnv(t)
+	// {% blog_links %} 在 Fixture 模式服务端直出确定性分组。
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	out := previewBody(t, r, cookie, `{"markdown":"{% links %}","preview_profile":"component-library"}`)
+	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% blog_links %}","preview_profile":"component-library"}`)
 	for _, want := range []string{
 		`<h2>推荐站点</h2>`,
 		`<span class="title">Fixture Blog</span>`,

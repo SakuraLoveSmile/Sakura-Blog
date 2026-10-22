@@ -1,0 +1,16 @@
+{
+  "origin": "http://127.0.0.1:8098",
+  "entry_assets": 6,
+  "asset_hashes": {
+    "/console/assets/index-CCfdFI5n.js": "6e9043e3a1203ece5ff5ffd105c5aeededf8da4edec7c3e0346ad13379f9242d",
+    "/console/assets/api-LHVzItrw.js": "65e5c48049d350e7af050ebbce859c3afe0cc4a6c99eb09562d4c3f243df8881",
+    "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+    "/console/assets/pinia-BDaR9qFm.js": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+    "/console/assets/preload-helper-l0U7FUPx.js": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+    "/console/assets/index-bKdsp-W-.css": "e85976647d911cef8657544f70b4b55a48d2b1b25dbf51b599a81af9bd19552b"
+  },
+  "isolated_posts": [
+    "inline-draft",
+    "inline-published"
+  ]
+}

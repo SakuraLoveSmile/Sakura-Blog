@@ -1,0 +1,174 @@
+--- a/pango/pango-attributes.c
++++ b/pango/pango-attributes.c
+@@ -1949,6 +1949,15 @@
+  *   which should be freed with [method@Pango.AttrList.unref].
+  *   Returns %NULL if @list was %NULL.
+  */
++#ifdef __wasi__
++static gpointer
++pango_attribute_copy_with_data (gconstpointer attribute, gpointer data)
++{
++  (void) data;
++  return pango_attribute_copy ((const PangoAttribute *) attribute);
++}
++#endif
++
+ PangoAttrList *
+ pango_attr_list_copy (PangoAttrList *list)
+ {
+@@ -1961,7 +1970,11 @@
+   if (!list->attributes || list->attributes->len == 0)
+     return new;
+ 
++#ifdef __wasi__
++  new->attributes = g_ptr_array_copy (list->attributes, pango_attribute_copy_with_data, NULL);
++#else
+   new->attributes = g_ptr_array_copy (list->attributes, (GCopyFunc)pango_attribute_copy, NULL);
++#endif
+ 
+   return new;
+ }
+--- a/pango/pango-context.c
++++ b/pango/pango-context.c
+@@ -722,8 +722,7 @@
+ 
+   update_metrics_from_items (metrics, language, sample_str, text_len, items);
+ 
+-  g_list_foreach (items, (GFunc)pango_item_free, NULL);
+-  g_list_free (items);
++  g_list_free_full (items, (GDestroyNotify)pango_item_free);
+ 
+   g_object_unref (current_fonts);
+ 
+--- a/pango/pango-item.c
++++ b/pango/pango-item.c
+@@ -101,8 +101,7 @@
+ 
+   if (item->analysis.extra_attrs)
+     {
+-      g_slist_foreach (item->analysis.extra_attrs, (GFunc)pango_attribute_destroy, NULL);
+-      g_slist_free (item->analysis.extra_attrs);
++      g_slist_free_full (item->analysis.extra_attrs, (GDestroyNotify)pango_attribute_destroy);
+     }
+ 
+   if (item->analysis.lang_engine)
+--- a/pango/pango-markup.c
++++ b/pango/pango-markup.c
+@@ -193,8 +193,7 @@
+ static void
+ open_tag_free (OpenTag *ot)
+ {
+-  g_slist_foreach (ot->attrs, (GFunc) pango_attribute_destroy, NULL);
+-  g_slist_free (ot->attrs);
++  g_slist_free_full (ot->attrs, (GDestroyNotify)pango_attribute_destroy);
+   g_slice_free (OpenTag, ot);
+ }
+ 
+--- a/pango/pango-utils.c
++++ b/pango/pango-utils.c
+@@ -263,7 +263,9 @@
+   int n_read = 0;
+   int lines = 1;
+ 
++#ifndef __wasi__
+   flockfile (stream);
++#endif /* Single-thread WASI cannot share this FILE with a worker. */
+ 
+   g_string_truncate (str, 0);
+ 
+@@ -343,7 +345,9 @@
+ 
+  done:
+ 
++#ifndef __wasi__
+   funlockfile (stream);
++#endif
+ 
+   return (n_read > 0) ? lines : 0;
+ }
+--- a/pango/pangocairo-font.c
++++ b/pango/pangocairo-font.c
+@@ -638,8 +638,7 @@
+     g_free (cf_priv->glyph_extents_cache);
+   cf_priv->glyph_extents_cache = NULL;
+ 
+-  g_slist_foreach (cf_priv->metrics_by_lang, (GFunc)free_metrics_info, NULL);
+-  g_slist_free (cf_priv->metrics_by_lang);
++  g_slist_free_full (cf_priv->metrics_by_lang, (GDestroyNotify)free_metrics_info);
+   cf_priv->metrics_by_lang = NULL;
+ }
+ 
+--- a/pango/pangofc-font.c
++++ b/pango/pangofc-font.c
+@@ -167,8 +167,7 @@
+   PangoFcFontPrivate *priv = fcfont->priv;
+   PangoFontMap *fontmap;
+ 
+-  g_slist_foreach (fcfont->metrics_by_lang, (GFunc)free_metrics_info, NULL);
+-  g_slist_free (fcfont->metrics_by_lang);
++  g_slist_free_full (fcfont->metrics_by_lang, (GDestroyNotify)free_metrics_info);
+ 
+   fontmap = fcfont->fontmap;
+   if (fontmap)
+--- a/pango/pangofc-fontmap.c
++++ b/pango/pangofc-fontmap.c
+@@ -1047,7 +1047,11 @@
+   g_mutex_init (&pats->mutex);
+   g_cond_init (&pats->cond);
+ 
++#ifdef __wasi__
++  match_in_thread (thread_data_new (FC_MATCH, pats));
++#else
+   g_async_queue_push (fontmap->priv->queue, thread_data_new (FC_MATCH, pats));
++#endif
+ 
+   g_hash_table_insert (fontmap->priv->patterns_hash, pats->pattern, pats);
+ 
+@@ -1223,7 +1227,13 @@
+       before = PANGO_TRACE_CURRENT_TIME;
+ 
+       if (!pats->fontset)
+-        g_async_queue_push (pats->fontmap->priv->queue, thread_data_new (FC_SORT, pats));
++        {
++#ifdef __wasi__
++          sort_in_thread (thread_data_new (FC_SORT, pats));
++#else
++          g_async_queue_push (pats->fontmap->priv->queue, thread_data_new (FC_SORT, pats));
++#endif
++        }
+ 
+       g_mutex_lock (&pats->mutex);
+ 
+@@ -1524,6 +1534,14 @@
+ static void
+ start_fontconfig_thread (PangoFcFontMap *fcfontmap)
+ {
++#ifdef __wasi__
++  /* Complete the same initialization synchronously before matching fonts. */
++  if (fc_initialized == DEFAULT_CONFIG_NOT_INITIALIZED)
++    {
++      fc_initialized = DEFAULT_CONFIG_INITIALIZING;
++      init_in_thread (thread_data_new (FC_INIT, NULL));
++    }
++#else
+   GThread *thread;
+ 
+   g_mutex_lock (&fc_init_mutex);
+@@ -1539,6 +1557,7 @@
+     }
+ 
+   g_mutex_unlock (&fc_init_mutex);
++#endif
+ }
+ 
+ static void
+@@ -1629,7 +1648,9 @@
+   priv->n_families = -1;
+   priv->families = NULL;
+ 
++#ifndef __wasi__
+   g_async_queue_push (fcfontmap->priv->queue, thread_data_new (FC_END, NULL));
++#endif
+ 
+   g_async_queue_unref (priv->queue);
+   priv->queue = NULL;

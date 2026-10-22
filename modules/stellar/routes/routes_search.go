@@ -1,9 +1,6 @@
 package routes
 
 import (
-	"log"
-	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -71,56 +68,8 @@ func searchPathAllowed(path string, cfg tmpl.SearchConfig) bool {
 
 // registerSearchRoutes 注册搜索域路由：/api/search（FTS5）与 /search.json（前端本地匹配索引）。
 func (s *webServer) registerSearchRoutes(r *gin.Engine) {
-	// 服务端全文搜索（Spec 25 + 搜索范围扩展）：FTS5 bm25 排序 + snippet 高亮，
-	// 覆盖文章/页面/瞬间三类（type 参数过滤，空串为全部）。
-	// 前端 local-search.js 优先走此端点，失败降级回 /search.json 本地匹配。
-	r.GET("/api/search", func(c *gin.Context) {
-		if s.searchIdx == nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "server search disabled"})
-			return
-		}
-		q := strings.TrimSpace(c.Query("q"))
-		docType := strings.TrimSpace(c.Query("type")) // post / page / moment，空 = 全部
-		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-		results, err := s.searchIdx.Search(q, docType, limit)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		type apiItem struct {
-			Type    string `json:"type"` // post / page / moment
-			Title   string `json:"title"`
-			Path    string `json:"path"`
-			Snippet string `json:"snippet"`
-			// 章节锚点（1.41）：命中内容所在标题的 id/文本，前端拼 #锚点直达章节
-			AnchorID   string `json:"anchor_id,omitempty"`
-			AnchorText string `json:"anchor_text,omitempty"`
-		}
-		terms := strings.Fields(strings.ToLower(q))
-		items := make([]apiItem, 0, len(results))
-		for _, res := range results {
-			it := apiItem{Type: res.Type, Title: res.Title, Path: searchPath(res.Type, res.Slug), Snippet: res.Snippet}
-			if id, text := s.resultAnchor(res.Type, res.Slug, terms); id != "" || text != "" {
-				it.AnchorID, it.AnchorText = id, text
-			}
-			items = append(items, it)
-		}
-		c.Header("Cache-Control", "no-store")
-		c.JSON(http.StatusOK, gin.H{"items": items})
-	})
-
-	// 本地搜索索引：全量 published 文章的标题/正文纯文本，前端 local-search.js 拉取。
-	// Spec 61 阶段 5：内存缓存（写路径置脏后重建）；响应仍 no-store，禁止浏览器/CDN 缓存。
-	r.GET("/search.json", func(c *gin.Context) {
-		data, err := s.contentCache.searchJSON()
-		if err != nil {
-			log.Printf("search index: %v", err)
-			s.render500(c)
-			return
-		}
-		c.Header("Cache-Control", "no-store")
-		c.Data(http.StatusOK, "application/json; charset=utf-8", data)
-	})
+	r.GET("/api/search", s.serveStellarSearchAPI)
+	r.GET("/search.json", s.serveStellarSearchJSON)
 }
 
 // resultAnchor 服务端搜索结果的章节锚点（1.41）：加载命中文档内容，按首个命中词
@@ -172,16 +121,4 @@ func (s *webServer) resultAnchor(docType, slug string, terms []string) (id, text
 		return "", ""
 	}
 	return hit.ID, hit.Text
-}
-
-// searchPath 搜索结果路径：post/page 按 slug 拼接，moment 无详情页指向 /moments 时间流。
-func searchPath(docType, slug string) string {
-	switch docType {
-	case search.TypePage:
-		return "/pages/" + slug
-	case search.TypeMoment:
-		return "/moments"
-	default:
-		return "/post/" + slug
-	}
 }

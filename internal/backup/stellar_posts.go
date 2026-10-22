@@ -1,0 +1,524 @@
+package backup
+
+import (
+	"archive/zip"
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	"blog/internal/config"
+	"blog/internal/content"
+	"blog/internal/maintenance"
+	"blog/internal/post"
+	"blog/internal/stellarmigration"
+	"blog/internal/stellarv2"
+	"blog/internal/store"
+)
+
+// BuildStellarPost 使用原始 front matter；不经过旧 FileMeta 字段白名单。
+// 新导入归显式的 admin 账户，已有文章保留真实 ownership，不从署名猜用户。
+func BuildStellarPost(st *store.Store, renderer *post.Service, slug string, source []byte) (*store.Post, error) {
+	if !validStellarSourceComponent(slug, false) || !utf8.Valid(source) {
+		return nil, fmt.Errorf("invalid Markdown source name or UTF-8")
+	}
+	configuration, err := config.LoadStellarV2(st)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", store.ErrStellarMigrationRequired, err)
+	}
+	existing, err := st.GetBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil && existing.StellarVersion != 2 {
+		return nil, fmt.Errorf("%w: posts/%s", store.ErrStellarMigrationRequired, slug)
+	}
+	registry, err := stellarPostRegistry(st)
+	if err != nil {
+		return nil, err
+	}
+	document, err := post.ParseStellarDocument(source, post.StellarDocumentOptions{Source: "posts/" + slug + ".md", Profile: "post", Kind: "posts", PagePath: "posts/" + slug + ".md", Registry: registry})
+	if err != nil {
+		return nil, err
+	}
+	p := &store.Post{Slug: slug, Status: store.StatusPublished}
+	if existing != nil {
+		*p = *existing
+	} else {
+		owner, err := st.GetUserByUsername("admin")
+		if err != nil || owner == nil || owner.Role != store.RoleAdmin {
+			return nil, fmt.Errorf("markdown import requires the configured admin identity")
+		}
+		p.AuthorIDs = []int64{owner.ID}
+	}
+	p.StellarVersion = 2
+	encoded, err := json.Marshal(document.Raw)
+	if err != nil {
+		return nil, err
+	}
+	p.StellarConfig = string(encoded)
+	encoded, err = json.Marshal(document.Blog)
+	if err != nil {
+		return nil, err
+	}
+	p.BlogExtensions, p.ContentMD = string(encoded), document.Body
+	p.Title = stellarPostText(document.Raw, "title", slug)
+	p.Excerpt = stellarPostText(document.Raw, "excerpt", "")
+	p.Cover = stellarPostText(document.Raw, "cover", "")
+	p.Tags = strings.Join(stellarPostStrings(document.Raw["tags"]), ",")
+	p.Categories = stellarPostStrings(document.Raw["categories"])
+	p.Category = ""
+	if len(p.Categories) > 0 {
+		p.Category = p.Categories[0]
+	}
+	if status, exists := document.Blog["status"]; exists {
+		if status != store.StatusDraft && status != store.StatusPublished {
+			return nil, fmt.Errorf("posts/%s: blog.status must be draft or published", slug)
+		}
+		p.Status = status.(string)
+	}
+	if date, exists := document.Raw["date"]; exists {
+		text, ok := date.(string)
+		if !ok {
+			return nil, fmt.Errorf("posts/%s: date must be a valid timestamp", slug)
+		}
+		valid := false
+		for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05", "2006-01-02"} {
+			if parsed, err := time.Parse(layout, text); err == nil {
+				p.CreatedAt, valid = parsed, true
+				break
+			}
+		}
+		if !valid {
+			return nil, fmt.Errorf("posts/%s: date must be a valid timestamp", slug)
+		}
+	}
+	p.TopicID, p.Topic = 0, ""
+	if membership, ok := document.Page["collection"].(map[string]any); ok && membership["profile"] == "topic" {
+		id, _ := membership["id"].(string)
+		topic, err := st.GetTopicBySlug(id)
+		if err != nil || topic == nil {
+			return nil, fmt.Errorf("posts/%s: topic collection missing", slug)
+		}
+		p.TopicID, p.Topic = topic.ID, topic.Name
+	}
+	if renderer == nil {
+		renderer = post.NewService("")
+	}
+	publicData, _ := configuration.Blog["data"].(map[string]any)
+	p.ContentHTML, err = renderer.RenderStellarV2WithContext(document.Body, post.StellarRenderContext{Theme: configuration.Theme, Data: publicData, Page: document.Page, Language: content.ResolveStellarLanguage(document.Page, configuration.Blog), BlogExtensions: true})
+	return p, err
+}
+
+func stellarPostRegistry(st *store.Store) (*stellarv2.CollectionRegistry, error) {
+	values := map[string]map[string]any{}
+	topics, err := st.ListTopics()
+	if err != nil {
+		return nil, err
+	}
+	for _, value := range topics {
+		parsed, err := value.ValidateStellar()
+		if err != nil {
+			return nil, err
+		}
+		values["topic/"+value.Slug] = parsed.Value
+	}
+	wikis, err := st.ListWikiProjects()
+	if err != nil {
+		return nil, err
+	}
+	for _, value := range wikis {
+		parsed, err := value.ValidateStellar()
+		if err != nil {
+			return nil, err
+		}
+		values["wiki/"+value.ID] = parsed.Value
+	}
+	notebooks, err := st.ListNotebooks()
+	if err != nil {
+		return nil, err
+	}
+	for _, value := range notebooks {
+		parsed, err := value.ValidateStellar()
+		if err != nil {
+			return nil, err
+		}
+		values["notebooks/"+value.ID] = parsed.Value
+	}
+	return stellarv2.CreateCollectionRegistry(values), nil
+}
+
+func stellarPostText(values map[string]any, field, fallback string) string {
+	text, ok := values[field].(string)
+	if !ok || text == "" {
+		return fallback
+	}
+	return text
+}
+
+func stellarPostStrings(value any) []string {
+	if text, ok := value.(string); ok {
+		return []string{text}
+	}
+	out := []string{}
+	if values, ok := value.([]any); ok {
+		for _, value := range values {
+			if text, ok := value.(string); ok {
+				out = append(out, text)
+			}
+		}
+	}
+	return out
+}
+
+// StageStellarPosts 在私有副本构建完整候选；调用者不得传 live DB。
+func StageStellarPosts(st *store.Store, renderer *post.Service, sources map[string][]byte, missingOnly bool) ([]string, error) {
+	prepared := []*store.Post{}
+	for slug, source := range sources {
+		existing, err := st.GetBySlug(slug)
+		if err != nil {
+			return nil, err
+		}
+		if existing != nil && existing.StellarVersion != 2 {
+			return nil, fmt.Errorf("%w: posts/%s", store.ErrStellarMigrationRequired, slug)
+		}
+		if existing != nil && missingOnly {
+			continue
+		}
+		value, err := BuildStellarPost(st, renderer, slug, source)
+		if err != nil {
+			return nil, err
+		}
+		prepared = append(prepared, value)
+	}
+	imported := []string{}
+	for _, value := range prepared {
+		if err := st.Upsert(value); err != nil {
+			return nil, err
+		}
+		imported = append(imported, value.Slug)
+	}
+	return imported, nil
+}
+
+func (s *Service) importStellarPosts(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
+	return s.importMarkdownPosts(ctx, filename, data, false, nil, nil)
+}
+
+// ImportLegacyMarkdownContext 仅在调用者明确选择 1.x 转换时执行；不接受 manifest 备份。
+func (s *Service) ImportLegacyMarkdownContext(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
+	return s.ImportLegacyMarkdownWithTopicsContext(ctx, filename, data, nil)
+}
+
+// MissingLegacyTopicsError 列出本批需确认创建的专栏，此时真实数据库尚未写入。
+type MissingLegacyTopicsError struct {
+	Topics []string
+}
+
+func (e *MissingLegacyTopicsError) Error() string {
+	return "导入需要创建以下专栏：" + strings.Join(e.Topics, "、")
+}
+
+// ImportLegacyMarkdownWithTopicsContext 仅在候选副本中创建已明确确认的同名/同 Slug 专栏。
+// 后续转换或校验失败不会把新专栏单独写入真实数据库。
+func (s *Service) ImportLegacyMarkdownWithTopicsContext(ctx context.Context, filename string, data []byte, createTopics []string) (*ImportResult, error) {
+	return s.ImportLegacyMarkdownWithOptionsContext(ctx, filename, data, createTopics, nil)
+}
+
+// IgnoredMarkdownParameter 是仅对本次源文件中已证明不支持的参数的精确授权。
+type IgnoredMarkdownParameter struct {
+	Source string `json:"source"`
+	Path   string `json:"path"`
+}
+
+// ImportLegacyMarkdownWithOptionsContext 不保存忽略偏好；每次重新解析上传内容。
+func (s *Service) ImportLegacyMarkdownWithOptionsContext(ctx context.Context, filename string, data []byte, createTopics []string, ignored []IgnoredMarkdownParameter) (*ImportResult, error) {
+	return s.importMarkdownPosts(ctx, filename, data, true, createTopics, ignored)
+}
+
+func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data []byte, legacy bool, createTopics []string, ignored []IgnoredMarkdownParameter) (*ImportResult, error) {
+	if _, err := config.LoadStellarV2(s.store); err != nil {
+		return nil, fmt.Errorf("%w: %w", store.ErrStellarMigrationRequired, err)
+	}
+	sources := map[string][]byte{}
+	sourceNames := map[string]string{}
+	if strings.HasSuffix(strings.ToLower(filename), ".md") {
+		if filename != filepath.Base(filename) || len(data) > maxZipEntrySize {
+			return nil, fmt.Errorf("invalid Markdown file name or size")
+		}
+		slug := strings.TrimSuffix(filename, filepath.Ext(filename))
+		sources[slug] = data
+		sourceNames[slug] = filename
+	} else if strings.HasSuffix(strings.ToLower(filename), ".zip") {
+		reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+		if err != nil {
+			return nil, err
+		}
+		if len(reader.File) > maxZipEntries {
+			return nil, fmt.Errorf("markdown archive has too many members")
+		}
+		var total int
+		for _, entry := range reader.File {
+			if entry.Name != filepath.Base(entry.Name) || !strings.HasSuffix(strings.ToLower(entry.Name), ".md") || !entry.Mode().IsRegular() || entry.Mode()&os.ModeSymlink != 0 {
+				return nil, fmt.Errorf("markdown archive member rejected; multi-kind archives require the manifest protocol")
+			}
+			slug := strings.TrimSuffix(entry.Name, filepath.Ext(entry.Name))
+			if _, duplicate := sources[slug]; duplicate {
+				return nil, fmt.Errorf("duplicate Markdown source")
+			}
+			member, err := entry.Open()
+			if err != nil {
+				return nil, err
+			}
+			body, err := io.ReadAll(io.LimitReader(member, maxZipEntrySize+1))
+			_ = member.Close()
+			total += len(body)
+			if err != nil || len(body) > maxZipEntrySize || total > 500<<20 {
+				return nil, fmt.Errorf("markdown archive exceeds size limit or cannot be read")
+			}
+			sources[slug] = body
+			sourceNames[slug] = entry.Name
+		}
+	} else {
+		return nil, fmt.Errorf("only Markdown or portable ZIP content is supported")
+	}
+	if len(sources) == 0 {
+		return nil, fmt.Errorf("markdown archive has no sources")
+	}
+	if !legacy && len(ignored) > 0 {
+		return nil, fmt.Errorf("仅 1.x 导入支持忽略参数授权")
+	}
+	directory, err := os.MkdirTemp(filepath.Dir(s.store.DBPath()), ".stellar-import-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(directory)
+	snapshot := filepath.Join(directory, "blog.db")
+	if err := s.store.BackupTo(snapshot); err != nil {
+		return nil, err
+	}
+	probe, err := store.OpenForRecovery(snapshot)
+	if err != nil {
+		return nil, err
+	}
+	defer probe.Close()
+	// 整批预检与转换读取同一候选快照，真实数据库与文件不写入。
+	ordered := make([]string, 0, len(sources))
+	for slug := range sources {
+		ordered = append(ordered, slug)
+	}
+	sort.Slice(ordered, func(i, j int) bool { return sourceNames[ordered[i]] < sourceNames[ordered[j]] })
+	ignoredBySource := map[string][]string{}
+	options := stellarmigration.LegacyMarkdownImportOptions{}
+	if legacy {
+		configuration, err := config.LoadStellarV2(probe)
+		if err != nil {
+			return nil, err
+		}
+		runtime, err := config.ParseStellarBlogRuntime(configuration.Blog)
+		if err != nil {
+			return nil, err
+		}
+		options.PublicAuthorIDs = map[string]bool{}
+		for id, author := range runtime.Authors {
+			options.PublicAuthorIDs[id] = strings.TrimSpace(author.Name) != ""
+		}
+		all := []stellarmigration.UnsupportedMarkdownParameter{}
+		known := map[IgnoredMarkdownParameter]bool{}
+		for _, slug := range ordered {
+			parameters, err := stellarmigration.InspectLegacyMarkdownParametersWithOptions(sources[slug], sourceNames[slug], options)
+			if err != nil {
+				return nil, err
+			}
+			for _, parameter := range parameters {
+				all = append(all, parameter)
+				known[IgnoredMarkdownParameter{Source: parameter.Source, Path: parameter.Path}] = true
+			}
+		}
+		selected := map[IgnoredMarkdownParameter]bool{}
+		for _, parameter := range ignored {
+			if !known[parameter] || selected[parameter] {
+				return nil, fmt.Errorf("无效的不支持参数忽略授权")
+			}
+			selected[parameter] = true
+			ignoredBySource[parameter.Source] = append(ignoredBySource[parameter.Source], parameter.Path)
+		}
+		remaining := []stellarmigration.UnsupportedMarkdownParameter{}
+		for _, parameter := range all {
+			if !selected[IgnoredMarkdownParameter{Source: parameter.Source, Path: parameter.Path}] {
+				remaining = append(remaining, parameter)
+			}
+		}
+		if len(remaining) > 0 {
+			return nil, &stellarmigration.UnsupportedMarkdownParametersError{Parameters: remaining}
+		}
+	}
+	if legacy {
+		topics, err := probe.ListTopics()
+		if err != nil {
+			return nil, err
+		}
+		converted := map[string][]byte{}
+		approved := map[string]bool{}
+		for _, name := range createTopics {
+			approved[name] = true
+		}
+		missing := map[string]bool{}
+		for _, fileSlug := range ordered {
+			source := sources[fileSlug]
+			sourceName := sourceNames[fileSlug]
+			options.Topics, options.IgnoredParameters = topics, ignoredBySource[sourceName]
+			result, err := stellarmigration.ConvertLegacyMarkdownWithOptions(source, sourceName, "post", options)
+			var unresolved *stellarmigration.MissingLegacyTopicError
+			if errors.As(err, &unresolved) {
+				if !approved[unresolved.Topic] {
+					missing[unresolved.Topic] = true
+					continue
+				}
+				if !validStellarSourceComponent(unresolved.Topic, false) || strings.TrimSpace(unresolved.Topic) != unresolved.Topic {
+					return nil, fmt.Errorf("专栏 %q 不能直接用作 Slug，请先在「专栏」中创建并填写有效 Slug", unresolved.Topic)
+				}
+				raw, encodeErr := json.Marshal(map[string]any{"name": unresolved.Topic})
+				if encodeErr != nil {
+					return nil, encodeErr
+				}
+				topic := &store.Topic{Name: unresolved.Topic, Slug: unresolved.Topic, StellarVersion: 2, StellarConfig: string(raw), BlogExtensions: "{}"}
+				if err := probe.CreateTopic(topic); err != nil {
+					return nil, err
+				}
+				topics = append(topics, topic)
+				options.Topics = topics
+				result, err = stellarmigration.ConvertLegacyMarkdownWithOptions(source, sourceName, "post", options)
+			}
+			if err != nil {
+				return nil, err
+			}
+			slug := fileSlug
+			if result.SlugSuggestion != "" {
+				slug = result.SlugSuggestion
+			}
+			if _, duplicate := converted[slug]; duplicate {
+				return nil, fmt.Errorf("duplicate Markdown slug: %s", slug)
+			}
+			existing, err := probe.GetBySlug(slug)
+			if err != nil {
+				return nil, err
+			}
+			if _, explicit := result.Document.Blog["status"]; !explicit && existing == nil {
+				result.Document.Blog["status"] = store.StatusDraft
+			}
+			converted[slug], err = post.SerializeStellarDocument(result.Document)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if len(missing) > 0 {
+			names := make([]string, 0, len(missing))
+			for name := range missing {
+				names = append(names, name)
+			}
+			sort.Strings(names)
+			return nil, &MissingLegacyTopicsError{Topics: names}
+		}
+		sources = converted
+	}
+	imported, err := StageStellarPosts(probe, s.posts, sources, false)
+	if err != nil {
+		return nil, err
+	}
+	candidateService := New(Config{Store: probe, BackupDir: filepath.Join(directory, "export")})
+	var complete bytes.Buffer
+	if err := candidateService.WriteStellarContentZip(&complete); err != nil {
+		return nil, err
+	}
+	manifest, _, err := ReadStellarContentZip(complete.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	ids := map[int64]bool{}
+	for _, slug := range imported {
+		value, err := probe.GetBySlug(slug)
+		if err != nil {
+			return nil, err
+		}
+		ids[value.ID] = true
+	}
+	selected := []StellarContentRecord{}
+	for _, record := range manifest.Records {
+		if stellarCollectionTable(record.Table) || record.Table == "categories" || record.Table == "wiki_project_tags" {
+			selected = append(selected, record)
+		} else if record.Table == "posts" {
+			id, _ := stellarRecordInteger(record, "id")
+			if ids[id] {
+				selected = append(selected, record)
+			}
+		} else if record.Table == "post_authors" || record.Table == "post_categories" {
+			id, _ := stellarRecordInteger(record, "post_id")
+			if ids[id] {
+				selected = append(selected, record)
+			}
+		}
+	}
+	manifest.Records = selected
+	neededAuthors := map[int64]bool{}
+	for _, record := range selected {
+		if record.Table == "notebooks" || record.Table == "notes" || record.Table == "post_authors" {
+			id, _ := stellarRecordInteger(record, "author_id")
+			neededAuthors[id] = true
+		}
+	}
+	authors := []StellarAuthorIdentity{}
+	for _, author := range manifest.Authors {
+		if neededAuthors[author.ID] {
+			authors = append(authors, author)
+		}
+	}
+	manifest.Authors = authors
+	portable, err := MarshalStellarContentZip(manifest)
+	if err != nil {
+		return nil, err
+	}
+	maintenance.ReleaseRequest(ctx)
+	task, err := s.StartRestore(ctx, RestoreInput{Data: portable, ContentImport: true, ContentMergeDefinitions: true})
+	if err != nil {
+		return nil, err
+	}
+	if err := s.WaitRestore(ctx, task.ID); err != nil {
+		return nil, err
+	}
+	return &ImportResult{Imported: imported, Skipped: []string{}}, nil
+}
+
+func MarshalStellarContentZip(manifest StellarContentManifest) ([]byte, error) {
+	sources, err := stellarContentSources(manifest)
+	if err != nil {
+		return nil, err
+	}
+	sources[StellarContentManifestName], err = json.Marshal(manifest)
+	if err != nil {
+		return nil, err
+	}
+	var out bytes.Buffer
+	writer := zip.NewWriter(&out)
+	for name, source := range sources {
+		entry, err := writer.Create(name)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := entry.Write(source); err != nil {
+			return nil, err
+		}
+	}
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
+}

@@ -1,8 +1,8 @@
 {{- /* wiki.html: Wiki 项目列表，对齐 Stellar index_wiki.ejs + wiki_card.ejs。 */ -}}
 {{template "partial/pin_slider" .}}
-<div class="navbar top">
-  <div class="navbar-blur">
-    <div class="navbar-container">
+<div class="listing-nav">
+  <div class="listing-nav__surface">
+    <div class="listing-nav__viewport">
       <nav class="wiki">
         <a {{if not .Page.Tag}}class="active" {{end}}href="/wiki">{{- lang "btn.all_wiki" -}}</a>
         {{- range .WikiTags}}

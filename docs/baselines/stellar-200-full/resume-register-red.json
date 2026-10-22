@@ -1,0 +1,7 @@
+{
+  "captchaInputs": 0,
+  "formVisible": "flex",
+  "status": 400,
+  "error": "验证码错误或已过期",
+  "challengeRequests": 0
+}

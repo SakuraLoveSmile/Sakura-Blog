@@ -11,6 +11,8 @@ import (
 
 	backuppkg "blog/internal/backup"
 	"blog/internal/comments"
+	"blog/internal/config"
+	"blog/internal/content"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -23,6 +25,12 @@ import (
 // newFullEnv 完整测试环境：密码站点 + users 表 + 文章/评论/备份服务。
 // 返回 engine、store、admin 用户与 handler。
 func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler) {
+	return newFullEnvWithStellar(t, false)
+}
+func newFullStellarEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler) {
+	return newFullEnvWithStellar(t, true)
+}
+func newFullEnvWithStellar(t *testing.T, stellar bool) (*gin.Engine, *store.Store, *store.User, *Handler) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
@@ -49,6 +57,13 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 		}
 	}
 	site := &tmpl.Site{}
+	if stellar {
+		strict, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{})
+		if err != nil {
+			t.Fatalf("initialize isolated Stellar fixture: %v", err)
+		}
+		site.StellarV2 = strict
+	}
 	enableAdmin(t, st, site, "secret")
 
 	posts := post.NewService(t.TempDir())
@@ -61,17 +76,50 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 		BackupDir: t.TempDir(),
 	})
 
+	snapshot := sitePtr(site)
 	r := gin.New()
 	mountPublicIdentityForTest(r, st, site)
-	h, err := MountConsole(r, MountDeps{Config: Config{
-		Store:    st,
+	var h *Handler
+	var mountErr error
+	h, mountErr = MountConsole(r, MountDeps{Config: Config{
+		Store: st,
+		RenderStellarMarkdown: func(input content.StellarBodyInput) (string, error) {
+			configuration := snapshot.Load().StellarV2
+			if configuration == nil {
+				var err error
+				configuration, err = config.LoadStellarV2(st)
+				if err != nil {
+					return "", err
+				}
+			}
+			language := input.Language
+			if language == "" {
+				language = content.ResolveStellarLanguage(input.Page, configuration.Blog)
+			}
+			data, _ := configuration.Blog["data"].(map[string]any)
+			return posts.RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: configuration.Theme, Data: data, Page: input.Page, Language: language, BlogExtensions: true})
+		},
+		RenderStellarContentPreview: func(input content.StellarPreviewInput) (content.StellarPreviewOutput, error) {
+			body := input.HTML
+			if input.Markdown != nil {
+				parsed, err := validateEditorMetadata(StellarContentMetadata{input.StellarVersion, input.StellarConfig, input.BlogExtensions}, input.Layout, false)
+				if err != nil {
+					return content.StellarPreviewOutput{}, err
+				}
+				body, err = h.renderStellarBody(content.StellarBodyInput{Markdown: *input.Markdown, Page: parsed.Value, Language: input.Language})
+				if err != nil {
+					return content.StellarPreviewOutput{}, err
+				}
+			}
+			return content.StellarPreviewOutput{HTML: body, Document: "<!doctype html><html><body>" + body + "</body></html>"}, nil
+		},
 		Posts:    posts,
-		Site:     sitePtr(site),
+		Site:     snapshot,
 		Comments: commentH,
 		Backups:  backups,
 	}})
-	if err != nil {
-		t.Fatalf("mount: %v", err)
+	if mountErr != nil {
+		t.Fatalf("mount: %v", mountErr)
 	}
 	return r, st, user, h
 }

@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from "vue";
 import { previewApi } from "@/api";
+import { readJSONFieldRaw } from "@/components/editor/stellar-form-json";
 
 interface PreviewFocus {
   page: string;
@@ -8,9 +9,8 @@ interface PreviewFocus {
 }
 
 const PREVIEW_FOCUS: Record<string, PreviewFocus> = {
-  basic: { page: "index", selectors: [".navbar.top", "footer.page-footer"], label: "顶栏与页脚" },
-  post: { page: "index", selectors: [".l_main"], label: "文章卡片" },
-  comments: { page: "post", selectors: ["#comments"], label: "评论区" },
+  basic: { page: "index", selectors: ["#leftbar-region", "footer"], label: "站点标识与页脚" },
+  post: { page: "index", selectors: ["#main"], label: "文章卡片" },
 };
 
 function filterPreviewHead(head: HTMLHeadElement): void {
@@ -40,7 +40,7 @@ function markChanged(oldEl: Element, newEl: Element): void {
 export function useSettingsPreview(
   data: Ref<Record<string, any>>,
   active: Ref<string>,
-  sections: readonly string[],
+  canonicalDocument: Ref<string>,
 ) {
   const previewOpen = ref(false);
   const previewViewport = ref<"desktop" | "tablet" | "mobile">("desktop");
@@ -51,12 +51,11 @@ export function useSettingsPreview(
   let previousHtml = "";
   let sequence = 0;
 
-  function previewSections(): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
-    for (const section of sections) {
-      if (data.value[section] !== undefined) result[section] = data.value[section];
-    }
-    return result;
+  function previewSections(): string {
+    const theme = readJSONFieldRaw(canonicalDocument.value, "theme");
+    const blog = readJSONFieldRaw(canonicalDocument.value, "blog_extensions");
+    if (!theme || !blog) throw new Error("请先修正完整主题配置");
+    return `{"site":${JSON.stringify(data.value.site ?? {})},"stellar_v2":{"version":2,"theme":${theme}},"blog_extensions":${blog}}`;
   }
 
   function buildFragmentDoc(fullHtml: string, focus: PreviewFocus): string {
@@ -110,6 +109,7 @@ export function useSettingsPreview(
     if (previewOpen.value) void refreshPreview();
   });
   watch(data, schedulePreview, { deep: true });
+  watch(canonicalDocument, schedulePreview);
   onBeforeUnmount(() => clearTimeout(previewTimer));
 
   return { previewOpen, previewViewport, previewHtml, previewLoading, previewFocus, refreshPreview };

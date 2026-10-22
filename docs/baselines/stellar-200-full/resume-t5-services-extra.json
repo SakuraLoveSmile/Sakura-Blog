@@ -1,0 +1,10 @@
+{
+  "built_head": "aa1fa93",
+  "scope": "isolated loopback HTTP contracts, no real provider accounts",
+  "cdp": {
+    "result": {
+      "type": "string",
+      "value": "{\"url\":\"http://127.0.0.1:8103/t5-services-extra/\",\"markers\":[{\"text\":\"T5_ARTALK_MARKER\",\"present\":true},{\"text\":\"T5_TWIKOO_MARKER\",\"present\":true},{\"text\":\"T5_WALINE_MARKER\",\"present\":true},{\"text\":\"T5_GISCUS_MARKER\",\"present\":true}],\"friends\":[{\"text\":\"T5 动态好友\",\"url\":\"http://127.0.0.1:8103/about/\"},{\"text\":\"T5 动态好友\",\"url\":\"http://127.0.0.1:8103/about/\"}],\"overflow\":false}"
+    }
+  }
+}

@@ -1,0 +1,107 @@
+.site-shell {
+  --shell-gap: var(--gap-page);
+  --shell-edge-inset: 16px;
+  --shell-topbar-top: 0px;
+}
+.site-shell[data-regions~='topbar'] {
+  --shell-sticky-offset: var(--shell-topbar-height);
+  --shell-topbar-bottom: var(--shell-topbar-height);
+}
+.ui-surface {
+  border: 0;
+  border-radius: var(--radius-card-l, var(--radius-card, 24px));
+  background: var(--card);
+  box-shadow: 0 4px 8px 0px rgba(0,0,0,0.05);
+}
+.site-region--topbar.ui-surface {
+  top: 0;
+  width: 100%;
+  border-radius: 0;
+}
+.site-region--leftbar .ui-surface {
+  background: var(--card);
+}
+.site-region--leftbar .brand-navigation__back {
+  background: var(--block-border);
+  box-shadow: none;
+}
+.site-region--leftbar .search-wrapper > .search-form:before {
+  background: var(--text-meta);
+}
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial) {
+  background-color: var(--block);
+}
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial):hover,
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial):active,
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial).active,
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial).is-active {
+  background-color: var(--block-border);
+}
+.ui-interactive {
+  background: transparent;
+  box-shadow: none;
+}
+.ui-interactive:focus-visible {
+  outline: 2px solid var(--theme);
+  outline-offset: 2px;
+}
+.ui-interactive:hover,
+.ui-interactive:focus-visible {
+  background: var(--block);
+  box-shadow: none;
+}
+.ui-interactive.has-hover-surface,
+.ui-interactive:active,
+.ui-interactive.active,
+.ui-interactive.is-active,
+details[open] > .ui-interactive {
+  background: var(--block);
+  box-shadow: none;
+}
+.widget-wrapper.markdown .ui-interactive {
+  background: var(--block);
+}
+.site-region--leftbar .ui-interactive:hover,
+.site-region--leftbar .ui-interactive:active,
+.site-region--leftbar .ui-interactive.active,
+.site-region--leftbar .ui-interactive.is-active,
+.site-region--leftbar details[open] > .ui-interactive {
+  background: var(--block-border);
+}
+table:not([class]) th {
+  background: var(--block);
+  border-top: 1px solid var(--block-border);
+  border-bottom: 1px solid var(--block-border);
+}
+table:not([class]) tr {
+  border-bottom: 1px dashed var(--block-border);
+}
+table:not([class]) tr:hover {
+  background: var(--block);
+}
+blockquote:before {
+  background: var(--text-meta);
+}
+p > code:not([class]),
+li > code:not([class]),
+.md-text .highlight,
+pre:not([class]):has(> code),
+.md-text .highlight figcaption span,
+.md-text .gist .highlight,
+.md-text .gist .gist-meta {
+  background: var(--block);
+}
+.md-text .gist .gist-file {
+  border-color: var(--block-border);
+}
+.md-text .gist .gist-data {
+  --bgColor-default: var(--block);
+  border-bottom-color: var(--block-border);
+}
+.md-text .link-card {
+  background: var(--card);
+}
+.listing-nav__surface {
+  background: var(--card);
+  box-shadow: 0 1px 2px 0px rgba(0,0,0,0.1);
+}

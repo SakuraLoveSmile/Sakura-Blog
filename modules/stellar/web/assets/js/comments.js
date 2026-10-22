@@ -5,9 +5,19 @@
  */
 (function () {
   'use strict';
+  if (window.stellar && window.stellar.comments && window.stellar.comments.mount) return;
+  var mounted = new WeakMap();
 
-  if (window.__cmtBuilt) return;
-  window.__cmtBuilt = true;
+  function createInstance(scope) {
+  var document = scope ? scope.document : window.document;
+  var fetch = scope ? scope.fetch : window.fetch.bind(window);
+  var setTimeout = scope ? scope.setTimeout : window.setTimeout.bind(window);
+  var requestAnimationFrame = scope ? scope.requestAnimationFrame : window.requestAnimationFrame;
+  var IntersectionObserver = scope ? function (fn, opts) { return scope.observer('IntersectionObserver', fn, opts); } : window.IntersectionObserver;
+  function listen(target, event, handler, options) {
+    if (scope) scope.listen(target, event, handler, options);
+    else target.addEventListener(event, handler, options);
+  }
 
   // ------- 常量 -------
   // artalk/ 目录下有各 pack 的 Artalk 格式清单（items: [{key, val}]），val 为图片直链
@@ -48,6 +58,7 @@
     parentId: 0,
     comments: [],         // 已渲染的评论列表（供插入新评论后更新计数）
     loadingComments: false,
+    registerSubmitting: false,
     sortMode: 'newest',   // 'newest' | 'hottest' | 'oldest' | 'author'
     boostEmojiItems: null,
     boostEmojiPromise: null
@@ -70,6 +81,7 @@
     var bg = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#111827');
     t.style.cssText = 'position:fixed;z-index:10001;left:50%;top:68px;transform:translateX(-50%);padding:.45rem 1rem;font-size:.82rem;color:#fff;background:' + bg + ';border-radius:999px;box-shadow:0 8px 24px rgba(17,24,39,.25);opacity:0;transition:opacity .18s;';
     document.body.appendChild(t);
+    if (scope) scope.onCleanup(function () { if (t.parentNode) t.parentNode.removeChild(t); });
     requestAnimationFrame(function () { t.style.opacity = '1'; });
     setTimeout(function () {
       t.style.opacity = '0';
@@ -302,6 +314,7 @@
       maybeScrollToHashComment();
     } else {
       listHead.style.display = 'none';
+      listHead.querySelector('.cmt-list-title').textContent = '0 条评论';
       emptyEl.style.display = 'flex';
     }
 
@@ -361,6 +374,11 @@
         cmt.reply_ref = parent.getAttribute('data-nick') || '';
         frag.innerHTML = renderCommentItem(cmt);
         childrenBox.appendChild(frag.content.firstElementChild);
+        var parentModel = findComment(state.comments, cmt.parent_id);
+        if (parentModel) {
+          parentModel.children = parentModel.children || [];
+          parentModel.children.push(cmt);
+        }
         if (listHead && listHead.querySelector('.cmt-list-title')) {
           var m = listHead.querySelector('.cmt-list-title').textContent.match(/\d+/);
           total = parseInt((m && m[0]) || '0', 10) + 1;
@@ -370,16 +388,19 @@
     } else {
       emptyEl.style.display = 'none';
       listHead.style.display = 'flex';
-      listHead.querySelector('.cmt-list-title').textContent = '1 条评论';
+      var title = listHead.querySelector('.cmt-list-title');
+      var previous = title.textContent.match(/\d+/);
+      total = parseInt((previous && previous[0]) || '0', 10) + 1;
+      title.textContent = total + ' 条评论';
+      state.comments.unshift(cmt);
       listEl.insertAdjacentHTML('afterbegin', renderCommentItem(cmt));
-      total = 1;
     }
 
     // 更新顶部徽章
     if (countBadge) {
       var cur = countBadge.textContent.match(/\d+/);
       var curN = parseInt((cur && cur[0]) || '0', 10);
-      countBadge.textContent = '共 ' + Math.max(curN, total > 0 ? total : 0) + ' 条评论';
+      countBadge.textContent = '共 ' + Math.max(curN + (total > 0 ? 1 : 0), total) + ' 条评论';
     }
   }
 
@@ -864,7 +885,9 @@
       return '\u0000C' + (codes.length - 1) + '\u0000';
     });
     s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, alt, u) {
-      return safeUrl(u) ? '<img class="cmt-emoji-img" src="' + u + '" alt="' + alt + '">' : m;
+      // 与服务端评论渲染一致：表情使用内联尺寸，普通附件保留图片布局。
+      var emoji = /^https?:\/\/[^\"]*(?:emoticons|emoji)[^\"]*$/i.test(u);
+      return safeUrl(u) ? '<img' + (emoji ? ' class="cmt-emoji-img"' : '') + ' src="' + u + '" alt="' + alt + '">' : m;
     });
     s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
       return safeUrl(u) ? '<a href="' + u + '" rel="nofollow noopener" target="_blank">' + t + '</a>' : m;
@@ -960,7 +983,7 @@
         fileInput.accept = 'image/png,image/jpeg,image/gif,image/webp';
         fileInput.style.display = 'none';
         document.body.appendChild(fileInput);
-        fileInput.addEventListener('change', function () {
+        listen(fileInput, 'change', function () {
           if (fileInput.files && fileInput.files[0]) uploadCommentImage(fileInput.files[0]);
           fileInput.value = '';
         });
@@ -1018,6 +1041,15 @@
     var regF = $('#cmt-form-register');
     if (loginF) loginF.style.display = isLogin ? 'flex' : 'none';
     if (regF) regF.style.display = isLogin ? 'none' : 'flex';
+    if (!isLogin) setRegisterError('');
+  }
+  function setRegisterError(message) {
+    var status = $('#cmt-reg-status');
+    if (status) status.textContent = message;
+  }
+  function updateRegisterControls() {
+    var submit = $('#cmt-do-register');
+    if (submit) submit.disabled = state.registerSubmitting;
   }
   function bindModal() {
     on($('#cmt-do-logout'), 'click', function () {
@@ -1061,10 +1093,13 @@
       var p = $('#cmt-login-password').value;
       if (!u || !p) { toast('请填写用户名和密码', 'error'); return; }
       var btn = $('#cmt-do-login'); if (btn) btn.disabled = true;
+      var codeInput = $('#cmt-login-code');
+      var payload = { username: u, password: p };
+      if (codeInput && codeInput.value.trim()) payload.code = codeInput.value.trim();
       fetch('/api/auth/login', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p })
+        body: JSON.stringify(payload)
       }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
         .then(function (res) {
           if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '登录失败');
@@ -1079,17 +1114,27 @@
     // 注册表单
     on($('#cmt-form-register'), 'submit', function (e) {
       e.preventDefault();
+      if (state.registerSubmitting) return;
       var u = $('#cmt-reg-username').value.trim();
       var p = $('#cmt-reg-password').value;
       var n = $('#cmt-reg-nick').value.trim();
       var em = $('#cmt-reg-email').value.trim();
       var av = $('#cmt-reg-avatar').value.trim();
       if (!u || !p || !em) { toast('请填写必填项', 'error'); return; }
-      var btn = $('#cmt-do-register'); if (btn) btn.disabled = true;
+      var inviteInput = $('#cmt-reg-invitation');
+      var invitation = inviteInput ? inviteInput.value.trim() : '';
+      if (!invitation) {
+        setRegisterError(inviteInput && inviteInput.getAttribute('data-required') || '请填写管理员提供的邀请码');
+        if (inviteInput) inviteInput.focus();
+        return;
+      }
+      state.registerSubmitting = true;
+      setRegisterError('');
+      updateRegisterControls();
       fetch('/api/auth/register', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p, display_name: n, email: em, avatar: av })
+        body: JSON.stringify({ username: u, password: p, display_name: n, email: em, avatar: av, invitation_code: invitation })
       }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
         .then(function (res) {
           if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '注册失败');
@@ -1097,8 +1142,11 @@
           closeModal();
           fetchMe();
         })
-        .catch(function (err) { toast(err.message || '注册失败', 'error'); })
-        .then(function () { if (btn) btn.disabled = false; });
+        .catch(function (err) {
+          setRegisterError(err.message || '注册失败');
+          // 注册失败保留邀请码、账号资料和评论草稿，便于修正后重试。
+        })
+        .then(function () { state.registerSubmitting = false; updateRegisterControls(); });
     });
   }
 
@@ -1115,12 +1163,30 @@
   // ------- 通用事件绑定（委托 + PJAX 兼容） -------
   function on(el, ev, fn) {
     if (!el) return;
-    el.addEventListener(ev, fn);
+    listen(el, ev, fn);
   }
 
   function bindDelegated() {
     // 回复按钮（委托到 document，因为评论列表是动态插入的）
-    document.addEventListener('click', function (e) {
+    listen(document, 'click', function (e) {
+      var like = e.target.closest && e.target.closest('.cmt-like-btn');
+      if (like) {
+        if (like.disabled || like.getAttribute('data-liked') === '1') return;
+        var likeID = like.getAttribute('data-id');
+        if (!likeID) return;
+        var count = like.querySelector('.cmt-like-count');
+        var previous = count ? parseInt(count.textContent, 10) || 0 : 0;
+        like.disabled = true;
+        if (count) count.textContent = String(previous + 1);
+        fetch('/api/comments/' + encodeURIComponent(likeID) + '/like', { method: 'POST', credentials: 'same-origin' })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data || !data.ok) { if (count) count.textContent = String(previous); like.disabled = false; return; }
+            if (count && typeof data.likes === 'number') count.textContent = String(data.likes);
+            like.setAttribute('data-liked', '1'); like.classList.add('is-liked');
+          }).catch(function () { if (count) count.textContent = String(previous); like.disabled = false; });
+        return;
+      }
       var replyBtn = e.target.closest && e.target.closest('.cmt-reply-btn');
       if (replyBtn) {
         var id = replyBtn.getAttribute('data-id');
@@ -1276,7 +1342,7 @@
       if (!e.target.closest || !e.target.closest('.cmt-boost-popover')) closeBoostPanel();
     });
 
-    document.addEventListener('input', function (e) {
+    listen(document, 'input', function (e) {
       var search = e.target.closest && e.target.closest('.cmt-boost-search');
       if (!search) return;
       var panel = search.closest('.cmt-boost-popover');
@@ -1284,18 +1350,18 @@
     });
 
     if (window.addEventListener) {
-      window.addEventListener('resize', function () {
+      listen(window, 'resize', function () {
         var panel = $('.cmt-boost-popover');
         if (panel) positionBoostPanel(panel, panel._boostAnchor);
       });
-      window.addEventListener('scroll', function () {
+      listen(window, 'scroll', function () {
         var panel = $('.cmt-boost-popover');
         if (panel) positionBoostPanel(panel, panel._boostAnchor);
       }, true);
     }
 
     // Boost 键盘操作，以及评论 Ctrl/Cmd + Enter 快捷提交。
-    document.addEventListener('keydown', function (e) {
+    listen(document, 'keydown', function (e) {
       var boostPanel = e.target && e.target.closest && e.target.closest('.cmt-boost-popover');
       if (boostPanel) {
         if (e.key === 'Escape') {
@@ -1327,9 +1393,9 @@
     // 匿名输入记忆
     ['input', 'change'].forEach(function (ev) {
       var n = $('#cmt-nick'), em = $('#cmt-email'), l = $('#cmt-link');
-      if (n) n.addEventListener(ev, rememberAnon);
-      if (em) em.addEventListener(ev, rememberAnon);
-      if (l) l.addEventListener(ev, rememberAnon);
+      if (n) listen(n, ev, rememberAnon);
+      if (em) listen(em, ev, rememberAnon);
+      if (l) listen(l, ev, rememberAnon);
     });
   }
 
@@ -1339,22 +1405,22 @@
     if (!body) return;  // 当前页面没有评论区
     if (body.getAttribute('data-cmt-init') === '1') return;
     body.setAttribute('data-cmt-init', '1');
+    if (scope) scope.onCleanup(function () { body.removeAttribute('data-cmt-init'); });
 
     bindDelegated();
     bindToolbar();
     bindModal();
 
-    // 1. 拉身份  2. 观察懒加载
-    fetchMe(function () {
-      observeLazy();
-    });
+    // 公开列表无需等待身份响应，身份请求缓慢时仍能按视口懒加载。
+    fetchMe();
+    observeLazy();
   }
 
   // 测试面：机械校验入口（node --test modules/stellar/tests/comments.test.mjs 在 vm 沙箱断言）。
   // 与 pjax.js 的 window.stellar.pjax._internal 模式一致；真实浏览器不消费该对象。
   // _resetState 仅供测试重建运行时状态；_init 为 init 别名（测试按需显式初始化）。
   window.stellar = window.stellar || {};
-  window.stellar.comments = {
+  var instance = {
     _internal: {
       escapeHtml: escapeHtml,
       defaultAvatar: defaultAvatar,
@@ -1405,10 +1471,20 @@
     }
   };
 
-  // DOMContentLoaded 已过也没关系，立即跑（整页刷新模型，无需换页重初始化）
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  return { init: init, internal: instance._internal };
   }
+  var testing = createInstance(null);
+  window.stellar.comments = {
+    _internal: testing.internal,
+    mount: function (root, context) {
+      if (mounted.has(root)) return mounted.get(root);
+      var scope = window.blogRuntime.createScope(root, context);
+      var cleanup = function () { scope.cleanup(); mounted.delete(root); };
+      scope.onCleanup(function () { mounted.delete(root); });
+      var instance = createInstance(scope);
+      instance.init();
+      mounted.set(root, cleanup);
+      return cleanup;
+    }
+  };
 })();

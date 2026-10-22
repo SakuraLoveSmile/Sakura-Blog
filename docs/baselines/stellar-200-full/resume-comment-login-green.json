@@ -1,0 +1,99 @@
+{
+  "red": {
+    "initialized": "1",
+    "modalDisplay": "none",
+    "modalOwned": false
+  },
+  "loggedIn": {
+    "draft": "原生评论登录与发布回归 20261014",
+    "identity": "评论验收读者",
+    "modalClosed": true,
+    "modalOwned": true,
+    "submit": "发送"
+  },
+  "reloaded": {
+    "commentCount": 1,
+    "content": "评论验收读者刚刚原生评论登录与发布回归 20261014\n回复0",
+    "emptyDraft": true,
+    "identity": "评论验收读者",
+    "modalCount": 1
+  },
+  "responses": [
+    {
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/api/comments",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/api/comments",
+      "status": 200
+    }
+  ],
+  "checks": {
+    "escapeClosed": true,
+    "closeButtonClosed": true,
+    "onlyIsolatedFixture": true,
+    "userDraftUntouched": true
+  },
+  "navigation": {
+    "url": "http://localhost:8112/wiki/ferrofluid/second",
+    "documentResponses": 1,
+    "requests": [
+      {
+        "type": "Fetch",
+        "path": "/api/auth/logout",
+        "status": 200
+      },
+      {
+        "type": "Document",
+        "path": "/wiki/ferrofluid/second",
+        "status": 200
+      },
+      {
+        "type": "Fetch",
+        "path": "/api/comments",
+        "status": 200
+      },
+      {
+        "type": "Fetch",
+        "path": "/api/auth/me",
+        "status": 200
+      },
+      {
+        "type": "Fetch",
+        "path": "/api/auth/login",
+        "status": 401
+      },
+      {
+        "type": "Fetch",
+        "path": "/api/auth/login",
+        "status": 200
+      },
+      {
+        "type": "Fetch",
+        "path": "/api/auth/me",
+        "status": 200
+      }
+    ]
+  },
+  "failure": {
+    "status": 401,
+    "error": "用户名或密码错误"
+  },
+  "remount": {
+    "loginResponses": 1,
+    "identity": "评论验收读者",
+    "modalCount": 1
+  }
+}

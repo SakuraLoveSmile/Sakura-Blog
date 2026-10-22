@@ -8,6 +8,7 @@ import type {
   PostListParams,
   PostPayload,
   ShareListParams,
+  StellarContentMetadata,
 } from "./contracts";
 
 // --- Posts ---
@@ -29,7 +30,7 @@ export const postApi = {
 };
 
 // --- Topics ---
-export interface TopicItem {
+export interface TopicItem extends StellarContentMetadata {
   id: number;
   name: string;
   slug: string;
@@ -42,7 +43,7 @@ export interface TopicItem {
   updated_at: string;
 }
 
-export interface TopicPayload {
+export interface TopicPayload extends StellarContentMetadata {
   name: string;
   slug?: string;
   description?: string;

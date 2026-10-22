@@ -94,7 +94,29 @@ func TestAPISearchTypeFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ws := &webServer{st: st, searchIdx: idx}
+	ensureRouteSchema(t, st)
+	if _, err := st.Create(&store.Post{Slug: "p1", Title: "文章标题", ContentMD: "文章正文含独特词甲", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreatePage(&store.Page{Slug: "about", Title: "页面标题", ContentMD: "页面正文含独特词乙", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreateMoment(&store.Moment{ContentMD: "瞬间正文含独特词丙", ContentHTML: "瞬间正文含独特词丙", Visibility: store.MomentVisibilityPublic}); err != nil {
+		t.Fatal(err)
+	}
+
+	// 索引并不等于公开授权：过期行及私密瞬间即使命中也必须过滤。
+	if _, err := st.CreateMoment(&store.Moment{ContentMD: "私密瞬间含独特词", ContentHTML: "私密瞬间含独特词", Visibility: store.MomentVisibilityPrivate}); err != nil {
+		t.Fatal(err)
+	}
+	for _, candidate := range []struct{ kind, slug string }{{search.TypePost, "stale"}, {search.TypeMoment, "moment-2"}} {
+		if err := idx.IndexDoc(candidate.kind, candidate.slug, "隐藏标题", "隐藏正文含独特词"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ws, _ := newWikiVerifyServer(t)
+	ws.st, ws.searchIdx = st, idx
+	ws.site.Store(canonicalRouteSite(t, "搜索测试", nil, map[string]any{"search": map[string]any{"provider": "go"}}))
 	r := gin.New()
 	ws.registerSearchRoutes(r)
 
@@ -123,7 +145,7 @@ func TestAPISearchTypeFilter(t *testing.T) {
 	if items := doSearch("独特词", "post"); len(items) != 1 || items[0]["type"] != "post" || items[0]["path"] != "/post/p1" {
 		t.Errorf("post filter mismatch: %v", items)
 	}
-	if items := doSearch("独特词", "page"); len(items) != 1 || items[0]["type"] != "page" || items[0]["path"] != "/pages/about" {
+	if items := doSearch("独特词", "page"); len(items) != 1 || items[0]["type"] != "page" || items[0]["path"] != "/about" {
 		t.Errorf("page filter mismatch: %v", items)
 	}
 	if items := doSearch("独特词", "moment"); len(items) != 1 || items[0]["type"] != "moment" || items[0]["path"] != "/moments" {
@@ -167,6 +189,144 @@ func TestSearchItemsAnchors(t *testing.T) {
 	}
 	if !strings.Contains(string(b), `"anchors":[{"id":"setup"`) {
 		t.Errorf("json missing anchors: %s", b)
+	}
+}
+
+func TestStellarSearchPathsStayWithinSubpath(t *testing.T) {
+	ws, st, _, r := stellarRouteFixture(t)
+	site := *ws.site.Load()
+	site.URL = "https://fixture.example/sub"
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	searchConfig := stellarCopyObject(stellarObject(version.Theme["search"]))
+	local := stellarCopyObject(stellarObject(searchConfig["local"]))
+	local["scope"] = "all"
+	searchConfig["local"] = local
+	version.Theme["search"] = searchConfig
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	row := createStellarPost(t, st, "marker", "")
+	if err := ws.searchIdx.IndexDoc(search.TypePost, row.Slug, row.Title, row.ContentMD); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikiProject(&store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"文档","route":{"path":"/docs/"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "docs", Slug: "intro", Title: "文档", ContentMD: "marker", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"wiki","id":"docs"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateNotebook(&store.Notebook{ID: "journal", StellarVersion: 2, StellarConfig: `{"name":"笔记","route":{"path":"/journal/"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreateNote(&store.Note{NotebookID: "journal", Slug: "entry", Title: "笔记", ContentMD: "marker", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"notebook","id":"journal"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	moment := &store.Moment{ContentMD: "marker", Visibility: store.MomentVisibilityPublic}
+	if _, err := st.CreateMoment(moment); err != nil {
+		t.Fatal(err)
+	}
+	if err := ws.searchIdx.IndexDoc(search.TypeMoment, store.MomentSlugKey(moment.ID), "marker", moment.ContentMD); err != nil {
+		t.Fatal(err)
+	}
+	w := stellarRequest(r, "/sub/search.json")
+	if w.Code != http.StatusOK {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	var localItems []stellarSearchItem
+	if err := json.Unmarshal(w.Body.Bytes(), &localItems); err != nil {
+		t.Fatal(err)
+	}
+	localPaths := map[string]bool{}
+	for _, item := range localItems {
+		localPaths[item.Path] = true
+		if target := stellarRequest(r, item.Path); target.Code != http.StatusOK {
+			t.Errorf("local search target %s => %d", item.Path, target.Code)
+		}
+	}
+	for _, want := range []string{"/sub/post/marker/", "/sub/docs/intro/", "/sub/journal/entry/"} {
+		if !localPaths[want] {
+			t.Errorf("local search missing subpath %s: %#v", want, localPaths)
+		}
+	}
+	w = stellarRequest(r, "/sub/api/search?q=marker")
+	if w.Code != http.StatusOK {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	var response stellarSearchAPIResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	apiPaths := map[string]bool{}
+	for _, item := range response.Items {
+		apiPaths[item.Path] = true
+		if target := stellarRequest(r, item.Path); target.Code != http.StatusOK {
+			t.Errorf("search target %s => %d", item.Path, target.Code)
+		}
+		if strings.Contains(item.Path, "/sub/sub/") {
+			t.Errorf("search target repeated root: %s", item.Path)
+		}
+	}
+	for _, want := range []string{"/sub/post/marker", "/sub/docs/intro", "/sub/journal/entry", "/sub/moments"} {
+		if !apiPaths[want] {
+			t.Errorf("server search missing subpath %s: %#v", want, apiPaths)
+		}
+	}
+}
+
+func TestStellarGoSearchScopeDomainAndContentPolicy(t *testing.T) {
+	ws, st, _, router := stellarRouteFixture(t)
+	row := createStellarPost(t, st, "headline", "")
+	if err := ws.searchIdx.IndexDoc(search.TypePost, row.Slug, row.Title, row.ContentMD); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikiProject(&store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"文档"}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "docs", Slug: "intro", Title: "文档标题", ContentMD: "bodymarker", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"title":"文档标题","collection":{"profile":"wiki","id":"docs"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	read := func(query string) []stellarSearchAPIItem {
+		t.Helper()
+		response := stellarRequest(router, "/api/search?"+query)
+		if response.Code != http.StatusOK {
+			t.Fatal(response.Code, response.Body.String())
+		}
+		var result stellarSearchAPIResponse
+		if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		return result.Items
+	}
+	for _, query := range []string{"q=bodymarker&scope=post", "q=bodymarker&domain=blog", "q=bodymarker&domain=wiki:other", "q=bodymarker&include_content=false"} {
+		if items := read(query); len(items) != 0 {
+			t.Fatalf("query %s escaped policy: %#v", query, items)
+		}
+	}
+	if items := read("q=bodymarker&scope=page&domain=wiki:docs"); len(items) != 1 || items[0].Type != "wiki" || len(items[0].Domains) != 1 || items[0].Domains[0] != "wiki:docs" {
+		t.Fatalf("collection search: %#v", items)
+	}
+	if items := read("q=Go&include_content=false&domain=blog"); len(items) != 1 || items[0].Snippet != "" || items[0].AnchorID != "" {
+		t.Fatalf("metadata-only search: %#v", items)
+	}
+	site := *ws.site.Load()
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	searchConfig := stellarCopyObject(stellarObject(version.Theme["search"]))
+	local := stellarCopyObject(stellarObject(searchConfig["local"]))
+	local["includeContent"] = false
+	searchConfig["local"] = local
+	version.Theme["search"] = searchConfig
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	if items := read("q=bodymarker&include_content=true&scope=all"); len(items) != 0 {
+		t.Fatalf("request expanded disabled server content policy: %#v", items)
+	}
+	local["scope"] = "post"
+	if items := read("q=文档标题&scope=all"); len(items) != 0 {
+		t.Fatalf("request expanded server scope: %#v", items)
+	}
+	if response := stellarRequest(router, "/api/search?q=marker&scope=bad"); response.Code != http.StatusBadRequest {
+		t.Fatalf("invalid scope status: %d", response.Code)
 	}
 }
 

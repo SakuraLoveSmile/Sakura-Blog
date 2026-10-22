@@ -1,0 +1,20 @@
+{
+  "authors": [
+    {
+      "name": "验收管理员",
+      "url": "http://127.0.0.1:8103/author/admin"
+    },
+    {
+      "name": "第二作者",
+      "url": "http://127.0.0.1:8103/author/writer"
+    }
+  ],
+  "headings": [
+    "随笔：保存重开与搜索实测",
+    "第一节",
+    "第二节",
+    "站内搜索"
+  ],
+  "title": "随笔：保存重开与搜索实测 - Stellar 2.0 验收站",
+  "url": "http://127.0.0.1:8103/post/story"
+}

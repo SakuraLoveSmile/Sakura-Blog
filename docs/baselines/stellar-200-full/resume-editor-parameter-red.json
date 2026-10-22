@@ -1,0 +1,8 @@
+{
+  "sourceBefore": "# Editor Parameter Fixture\n\n{% note color:blue OriginalTitle ORIGINAL_BODY %}\n\n{% folding More %}\nFOLDING_BODY\n{% endfolding %}\n\n{% note color:green future:retained OPAQUE_BODY %}\n",
+  "afterForm": "# Editor Parameter Fixture\n\n{% note color:blue OriginalTitle ORIGINAL_BODY %}\n\n{% folding More %}\nFOLDING_BODY\n{% endfolding %}\n\n{% note color:green future:retained OPAQUE_BODY %}\n",
+  "reopened": "# Editor Parameter Fixture\n\n{% note color:blue OriginalTitle ORIGINAL_BODY %}\n\n{% folding More %}\nFOLDING_BODY\n{% endfolding %}\n\n{% note color:green future:retained OPAQUE_BODY %}\n",
+  "frontend": "Editor Parameter Fixture\nOriginalTitle\n\nORIGINAL_BODY\n\nMore\n\nfuture:retained\n\nOPAQUE_BODY\n\n技术/Go/SSR\n生活/阅读",
+  "afterWait": "# Editor Parameter Fixture\n\n{% note color:purple UpdatedTitle UPDATED_BODY %}\n\n{% folding More %}\nFOLDING_BODY\n{% endfolding %}\n\n{% note color:green future:retained OPAQUE_BODY %}",
+  "collection_provenance": "Historical browser observations from this implementation session, before current bdf10768. Original measurements retained; no new current-binary binding inferred."
+}

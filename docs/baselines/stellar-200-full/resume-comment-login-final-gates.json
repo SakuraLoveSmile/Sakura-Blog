@@ -1,0 +1,16 @@
+{
+  "fix_commit": "10187eac",
+  "normal_commit_hook": true,
+  "feature_merge_check": true,
+  "dev_combination_make_test": true,
+  "console_tests": 261,
+  "stellar_tests": 214,
+  "fail": 0,
+  "skipped": 0,
+  "go_vet_staticcheck_all_tests": true,
+  "dev_real_build": true,
+  "binary_sha256": "f19d09181faa816c7f3f367a2114d7087fe9a45d9ea85581ef3002293531b10b",
+  "four_isolated_runtime_checks": true,
+  "real_source_migrated": false,
+  "push_release_production_deploy": false
+}

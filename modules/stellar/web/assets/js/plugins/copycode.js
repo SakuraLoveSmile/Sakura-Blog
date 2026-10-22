@@ -1,38 +1,53 @@
-// copycode.js: 代码块复制按钮，配置由 ctx.copycode 提供。
-(function () {
-  "use strict";
-
-  function init() {
-    var cfg = (typeof ctx !== "undefined" && ctx.copycode) || {};
-    if (cfg.enable === false) return;
-    document.querySelectorAll(".highlight .code").forEach(function (codeElement) {
-      if (codeElement.querySelector(".copy-btn")) return;
-      var button = document.createElement("button");
-      button.type = "button";
-      button.className = "copy-btn";
-      button.textContent = cfg.default_text || "Copy";
-      button.addEventListener("click", async function () {
-        var code = codeElement.querySelector("pre");
-        var text = code ? code.innerText : "";
-        try {
-          if (!navigator.clipboard) throw new Error("clipboard unavailable");
-          await navigator.clipboard.writeText(text);
-          button.textContent = cfg.success_text || "Copied";
-          button.classList.add("success");
-          if (typeof hud !== "undefined" && hud.toast) hud.toast(cfg.toast || "Copied", 2500);
-        } catch (_) {
-          button.textContent = "复制失败";
-          button.classList.add("warning");
-        }
-        setTimeout(function () {
-          button.textContent = cfg.default_text || "Copy";
-          button.classList.remove("success", "warning");
-        }, 3000);
-      });
-      codeElement.appendChild(button);
+function createCopyButtons(codeElements, signal) {
+  if (signal?.aborted) return () => {};
+  let active = true;
+  const buttons = [];
+  const messages = ctx.copycode;
+  const current = () => active && !signal?.aborted;
+  function cleanup() {
+    if (!active) return;
+    active = false;
+    signal?.removeEventListener('abort', cleanup);
+    buttons.forEach(({ button, copy }) => {
+      button.removeEventListener('click', copy);
+      button.remove();
     });
+    buttons.length = 0;
   }
+  signal?.addEventListener('abort', cleanup, { once: true });
+  codeElements.forEach((codeElement) => {
+    if (codeElement.querySelector('.copy-btn')) return;
+    // 创建复制按钮
+    const codeCopyBtn = document.createElement('button');
+    const copyIcon = ctx.icons['copy:copy'] || '';
+    codeCopyBtn.className = 'copy-btn';
+    codeCopyBtn.type = 'button';
+    codeCopyBtn.innerHTML = copyIcon;
+    codeCopyBtn.setAttribute('aria-label', messages.label);
+    codeCopyBtn.setAttribute('title', messages.label);
+    codeElement.appendChild(codeCopyBtn);
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
-})();
+    // 添加点击事件监听
+    const copy = async () => {
+      if (!current()) return;
+      const codeToCopy = codeElement.querySelector('pre')?.innerText || '';
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(codeToCopy);
+          if (current()) hud.toast(messages.copied, messages.toast_ms);
+        } catch (error) {
+          if (current()) hud.toast(messages.denied, messages.toast_ms);
+        }
+      } else {
+        hud.toast(messages.unsupported, messages.toast_ms);
+      }
+    };
+    codeCopyBtn.addEventListener('click', copy);
+    buttons.push({ button: codeCopyBtn, copy });
+  });
+  return cleanup;
+}
+
+if (typeof window.codeElements !== 'undefined') {
+  createCopyButtons(window.codeElements);
+}

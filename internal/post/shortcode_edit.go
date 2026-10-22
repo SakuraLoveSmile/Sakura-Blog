@@ -14,6 +14,7 @@ type ShortcodeEditResult struct {
 	Name     string         `json:"name"`
 	Values   map[string]any `json:"values"`
 	Editable bool           `json:"editable"`
+	Present  []string       `json:"present,omitempty"`
 	// Variant 只对 hybrid 标签（navbar/frame）输出，标明当前 raw 是 inline 还是 block，
 	// 前端据此选择包装方式，避免把旧的单行语法强行改写为块级。
 	Variant string `json:"variant,omitempty"`

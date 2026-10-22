@@ -57,9 +57,16 @@ func (s *Services) rebuildRestoredState() error {
 	base, err := config.LoadSite(s.SitePath)
 	if err != nil {
 		if !s.devMode {
-			return err
+			if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+			base, err = config.LoadPersistedStellarSite(s.Store)
+			if err != nil {
+				return err
+			}
+		} else {
+			base = config.DefaultSite()
 		}
-		base = config.DefaultSite()
 	}
 	if err := config.RebuildSiteFromBase(s.Store, s.Site, base); err != nil {
 		return err

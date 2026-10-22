@@ -5,6 +5,11 @@
 // 全站 defer 加载：遍历 .widget-wrapper.tagcloud 存在性初始化（支持多实例）+
 // pjax:complete 重初始化，元素移出 DOM 后动画循环自清理；数据源为 SSR 静态云 DOM，不发请求。
 (function () {
+  function mount(rootRegion, context) {
+  var scope = window.blogRuntime.createScope(rootRegion, context);
+  var document = scope.document;
+  var requestAnimationFrame = scope.requestAnimationFrame;
+  var setTimeout = scope.setTimeout, clearTimeout = scope.clearTimeout;
   'use strict';
 
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -247,17 +252,17 @@
       window.removeEventListener('resize', onResize);
     }
 
-    cloud.addEventListener('mousedown', onStart);
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onEnd);
-    cloud.addEventListener('touchstart', onStart, { passive: true });
-    document.addEventListener('touchmove', onMove, { passive: true });
-    document.addEventListener('touchend', onEnd);
-    cloud.addEventListener('click', onClickCapture, true);
-    cloud.addEventListener('mouseenter', onEnter);
-    cloud.addEventListener('mouseleave', onLeave);
-    modeSwitch.addEventListener('click', onModeClick);
-    window.addEventListener('resize', onResize);
+    scope.listen(cloud, 'mousedown', onStart);
+    scope.listen(document, 'mousemove', onMove);
+    scope.listen(document, 'mouseup', onEnd);
+    scope.listen(cloud, 'touchstart', onStart, { passive: true });
+    scope.listen(document, 'touchmove', onMove, { passive: true });
+    scope.listen(document, 'touchend', onEnd);
+    scope.listen(cloud, 'click', onClickCapture, true);
+    scope.listen(cloud, 'mouseenter', onEnter);
+    scope.listen(cloud, 'mouseleave', onLeave);
+    scope.listen(modeSwitch, 'click', onModeClick);
+    scope.listen(window, 'resize', onResize);
 
     // 默认静态模式：SSR 静态云已可见，球体标签已构建但隐藏。
     // 启动首帧 RAF，animate 在静态无交互时会自行停止；切到动态时由 switchMode 重启。
@@ -278,5 +283,9 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  init();
+  scope.onCleanup(function () { instances.forEach(function (it) { it.stop(); }); });
+  return scope.cleanup;
+  }
+  window.blogTagcloud = { mount: mount };
 })();

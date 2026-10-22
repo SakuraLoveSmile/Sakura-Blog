@@ -74,6 +74,7 @@
 {{- /* 文章页脚：参考文献 / 版权声明 / 贡献者 / 分享（site.yml article 段驱动，全关时不渲染）。
    对齐 Stellar article_footer.ejs + main.css .article-footer 样式。*/}}
 {{if and .Page.Title (or .Page.References .Site.Article.Copyright.Enabled .EditPage .Site.Article.Share.Enabled)}}
+{{if or .Page.References .Site.Article.Copyright.Enabled .EditPage}}
 <div class="article-footer" id="post-footer" data-url="{{.Page.CanonicalURL}}" data-title="{{.Page.Title}} - {{.Site.Title}}">
   {{if .Page.References}}
   <section id="references">
@@ -121,51 +122,51 @@
   </section>
   {{end}}
 
+</div>
+{{end}}
   {{if .Site.Article.Share.Enabled}}
-  <section id="share">
-    <div class="header"><span>{{- lang "meta.share" -}}</span></div>
+  <div class="article-share" id="share" data-url="{{.Page.CanonicalURL}}" data-title="{{.Page.Title}} - {{.Site.Title}}">
     <div class="body">
       <div class="link"><input class="copy-area" readonly="true" id="copy-link" value="{{.Page.CanonicalURL}}" aria-hidden="true" tabindex="-1" /></div>
       <div class="social-wrap dis-select">
         {{- range .Site.Article.Share.Platforms}}
         {{- if eq . "wechat"}}
-        <a class="social share-item wechat" onclick="util.toggle('qrcode-wechat')" title="{{lang "share.wechat"}}">{{icon "share:wechat"}}</a>
+        <a class="social ui-interactive share-item wechat" onclick="util.toggle('share-qrcode')" title="{{lang "share.wechat"}}"><span class="share-item__icon ui-icon">{{icon "share:wechat"}}</span></a>
         {{- else if eq . "weibo"}}
-        <a class="social share-item weibo" target="_blank" rel="external nofollow noopener noreferrer" data-platform="weibo" title="{{lang "share.weibo"}}">{{icon "share:weibo"}}</a>
+        <a class="social ui-interactive share-item weibo" target="_blank" rel="external nofollow noopener noreferrer" data-platform="weibo" title="{{lang "share.weibo"}}"><span class="share-item__icon ui-icon">{{icon "share:weibo"}}</span></a>
         {{- else if eq . "email"}}
-        <a class="social share-item email" data-platform="email" title="{{lang "share.email"}}">{{icon "share:email"}}</a>
+        <a class="social ui-interactive share-item email" data-platform="email" title="{{lang "share.email"}}"><span class="share-item__icon ui-icon">{{icon "share:email"}}</span></a>
         {{- else if eq . "link"}}
-        <a class="social share-item link" onclick="util.copy('copy-link', '{{lang "message.copied"}}')" title="{{lang "share.copy_link"}}">{{icon "share:link"}}</a>
+        <a class="social ui-interactive share-item link" onclick="util.copy('copy-link', '{{lang "message.copied"}}')" title="{{lang "share.copy_link"}}"><span class="share-item__icon ui-icon">{{icon "share:link"}}</span></a>
         {{- end}}
         {{- end}}
       </div>
-      <div class="qrcode" id="qrcode-wechat" style="opacity:0;height:0">
+      <div class="share-qrcode" id="share-qrcode" style="opacity:0;height:0">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data={{.Page.CanonicalURL | urlquery}}" alt="{{lang "share.wechat_qrcode"}}"/>
       </div>
     </div>
-  </section>
+  </div>
   {{end}}
-</div>
 <script>
 (function () {
   var _langPromptCopy = '{{lang "share.prompt_copy"}}';
   function postUrl() {
-    var footer = document.getElementById('post-footer');
+    var footer = document.getElementById('post-footer') || document.getElementById('share');
     return (footer && footer.getAttribute('data-url')) || location.href;
   }
   function postTitle() {
-    var footer = document.getElementById('post-footer');
+    var footer = document.getElementById('post-footer') || document.getElementById('share');
     return (footer && footer.getAttribute('data-title')) || document.title;
   }
   /* 为 weibo / email 分享按钮动态拼接 href（服务端无法拿到完整渲染后 URL，故用 JS） */
   function initShareLinks() {
     var url = encodeURIComponent(postUrl());
     var title = encodeURIComponent(postTitle());
-    var weibo = document.querySelector('#post-footer .share-item.weibo');
+    var weibo = document.querySelector('#share .share-item.weibo');
     if (weibo) {
       weibo.setAttribute('href', 'https://service.weibo.com/share/share.php?url=' + url + '&title=' + title);
     }
-    var email = document.querySelector('#post-footer .share-item.email');
+    var email = document.querySelector('#share .share-item.email');
     if (email) {
       var raw = postTitle();
       var rawUrl = postUrl();
@@ -183,7 +184,7 @@
     window.prompt(_langPromptCopy, text);
   }
   function onClick(e) {
-    var shareBtn = e.target.closest && e.target.closest('#post-footer .share-item');
+    var shareBtn = e.target.closest && e.target.closest('#share .share-item');
     if (shareBtn) {
       /* link / wechat 已通过 onclick 内联处理，此处仅拦截 weibo / email 的默认跳转（href 由 initShareLinks 设置） */
       var platform = shareBtn.getAttribute('data-platform');

@@ -1,0 +1,198 @@
+{
+  "fixture_only": true,
+  "runtime": "resume-runtime-581.json",
+  "input": {
+    "open_graph": {
+      "url": "https://例え.テスト/og/entry?x=a+b",
+      "image": [
+        "../share.png",
+        "data:image/png;base64,AA=="
+      ],
+      "twitter_image": "../twitter.png",
+      "twitter_id": "fixtureUser",
+      "twitter_site": "@fixtureSite",
+      "fb_admins": "fixture-admin",
+      "fb_app_id": "fixture-app",
+      "author": "Fixture Author",
+      "description": "Fixture <b>OG</b> &amp; description",
+      "language": "en"
+    }
+  },
+  "reopened": true,
+  "ssr": {
+    "canonical": "http://127.0.0.1:8103/journal/beta",
+    "meta": [
+      {
+        "content": "Fixture OG & description",
+        "name": "description"
+      },
+      {
+        "content": "website",
+        "name": "og:type"
+      },
+      {
+        "content": "笔记 beta · 保存重开实测",
+        "name": "og:title"
+      },
+      {
+        "content": "https://例え.テスト/og/entry?x=a+b",
+        "name": "og:url"
+      },
+      {
+        "content": "Stellar 2.0 验收站",
+        "name": "og:site_name"
+      },
+      {
+        "content": "Fixture OG & description",
+        "name": "og:description"
+      },
+      {
+        "content": "en_US",
+        "name": "og:locale"
+      },
+      {
+        "content": "https://xn--r8jz45g.xn--zckzah/share.png",
+        "name": "og:image"
+      },
+      {
+        "content": "2026-10-13T01:00:00.000Z",
+        "name": "article:published_time"
+      },
+      {
+        "content": "2026-10-13T19:58:13.647Z",
+        "name": "article:modified_time"
+      },
+      {
+        "content": "Fixture Author",
+        "name": "article:author"
+      },
+      {
+        "content": "技术/Go/SSR",
+        "name": "article:tag"
+      },
+      {
+        "content": "生活/阅读",
+        "name": "article:tag"
+      },
+      {
+        "content": "summary",
+        "name": "twitter:card"
+      },
+      {
+        "content": "https://xn--r8jz45g.xn--zckzah/twitter.png",
+        "name": "twitter:image"
+      },
+      {
+        "content": "@fixtureUser",
+        "name": "twitter:creator"
+      },
+      {
+        "content": "@fixtureSite",
+        "name": "twitter:site"
+      },
+      {
+        "content": "fixture-admin",
+        "name": "fb:admins"
+      },
+      {
+        "content": "fixture-app",
+        "name": "fb:app_id"
+      },
+      {
+        "content": "笔记 beta · 保存重开实测",
+        "name": "twitter:title"
+      }
+    ]
+  },
+  "preview": {
+    "meta": [
+      {
+        "content": "Fixture OG & description",
+        "name": "description"
+      },
+      {
+        "content": "website",
+        "name": "og:type"
+      },
+      {
+        "content": "笔记 beta · 保存重开实测",
+        "name": "og:title"
+      },
+      {
+        "content": "https://例え.テスト/og/entry?x=a+b",
+        "name": "og:url"
+      },
+      {
+        "content": "Stellar 2.0 验收站",
+        "name": "og:site_name"
+      },
+      {
+        "content": "Fixture OG & description",
+        "name": "og:description"
+      },
+      {
+        "content": "en_US",
+        "name": "og:locale"
+      },
+      {
+        "content": "https://xn--r8jz45g.xn--zckzah/share.png",
+        "name": "og:image"
+      },
+      {
+        "content": "Fixture Author",
+        "name": "article:author"
+      },
+      {
+        "content": "技术/Go/SSR",
+        "name": "article:tag"
+      },
+      {
+        "content": "生活/阅读",
+        "name": "article:tag"
+      },
+      {
+        "content": "summary",
+        "name": "twitter:card"
+      },
+      {
+        "content": "https://xn--r8jz45g.xn--zckzah/twitter.png",
+        "name": "twitter:image"
+      },
+      {
+        "content": "@fixtureUser",
+        "name": "twitter:creator"
+      },
+      {
+        "content": "@fixtureSite",
+        "name": "twitter:site"
+      },
+      {
+        "content": "fixture-admin",
+        "name": "fb:admins"
+      },
+      {
+        "content": "fixture-app",
+        "name": "fb:app_id"
+      },
+      {
+        "content": "笔记 beta · 保存重开实测",
+        "name": "twitter:title"
+      }
+    ]
+  },
+  "isolation": {
+    "opaque": false,
+    "sandbox": "allow-scripts"
+  },
+  "restored": true,
+  "isolationCdp": {
+    "result": {
+      "type": "object",
+      "value": {
+        "opaque": true,
+        "sandbox": "allow-scripts"
+      }
+    }
+  },
+  "isolationScopeBoundary": "Read-only Playwright DOM scope produced opaque=false; authoritative native Runtime.evaluate is recorded separately."
+}

@@ -109,14 +109,20 @@ func (h *Handler) restoreRevision(c *gin.Context) {
 		return
 	}
 
-	contentHTML, err := h.posts.Render(rev.ContentMD)
+	meta := StellarContentMetadata{existing.StellarVersion, existing.StellarConfig, existing.BlogExtensions}
+	if err := h.checkEditorCollection(meta, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(rev.ContentMD, meta, "post")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 
 	// 用版本内容覆盖正文相关字段，保留现有 slug 与其余元数据（cover/password/pinned/topic 等）
 	p := &store.Post{
+		StellarVersion: existing.StellarVersion, StellarConfig: existing.StellarConfig, BlogExtensions: existing.BlogExtensions,
 		Slug:        existing.Slug,
 		Title:       rev.Title,
 		Excerpt:     rev.Excerpt,

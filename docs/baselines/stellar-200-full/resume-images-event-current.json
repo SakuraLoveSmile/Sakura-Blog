@@ -1,0 +1,27 @@
+{
+  "fixture_only": true,
+  "built_head": "605d1186",
+  "binary_sha256": "65b2cc57e031505d726d1aa90cff8a594497b3118f9a8b887dcab1dbf816a557",
+  "event": "Console Note body save emitted content event; same PID automatic batch processed new upload",
+  "newImage": "/uploads/lifecycle-605-new.png",
+  "source_sha256_before_and_after": "561ed484edb388094a9027da73187a4a8f42d5ad2b14012f85256de7866d3954",
+  "initialSamplingWithoutMetadata": true,
+  "afterBatch": {
+    "color": "{\"size\":64,\"hsla\":[223.763,21.8748,49.8744,1]}",
+    "height": "540",
+    "source": "/uploads/lifecycle-605-new.png",
+    "src": "/uploads/lifecycle-605-new.png",
+    "width": "960"
+  },
+  "disabledReuse": {
+    "color": "{\"size\":64,\"hsla\":[223.763,21.8748,49.8744,1]}",
+    "height": "540",
+    "src": "/uploads/lifecycle-605-new.png",
+    "width": "960"
+  },
+  "noteRestored": true,
+  "settingsRestored": true,
+  "limitations": "upload fixture retained; immediate first GET sampled before async batch publication; full cancellation/shutdown verified by existing isolated tests and later graceful restart",
+  "original_cover_sha256_before_and_after": "561ed484edb388094a9027da73187a4a8f42d5ad2b14012f85256de7866d3954",
+  "source_hash_measurement": "Before: copy2 created fresh upload from cover.png and hash matched; after: independently hashed both upload files following content event and metadata readiness."
+}

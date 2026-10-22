@@ -1,0 +1,1016 @@
+{
+  "fixture_only": true,
+  "base_url": "http://127.0.0.1:8113",
+  "upstream_commit": "9d11978a24fe6610e3a7dbab741cf62634539d05",
+  "service_source_commit": "5f944882",
+  "browser_verified": false,
+  "posts": [
+    {
+      "slug": "t3-ai-manual",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-ai-manual",
+      "front_url": "http://127.0.0.1:8113/post/t3-ai-manual",
+      "stellar_config": {
+        "title": "T3 AI manual",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "manual",
+          "paragraph_indent": "always"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 manual",
+          "tagline": "T3 副标题 manual"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        },
+        "inject": {
+          "head_begin": "<meta name=\"t3-page-head_begin\" content=\"present\">",
+          "head_end": "<meta name=\"t3-page-head_end\" content=\"present\">",
+          "body_begin": "<div data-t3-page=\"body_begin\"></div>",
+          "body_end": "<div data-t3-page=\"body_end\"></div>"
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 AI manual\",\n  \"cover\": \"/uploads/cover.png\",\n  \"article\": {\n    \"style\": \"tech\",\n    \"ai_label\": \"manual\",\n    \"paragraph_indent\": \"always\"\n  },\n  \"banner\": {\n    \"enabled\": true,\n    \"background\": true,\n    \"avatar\": \"/assets/img/icon-512.png\",\n    \"headline\": \"T3 横幅 manual\",\n    \"tagline\": \"T3 副标题 manual\"\n  },\n  \"tags\": [\n    \"T3\",\n    \"参数\"\n  ],\n  \"footer\": {\n    \"references\": [\n      \"[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)\",\n      \"**T3 Markdown 引用**\"\n    ],\n    \"license\": \"T3 license by {author.name} · {author.url}\",\n    \"share\": [\n      \"qrcode\",\n      \"weibo\",\n      \"x\",\n      \"telegram\",\n      \"whatsapp\",\n      \"email\"\n    ],\n    \"show_tags\": true\n  },\n  \"listing\": {\n    \"priority\": 0\n  },\n  \"inject\": {\n    \"head_begin\": \"<meta name=\\\"t3-page-head_begin\\\" content=\\\"present\\\">\",\n    \"head_end\": \"<meta name=\\\"t3-page-head_end\\\" content=\\\"present\\\">\",\n    \"body_begin\": \"<div data-t3-page=\\\"body_begin\\\"></div>\",\n    \"body_end\": \"<div data-t3-page=\\\"body_end\\\"></div>\"\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true,
+      "schema_validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_status": 400,
+      "api_reopened_equal": true,
+      "saved_on_source_commit": "5f944882"
+    },
+    {
+      "slug": "t3-ai-reviewed",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-ai-reviewed",
+      "front_url": "http://127.0.0.1:8113/post/t3-ai-reviewed",
+      "stellar_config": {
+        "title": "T3 AI reviewed",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "reviewed",
+          "paragraph_indent": "never"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 reviewed",
+          "tagline": "T3 副标题 reviewed"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 AI reviewed\",\n  \"cover\": \"/uploads/cover.png\",\n  \"article\": {\n    \"style\": \"tech\",\n    \"ai_label\": \"reviewed\",\n    \"paragraph_indent\": \"never\"\n  },\n  \"banner\": {\n    \"enabled\": true,\n    \"background\": true,\n    \"avatar\": \"/assets/img/icon-512.png\",\n    \"headline\": \"T3 横幅 reviewed\",\n    \"tagline\": \"T3 副标题 reviewed\"\n  },\n  \"tags\": [\n    \"T3\",\n    \"参数\"\n  ],\n  \"footer\": {\n    \"references\": [\n      \"[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)\",\n      \"**T3 Markdown 引用**\"\n    ],\n    \"license\": \"T3 license by {author.name} · {author.url}\",\n    \"share\": [\n      \"qrcode\",\n      \"weibo\",\n      \"x\",\n      \"telegram\",\n      \"whatsapp\",\n      \"email\"\n    ],\n    \"show_tags\": true\n  },\n  \"listing\": {\n    \"priority\": 0\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true,
+      "schema_validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_status": 400,
+      "api_reopened_equal": true,
+      "saved_on_source_commit": "5f944882"
+    },
+    {
+      "slug": "t3-ai-polished",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-ai-polished",
+      "front_url": "http://127.0.0.1:8113/post/t3-ai-polished",
+      "stellar_config": {
+        "title": "T3 AI polished",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "polished",
+          "paragraph_indent": "never"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 polished",
+          "tagline": "T3 副标题 polished"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 AI polished\",\n  \"cover\": \"/uploads/cover.png\",\n  \"article\": {\n    \"style\": \"tech\",\n    \"ai_label\": \"polished\",\n    \"paragraph_indent\": \"never\"\n  },\n  \"banner\": {\n    \"enabled\": true,\n    \"background\": true,\n    \"avatar\": \"/assets/img/icon-512.png\",\n    \"headline\": \"T3 横幅 polished\",\n    \"tagline\": \"T3 副标题 polished\"\n  },\n  \"tags\": [\n    \"T3\",\n    \"参数\"\n  ],\n  \"footer\": {\n    \"references\": [\n      \"[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)\",\n      \"**T3 Markdown 引用**\"\n    ],\n    \"license\": \"T3 license by {author.name} · {author.url}\",\n    \"share\": [\n      \"qrcode\",\n      \"weibo\",\n      \"x\",\n      \"telegram\",\n      \"whatsapp\",\n      \"email\"\n    ],\n    \"show_tags\": true\n  },\n  \"listing\": {\n    \"priority\": 0\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true,
+      "schema_validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_status": 400,
+      "api_reopened_equal": true,
+      "saved_on_source_commit": "5f944882"
+    },
+    {
+      "slug": "t3-ai-generated",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-ai-generated",
+      "front_url": "http://127.0.0.1:8113/post/t3-ai-generated",
+      "stellar_config": {
+        "title": "T3 AI generated",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "generated",
+          "paragraph_indent": "never"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 generated",
+          "tagline": "T3 副标题 generated"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 AI generated\",\n  \"cover\": \"/uploads/cover.png\",\n  \"article\": {\n    \"style\": \"tech\",\n    \"ai_label\": \"generated\",\n    \"paragraph_indent\": \"never\"\n  },\n  \"banner\": {\n    \"enabled\": true,\n    \"background\": true,\n    \"avatar\": \"/assets/img/icon-512.png\",\n    \"headline\": \"T3 横幅 generated\",\n    \"tagline\": \"T3 副标题 generated\"\n  },\n  \"tags\": [\n    \"T3\",\n    \"参数\"\n  ],\n  \"footer\": {\n    \"references\": [\n      \"[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)\",\n      \"**T3 Markdown 引用**\"\n    ],\n    \"license\": \"T3 license by {author.name} · {author.url}\",\n    \"share\": [\n      \"qrcode\",\n      \"weibo\",\n      \"x\",\n      \"telegram\",\n      \"whatsapp\",\n      \"email\"\n    ],\n    \"show_tags\": true\n  },\n  \"listing\": {\n    \"priority\": 0\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true,
+      "schema_validation": {
+        "valid": true,
+        "issues": []
+      },
+      "save_status": 400,
+      "api_reopened_equal": true,
+      "saved_on_source_commit": "5f944882"
+    },
+    {
+      "slug": "t3-banner-disabled",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-banner-disabled",
+      "front_url": "http://127.0.0.1:8113/post/t3-banner-disabled",
+      "stellar_config": {
+        "title": "T3 banner-disabled",
+        "cover": "/uploads/cover.png",
+        "banner": {
+          "enabled": false,
+          "background": true,
+          "headline": "Must not render"
+        },
+        "footer": {
+          "share": false,
+          "license": false
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 banner-disabled\",\n  \"cover\": \"/uploads/cover.png\",\n  \"banner\": {\n    \"enabled\": false,\n    \"background\": true,\n    \"headline\": \"Must not render\"\n  },\n  \"footer\": {\n    \"share\": false,\n    \"license\": false\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true,
+      "api_reopened_equal": true
+    },
+    {
+      "slug": "t3-banner-no-bg",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-banner-no-bg",
+      "front_url": "http://127.0.0.1:8113/post/t3-banner-no-bg",
+      "stellar_config": {
+        "title": "T3 banner-no-bg",
+        "cover": "/uploads/cover.png",
+        "banner": {
+          "enabled": true,
+          "background": false,
+          "headline": "T3 无背景横幅",
+          "avatar": "/assets/img/icon-512.png",
+          "tagline": "T3 无背景副标题"
+        },
+        "footer": {
+          "share": false,
+          "license": false
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 banner-no-bg\",\n  \"cover\": \"/uploads/cover.png\",\n  \"banner\": {\n    \"enabled\": true,\n    \"background\": false,\n    \"headline\": \"T3 无背景横幅\",\n    \"avatar\": \"/assets/img/icon-512.png\",\n    \"tagline\": \"T3 无背景副标题\"\n  },\n  \"footer\": {\n    \"share\": false,\n    \"license\": false\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true,
+      "api_reopened_equal": true
+    },
+    {
+      "slug": "t3-banner-empty-headline",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-banner-empty-headline",
+      "front_url": "http://127.0.0.1:8113/post/t3-banner-empty-headline",
+      "stellar_config": {
+        "title": "T3 banner-empty-headline",
+        "cover": "/uploads/cover.png",
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "headline": "",
+          "tagline": "T3 empty headline hidden"
+        },
+        "footer": {
+          "share": false,
+          "license": false
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 banner-empty-headline\",\n  \"cover\": \"/uploads/cover.png\",\n  \"banner\": {\n    \"enabled\": true,\n    \"background\": true,\n    \"headline\": \"\",\n    \"tagline\": \"T3 empty headline hidden\"\n  },\n  \"footer\": {\n    \"share\": false,\n    \"license\": false\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true,
+      "api_reopened_equal": true
+    },
+    {
+      "slug": "t3-pin-9",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-pin-9",
+      "front_url": "http://127.0.0.1:8113/post/t3-pin-9",
+      "stellar_config": {
+        "title": "T3 置顶优先级 9",
+        "cover": "/uploads/cover.png",
+        "listing": {
+          "priority": 9
+        },
+        "footer": {
+          "share": false
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 置顶优先级 9\",\n  \"cover\": \"/uploads/cover.png\",\n  \"listing\": {\n    \"priority\": 9\n  },\n  \"footer\": {\n    \"share\": false\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true
+    },
+    {
+      "slug": "t3-pin-7",
+      "console_url": "http://127.0.0.1:8113/console/posts/t3-pin-7",
+      "front_url": "http://127.0.0.1:8113/post/t3-pin-7",
+      "stellar_config": {
+        "title": "T3 置顶优先级 7",
+        "cover": "/uploads/cover.png",
+        "listing": {
+          "priority": 7
+        },
+        "footer": {
+          "share": false
+        }
+      },
+      "ui_json": "{\n  \"title\": \"T3 置顶优先级 7\",\n  \"cover\": \"/uploads/cover.png\",\n  \"listing\": {\n    \"priority\": 7\n  },\n  \"footer\": {\n    \"share\": false\n  }\n}",
+      "content_md": "## T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+      "api_saved": true
+    }
+  ],
+  "themes": [
+    {
+      "id": "carousel-hero",
+      "document": {
+        "version": 2,
+        "theme": {
+          "appearance": {
+            "color_scheme": "auto",
+            "preset": "minimal"
+          },
+          "features": {
+            "color_scheme_switch": {
+              "enabled": true
+            },
+            "image_optimization": {
+              "enabled": true
+            },
+            "link_prefetch": {
+              "enabled": false
+            }
+          },
+          "leftbar": {
+            "brand": {
+              "image": {
+                "src": "/uploads/avatar.png"
+              },
+              "name": "Stellar 2.0 验收站",
+              "tagline": "独立虚构数据"
+            },
+            "menu": [
+              {
+                "icon": "default:documents",
+                "id": "post",
+                "title": "post",
+                "url": "/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "wiki",
+                "title": "wiki",
+                "url": "/wiki/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "topic",
+                "title": "topic",
+                "url": "/topic/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "notebook",
+                "title": "notebook",
+                "url": "/notebooks/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "settings",
+                "title": "settings",
+                "url": "/settings/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "tags",
+                "title": "tags",
+                "url": "/tags-showcase/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "moments",
+                "title": "moments",
+                "url": "/moments/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "about",
+                "title": "about",
+                "url": "/about/"
+              }
+            ]
+          },
+          "profiles": {
+            "error": {
+              "image": "/uploads/cover.png"
+            },
+            "post": {
+              "rightbar": {
+                "widgets": [
+                  "author",
+                  "toc"
+                ]
+              }
+            }
+          },
+          "article": {
+            "listing": {
+              "pinned_layout": "carousel",
+              "card_layout": "hero",
+              "cover_ratio": 2.4,
+              "excerpt_length": 160,
+              "show_tags": true
+            },
+            "show_reading_time": true,
+            "footer": {
+              "share": [
+                "qrcode",
+                "weibo",
+                "x",
+                "telegram",
+                "whatsapp",
+                "email"
+              ],
+              "license": "Theme T3 {author.name} {author.url}",
+              "show_tags": true
+            }
+          },
+          "preconnect": [
+            "http://127.0.0.1:8111/path",
+            "http://127.0.0.1:8111"
+          ],
+          "canonical": {
+            "host": "127.0.0.1",
+            "allowed_hosts": [
+              "localhost",
+              "127.0.0.1",
+              "t3-mirror.test"
+            ]
+          },
+          "inject": {
+            "head_begin": "<meta name=\"t3-theme-head_begin\" content=\"present\">",
+            "head_end": "<meta name=\"t3-theme-head_end\" content=\"present\">",
+            "body_begin": "<div data-t3-theme=\"body_begin\"></div>",
+            "body_end": "<div data-t3-theme=\"body_end\"></div>"
+          },
+          "services": {
+            "github": {
+              "api_url": "http://127.0.0.1:8113/t3-github"
+            },
+            "contributors": {
+              "provider": "github",
+              "github": {
+                "repositories": [
+                  {
+                    "source_prefix": "_posts/",
+                    "repository": "fixture/broad",
+                    "branch": "broad"
+                  },
+                  {
+                    "source_prefix": "_posts/t3-",
+                    "repository": "fixture/narrow",
+                    "branch": "narrow"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "blog_extensions": {
+          "ai": {
+            "ask": {
+              "allow_user_llm": false,
+              "enabled": false
+            },
+            "summary": {
+              "allow_user_api": false,
+              "enabled": false
+            }
+          },
+          "data": {
+            "authors": {
+              "admin": {
+                "avatar": "/uploads/avatar.png",
+                "description": "虚构作者",
+                "hidden": false,
+                "name": "验收管理员"
+              },
+              "writer": {
+                "avatar": "/uploads/avatar.png",
+                "hidden": false,
+                "name": "第二作者"
+              }
+            },
+            "defaultAuthor": {
+              "avatar": "/uploads/avatar.png",
+              "description": "默认作者组件样本",
+              "name": "验收管理员",
+              "path": "/author/admin/"
+            },
+            "wiki": [
+              "galaxy",
+              "strands",
+              "light-rays",
+              "ferrofluid",
+              "video"
+            ]
+          },
+          "friends": {
+            "check_interval": 0,
+            "snapshot_interval": 0
+          },
+          "native_comments": {
+            "enabled": true,
+            "gravatar_mirror": "http://127.0.0.1:8113/fixture-unavailable/avatar",
+            "moderation": false,
+            "notify": {
+              "enabled": false
+            },
+            "title": "原生评论验收"
+          },
+          "search": {
+            "provider": "go"
+          },
+          "site": {
+            "language": "zh-CN",
+            "per_page": 2
+          }
+        }
+      },
+      "ui_json": "{\n  \"version\": 2,\n  \"theme\": {\n    \"appearance\": {\n      \"color_scheme\": \"auto\",\n      \"preset\": \"minimal\"\n    },\n    \"features\": {\n      \"color_scheme_switch\": {\n        \"enabled\": true\n      },\n      \"image_optimization\": {\n        \"enabled\": true\n      },\n      \"link_prefetch\": {\n        \"enabled\": false\n      }\n    },\n    \"leftbar\": {\n      \"brand\": {\n        \"image\": {\n          \"src\": \"/uploads/avatar.png\"\n        },\n        \"name\": \"Stellar 2.0 验收站\",\n        \"tagline\": \"独立虚构数据\"\n      },\n      \"menu\": [\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"post\",\n          \"title\": \"post\",\n          \"url\": \"/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"wiki\",\n          \"title\": \"wiki\",\n          \"url\": \"/wiki/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"topic\",\n          \"title\": \"topic\",\n          \"url\": \"/topic/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"notebook\",\n          \"title\": \"notebook\",\n          \"url\": \"/notebooks/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"settings\",\n          \"title\": \"settings\",\n          \"url\": \"/settings/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"tags\",\n          \"title\": \"tags\",\n          \"url\": \"/tags-showcase/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"moments\",\n          \"title\": \"moments\",\n          \"url\": \"/moments/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"about\",\n          \"title\": \"about\",\n          \"url\": \"/about/\"\n        }\n      ]\n    },\n    \"profiles\": {\n      \"error\": {\n        \"image\": \"/uploads/cover.png\"\n      },\n      \"post\": {\n        \"rightbar\": {\n          \"widgets\": [\n            \"author\",\n            \"toc\"\n          ]\n        }\n      }\n    },\n    \"article\": {\n      \"listing\": {\n        \"pinned_layout\": \"carousel\",\n        \"card_layout\": \"hero\",\n        \"cover_ratio\": 2.4,\n        \"excerpt_length\": 160,\n        \"show_tags\": true\n      },\n      \"show_reading_time\": true,\n      \"footer\": {\n        \"share\": [\n          \"qrcode\",\n          \"weibo\",\n          \"x\",\n          \"telegram\",\n          \"whatsapp\",\n          \"email\"\n        ],\n        \"license\": \"Theme T3 {author.name} {author.url}\",\n        \"show_tags\": true\n      }\n    },\n    \"preconnect\": [\n      \"http://127.0.0.1:8111/path\",\n      \"http://127.0.0.1:8111\"\n    ],\n    \"canonical\": {\n      \"host\": \"127.0.0.1\",\n      \"allowed_hosts\": [\n        \"localhost\",\n        \"127.0.0.1\",\n        \"t3-mirror.test\"\n      ]\n    },\n    \"inject\": {\n      \"head_begin\": \"<meta name=\\\"t3-theme-head_begin\\\" content=\\\"present\\\">\",\n      \"head_end\": \"<meta name=\\\"t3-theme-head_end\\\" content=\\\"present\\\">\",\n      \"body_begin\": \"<div data-t3-theme=\\\"body_begin\\\"></div>\",\n      \"body_end\": \"<div data-t3-theme=\\\"body_end\\\"></div>\"\n    },\n    \"services\": {\n      \"github\": {\n        \"api_url\": \"http://127.0.0.1:8113/t3-github\"\n      },\n      \"contributors\": {\n        \"provider\": \"github\",\n        \"github\": {\n          \"repositories\": [\n            {\n              \"source_prefix\": \"_posts/\",\n              \"repository\": \"fixture/broad\",\n              \"branch\": \"broad\"\n            },\n            {\n              \"source_prefix\": \"_posts/t3-\",\n              \"repository\": \"fixture/narrow\",\n              \"branch\": \"narrow\"\n            }\n          ]\n        }\n      }\n    }\n  },\n  \"blog_extensions\": {\n    \"ai\": {\n      \"ask\": {\n        \"allow_user_llm\": false,\n        \"enabled\": false\n      },\n      \"summary\": {\n        \"allow_user_api\": false,\n        \"enabled\": false\n      }\n    },\n    \"data\": {\n      \"authors\": {\n        \"admin\": {\n          \"avatar\": \"/uploads/avatar.png\",\n          \"description\": \"虚构作者\",\n          \"hidden\": false,\n          \"name\": \"验收管理员\"\n        },\n        \"writer\": {\n          \"avatar\": \"/uploads/avatar.png\",\n          \"hidden\": false,\n          \"name\": \"第二作者\"\n        }\n      },\n      \"defaultAuthor\": {\n        \"avatar\": \"/uploads/avatar.png\",\n        \"description\": \"默认作者组件样本\",\n        \"name\": \"验收管理员\",\n        \"path\": \"/author/admin/\"\n      },\n      \"wiki\": [\n        \"galaxy\",\n        \"strands\",\n        \"light-rays\",\n        \"ferrofluid\",\n        \"video\"\n      ]\n    },\n    \"friends\": {\n      \"check_interval\": 0,\n      \"snapshot_interval\": 0\n    },\n    \"native_comments\": {\n      \"enabled\": true,\n      \"gravatar_mirror\": \"http://127.0.0.1:8113/fixture-unavailable/avatar\",\n      \"moderation\": false,\n      \"notify\": {\n        \"enabled\": false\n      },\n      \"title\": \"原生评论验收\"\n    },\n    \"search\": {\n      \"provider\": \"go\"\n    },\n    \"site\": {\n      \"language\": \"zh-CN\",\n      \"per_page\": 2\n    }\n  }\n}",
+      "api_reopened_equal": true,
+      "assertions": {
+        "pin_slider": true,
+        "card_photo": true,
+        "cover_ratio": 2.4
+      }
+    },
+    {
+      "id": "flat-classic",
+      "document": {
+        "version": 2,
+        "theme": {
+          "appearance": {
+            "color_scheme": "auto",
+            "preset": "minimal"
+          },
+          "features": {
+            "color_scheme_switch": {
+              "enabled": true
+            },
+            "image_optimization": {
+              "enabled": true
+            },
+            "link_prefetch": {
+              "enabled": false
+            }
+          },
+          "leftbar": {
+            "brand": {
+              "image": {
+                "src": "/uploads/avatar.png"
+              },
+              "name": "Stellar 2.0 验收站",
+              "tagline": "独立虚构数据"
+            },
+            "menu": [
+              {
+                "icon": "default:documents",
+                "id": "post",
+                "title": "post",
+                "url": "/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "wiki",
+                "title": "wiki",
+                "url": "/wiki/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "topic",
+                "title": "topic",
+                "url": "/topic/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "notebook",
+                "title": "notebook",
+                "url": "/notebooks/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "settings",
+                "title": "settings",
+                "url": "/settings/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "tags",
+                "title": "tags",
+                "url": "/tags-showcase/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "moments",
+                "title": "moments",
+                "url": "/moments/"
+              },
+              {
+                "icon": "default:documents",
+                "id": "about",
+                "title": "about",
+                "url": "/about/"
+              }
+            ]
+          },
+          "profiles": {
+            "error": {
+              "image": "/uploads/cover.png"
+            },
+            "post": {
+              "rightbar": {
+                "widgets": [
+                  "author",
+                  "toc"
+                ]
+              }
+            }
+          },
+          "article": {
+            "listing": {
+              "pinned_layout": "flat",
+              "card_layout": "classic",
+              "cover_ratio": 1.25,
+              "excerpt_length": 160,
+              "show_tags": true
+            },
+            "show_reading_time": true,
+            "footer": {
+              "share": [
+                "qrcode",
+                "weibo",
+                "x",
+                "telegram",
+                "whatsapp",
+                "email"
+              ],
+              "license": "Theme T3 {author.name} {author.url}",
+              "show_tags": true
+            }
+          },
+          "preconnect": [
+            "http://127.0.0.1:8111/path",
+            "http://127.0.0.1:8111"
+          ],
+          "canonical": {
+            "host": "127.0.0.1",
+            "allowed_hosts": [
+              "localhost",
+              "127.0.0.1",
+              "t3-mirror.test"
+            ]
+          },
+          "inject": {
+            "head_begin": "<meta name=\"t3-theme-head_begin\" content=\"present\">",
+            "head_end": "<meta name=\"t3-theme-head_end\" content=\"present\">",
+            "body_begin": "<div data-t3-theme=\"body_begin\"></div>",
+            "body_end": "<div data-t3-theme=\"body_end\"></div>"
+          },
+          "services": {
+            "github": {
+              "api_url": "http://127.0.0.1:8113/t3-github"
+            },
+            "contributors": {
+              "provider": "github",
+              "github": {
+                "repositories": [
+                  {
+                    "source_prefix": "_posts/",
+                    "repository": "fixture/broad",
+                    "branch": "broad"
+                  },
+                  {
+                    "source_prefix": "_posts/t3-",
+                    "repository": "fixture/narrow",
+                    "branch": "narrow"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "blog_extensions": {
+          "ai": {
+            "ask": {
+              "allow_user_llm": false,
+              "enabled": false
+            },
+            "summary": {
+              "allow_user_api": false,
+              "enabled": false
+            }
+          },
+          "data": {
+            "authors": {
+              "admin": {
+                "avatar": "/uploads/avatar.png",
+                "description": "虚构作者",
+                "hidden": false,
+                "name": "验收管理员"
+              },
+              "writer": {
+                "avatar": "/uploads/avatar.png",
+                "hidden": false,
+                "name": "第二作者"
+              }
+            },
+            "defaultAuthor": {
+              "avatar": "/uploads/avatar.png",
+              "description": "默认作者组件样本",
+              "name": "验收管理员",
+              "path": "/author/admin/"
+            },
+            "wiki": [
+              "galaxy",
+              "strands",
+              "light-rays",
+              "ferrofluid",
+              "video"
+            ]
+          },
+          "friends": {
+            "check_interval": 0,
+            "snapshot_interval": 0
+          },
+          "native_comments": {
+            "enabled": true,
+            "gravatar_mirror": "http://127.0.0.1:8113/fixture-unavailable/avatar",
+            "moderation": false,
+            "notify": {
+              "enabled": false
+            },
+            "title": "原生评论验收"
+          },
+          "search": {
+            "provider": "go"
+          },
+          "site": {
+            "language": "zh-CN",
+            "per_page": 2
+          }
+        }
+      },
+      "ui_json": "{\n  \"version\": 2,\n  \"theme\": {\n    \"appearance\": {\n      \"color_scheme\": \"auto\",\n      \"preset\": \"minimal\"\n    },\n    \"features\": {\n      \"color_scheme_switch\": {\n        \"enabled\": true\n      },\n      \"image_optimization\": {\n        \"enabled\": true\n      },\n      \"link_prefetch\": {\n        \"enabled\": false\n      }\n    },\n    \"leftbar\": {\n      \"brand\": {\n        \"image\": {\n          \"src\": \"/uploads/avatar.png\"\n        },\n        \"name\": \"Stellar 2.0 验收站\",\n        \"tagline\": \"独立虚构数据\"\n      },\n      \"menu\": [\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"post\",\n          \"title\": \"post\",\n          \"url\": \"/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"wiki\",\n          \"title\": \"wiki\",\n          \"url\": \"/wiki/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"topic\",\n          \"title\": \"topic\",\n          \"url\": \"/topic/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"notebook\",\n          \"title\": \"notebook\",\n          \"url\": \"/notebooks/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"settings\",\n          \"title\": \"settings\",\n          \"url\": \"/settings/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"tags\",\n          \"title\": \"tags\",\n          \"url\": \"/tags-showcase/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"moments\",\n          \"title\": \"moments\",\n          \"url\": \"/moments/\"\n        },\n        {\n          \"icon\": \"default:documents\",\n          \"id\": \"about\",\n          \"title\": \"about\",\n          \"url\": \"/about/\"\n        }\n      ]\n    },\n    \"profiles\": {\n      \"error\": {\n        \"image\": \"/uploads/cover.png\"\n      },\n      \"post\": {\n        \"rightbar\": {\n          \"widgets\": [\n            \"author\",\n            \"toc\"\n          ]\n        }\n      }\n    },\n    \"article\": {\n      \"listing\": {\n        \"pinned_layout\": \"flat\",\n        \"card_layout\": \"classic\",\n        \"cover_ratio\": 1.25,\n        \"excerpt_length\": 160,\n        \"show_tags\": true\n      },\n      \"show_reading_time\": true,\n      \"footer\": {\n        \"share\": [\n          \"qrcode\",\n          \"weibo\",\n          \"x\",\n          \"telegram\",\n          \"whatsapp\",\n          \"email\"\n        ],\n        \"license\": \"Theme T3 {author.name} {author.url}\",\n        \"show_tags\": true\n      }\n    },\n    \"preconnect\": [\n      \"http://127.0.0.1:8111/path\",\n      \"http://127.0.0.1:8111\"\n    ],\n    \"canonical\": {\n      \"host\": \"127.0.0.1\",\n      \"allowed_hosts\": [\n        \"localhost\",\n        \"127.0.0.1\",\n        \"t3-mirror.test\"\n      ]\n    },\n    \"inject\": {\n      \"head_begin\": \"<meta name=\\\"t3-theme-head_begin\\\" content=\\\"present\\\">\",\n      \"head_end\": \"<meta name=\\\"t3-theme-head_end\\\" content=\\\"present\\\">\",\n      \"body_begin\": \"<div data-t3-theme=\\\"body_begin\\\"></div>\",\n      \"body_end\": \"<div data-t3-theme=\\\"body_end\\\"></div>\"\n    },\n    \"services\": {\n      \"github\": {\n        \"api_url\": \"http://127.0.0.1:8113/t3-github\"\n      },\n      \"contributors\": {\n        \"provider\": \"github\",\n        \"github\": {\n          \"repositories\": [\n            {\n              \"source_prefix\": \"_posts/\",\n              \"repository\": \"fixture/broad\",\n              \"branch\": \"broad\"\n            },\n            {\n              \"source_prefix\": \"_posts/t3-\",\n              \"repository\": \"fixture/narrow\",\n              \"branch\": \"narrow\"\n            }\n          ]\n        }\n      }\n    }\n  },\n  \"blog_extensions\": {\n    \"ai\": {\n      \"ask\": {\n        \"allow_user_llm\": false,\n        \"enabled\": false\n      },\n      \"summary\": {\n        \"allow_user_api\": false,\n        \"enabled\": false\n      }\n    },\n    \"data\": {\n      \"authors\": {\n        \"admin\": {\n          \"avatar\": \"/uploads/avatar.png\",\n          \"description\": \"虚构作者\",\n          \"hidden\": false,\n          \"name\": \"验收管理员\"\n        },\n        \"writer\": {\n          \"avatar\": \"/uploads/avatar.png\",\n          \"hidden\": false,\n          \"name\": \"第二作者\"\n        }\n      },\n      \"defaultAuthor\": {\n        \"avatar\": \"/uploads/avatar.png\",\n        \"description\": \"默认作者组件样本\",\n        \"name\": \"验收管理员\",\n        \"path\": \"/author/admin/\"\n      },\n      \"wiki\": [\n        \"galaxy\",\n        \"strands\",\n        \"light-rays\",\n        \"ferrofluid\",\n        \"video\"\n      ]\n    },\n    \"friends\": {\n      \"check_interval\": 0,\n      \"snapshot_interval\": 0\n    },\n    \"native_comments\": {\n      \"enabled\": true,\n      \"gravatar_mirror\": \"http://127.0.0.1:8113/fixture-unavailable/avatar\",\n      \"moderation\": false,\n      \"notify\": {\n        \"enabled\": false\n      },\n      \"title\": \"原生评论验收\"\n    },\n    \"search\": {\n      \"provider\": \"go\"\n    },\n    \"site\": {\n      \"language\": \"zh-CN\",\n      \"per_page\": 2\n    }\n  }\n}",
+      "api_reopened_equal": true,
+      "assertions": {
+        "pin_slider": false,
+        "card_photo": false,
+        "cover_ratio": 1.25
+      }
+    }
+  ],
+  "notebook": {
+    "id": "reading",
+    "config": {
+      "name": "T3 阅读笔记本",
+      "route": {
+        "path": "/reading/"
+      },
+      "listing": {
+        "per_page": 0,
+        "sort": {
+          "field": "title",
+          "direction": "asc"
+        }
+      },
+      "navigation": {
+        "tree": []
+      },
+      "footer": {
+        "share": false
+      },
+      "rightbar": {
+        "enabled": true,
+        "widgets": [
+          "tagtree"
+        ]
+      }
+    },
+    "ui_json": "{\n  \"name\": \"T3 阅读笔记本\",\n  \"route\": {\n    \"path\": \"/reading/\"\n  },\n  \"listing\": {\n    \"per_page\": 0,\n    \"sort\": {\n      \"field\": \"title\",\n      \"direction\": \"asc\"\n    }\n  },\n  \"navigation\": {\n    \"tree\": []\n  },\n  \"footer\": {\n    \"share\": false\n  },\n  \"rightbar\": {\n    \"enabled\": true,\n    \"widgets\": [\n      \"tagtree\"\n    ]\n  }\n}",
+    "console_url": "http://127.0.0.1:8113/console/notebooks/reading/edit",
+    "notes": [
+      {
+        "id": 3,
+        "slug": "alpha",
+        "console_url": "http://127.0.0.1:8113/console/notebooks/reading/notes/3",
+        "front_url": "http://127.0.0.1:8113/reading/alpha",
+        "payload": {
+          "slug": "alpha",
+          "content_md": "## T3 alpha\n\n虚构阅读笔记本正文。",
+          "status": "published",
+          "tags": [
+            "技术/Go/SSR",
+            "生活/阅读"
+          ],
+          "stellar_version": 2,
+          "stellar_config": "{\n  \"title\": \"T3 阅读 alpha\",\n  \"collection\": {\n    \"profile\": \"notebook\",\n    \"id\": \"reading\"\n  },\n  \"footer\": {\n    \"share\": false,\n    \"show_tags\": true\n  },\n  \"article\": {\n    \"ai_label\": \"manual\",\n    \"paragraph_indent\": \"always\"\n  },\n  \"rightbar\": {\n    \"enabled\": true,\n    \"widgets\": [\n      \"tagtree\"\n    ]\n  },\n  \"tags\": [\n    \"技术/Go/SSR\",\n    \"生活/阅读\"\n  ]\n}",
+          "blog_extensions": "{}"
+        },
+        "ui_json": "{\n  \"title\": \"T3 阅读 alpha\",\n  \"collection\": {\n    \"profile\": \"notebook\",\n    \"id\": \"reading\"\n  },\n  \"footer\": {\n    \"share\": false,\n    \"show_tags\": true\n  },\n  \"article\": {\n    \"ai_label\": \"manual\",\n    \"paragraph_indent\": \"always\"\n  },\n  \"rightbar\": {\n    \"enabled\": true,\n    \"widgets\": [\n      \"tagtree\"\n    ]\n  },\n  \"tags\": [\n    \"技术/Go/SSR\",\n    \"生活/阅读\"\n  ]\n}",
+        "api_reopened_equal": true,
+        "saved_on_source_commit": "5f944882"
+      },
+      {
+        "id": 4,
+        "slug": "beta",
+        "console_url": "http://127.0.0.1:8113/console/notebooks/reading/notes/4",
+        "front_url": "http://127.0.0.1:8113/reading/beta",
+        "payload": {
+          "slug": "beta",
+          "content_md": "## T3 beta\n\n虚构阅读笔记本正文。",
+          "status": "published",
+          "tags": [
+            "技术/Go",
+            "生活/阅读/书评"
+          ],
+          "stellar_version": 2,
+          "stellar_config": "{\n  \"title\": \"T3 阅读 beta\",\n  \"collection\": {\n    \"profile\": \"notebook\",\n    \"id\": \"reading\"\n  },\n  \"footer\": {\n    \"share\": false,\n    \"show_tags\": true\n  },\n  \"article\": {\n    \"ai_label\": \"manual\",\n    \"paragraph_indent\": \"always\"\n  },\n  \"rightbar\": {\n    \"enabled\": true,\n    \"widgets\": [\n      \"tagtree\"\n    ]\n  },\n  \"tags\": [\n    \"技术/Go\",\n    \"生活/阅读/书评\"\n  ]\n}",
+          "blog_extensions": "{}"
+        },
+        "ui_json": "{\n  \"title\": \"T3 阅读 beta\",\n  \"collection\": {\n    \"profile\": \"notebook\",\n    \"id\": \"reading\"\n  },\n  \"footer\": {\n    \"share\": false,\n    \"show_tags\": true\n  },\n  \"article\": {\n    \"ai_label\": \"manual\",\n    \"paragraph_indent\": \"always\"\n  },\n  \"rightbar\": {\n    \"enabled\": true,\n    \"widgets\": [\n      \"tagtree\"\n    ]\n  },\n  \"tags\": [\n    \"技术/Go\",\n    \"生活/阅读/书评\"\n  ]\n}",
+        "api_reopened_equal": true,
+        "saved_on_source_commit": "5f944882"
+      }
+    ],
+    "api_reopened_equal": true
+  },
+  "baseline_theme_document": {
+    "version": 2,
+    "theme": {
+      "appearance": {
+        "color_scheme": "auto",
+        "preset": "minimal"
+      },
+      "features": {
+        "color_scheme_switch": {
+          "enabled": true
+        },
+        "image_optimization": {
+          "enabled": true
+        },
+        "link_prefetch": {
+          "enabled": false
+        }
+      },
+      "leftbar": {
+        "brand": {
+          "image": {
+            "src": "/uploads/avatar.png"
+          },
+          "name": "Stellar 2.0 验收站",
+          "tagline": "独立虚构数据"
+        },
+        "menu": [
+          {
+            "icon": "default:documents",
+            "id": "post",
+            "title": "post",
+            "url": "/"
+          },
+          {
+            "icon": "default:documents",
+            "id": "wiki",
+            "title": "wiki",
+            "url": "/wiki/"
+          },
+          {
+            "icon": "default:documents",
+            "id": "topic",
+            "title": "topic",
+            "url": "/topic/"
+          },
+          {
+            "icon": "default:documents",
+            "id": "notebook",
+            "title": "notebook",
+            "url": "/notebooks/"
+          },
+          {
+            "icon": "default:documents",
+            "id": "settings",
+            "title": "settings",
+            "url": "/settings/"
+          },
+          {
+            "icon": "default:documents",
+            "id": "tags",
+            "title": "tags",
+            "url": "/tags-showcase/"
+          },
+          {
+            "icon": "default:documents",
+            "id": "moments",
+            "title": "moments",
+            "url": "/moments/"
+          },
+          {
+            "icon": "default:documents",
+            "id": "about",
+            "title": "about",
+            "url": "/about/"
+          }
+        ]
+      },
+      "profiles": {
+        "error": {
+          "image": "/uploads/cover.png"
+        },
+        "post": {
+          "rightbar": {
+            "widgets": [
+              "author",
+              "toc"
+            ]
+          }
+        }
+      }
+    },
+    "blog_extensions": {
+      "ai": {
+        "ask": {
+          "allow_user_llm": false,
+          "enabled": false
+        },
+        "summary": {
+          "allow_user_api": false,
+          "enabled": false
+        }
+      },
+      "data": {
+        "authors": {
+          "admin": {
+            "avatar": "/uploads/avatar.png",
+            "description": "虚构作者",
+            "hidden": false,
+            "name": "验收管理员"
+          },
+          "writer": {
+            "avatar": "/uploads/avatar.png",
+            "hidden": false,
+            "name": "第二作者"
+          }
+        },
+        "defaultAuthor": {
+          "avatar": "/uploads/avatar.png",
+          "description": "默认作者组件样本",
+          "name": "验收管理员",
+          "path": "/author/admin/"
+        },
+        "wiki": [
+          "galaxy",
+          "strands",
+          "light-rays",
+          "ferrofluid",
+          "video"
+        ]
+      },
+      "friends": {
+        "check_interval": 0,
+        "snapshot_interval": 0
+      },
+      "native_comments": {
+        "enabled": true,
+        "gravatar_mirror": "http://127.0.0.1:8113/fixture-unavailable/avatar",
+        "moderation": false,
+        "notify": {
+          "enabled": false
+        },
+        "title": "原生评论验收"
+      },
+      "search": {
+        "provider": "go"
+      },
+      "site": {
+        "language": "zh-CN",
+        "per_page": 2
+      }
+    }
+  },
+  "remaining_browser_steps": "全部候选已通过当前8113隔离API保存重开，仍需真实Console JSON保存→离开重开→前台核对。当前主题carousel/hero 2.4；随后flat/classic 1.25；三上游selector核对computed ratio。Notebook reading含显式tagtree和多层tag，note含合法snake_case article/footer。allowed_hosts须核对canonical-tip真实JS分支。末尾恢复baseline_theme_document。所有操作只在8113。",
+  "prior_service_source_commit": "7ca5a989",
+  "current_theme": "carousel-hero cover_ratio=2.4"
+}

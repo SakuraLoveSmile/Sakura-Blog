@@ -26,6 +26,7 @@ test("User Center keeps authors in a restricted writing surface", () => {
   assert.match(consoleRouter, /window\.location\.assign\("\/uc\/"\)/);
   assert.match(editor, /受限编辑器/);
   assert.doesNotMatch(editor, /settingsApi/);
-  assert.match(store, /register\/challenge/);
+  assert.match(store, /invitation_code/);
+  assert.doesNotMatch(store, /captcha_|register\/challenge/);
   assert.match(store, /\/api\/auth\/upgrade/);
 });

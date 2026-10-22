@@ -118,12 +118,3 @@ func normalizeLegacyWikiHero(hero *tmpl.HeroConfig) *tmpl.HeroConfig {
 	}
 	return &out
 }
-
-func wikiProjectHasTag(p *tmpl.WikiProject, tag string) bool {
-	for _, candidate := range p.Tags {
-		if strings.TrimSpace(candidate) == tag {
-			return true
-		}
-	}
-	return false
-}

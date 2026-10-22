@@ -1,0 +1,58 @@
+{
+  "source": "56bac8cd",
+  "layout": {
+    "preview": "<div class=\"cmt-preview-body\"><p><img class=\"cmt-emoji-img loaded\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/angel.gif\" alt=\"emoji\"> hello<img class=\"cmt-emoji-img loaded\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/angel.gif\" alt=\"emoji\"></p></div>",
+    "images": [
+      {
+        "display": "block",
+        "margin": "0px 269px",
+        "rect": {
+          "x": 621,
+          "y": 357.0703125,
+          "width": 30,
+          "height": 30,
+          "top": 357.0703125,
+          "right": 651,
+          "bottom": 387.0703125,
+          "left": 621
+        }
+      },
+      {
+        "display": "block",
+        "margin": "0px 269px",
+        "rect": {
+          "x": 621,
+          "y": 414.265625,
+          "width": 30,
+          "height": 30,
+          "top": 414.265625,
+          "right": 651,
+          "bottom": 444.265625,
+          "left": 621
+        }
+      }
+    ]
+  },
+  "pendingIdentity": {
+    "list": "加载评论中…",
+    "body": {
+      "x": 328,
+      "y": 225.171875,
+      "width": 616,
+      "height": 375.5703125,
+      "top": 225.171875,
+      "right": 944,
+      "bottom": 600.7421875,
+      "left": 328
+    },
+    "commentRequests": [],
+    "spinner": {
+      "position": "absolute",
+      "width": "616px",
+      "height": "32px",
+      "zIndex": "-1",
+      "margin": "0px"
+    }
+  },
+  "boundary": "Auth request deliberately held; ordinary list API succeeds when identity finishes. User tabs unchanged."
+}

@@ -1,0 +1,68 @@
+{
+  "built_head": "aa1fa93",
+  "quote": {
+    "visible": true,
+    "blink": true
+  },
+  "qqPlaying": {
+    "result": {
+      "type": "object",
+      "value": {
+        "paused": false,
+        "time": 0.149871
+      }
+    }
+  },
+  "qqPaused": {
+    "result": {
+      "type": "object",
+      "value": {
+        "paused": true,
+        "time": 0.179863
+      }
+    }
+  },
+  "wcPlaying": {
+    "result": {
+      "type": "object",
+      "value": {
+        "paused": false,
+        "time": 0.2145
+      }
+    }
+  },
+  "wcPaused": {
+    "result": {
+      "type": "object",
+      "value": {
+        "paused": true,
+        "time": 0.253377
+      }
+    }
+  },
+  "videoPlaying": {
+    "result": {
+      "type": "object",
+      "value": {
+        "duration": 4,
+        "paused": false,
+        "time": 0.081534
+      }
+    }
+  },
+  "videoPaused": {
+    "result": {
+      "type": "object",
+      "value": {
+        "duration": 4,
+        "paused": true,
+        "time": 0.243056
+      }
+    }
+  },
+  "download": {
+    "bytes": 0,
+    "containsFixtureMarker": false,
+    "source": "/uploads/t5-download.txt"
+  }
+}

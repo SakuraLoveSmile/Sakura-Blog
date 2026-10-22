@@ -1,0 +1,5032 @@
+{
+  "fixture_only": true,
+  "runtime": "resume-runtime-cd3.json",
+  "arrays": [
+    "topbar.menu",
+    "topbar.widgets",
+    "rightbar.widgets"
+  ],
+  "cases": [
+    {
+      "id": "cascade-global-replace",
+      "input": {
+        "id": "cascade-global-replace",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_REPLACED_0"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-replaced-0",
+                  "title": "T2_MENU_GLOBAL_REPLACED_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL_REPLACED0"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_REPLACED_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL_REPLACED0"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": null,
+                  "menu": null,
+                  "footer": {
+                    "actions": null
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": null,
+                  "widgets": null
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": null
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-replaced-0",
+                  "title": "T2_TOP_MENU_GLOBAL_REPLACED_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL_REPLACED0"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_REPLACED_0"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "GLOBAL_REPLACED",
+          "expectedCustomCount": 1,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_GLOBAL_REPLACED_0"
+        ],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_GLOBAL_REPLACED_0"
+        ],
+        "topWidgets": [],
+        "topbar": true
+      }
+    },
+    {
+      "id": "cascade-global-omit",
+      "input": {
+        "id": "cascade-global-omit",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {},
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": null,
+                  "menu": null,
+                  "footer": {
+                    "actions": null
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": null,
+                  "widgets": null
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": null
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false
+            },
+            "rightbar": {
+              "enabled": true
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "upstream defaults",
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": true,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": false,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false,
+        "rightWidgetLayouts": [],
+        "topWidgetLayouts": []
+      }
+    },
+    {
+      "id": "cascade-global-empty",
+      "input": {
+        "id": "cascade-global-empty",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [],
+              "menu": [],
+              "footer": {
+                "actions": []
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": null,
+                  "menu": null,
+                  "footer": {
+                    "actions": null
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": null,
+                  "widgets": null
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": null
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [],
+              "widgets": []
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": []
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": null,
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": false,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false,
+        "rightWidgetLayouts": [],
+        "topWidgetLayouts": []
+      }
+    },
+    {
+      "id": "cascade-profile-omit",
+      "input": {
+        "id": "cascade-profile-omit",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {},
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false
+                },
+                "rightbar": {
+                  "enabled": true
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "upstream wiki profile defaults",
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_GLOBAL_0",
+          "T2_TOP_MENU_GLOBAL_1"
+        ],
+        "topWidgets": [],
+        "topbar": true,
+        "rightWidgetLayouts": [
+          "rightbar:1:toc"
+        ],
+        "topWidgetLayouts": [
+          "topbar:0:menu",
+          "topbar:1:spacer"
+        ]
+      }
+    },
+    {
+      "id": "cascade-profile-empty",
+      "input": {
+        "id": "cascade-profile-empty",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [],
+                  "menu": [],
+                  "footer": {
+                    "actions": []
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [],
+                  "widgets": []
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": []
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": null,
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": false,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false,
+        "rightWidgetLayouts": [],
+        "topWidgetLayouts": []
+      }
+    },
+    {
+      "id": "cascade-profile-replace",
+      "input": {
+        "id": "cascade-profile-replace",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_REPLACED_0"
+                    }
+                  ],
+                  "menu": [
+                    {
+                      "id": "t2-profile-replaced-0",
+                      "title": "T2_MENU_PROFILE_REPLACED_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE_REPLACED0"
+                    }
+                  ],
+                  "footer": {
+                    "actions": [
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_REPLACED_0",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE_REPLACED0"
+                      }
+                    ]
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [
+                    {
+                      "id": "t2-profile-replaced-0",
+                      "title": "T2_TOP_MENU_PROFILE_REPLACED_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE_REPLACED0"
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "layout": "menu"
+                    }
+                  ]
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_REPLACED_0"
+                    }
+                  ]
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "PROFILE_REPLACED",
+          "expectedCustomCount": 1,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_PROFILE_REPLACED_0"
+        ],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_PROFILE_REPLACED_0"
+        ],
+        "topWidgets": [],
+        "topbar": true,
+        "rightWidgetLayouts": [
+          "rightbar:0:markdown"
+        ],
+        "topWidgetLayouts": [
+          "topbar:0:menu"
+        ]
+      }
+    },
+    {
+      "id": "cascade-collection-omit",
+      "input": {
+        "id": "cascade-collection-omit",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_1"
+                    }
+                  ],
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "footer": {
+                    "actions": [
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_0",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE0"
+                      },
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_1",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE1"
+                      }
+                    ]
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_TOP_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_TOP_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "layout": "menu"
+                    },
+                    {
+                      "layout": "spacer"
+                    }
+                  ]
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_1"
+                    }
+                  ]
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]},\"leftbar\":{},\"topbar\":{\"enabled\":true,\"brand\":false},\"rightbar\":{\"enabled\":true}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "PROFILE",
+          "expectedCustomCount": 2,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_PROFILE_0",
+          "T2_RIGHT_WIDGET_PROFILE_1"
+        ],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_PROFILE_0",
+          "T2_TOP_MENU_PROFILE_1"
+        ],
+        "topWidgets": [],
+        "topbar": true,
+        "rightWidgetLayouts": [
+          "rightbar:0:markdown",
+          "rightbar:1:markdown"
+        ],
+        "topWidgetLayouts": [
+          "topbar:0:menu",
+          "topbar:1:spacer"
+        ]
+      }
+    },
+    {
+      "id": "cascade-collection-empty",
+      "input": {
+        "id": "cascade-collection-empty",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_1"
+                    }
+                  ],
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "footer": {
+                    "actions": [
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_0",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE0"
+                      },
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_1",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE1"
+                      }
+                    ]
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_TOP_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_TOP_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "layout": "menu"
+                    },
+                    {
+                      "layout": "spacer"
+                    }
+                  ]
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_1"
+                    }
+                  ]
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]},\"leftbar\":{\"widgets\":[],\"menu\":[],\"footer\":{\"actions\":[]}},\"topbar\":{\"enabled\":true,\"brand\":false,\"menu\":[],\"widgets\":[]},\"rightbar\":{\"enabled\":true,\"widgets\":[]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": null,
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": false,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false,
+        "rightWidgetLayouts": [],
+        "topWidgetLayouts": []
+      }
+    },
+    {
+      "id": "cascade-collection-replace",
+      "input": {
+        "id": "cascade-collection-replace",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_1"
+                    }
+                  ],
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "footer": {
+                    "actions": [
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_0",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE0"
+                      },
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_1",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE1"
+                      }
+                    ]
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_TOP_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_TOP_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "layout": "menu"
+                    },
+                    {
+                      "layout": "spacer"
+                    }
+                  ]
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_1"
+                    }
+                  ]
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]},\"leftbar\":{\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_COLLECTION_REPLACED_0\"}],\"menu\":[{\"id\":\"t2-collection-replaced-0\",\"title\":\"T2_MENU_COLLECTION_REPLACED_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION_REPLACED0\"}],\"footer\":{\"actions\":[{\"type\":\"link\",\"title\":\"T2_ACTION_COLLECTION_REPLACED_0\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=COLLECTION_REPLACED0\"}]}},\"topbar\":{\"enabled\":true,\"brand\":false,\"menu\":[{\"id\":\"t2-collection-replaced-0\",\"title\":\"T2_TOP_MENU_COLLECTION_REPLACED_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION_REPLACED0\"}],\"widgets\":[{\"layout\":\"menu\"}]},\"rightbar\":{\"enabled\":true,\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_COLLECTION_REPLACED_0\"}]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "COLLECTION_REPLACED",
+          "expectedCustomCount": 1,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_COLLECTION_REPLACED_0"
+        ],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_COLLECTION_REPLACED_0"
+        ],
+        "topWidgets": [],
+        "topbar": true,
+        "rightWidgetLayouts": [
+          "rightbar:0:markdown"
+        ],
+        "topWidgetLayouts": [
+          "topbar:0:menu"
+        ]
+      }
+    },
+    {
+      "id": "cascade-page-omit",
+      "input": {
+        "id": "cascade-page-omit",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_1"
+                    }
+                  ],
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "footer": {
+                    "actions": [
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_0",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE0"
+                      },
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_1",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE1"
+                      }
+                    ]
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_TOP_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_TOP_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "layout": "menu"
+                    },
+                    {
+                      "layout": "spacer"
+                    }
+                  ]
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_1"
+                    }
+                  ]
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]},\"leftbar\":{\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_COLLECTION_0\"},{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_COLLECTION_1\"}],\"menu\":[{\"id\":\"t2-collection-0\",\"title\":\"T2_MENU_COLLECTION_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION0\"},{\"id\":\"t2-collection-1\",\"title\":\"T2_MENU_COLLECTION_1\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION1\"}],\"footer\":{\"actions\":[{\"type\":\"link\",\"title\":\"T2_ACTION_COLLECTION_0\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=COLLECTION0\"},{\"type\":\"link\",\"title\":\"T2_ACTION_COLLECTION_1\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=COLLECTION1\"}]}},\"topbar\":{\"enabled\":true,\"brand\":false,\"menu\":[{\"id\":\"t2-collection-0\",\"title\":\"T2_TOP_MENU_COLLECTION_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION0\"},{\"id\":\"t2-collection-1\",\"title\":\"T2_TOP_MENU_COLLECTION_1\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION1\"}],\"widgets\":[{\"layout\":\"menu\"},{\"layout\":\"spacer\"}]},\"rightbar\":{\"enabled\":true,\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_COLLECTION_0\"},{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_COLLECTION_1\"}]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\",\"leftbar\":{},\"topbar\":{\"enabled\":true,\"brand\":false},\"rightbar\":{\"enabled\":true}}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "COLLECTION",
+          "expectedCustomCount": 2,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_COLLECTION_0",
+          "T2_RIGHT_WIDGET_COLLECTION_1"
+        ],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_COLLECTION_0",
+          "T2_TOP_MENU_COLLECTION_1"
+        ],
+        "topWidgets": [],
+        "topbar": true,
+        "rightWidgetLayouts": [
+          "rightbar:0:markdown",
+          "rightbar:1:markdown"
+        ],
+        "topWidgetLayouts": [
+          "topbar:0:menu",
+          "topbar:1:spacer"
+        ]
+      }
+    },
+    {
+      "id": "cascade-page-empty",
+      "input": {
+        "id": "cascade-page-empty",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_1"
+                    }
+                  ],
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "footer": {
+                    "actions": [
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_0",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE0"
+                      },
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_1",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE1"
+                      }
+                    ]
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_TOP_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_TOP_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "layout": "menu"
+                    },
+                    {
+                      "layout": "spacer"
+                    }
+                  ]
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_1"
+                    }
+                  ]
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]},\"leftbar\":{\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_COLLECTION_0\"},{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_COLLECTION_1\"}],\"menu\":[{\"id\":\"t2-collection-0\",\"title\":\"T2_MENU_COLLECTION_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION0\"},{\"id\":\"t2-collection-1\",\"title\":\"T2_MENU_COLLECTION_1\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION1\"}],\"footer\":{\"actions\":[{\"type\":\"link\",\"title\":\"T2_ACTION_COLLECTION_0\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=COLLECTION0\"},{\"type\":\"link\",\"title\":\"T2_ACTION_COLLECTION_1\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=COLLECTION1\"}]}},\"topbar\":{\"enabled\":true,\"brand\":false,\"menu\":[{\"id\":\"t2-collection-0\",\"title\":\"T2_TOP_MENU_COLLECTION_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION0\"},{\"id\":\"t2-collection-1\",\"title\":\"T2_TOP_MENU_COLLECTION_1\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION1\"}],\"widgets\":[{\"layout\":\"menu\"},{\"layout\":\"spacer\"}]},\"rightbar\":{\"enabled\":true,\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_COLLECTION_0\"},{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_COLLECTION_1\"}]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\",\"leftbar\":{\"widgets\":[],\"menu\":[],\"footer\":{\"actions\":[]}},\"topbar\":{\"enabled\":true,\"brand\":false,\"menu\":[],\"widgets\":[]},\"rightbar\":{\"enabled\":true,\"widgets\":[]}}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": null,
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": false,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false,
+        "rightWidgetLayouts": [],
+        "topWidgetLayouts": []
+      }
+    },
+    {
+      "id": "cascade-page-replace",
+      "input": {
+        "id": "cascade-page-replace",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_WIDGET_PROFILE_1"
+                    }
+                  ],
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "footer": {
+                    "actions": [
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_0",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE0"
+                      },
+                      {
+                        "type": "link",
+                        "title": "T2_ACTION_PROFILE_1",
+                        "icon": "default:link",
+                        "url": "/about/?t2action=PROFILE1"
+                      }
+                    ]
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": [
+                    {
+                      "id": "t2-profile-0",
+                      "title": "T2_TOP_MENU_PROFILE_0",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE0"
+                    },
+                    {
+                      "id": "t2-profile-1",
+                      "title": "T2_TOP_MENU_PROFILE_1",
+                      "icon": "default:documents",
+                      "url": "/about/?t2=PROFILE1"
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "layout": "menu"
+                    },
+                    {
+                      "layout": "spacer"
+                    }
+                  ]
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": [
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_0"
+                    },
+                    {
+                      "layout": "markdown",
+                      "content": "T2_RIGHT_WIDGET_PROFILE_1"
+                    }
+                  ]
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]},\"leftbar\":{\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_COLLECTION_0\"},{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_COLLECTION_1\"}],\"menu\":[{\"id\":\"t2-collection-0\",\"title\":\"T2_MENU_COLLECTION_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION0\"},{\"id\":\"t2-collection-1\",\"title\":\"T2_MENU_COLLECTION_1\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION1\"}],\"footer\":{\"actions\":[{\"type\":\"link\",\"title\":\"T2_ACTION_COLLECTION_0\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=COLLECTION0\"},{\"type\":\"link\",\"title\":\"T2_ACTION_COLLECTION_1\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=COLLECTION1\"}]}},\"topbar\":{\"enabled\":true,\"brand\":false,\"menu\":[{\"id\":\"t2-collection-0\",\"title\":\"T2_TOP_MENU_COLLECTION_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION0\"},{\"id\":\"t2-collection-1\",\"title\":\"T2_TOP_MENU_COLLECTION_1\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=COLLECTION1\"}],\"widgets\":[{\"layout\":\"menu\"},{\"layout\":\"spacer\"}]},\"rightbar\":{\"enabled\":true,\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_COLLECTION_0\"},{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_COLLECTION_1\"}]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\",\"leftbar\":{\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_WIDGET_PAGE_REPLACED_0\"}],\"menu\":[{\"id\":\"t2-page-replaced-0\",\"title\":\"T2_MENU_PAGE_REPLACED_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=PAGE_REPLACED0\"}],\"footer\":{\"actions\":[{\"type\":\"link\",\"title\":\"T2_ACTION_PAGE_REPLACED_0\",\"icon\":\"default:link\",\"url\":\"/about/?t2action=PAGE_REPLACED0\"}]}},\"topbar\":{\"enabled\":true,\"brand\":false,\"menu\":[{\"id\":\"t2-page-replaced-0\",\"title\":\"T2_TOP_MENU_PAGE_REPLACED_0\",\"icon\":\"default:documents\",\"url\":\"/about/?t2=PAGE_REPLACED0\"}],\"widgets\":[{\"layout\":\"menu\"}]},\"rightbar\":{\"enabled\":true,\"widgets\":[{\"layout\":\"markdown\",\"content\":\"T2_RIGHT_WIDGET_PAGE_REPLACED_0\"}]}}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "PAGE_REPLACED",
+          "expectedCustomCount": 1,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_PAGE_REPLACED_0"
+        ],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_PAGE_REPLACED_0"
+        ],
+        "topWidgets": [],
+        "topbar": true,
+        "rightWidgetLayouts": [
+          "rightbar:0:markdown"
+        ],
+        "topWidgetLayouts": [
+          "topbar:0:menu"
+        ]
+      }
+    },
+    {
+      "id": "cascade-global-replace",
+      "input": {
+        "id": "cascade-global-replace",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_REPLACED_0"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-replaced-0",
+                  "title": "T2_MENU_GLOBAL_REPLACED_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL_REPLACED0"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_REPLACED_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL_REPLACED0"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": null,
+                  "menu": null,
+                  "footer": {
+                    "actions": null
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": null,
+                  "widgets": null
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": null
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-replaced-0",
+                  "title": "T2_TOP_MENU_GLOBAL_REPLACED_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL_REPLACED0"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_REPLACED_0"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "GLOBAL_REPLACED",
+          "expectedCustomCount": 1,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_GLOBAL_REPLACED_0"
+        ],
+        "rightbar": true,
+        "topMenus": [
+          "T2_TOP_MENU_GLOBAL_REPLACED_0"
+        ],
+        "topWidgets": [],
+        "topbar": true,
+        "rightWidgetLayouts": [
+          "rightbar:0:markdown"
+        ],
+        "topWidgetLayouts": [
+          "topbar:0:menu"
+        ]
+      },
+      "built_head": "5815e94",
+      "measurement_source": "Supplement before first605 restart; global replacement menu widget resampled by actual Console save/reopen and DOM."
+    }
+  ],
+  "initialUnsupportedFixture": [
+    {
+      "id": "cascade-global-omit",
+      "input": {
+        "id": "cascade-global-omit",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {},
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": null,
+                  "menu": null,
+                  "footer": {
+                    "actions": null
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": null,
+                  "widgets": null
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": null
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false
+            },
+            "rightbar": {
+              "enabled": true
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "upstream defaults",
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": true,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": false,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false
+      }
+    },
+    {
+      "id": "cascade-global-empty",
+      "input": {
+        "id": "cascade-global-empty",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [],
+              "menu": [],
+              "footer": {
+                "actions": []
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": null,
+                  "menu": null,
+                  "footer": {
+                    "actions": null
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": null,
+                  "widgets": null
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": null
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [],
+              "widgets": []
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": []
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": null,
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": false,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false
+      }
+    },
+    {
+      "id": "cascade-global-replace",
+      "input": {
+        "id": "cascade-global-replace",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_REPLACED_0"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-replaced-0",
+                  "title": "T2_MENU_GLOBAL_REPLACED_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL_REPLACED0"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_REPLACED_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL_REPLACED0"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {
+                  "widgets": null,
+                  "menu": null,
+                  "footer": {
+                    "actions": null
+                  }
+                },
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false,
+                  "menu": null,
+                  "widgets": null
+                },
+                "rightbar": {
+                  "enabled": true,
+                  "widgets": null
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-replaced-0",
+                  "title": "T2_TOP_MENU_GLOBAL_REPLACED_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL_REPLACED0"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_REPLACED_0"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "GLOBAL_REPLACED",
+          "expectedCustomCount": 1,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [
+          "T2_RIGHT_WIDGET_GLOBAL_REPLACED_0"
+        ],
+        "rightbar": true,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false
+      }
+    },
+    {
+      "id": "cascade-profile-omit",
+      "input": {
+        "id": "cascade-profile-omit",
+        "settingsDocument": {
+          "version": 2,
+          "theme": {
+            "appearance": {
+              "color_scheme": "auto",
+              "preset": "minimal"
+            },
+            "features": {
+              "color_scheme_switch": {
+                "enabled": true
+              },
+              "image_optimization": {
+                "enabled": true
+              },
+              "link_prefetch": {
+                "enabled": false
+              }
+            },
+            "leftbar": {
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_WIDGET_GLOBAL_1"
+                }
+              ],
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "footer": {
+                "actions": [
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_0",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL0"
+                  },
+                  {
+                    "type": "link",
+                    "title": "T2_ACTION_GLOBAL_1",
+                    "icon": "default:link",
+                    "url": "/about/?t2action=GLOBAL1"
+                  }
+                ]
+              }
+            },
+            "profiles": {
+              "home": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "page": {
+                "leftbar": {
+                  "widgets": []
+                },
+                "active_menu": null
+              },
+              "wiki": {
+                "leftbar": {},
+                "active_menu": null,
+                "topbar": {
+                  "enabled": true,
+                  "brand": false
+                },
+                "rightbar": {
+                  "enabled": true
+                }
+              },
+              "blog_index": {
+                "active_menu": null
+              },
+              "wiki_index": {
+                "active_menu": null
+              },
+              "post": {
+                "active_menu": null
+              },
+              "topic": {
+                "active_menu": null
+              },
+              "notebooks": {
+                "active_menu": null
+              },
+              "notebook": {
+                "active_menu": null
+              },
+              "note": {
+                "active_menu": null
+              },
+              "author": {
+                "active_menu": null
+              },
+              "settings": {
+                "active_menu": null
+              },
+              "error": {
+                "active_menu": null
+              }
+            },
+            "topbar": {
+              "enabled": true,
+              "brand": false,
+              "menu": [
+                {
+                  "id": "t2-global-0",
+                  "title": "T2_TOP_MENU_GLOBAL_0",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL0"
+                },
+                {
+                  "id": "t2-global-1",
+                  "title": "T2_TOP_MENU_GLOBAL_1",
+                  "icon": "default:documents",
+                  "url": "/about/?t2=GLOBAL1"
+                }
+              ],
+              "widgets": [
+                {
+                  "layout": "menu"
+                },
+                {
+                  "layout": "spacer"
+                }
+              ]
+            },
+            "rightbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_0"
+                },
+                {
+                  "layout": "markdown",
+                  "content": "T2_RIGHT_WIDGET_GLOBAL_1"
+                }
+              ]
+            }
+          },
+          "blog_extensions": {
+            "ai": {
+              "ask": {
+                "allow_user_llm": false,
+                "enabled": false
+              },
+              "summary": {
+                "allow_user_api": false,
+                "enabled": false
+              }
+            },
+            "data": {
+              "authors": {
+                "admin": {
+                  "avatar": "/uploads/avatar.png",
+                  "description": "虚构作者",
+                  "hidden": false,
+                  "name": "验收管理员"
+                },
+                "writer": {
+                  "avatar": "/uploads/avatar.png",
+                  "hidden": false,
+                  "name": "第二作者"
+                }
+              },
+              "defaultAuthor": {
+                "avatar": "/uploads/avatar.png",
+                "description": "默认作者组件样本",
+                "name": "验收管理员",
+                "path": "/author/admin/"
+              },
+              "wiki": [
+                "galaxy",
+                "strands",
+                "light-rays",
+                "ferrofluid",
+                "video"
+              ]
+            },
+            "friends": {
+              "check_interval": 0,
+              "snapshot_interval": 0
+            },
+            "native_comments": {
+              "enabled": true,
+              "gravatar_mirror": "http://127.0.0.1:8112/fixture-unavailable/avatar",
+              "moderation": false,
+              "notify": {
+                "enabled": false
+              },
+              "title": "原生评论验收"
+            },
+            "search": {
+              "provider": "go"
+            },
+            "site": {
+              "language": "zh-CN",
+              "per_page": 2
+            }
+          }
+        },
+        "contentRequests": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/projects/t2-cascade",
+            "body": {
+              "id": "t2-cascade",
+              "name": "T2 synthetic cascade",
+              "visible": true,
+              "stellar_version": 2,
+              "stellar_config": "{\"name\":\"T2 synthetic cascade\",\"route\":{\"path\":\"/wiki/t2-cascade/\"},\"navigation\":{\"tree\":[\"entry\"]}}",
+              "blog_extensions": "{}"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/v1/wiki/t2-cascade/docs/entry",
+            "body": {
+              "slug": "entry",
+              "title": "T2 synthetic cascade entry",
+              "content_md": "## T2 cascade\n\nSynthetic fixture only.",
+              "status": "published",
+              "stellar_version": 2,
+              "stellar_config": "{\"collection\":{\"profile\":\"wiki\",\"id\":\"t2-cascade\"},\"title\":\"T2 synthetic cascade entry\"}",
+              "blog_extensions": "{}"
+            }
+          }
+        ],
+        "publicPath": "/wiki/t2-cascade/entry",
+        "expected": {
+          "arrays": [
+            "leftbar.widgets",
+            "leftbar.menu",
+            "leftbar.footer.actions"
+          ],
+          "expectedPrefix": "upstream wiki profile defaults",
+          "expectedCustomCount": 0,
+          "upstreamDefaultMenu": false,
+          "note": "Theme omission merges official schema defaults first; collection/page omission inherits lower layers."
+        },
+        "browser": {
+          "saveReopen": "NOT RUN",
+          "DOM": "NOT RUN",
+          "computed": "NOT RUN",
+          "interaction": "NOT RUN",
+          "screenshot": "NOT RUN"
+        }
+      },
+      "settingsEqual": true,
+      "projectEqual": true,
+      "pageEqual": true,
+      "front": {
+        "rightWidgets": [],
+        "rightbar": true,
+        "topMenus": [],
+        "topWidgets": [],
+        "topbar": false
+      }
+    }
+  ],
+  "restore": {
+    "settingsEqual": true
+  },
+  "finalBaselineRestored": true
+}
