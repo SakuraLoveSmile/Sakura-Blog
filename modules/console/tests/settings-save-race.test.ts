@@ -43,11 +43,25 @@ const SAVE_BUTTON_FILES = [
 ];
 
 test("旧主题设置仅提供 canonical 配置入口，不再双协议写入", () => {
-  for (const path of ["appearance/AppearanceView.vue", "appearance/MenuView.vue", "authors/AuthorsView.vue", "assistant/AiSettings.vue", "friends/FriendSettings.vue"]) {
+  for (const path of ["appearance/AppearanceView.vue", "appearance/MenuView.vue", "authors/AuthorsView.vue", "friends/FriendSettings.vue"]) {
     const code = read(`modules/console/web/src/modules/${path}`);
     assert.match(code, /CanonicalSettingsNotice/);
     assert.doesNotMatch(code, /settingsApi\.updateSection|settingsApi\.all/);
   }
+});
+
+test("AI 设置使用 canonical 编辑器读写 blog_extensions.ai，不接入旧 ai 分段", () => {
+  const code = read("modules/console/web/src/modules/assistant/AiSettings.vue");
+  assert.match(code, /useStellarSettings\(\)/);
+  assert.match(code, /<CanonicalSettingsForm/);
+  assert.match(code, /tab="ai"/);
+  assert.doesNotMatch(code, /CanonicalSettingsNotice|settingsApi\.updateSection|settingsApi\.all/);
+});
+
+test("AI 设置仅在首次进入设置标签后挂载，默认助手标签不读取配置", () => {
+  const code = read("modules/console/web/src/modules/assistant/AssistantView.vue");
+  assert.match(code, /<AiSettings v-if="settingsVisited" v-show="activeTab === 'settings'" \/>/);
+  assert.match(code, /if \(tab === "settings"\) settingsVisited\.value = true;/);
 });
 
 test("SettingsView.save 与 canonical 原文保存: 维护各分区 JSON 文本基线与表单/草稿双重脏态判定（结构检查）", () => {

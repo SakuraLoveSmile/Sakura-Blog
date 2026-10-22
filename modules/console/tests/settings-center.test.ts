@@ -83,7 +83,7 @@ test("appearance, menu, author, assistant and friend settings routes are wired",
   assert.match(read("modules/appearance/MenuView.vue"), /CanonicalSettingsNotice/);
   assert.match(read("modules/authors/AuthorsView.vue"), /CanonicalSettingsNotice/);
   assert.match(read("modules/assistant/AssistantView.vue"), /tab === "settings"/);
-  assert.match(read("modules/assistant/AiSettings.vue"), /CanonicalSettingsNotice/);
+  assert.match(read("modules/assistant/AiSettings.vue"), /CanonicalSettingsForm/);
   assert.match(read("modules/friends/FriendList.vue"), /activeTab.*settings/);
   assert.match(read("modules/friends/FriendSettings.vue"), /CanonicalSettingsNotice/);
 });

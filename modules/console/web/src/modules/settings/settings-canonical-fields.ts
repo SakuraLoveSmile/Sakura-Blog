@@ -1,4 +1,4 @@
-export type CanonicalSettingsTab = "post" | "comments" | "seo" | "search" | "advanced";
+export type CanonicalSettingsTab = "post" | "comments" | "seo" | "search" | "advanced" | "ai";
 export type CanonicalFieldKind =
   | "text"
   | "password"
@@ -34,6 +34,7 @@ export interface CanonicalSettingsGroup {
 const article = "theme.article";
 const content = "blog_extensions.content";
 const comments = "blog_extensions.native_comments";
+const ai = "blog_extensions.ai";
 export const DEFAULT_ARTICLE_LICENSE =
   "本文采用 [署名-非商业性使用-相同方式共享 4.0 国际](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可协议，转载请注明出处。";
 const field = (
@@ -299,6 +300,45 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
       description:
         "旧版动态数据缓存选项已不再使用。其他主题设置可在「Stellar 2」标签编辑，所有标签共享同一份未保存草稿。",
       fields: [],
+    },
+  ],
+  ai: [
+    {
+      title: "本地 AI 服务",
+      description: "用于文章属性生成与知识库问答的 OpenAI 兼容接口。密钥只保存在服务端，表单中显示为 ****。",
+      fields: [
+        text(
+          `${ai}.base_url`,
+          "接口地址",
+          "OpenAI 兼容服务的根地址，例如 https://api.openai.com/v1；系统会追加 /chat/completions 与 /embeddings。",
+        ),
+        field(`${ai}.api_key`, "API Key", "password", {
+          help: "保留 **** 表示不修改原密钥；清空输入可清除密钥。",
+        }),
+        text(`${ai}.model`, "对话模型", "文章属性生成与知识库问答使用的模型名称。"),
+        text(`${ai}.embedding_model`, "向量模型", "知识库向量化与检索使用的 Embedding 模型名称；留空时知识库不可用。"),
+      ],
+    },
+    {
+      title: "AI 摘要",
+      description: "控制前台文章页的 AI 摘要入口，以及读者能否使用自己的接口。",
+      fields: [
+        toggle(`${ai}.summary.enabled`, "启用 AI 摘要", false, "关闭时前台不展示摘要面板。"),
+        toggle(
+          `${ai}.summary.allow_user_api`,
+          "允许读者使用自己的接口",
+          false,
+          "需先开启 AI 摘要。读者填写的 Key 仅随本次请求透传，不会被保存。",
+        ),
+      ],
+    },
+    {
+      title: "AI 问答",
+      description: "控制前台知识库问答入口，以及读者能否提供自己的对话模型。",
+      fields: [
+        toggle(`${ai}.ask.enabled`, "启用知识库问答", false, "默认关闭。仅配置向量模型不会公开问答接口。"),
+        toggle(`${ai}.ask.allow_user_llm`, "允许读者使用自己的对话模型", false, "仅在开启知识库问答后生效。"),
+      ],
     },
   ],
 };

@@ -6,6 +6,7 @@ const activeForm = (page: Page) => page.locator(".canonical-settings-form:visibl
 const field = (page: Page, key: string) => activeForm(page).locator(`[data-setting-path="${key}"]`);
 const input = (page: Page, key: string) => field(page, key).locator("input,textarea").first();
 const save = (page: Page) => activeForm(page).getByRole("button", { name: "保存全部主题设置", exact: true });
+const aiSave = (page: Page) => activeForm(page).getByRole("button", { name: "保存 AI 设置", exact: true });
 
 async function login(page: Page) {
   await page.goto("/console/login");
@@ -145,6 +146,40 @@ test("保存期间继续编辑，响应只更新提交基线；失败保留草�
     expect(await (await page.request.get(endpoint)).text()).toBe(original);
   } finally {
     await page.unroute(`**${endpoint}`);
+    await put(page, original);
+  }
+});
+
+test("AI 设置写入独立 Blog 扩展，密钥占位与无关字段保持不变", async ({ page }) => {
+  const original = await (await page.request.get(endpoint)).text();
+  try {
+    await put(page, '{"version":2,"theme":{},"blog_extensions":{"ai":{"base_url":"https://ai.e2e.test/v1","api_key":"e2e-only-key","model":"e2e-chat","embedding_model":"e2e-embedding","summary":{"enabled":false,"allow_user_api":false},"ask":{"enabled":false,"allow_user_llm":false}},"unrelated":{"large":9007199254740993}}}');
+    await page.goto("/console/assistant?tab=settings");
+    await expect(input(page, "blog_extensions.ai.api_key")).toHaveValue("****");
+    await toggle(page, "blog_extensions.ai.summary.enabled", true);
+    await input(page, "blog_extensions.ai.model").fill("e2e-chat-next");
+    const request = page.waitForRequest((r) => r.url().endsWith(endpoint) && r.method() === "PUT");
+    const response = page.waitForResponse((r) => r.url().endsWith(endpoint) && r.request().method() === "PUT");
+    await aiSave(page).click();
+    // 未改动的密钥必须以占位原样提交，由服务端恢复原值；其余字段不因 AI 表单被重排或丢失。
+    expect((await request).postDataJSON().blog_extensions).toMatchObject({
+      ai: { api_key: "****", model: "e2e-chat-next", summary: { enabled: true } },
+      unrelated: { large: 9007199254740993 },
+    });
+    expect((await response).ok()).toBeTruthy();
+    const stored = await (await page.request.get(endpoint)).text();
+    expect(stored).toMatch(/9007199254740993/);
+    expect(JSON.parse(stored).blog_extensions.ai).toMatchObject({
+      base_url: "https://ai.e2e.test/v1",
+      api_key: "****",
+      model: "e2e-chat-next",
+      summary: { enabled: true, allow_user_api: false },
+    });
+    await page.reload();
+    await expect(input(page, "blog_extensions.ai.model")).toHaveValue("e2e-chat-next");
+    await expect(input(page, "blog_extensions.ai.api_key")).toHaveValue("****");
+    await expect(field(page, "blog_extensions.ai.summary.enabled").getByRole("switch")).toHaveAttribute("aria-checked", "true");
+  } finally {
     await put(page, original);
   }
 });

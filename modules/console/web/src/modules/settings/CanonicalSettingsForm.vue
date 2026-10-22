@@ -12,7 +12,22 @@ import {
   type CanonicalSettingsTab,
 } from "./settings-canonical-fields";
 
-const props = defineProps<{ tab: CanonicalSettingsTab; document: string; saving?: string; disabled?: boolean }>();
+const props = withDefaults(
+  defineProps<{
+    tab: CanonicalSettingsTab;
+    document: string;
+    saving?: string;
+    disabled?: boolean;
+    saveLabel?: string;
+    saveHelp?: string;
+    invalidHelp?: string;
+  }>(),
+  {
+    saveLabel: "保存全部主题设置",
+    saveHelp: "同时保存文章、评论、SEO、搜索和高级中的主题修改",
+    invalidHelp: "请先修正上方输入问题，再保存主题设置。",
+  },
+);
 const emit = defineEmits<{
   change: [path: string, value: unknown, rawValue?: string];
   save: [];
@@ -432,10 +447,10 @@ function submit() {
         native-type="submit"
         :disabled="disabled || Boolean(saving) || hasPending"
         :loading="saving === 'stellar2'"
-        ><template #icon><Icon icon="ri:save-line" /></template>保存全部主题设置</VButton
+        ><template #icon><Icon icon="ri:save-line" /></template>{{ saveLabel }}</VButton
       >
-      <p class="settings-help">同时保存文章、评论、SEO、搜索和高级中的主题修改</p>
-      <p v-if="hasErrors" class="settings-error" role="alert">请先修正上方输入问题，再保存主题设置。</p>
+      <p class="settings-help">{{ saveHelp }}</p>
+      <p v-if="hasErrors" class="settings-error" role="alert">{{ invalidHelp }}</p>
       <p v-else-if="hasMapDraft" class="settings-help">请先添加或清空尚未加入的映射项。</p>
     </div>
   </form>

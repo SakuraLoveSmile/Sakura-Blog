@@ -33,8 +33,11 @@ const route = useRoute();
 const router = useRouter();
 type AssistantTab = "assistant" | "knowledge" | "settings";
 const activeTab = ref<AssistantTab>(route.query.tab === "settings" ? "settings" : route.query.tab === "knowledge" ? "knowledge" : "assistant");
+// AI 设置在首次进入设置标签后才挂载，之后保持挂载以保留草稿与离开守卫；默认助手标签不读取配置。
+const settingsVisited = ref(activeTab.value === "settings");
 
 watch(activeTab, (tab) => {
+  if (tab === "settings") settingsVisited.value = true;
   const query = { ...route.query };
   if (tab === "assistant") delete query.tab;
   else query.tab = tab;
@@ -709,7 +712,7 @@ onBeforeUnmount(() => {
         </div>
       </aside>
     </div>
-    <AiSettings v-else />
+    <AiSettings v-if="settingsVisited" v-show="activeTab === 'settings'" />
   </div>
 </template>
 

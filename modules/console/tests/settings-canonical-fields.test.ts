@@ -13,6 +13,22 @@ import { patchJSONField, readJSONFieldRaw } from "../web/src/components/editor/s
 const schema = JSON.parse(readFileSync(new URL("../../../internal/stellarv2/schema.json", import.meta.url), "utf8"));
 const tabs = Object.keys(canonicalSettingsGroups) as CanonicalSettingsTab[];
 
+test("AI 设置只编辑独立 Blog 扩展 blog_extensions.ai，开关默认关闭且与运行时缺省一致", () => {
+  assert.deepEqual(canonicalSettingsPaths("ai"), [
+    "blog_extensions.ai.base_url",
+    "blog_extensions.ai.api_key",
+    "blog_extensions.ai.model",
+    "blog_extensions.ai.embedding_model",
+    "blog_extensions.ai.summary.enabled",
+    "blog_extensions.ai.summary.allow_user_api",
+    "blog_extensions.ai.ask.enabled",
+    "blog_extensions.ai.ask.allow_user_llm",
+  ]);
+  const fields = canonicalSettingsGroups.ai.flatMap((group) => group.fields);
+  assert.equal(fields.find((field) => field.path === "blog_extensions.ai.api_key")?.kind, "password");
+  for (const field of fields) if (field.kind === "switch") assert.equal(field.default, false, field.path);
+});
+
 test("普通设置字段遵守当前严格主题 schema，显示默认值与上游一致", () => {
   for (const tab of tabs) {
     for (const group of canonicalSettingsGroups[tab]) {
