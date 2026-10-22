@@ -1,4 +1,6 @@
 > **历史文档：旧目录结构（已废弃）**
+
+> 路径说明：文中本机绝对路径已脱敏。执行历史命令前，将 `BLOG_ROOT` 设置为对应版本的仓库根目录（例如从根目录执行 `export BLOG_ROOT="$PWD"`）。
 >
 > 本文档记录的是模块化重构前的路径，仅作历史参考，不应据此修改现行代码。
 >
@@ -80,7 +82,7 @@ func TestPublicRegister(t *testing.T) {
 ```
 
 - [ ] **Step 2: 运行测试确认失败**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go test ./backend/internal/api/ -run TestPublicRegister -v`
+Run: `cd "$BLOG_ROOT" && go test ./backend/internal/api/ -run TestPublicRegister -v`
 Expected: FAIL (no route /api/auth/register)
 
 - [ ] **Step 3: store/user.go 新增三个方法**
@@ -390,7 +392,7 @@ auth := r.Group("/api/auth")
 ```
 
 - [ ] **Step 6: 跑 auth 测试**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go test ./backend/internal/api/ -run TestPublicRegister -v`
+Run: `cd "$BLOG_ROOT" && go test ./backend/internal/api/ -run TestPublicRegister -v`
 Expected: PASS
 
 - [ ] **Step 7: 补 auth_public_test.go 全量用例**
@@ -402,12 +404,12 @@ func TestPublicLogout(t *testing.T)  { /* 登录→登出→/me 返回 logged_in
 func TestPublicRegisterDup(t *testing.T) { /* 两次同用户名第二次 409 */ }
 ```
 
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go test ./backend/internal/api/ -run TestPublic -v`
+Run: `cd "$BLOG_ROOT" && go test ./backend/internal/api/ -run TestPublic -v`
 Expected: 全部 PASS
 
 - [ ] **Step 8: 提交**
 ```bash
-cd /Users/sakurasep/Documents/Code/Project/Blog/dev && \
+cd "$BLOG_ROOT" && \
 git add backend/internal/store/user.go backend/internal/api/auth_public.go backend/internal/api/auth_public_test.go backend/internal/api/router.go && \
 git commit -S -m "feat: 公开用户注册/登录（评论身份体系）"
 ```
@@ -452,7 +454,7 @@ func TestCommentVerifiedFlag(t *testing.T) {
 ```
 
 - [ ] **Step 2: 运行失败确认**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go test ./backend/internal/api/ -run TestCommentVerifiedFlag -v`
+Run: `cd "$BLOG_ROOT" && go test ./backend/internal/api/ -run TestCommentVerifiedFlag -v`
 Expected: FAIL（verified 字段不存在 / 新 API 未注册二选一）
 
 - [ ] **Step 3: store/comment.go 扩展结构体 + 迁移**
@@ -680,12 +682,12 @@ p.AllowAttrs("data-emoji").OnElements("img")
 ```
 
 - [ ] **Step 6: 跑 comment 全测试**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go test ./backend/internal/api/ -run TestComment -v && go vet ./backend/... ./frontend/...`
+Run: `cd "$BLOG_ROOT" && go test ./backend/internal/api/ -run TestComment -v && go vet ./backend/... ./frontend/...`
 Expected: 全部 PASS
 
 - [ ] **Step 7: 提交**
 ```bash
-cd /Users/sakurasep/Documents/Code/Project/Blog/dev && \
+cd "$BLOG_ROOT" && \
 git add backend/internal/store/comment.go backend/internal/api/comment_public.go backend/internal/api/comment_test.go backend/cmd/server/routes_post.go backend/internal/comment/render.go && \
 git commit -S -m "feat: 评论区分匿名/注册双轨，注册用户带 verified 标识"
 ```
@@ -767,12 +769,12 @@ Comments: tmpl.CommentsConfig{
 同时在 model.go 的 CommentsConfig 结构体加两字段：`AllowRegister bool`, `VerifiedBadge string`。
 
 - [ ] **Step 4: 确认一致性测试通过**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go test ./backend/internal/config/ -v -run Consistency && go test ./backend/internal/template/ -run TestLang`
+Run: `cd "$BLOG_ROOT" && go test ./backend/internal/config/ -v -run Consistency && go test ./backend/internal/template/ -run TestLang`
 Expected: PASS
 
 - [ ] **Step 5: 提交**
 ```bash
-cd /Users/sakurasep/Documents/Code/Project/Blog/dev && \
+cd "$BLOG_ROOT" && \
 git add backend/internal/template/lang.go backend/internal/template/model.go config/site.example.yml backend/internal/config/site.go && \
 git commit -S -m "feat: 评论区新增 Artalk 风格文案与配置字段"
 ```
@@ -936,12 +938,12 @@ git commit -S -m "feat: 评论区新增 Artalk 风格文案与配置字段"
 ```
 
 - [ ] **Step 2: 模板语法检查**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go build ./backend/...`
+Run: `cd "$BLOG_ROOT" && go build ./backend/...`
 Expected: 编译通过（模板通过 engine.LoadDisk 加载，编译失败会报错）
 
 - [ ] **Step 3: 提交**
 ```bash
-cd /Users/sakurasep/Documents/Code/Project/Blog/dev && \
+cd "$BLOG_ROOT" && \
 git add backend/internal/template/partial/comments.html && \
 git commit -S -m "feat: 评论区模板 Artalk 视觉结构重写（卡片+双态+Tab+弹窗）"
 ```
@@ -1304,7 +1306,7 @@ git commit -S -m "feat: 评论区模板 Artalk 视觉结构重写（卡片+双�
 
 - [ ] **Step 3: 提交**
 ```bash
-cd /Users/sakurasep/Documents/Code/Project/Blog/dev && \
+cd "$BLOG_ROOT" && \
 git add frontend/assets/css/comments.css && \
 git commit -S -m "feat: 评论区 CSS Artalk 风格对齐（卡片/双态/徽章/Tab/弹窗/空状态）"
 ```
@@ -1984,12 +1986,12 @@ git commit -S -m "feat: 评论区 CSS Artalk 风格对齐（卡片/双态/徽章
 用 Edit 工具把 comments.html 末尾 `<script>/* comments.js ... */</script>` 改成空 `<script></script>`（或直接删掉，因为点赞已在 comments.js 统一实现）。
 
 - [ ] **Step 3: go vet + 构建检查**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && make test`
+Run: `cd "$BLOG_ROOT" && make test`
 Expected: go vet / go test / console tests 全部通过（若 console 构建需先 `cd frontend/console && npm ci && npm run build`，但此变更不触 console）
 
 - [ ] **Step 4: 提交**
 ```bash
-cd /Users/sakurasep/Documents/Code/Project/Blog/dev && \
+cd "$BLOG_ROOT" && \
 git add frontend/assets/js/comments.js backend/internal/template/partial/comments.html && \
 git commit -S -m "feat: 评论区 JS 重写（双态身份/登录弹窗/表情 Tab/空状态）"
 ```
@@ -1999,11 +2001,11 @@ git commit -S -m "feat: 评论区 JS 重写（双态身份/登录弹窗/表情 T
 ## Task 7: 构建 + 端到端验证
 
 - [ ] **Step 1: 运行 make test**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && make test`
+Run: `cd "$BLOG_ROOT" && make test`
 Expected: go vet PASS, go test PASS, console tests PASS（如果有 console 前端构建前置则先做）
 
 - [ ] **Step 2: 启动服务截图验证**
-Run: `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && go run ./backend/cmd/server -root /Users/sakurasep/Documents/Code/Project/Blog/dev -seed &`
+Run: `cd "$BLOG_ROOT" && go run ./backend/cmd/server -root "$BLOG_ROOT" -seed &`
 手动：
   - 打开 /post/hello，评论区应渲染：
     1. 标题「快来参与讨论吧~」蓝色下划线风 cap.theme

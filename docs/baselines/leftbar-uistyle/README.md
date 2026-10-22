@@ -3,7 +3,7 @@
 SID: S-20260901-002
 日期: 2026-09-01
 分支: `codex/leftbar-uistyle-audit`
-参照基线: 上游 Stellar 主题源码（`resource/hexo-theme-stellar`，**以主仓库 `/Users/sakurasep/Documents/Code/Project/Blog` 为准，该目录不在本 worktree 内**）
+参照基线: 上游 Stellar 主题源码（`resource/hexo-theme-stellar`，**以主工作树的 `resource/hexo-theme-stellar` 为准，该目录不在本 worktree 内**）
 
 ## 1. 背景与用户原始疑问
 

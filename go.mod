@@ -1,6 +1,6 @@
 module blog
 
-go 1.26.6
+go 1.26.10
 
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
@@ -14,9 +14,9 @@ require (
 	github.com/rivo/uniseg v0.4.7
 	github.com/yuin/goldmark v1.8.4
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
-	golang.org/x/crypto v0.51.0
+	golang.org/x/crypto v0.57.0
 	golang.org/x/image v0.44.0
-	golang.org/x/net v0.55.0
+	golang.org/x/net v0.60.0
 	modernc.org/sqlite v1.54.0
 )
 
@@ -63,8 +63,8 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/arch v0.22.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	modernc.org/libc v1.74.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

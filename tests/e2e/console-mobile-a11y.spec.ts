@@ -529,6 +529,8 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
       // 验证 390px 最小高度 88px
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(item.path);
+      await expect(page.getByRole("heading", { name: item.heading, exact: true })).toBeVisible();
+      await expect(page.locator(".stats-card").first()).toBeVisible();
       const mobileHeights = await page.locator(".stats-card").evaluateAll((els) =>
         els.map((el) => el.getBoundingClientRect().height),
       );
