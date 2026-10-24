@@ -80,6 +80,9 @@
 - 远端刷新后 `origin/main=86737cfc` 仅比 `origin/dev=9651820b` 多 PR #17 的合并记录，两者 tree 相同。按发布前置从 origin/main 创建同步树，合入候选 dev，保持程序源码不变并经 `make merge-check` 回到根 dev。分支 `codex/chore/20261024-blog20261024-stellar-release-sync`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-chore-blog20261024-stellar-release-sync`；同属 `BLOG20261024-STELLAR`，不是新业务任务。
 - 拟发布 `v2.0.0`：当前公开最新为 v1.7.4，生产已是 2.0 本地构建。必须等待 dev/main/release 适用 CI、tag 的 Release Build 与 Docker Release 都成功，核对三个二进制资产、SHA256/SBOM和镜像可启动，再替换生产固定镜像版本；先检查当前 Compose/数据/维护日志并保存可恢复备份，升级后核对 readyz、实际版本、SPA资产、公开页面、设置图标/搜索/配色及数据保全。
 - 发布过程日志和回执存根 `.tmp/stellar-release-20261024/`；最终公开结果/截图存 `docs/baselines/stellar-200-parity-20261024/release/`。旧本地构建与浏览器证据继续绑定 fb066e91 的程序源码；新合并提交、远端 CI、双产物、服务器实际版本与用户待体验分别记录，不能用其一代替另一项。
+- PR #18 首轮 CI（40102348646）为 109 项 E2E 通过、5 项失败，其余适用作业通过。根因是 `stellar-200.spec.ts` 的合成页面缺少生产 `clientconfig` 已无条件提供的 `ctx.ui.classes`，搜索结果统一交互卡片在服务端和本地两条渲染路径都会访问此字段。仅补齐夹具的生产 class 契约；原断言、超时、Wiki filter、缓存和卸载场景保持。只读 analyst 独立核对了契约，主 agent 复现并修复。
+- 本地先用隔离临时配置与已安装 Chrome 复现首个搜索结果超时（诊断命令限 8 秒），补齐夹具后按原用例默认超时运行整个文件，9 项通过（10.1 秒）；未把本地 Chrome 当作 CI 的 Chromium。默认 Playwright 所需 headless shell 尚未安装，安装进度单独记录；CI 原配置和门禁未修改。证据为根 `.tmp/stellar-release-20261024/pr18-search-{red,green}-chrome.log` 与 `pr18-red-evidence/`。
+- 服务器已收到 SHA256 `8ce2dada519dfe00ffcaba679a823f349623d95114e10c1d545c3c94dac6eea9` 的已审查脚本，执行 `preflight` 通过：旧镜像 `sha256:0463cefd…a24d4`、readyz 200、重启 0、无待恢复维护日志、39 个业务表、392 个保护文件，约 861 MB 备份输入、约 16.24 GB 空闲。私有前像和公开检查摘要保留在 `/home/ubuntu/blog-release-v2.0.0/`；尚未 stage、停生产、创建新备份或切换镜像。下一步仍是修复提交的本地门禁、更新 PR #18 完整 CI，再按上述发布路径继续。
 
 ## 目标与已确认选择
 
