@@ -83,6 +83,8 @@
 - PR #18 首轮 CI（40102348646）为 109 项 E2E 通过、5 项失败，其余适用作业通过。根因是 `stellar-200.spec.ts` 的合成页面缺少生产 `clientconfig` 已无条件提供的 `ctx.ui.classes`，搜索结果统一交互卡片在服务端和本地两条渲染路径都会访问此字段。仅补齐夹具的生产 class 契约；原断言、超时、Wiki filter、缓存和卸载场景保持。只读 analyst 独立核对了契约，主 agent 复现并修复。
 - 本地先用隔离临时配置与已安装 Chrome 复现首个搜索结果超时（诊断命令限 8 秒），补齐夹具后按原用例默认超时运行整个文件，9 项通过（10.1 秒）；未把本地 Chrome 当作 CI 的 Chromium。默认 Playwright 所需 headless shell 尚未安装，安装进度单独记录；CI 原配置和门禁未修改。证据为根 `.tmp/stellar-release-20261024/pr18-search-{red,green}-chrome.log` 与 `pr18-red-evidence/`。
 - 服务器已收到 SHA256 `8ce2dada519dfe00ffcaba679a823f349623d95114e10c1d545c3c94dac6eea9` 的已审查脚本，执行 `preflight` 通过：旧镜像 `sha256:0463cefd…a24d4`、readyz 200、重启 0、无待恢复维护日志、39 个业务表、392 个保护文件，约 861 MB 备份输入、约 16.24 GB 空闲。私有前像和公开检查摘要保留在 `/home/ubuntu/blog-release-v2.0.0/`；尚未 stage、停生产、创建新备份或切换镜像。下一步仍是修复提交的本地门禁、更新 PR #18 完整 CI，再按上述发布路径继续。
+- PR #18 修复提交 `a3a7942c` 再次通过提交 hook、feature 和合并后 dev 完整门禁；远端 CI 40105469675 的六项适用作业全部成功，Chromium E2E 为 114 通过、0 失败。已正常合并到 main `c219e3d6`，创建晋级 release 的 PR #19。
+- PR #19 的 `release-source` 通过，但 release 分支现行保护 `strict=true` 且强制管理员遵守，因此其 BEHIND 状态仍需修复。只读核对 release 独有的 5 个提交均为以往 main→release 合并记录，`git diff origin/main...origin/release` 为空；在本任务既有同步 worktree 先快进 main，再合入 release，提交前索引没有程序文件差异。沿 dev→main 的正常 PR 补齐历史，保留原有保护与检查，随后让 PR #19 按新 main 重新验证；不直接更新受保护分支、不使用管理员绕过。
 
 ## 目标与已确认选择
 
