@@ -96,10 +96,12 @@ async function openSettingsTab(page: Page, label: string) {
 }
 
 const basicSaveButton = (page: Page) => page.locator(".settings-basic-actions button[type='submit']");
-const postSaveButton = (page: Page) => page.locator(".settings-post-actions button[type='submit']");
-const commentSaveButton = (page: Page) => page.locator(".settings-comment-actions button[type='submit']");
 const dirtyBadge = (page: Page) => page.locator(".settings-dirty-badge");
 const siteTitle = (page: Page) => page.locator("#settings-site-title");
+// 规范表单（文章、评论等）的字段按 data-setting-path 定位，保存按钮统一为“保存全部主题设置”。
+const canonicalField = (page: Page, key: string) => page.locator(`[data-setting-path="${key}"]`).locator("input,textarea");
+const canonicalSaveButton = (page: Page) =>
+  page.locator(".canonical-settings-form:visible").getByRole("button", { name: "保存全部主题设置", exact: true });
 
 test.describe("设置保存竞态（拦截式行为验收）", () => {
   test("系统设置普通保存期间改表单：请求体对应提交值，页面保留新输入且快照不污染", async ({ page }) => {
@@ -129,92 +131,6 @@ test.describe("设置保存竞态（拦截式行为验收）", () => {
     await expect(dirtyBadge(page)).toHaveCount(0);
   });
 
-  test("主题设置普通保存期间改表单：新输入保留并继续提示未保存", async ({ page }) => {
-    await login(page);
-    await page.goto("/console/appearance?tab=home");
-    const coverTitle = page.locator('input[placeholder="Welcome"]');
-    await expect(coverTitle).toBeVisible();
-
-    const gate = await installGate(page, "cover");
-    await coverTitle.fill("A-cover-title");
-    const saveButton = page.getByRole("button", { name: "保存 Hero" });
-    await saveButton.click();
-    await gate.waitForRequest(1);
-    expect((gate.bodies[0] as Record<string, unknown>).title).toBe("A-cover-title");
-
-    await coverTitle.fill("B-cover-title");
-    gate.releaseOk();
-
-    await expect(coverTitle).toHaveValue("B-cover-title");
-    await expect(dirtyBadge(page)).toBeVisible();
-    await expect(saveButton).toBeEnabled();
-
-    await saveButton.click();
-    await expect(dirtyBadge(page)).toHaveCount(0);
-  });
-
-  test("普通保存期间编辑 JSON：新草稿不被响应回写覆盖", async ({ page }) => {
-    await login(page);
-    await page.goto("/console/settings?tab=basic");
-    await expect(siteTitle(page)).toBeVisible();
-
-    const gate = await installGate(page, "site");
-    await siteTitle(page).fill("A-normal-json-race");
-    await basicSaveButton(page).click();
-    await gate.waitForRequest(1);
-
-    // 请求未完成时切到高级标签并写入独立 JSON 草稿
-    await openSettingsTab(page, "高级");
-    await page.locator("#settings-raw-section").selectOption("site");
-    const rawTextarea = page.locator("#settings-raw-content");
-    const draft = JSON.stringify({ title: "B-json-draft" }, null, 2);
-    await rawTextarea.fill(draft);
-
-    gate.releaseOk();
-
-    await expect(rawTextarea).toHaveValue(draft);
-    await expect(dirtyBadge(page)).toBeVisible();
-  });
-
-  test("JSON 保存期间再次编辑 JSON：新文本保留且继续提示未保存", async ({ page }) => {
-    await login(page);
-    await page.goto("/console/settings?tab=advanced");
-    await page.locator("#settings-raw-section").selectOption("site");
-    const rawTextarea = page.locator("#settings-raw-content");
-    await rawTextarea.fill(JSON.stringify({ title: "json-A" }, null, 2));
-
-    const gate = await installGate(page, "site");
-    await page.getByRole("button", { name: /保存 site JSON/ }).click();
-    await gate.waitForRequest(1);
-    expect((gate.bodies[0] as Record<string, unknown>).title).toBe("json-A");
-
-    const laterText = JSON.stringify({ title: "json-B" }, null, 2);
-    await rawTextarea.fill(laterText);
-    gate.releaseOk();
-
-    await expect(rawTextarea).toHaveValue(laterText);
-    await expect(dirtyBadge(page)).toBeVisible();
-  });
-
-  test("JSON 保存期间切换到表单编辑：新表单输入不被响应覆盖", async ({ page }) => {
-    await login(page);
-    await page.goto("/console/settings?tab=advanced");
-    await page.locator("#settings-raw-section").selectOption("site");
-    await page.locator("#settings-raw-content").fill(JSON.stringify({ title: "json-C" }, null, 2));
-
-    const gate = await installGate(page, "site");
-    await page.getByRole("button", { name: /保存 site JSON/ }).click();
-    await gate.waitForRequest(1);
-
-    // 请求未完成时切回基本表单并改标题
-    await openSettingsTab(page, "基本");
-    await siteTitle(page).fill("form-during-json");
-    gate.releaseOk();
-
-    await expect(siteTitle(page)).toHaveValue("form-during-json");
-    await expect(dirtyBadge(page)).toBeVisible();
-  });
-
   test("保存 A 分区时 B 分区已有修改：B 的输入与提示不变", async ({ page }) => {
     await login(page);
     await page.goto("/console/settings?tab=basic");
@@ -222,7 +138,7 @@ test.describe("设置保存竞态（拦截式行为验收）", () => {
     await siteTitle(page).fill("A-section-title");
 
     await openSettingsTab(page, "文章");
-    const rewardInput = page.locator("#settings-post-reward-text");
+    const rewardInput = canonicalField(page, "blog_extensions.content.reward.text");
     await rewardInput.fill("B-section-reward");
 
     await openSettingsTab(page, "基本");
@@ -264,87 +180,50 @@ test.describe("设置保存竞态（拦截式行为验收）", () => {
     await expect(dirtyBadge(page)).toHaveCount(0);
   });
 
-  test("无效 JSON 提交：不发送任何保存请求并保留文本", async ({ page }) => {
-    await login(page);
-    await page.goto("/console/settings?tab=advanced");
-    await page.locator("#settings-raw-section").selectOption("site");
-    const rawTextarea = page.locator("#settings-raw-content");
-    const invalidText = '{\n  "title": "broken",\n}';
-    await rawTextarea.fill(invalidText);
-
-    const gate = await installGate(page, "site");
-    await page.getByRole("button", { name: /保存 site JSON/ }).click();
-    await expect(page.locator(".apple-toast-item").first()).toContainText("JSON 格式错误");
-
-    expect(gate.count).toBe(0);
-    await expect(rawTextarea).toHaveValue(invalidText);
-    await expect(dirtyBadge(page)).toBeVisible();
-  });
-
-  test("评论组合保存第一步失败：不发送第二步请求", async ({ page }) => {
+  test("评论分区保存失败：整体保存失败后保留未保存状态", async ({ page }) => {
     await login(page);
     await page.goto("/console/settings?tab=comments");
-    await page.locator("#settings-comment-title").fill("A-comments-combo");
+    await canonicalField(page, "blog_extensions.native_comments.title").fill("A-comments-failure");
 
-    const commentsGate = await installGate(page, "comments");
-    const treeGate = await installGate(page, "site_tree");
-    await commentSaveButton(page).click();
-    await commentsGate.waitForRequest(1);
-
-    commentsGate.failCurrent(500);
-    await expect(page.locator(".apple-toast-item").first()).toBeVisible();
-
-    expect(treeGate.count).toBe(0);
-    await expect(dirtyBadge(page)).toBeVisible();
-  });
-
-  test("评论组合保存第二步失败：只保留已成功部分的快照", async ({ page }) => {
-    await login(page);
-    await page.goto("/console/settings?tab=comments");
-    // comments 与 site_tree 两个分区都必须先有未保存修改，失败边界才可观察
-    await page.locator("#settings-comment-title").fill("A-comments-partial");
-    const homeCommentsSwitch = page.getByRole("switch", { name: "首页显示评论区" });
-    const switchBefore = await homeCommentsSwitch.getAttribute("aria-checked");
-    await homeCommentsSwitch.click();
-    await expect(homeCommentsSwitch).toHaveAttribute("aria-checked", switchBefore === "true" ? "false" : "true");
-
-    const commentsGate = await installGate(page, "comments");
-    const treeGate = await installGate(page, "site_tree");
-    await commentSaveButton(page).click();
-    await commentsGate.waitForRequest(1);
-    commentsGate.releaseOk();
-
-    await treeGate.waitForRequest(1);
-    // 第二步确实提交了被修改的 site_tree 内容
-    expect((treeGate.bodies[0] as Record<string, any>).home.comments).toBe(switchBefore !== "true");
-    treeGate.failCurrent(500);
-    await expect(page.locator(".apple-toast-item").first()).toBeVisible();
-
-    // 第二步失败不得被当作整体成功：site_tree 仍未保存，页面继续提示未保存
-    await expect(dirtyBadge(page)).toBeVisible();
-
-    // 已成功部分（comments）的文本基线确实更新为本次提交内容
-    await openSettingsTab(page, "高级");
-    await page.locator("#settings-raw-section").selectOption("comments");
-    await expect(page.locator("#settings-raw-content")).toHaveValue(/A-comments-partial/);
-  });
-
-  test("保存中切换分区：其他保存按钮禁用、输入仍可编辑、结束后恢复", async ({ page }) => {
-    await login(page);
-    await page.goto("/console/settings?tab=basic");
-    await expect(siteTitle(page)).toBeVisible();
-
-    const gate = await installGate(page, "site");
-    await siteTitle(page).fill("A-switch-section");
-    await basicSaveButton(page).click();
+    const gate = await installGate(page, "stellar");
+    await canonicalSaveButton(page).click();
     await gate.waitForRequest(1);
 
-    await openSettingsTab(page, "文章");
-    await expect(postSaveButton(page)).toBeDisabled();
-    await expect(page.locator("#settings-post-reward-text")).toBeEditable();
+    gate.failCurrent(500);
+    // 规范保存失败不弹 Toast，错误写入 Stellar 2 状态区（role=status）。
+    await expect(page.locator('[role="status"]:visible').filter({ hasText: "e2e induced failure" })).toBeVisible();
+    await expect(dirtyBadge(page)).toBeVisible();
+  });
+
+  test("评论分区一次规范保存成功：提交全部修改并清除未保存提示", async ({ page }) => {
+    await login(page);
+    await page.goto("/console/settings?tab=comments");
+    await canonicalField(page, "blog_extensions.native_comments.title").fill("A-comments-success");
+
+    const gate = await installGate(page, "stellar");
+    await canonicalSaveButton(page).click();
+    await gate.waitForRequest(1);
 
     gate.releaseOk();
-    await expect(postSaveButton(page)).toBeEnabled();
+    await expect(dirtyBadge(page)).toHaveCount(0);
+    expect(gate.count).toBe(1);
+  });
+
+  test("保存中切换分区：全局保存按钮保持禁用、输入仍可编辑、结束后恢复", async ({ page }) => {
+    await login(page);
+    await page.goto("/console/settings?tab=post");
+    await canonicalField(page, "blog_extensions.content.reward.text").fill("A-switch-section");
+
+    const gate = await installGate(page, "stellar");
+    await canonicalSaveButton(page).click();
+    await gate.waitForRequest(1);
+
+    await openSettingsTab(page, "评论");
+    await expect(canonicalSaveButton(page)).toBeDisabled();
+    await expect(canonicalField(page, "blog_extensions.native_comments.title")).toBeEditable();
+
+    gate.releaseOk();
+    await expect(canonicalSaveButton(page)).toBeEnabled();
   });
 
   test("请求未完成时用 Enter 提交：全局防重入不产生第二个请求", async ({ page }) => {

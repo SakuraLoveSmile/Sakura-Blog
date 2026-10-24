@@ -1,0 +1,33 @@
+{
+  "fixture_only": true,
+  "built_head": "5b92b246",
+  "slides": 3,
+  "start": {
+    "slides": 3,
+    "timeOrigin": 1791923431057.2
+  },
+  "cleanup": {
+    "removed": [
+      "mouseenter",
+      "mouseleave",
+      "focusin",
+      "focusout",
+      "touchstart",
+      "touchend",
+      "click",
+      "animationend",
+      "click",
+      "click",
+      "visibilitychange"
+    ],
+    "aborts": 9,
+    "paused": true,
+    "refreshCleared": true,
+    "persisted": false,
+    "timeOrigin": 1791923431057.2
+  },
+  "targetURL": "http://127.0.0.1:8113/post/t3-pin-9",
+  "navigation": "Visible Leftbar link to T3 置顶优先级 9; whole document navigation with real pagehide persisted=false",
+  "measurement": "Native CDP wrappers on EventTarget removals and AbortController.abort, attributed by pin-slider module call stack; transient sessionStorage removed after navigation.",
+  "limits": "Does not prove partial navigation disposal. First moving slide locator click did not change URL; that attempt is not accepted navigation evidence."
+}

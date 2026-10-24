@@ -7,22 +7,22 @@
 <widget class="widget-wrapper toc" id="data-toc" collapse="{{.Str "collapse" "false"}}">
   <div class="widget-header dis-select">
     <span class="name">{{.Str "title" (lang "widget.toc")}}</span>
-    <a class="cap-action" onclick="sidebar.toggleTOC()">{{icon "default:rightbar"}}</a>
+    <a class="cap-action" onclick="sidebar.toggleTOC()"><span class="ui-icon">{{icon "default:rightbar"}}</span></a>
   </div>
   <div class="widget-body">
-    <div class="ui-collection toc-collection ui-collection-adapter" data-layout="list" data-variant="nav" data-density="compact" data-ui-surface="sidebar">
+    <div class="ui-collection toc-collection ui-collection-adapter" data-layout="list" data-variant="nav" data-density="compact">
       {{.V.TOC}}
     </div>
   </div>
   <div class="widget-footer">
     <a class="top" onclick="util.scrollTop()">
-      {{icon "default:upup"}}
+      <span class="ui-icon">{{icon "default:upup"}}</span>
       <span>{{- lang "btn.top" -}}</span>
     </a>
     {{- /* 参与讨论：对齐原版 toc.ejs layoutDiv 的 a.buttom（评论服务启用时渲染）*/ -}}
     {{if .V.Site.Comments.Enabled}}
     <a class="buttom" onclick="util.scrollComment()">
-      {{icon "default:tocomment"}}
+      <span class="ui-icon">{{icon "default:tocomment"}}</span>
       <span>{{- lang "btn.comments" -}}</span>
     </a>
     {{end}}

@@ -8,9 +8,9 @@ import (
 )
 
 func TestCategoryAPIPersistsLegacyCategoryAssociation(t *testing.T) {
-	r, st, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"title":"分类文章","slug":"category-api","category":"后端","status":"published"}`, cookie)
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"分类文章","slug":"category-api","category":"后端","status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -24,9 +24,9 @@ func TestCategoryAPIPersistsLegacyCategoryAssociation(t *testing.T) {
 }
 
 func TestCategoryAPIMultiCategoryRequest(t *testing.T) {
-	r, st, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
-	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"title":"多分类文章","slug":"multi-category-api","categories":["产研/技术","产品"],"status":"published"}`, cookie)
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"多分类文章","slug":"multi-category-api","categories":["产研/技术","产品"],"status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create status=%d body=%s", w.Code, w.Body.String())
 	}

@@ -2,7 +2,6 @@
 package routes
 
 import (
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -264,86 +263,13 @@ func (h *PageHandler) ShowByPath(c *gin.Context) bool {
 	if err != nil || page == nil {
 		return false
 	}
-	_ = h.store.IncrementPageViews(seg)
 	h.renderPage(c, page)
 	return true
 }
 
 func (h *PageHandler) renderPage(c *gin.Context, p *store.Page) {
-	contentHTML, err := renderStoredContent(h.posts, p.ContentMD, p.ContentHTML)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "render: %v", err)
-		return
-	}
-	data := &tmpl.ViewData{
-		Site:    h.site.Load(),
-		Page:    buildPageModel(h.site.Load(), p, "/"+p.Slug, p.Slug),
-		Content: template.HTML(contentHTML),
-	}
-	// 页面级自定义侧栏：只要左右栏至少一个是「显式配置过」（非空字符串，配置=继承全局不进来），
-	// 就构造 CustomPageBars 指针；未配置的一侧用空切片（不落全局 DefaultPageBars 的默认组件）。
-	// 同时提取页面级参数覆盖：WidgetOverrides → 转成 tmpl.WidgetDef 存入 PageWidgetOverrides，
-	// BuildBar 时按组件名浅合并进全局 WidgetDef 参数。
-	leftCfgs, leftOK := p.ParseLeftbar()
-	rightCfgs, rightOK := p.ParseRightbar()
-	if leftOK || rightOK {
-		pb := &tmpl.PageBars{}
-		if leftOK {
-			pb.Leftbar = store.WidgetNames(leftCfgs)
-		}
-		if rightOK {
-			pb.Rightbar = store.WidgetNames(rightCfgs)
-		}
-		data.CustomPageBars = pb
-		// 页面级参数覆盖（组件名 → WidgetDef）
-		overrides := make(map[string]tmpl.WidgetDef)
-		for name, params := range store.WidgetOverrides(leftCfgs) {
-			overrides[name] = tmpl.WidgetDef(params)
-		}
-		for name, params := range store.WidgetOverrides(rightCfgs) {
-			overrides[name] = tmpl.WidgetDef(params)
-		}
-		if len(overrides) > 0 {
-			data.PageWidgetOverrides = overrides
-		}
-	}
-	if h.fillExtra != nil {
-		h.fillExtra(data, c)
-	}
-	html, err := h.engine.Render("layout/base", data)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "render: %v", err)
-		return
-	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
-}
-
-// buildPageModel 将 pages 表记录转换为普通 Page 的 Stellar 视图模型。
-// 普通页及 friends/links/notes 系统页共用此路径，避免横幅字段出现分叉。
-func buildPageModel(site *tmpl.Site, p *store.Page, path, menuID string) *tmpl.Page {
-	if p == nil {
-		return &tmpl.Page{Layout: "page", Lang: "zh-CN", Path: path, MenuID: menuID}
-	}
-	pg := &tmpl.Page{
-		Title:          p.Title,
-		Slug:           p.Slug,
-		Layout:         "page",
-		Lang:           "zh-CN",
-		MenuID:         menuID,
-		Banner:         p.Banner,
-		BannerInfo:     tmpl.PageBannerInfo{Title: p.BannerInfo.Title, Subtitle: p.BannerInfo.Subtitle, Avatar: p.BannerInfo.Avatar, Icon: p.BannerInfo.Icon},
-		HideBreadcrumb: !p.Breadcrumb,
-		Author:         p.Author,
-		Date:           p.PublishedAt,
-		Updated:        p.UpdatedAt.Format("2006-01-02"),
-		Path:           path,
-	}
-	pg.AuthorLinks = resolveAuthorLinks(site, &store.Post{Author: p.Author})
-	if len(pg.AuthorLinks) > 0 {
-		pg.Author = pg.AuthorLinks[0].ID
-		pg.AuthorName = pg.AuthorLinks[0].Name
-	}
-	return pg
+	ws := newWebServer(webDeps{Site: h.site, Store: h.store, Posts: h.posts, Engine: h.engine})
+	ws.serveStellarPage(c, p)
 }
 
 // show GET /pages/:slug：仅 published 展示，否则 404。复用 renderPage 与 ShowByPath 走同一渲染分支。
@@ -358,7 +284,6 @@ func (h *PageHandler) show(c *gin.Context) {
 		h.notFound(c)
 		return
 	}
-	_ = h.store.IncrementPageViews(slug)
 	h.renderPage(c, p)
 }
 

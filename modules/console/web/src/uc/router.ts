@@ -22,8 +22,12 @@ const routes: RouteRecordRaw[] = [
       { path: "posts/new", component: UCPostEditorView, meta: { requiresAuthor: true } },
       { path: "posts/:slug", component: UCPostEditorView, meta: { requiresAuthor: true } },
       { path: "attachments", component: UCAttachmentsView, meta: { requiresAuthor: true } },
-      { path: "profile", component: () => import("@/modules/profile/ProfileView.vue") },
-      { path: "notifications", component: () => import("@/modules/notifications/NotificationsView.vue") },
+      { path: "profile", component: () => import("@/modules/profile/ProfileView.vue"), props: { userCenter: true } },
+      {
+        path: "notifications",
+        component: () => import("@/modules/notifications/NotificationsView.vue"),
+        props: { userCenter: true },
+      },
     ],
   },
 ];

@@ -1,0 +1,76 @@
+{
+  "built_head": "fcb4591",
+  "start": {
+    "url": "http://127.0.0.1:8103/post/technical",
+    "timeOrigin": 1791900967473.2,
+    "scrollY": 0,
+    "h1": "技术：完整 Go SSR 链路",
+    "title": "技术：完整 Go SSR 链路 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/technical"
+  },
+  "before": {
+    "url": "http://127.0.0.1:8103/post/technical",
+    "timeOrigin": 1791900967473.2,
+    "scrollY": 1239.5,
+    "h1": "技术：完整 Go SSR 链路",
+    "title": "技术：完整 Go SSR 链路 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/technical"
+  },
+  "after": {
+    "url": "http://127.0.0.1:8103/post/story",
+    "timeOrigin": 1791900967473.2,
+    "scrollY": 0,
+    "h1": "随笔：保存重开与搜索实测",
+    "title": "随笔：保存重开与搜索实测 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/story"
+  },
+  "back": {
+    "url": "http://127.0.0.1:8103/post/technical",
+    "timeOrigin": 1791900967473.2,
+    "scrollY": 1164,
+    "h1": "技术：完整 Go SSR 链路",
+    "title": "技术：完整 Go SSR 链路 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/technical"
+  },
+  "forward": {
+    "url": "http://127.0.0.1:8103/post/story",
+    "timeOrigin": 1791900967473.2,
+    "scrollY": 0,
+    "h1": "随笔：保存重开与搜索实测",
+    "title": "随笔：保存重开与搜索实测 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/story"
+  },
+  "sidebarBefore": {
+    "url": "http://127.0.0.1:8103/post/technical",
+    "timeOrigin": 1791901159517.8,
+    "scrollY": 600,
+    "h1": "技术：完整 Go SSR 链路",
+    "title": "技术：完整 Go SSR 链路 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/technical"
+  },
+  "sidebarAfter": {
+    "url": "http://127.0.0.1:8103/post/story",
+    "timeOrigin": 1791901159517.8,
+    "scrollY": 0,
+    "h1": "随笔：保存重开与搜索实测",
+    "title": "随笔：保存重开与搜索实测 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/story"
+  },
+  "sidebarBack": {
+    "url": "http://127.0.0.1:8103/post/technical",
+    "timeOrigin": 1791901159517.8,
+    "scrollY": 709.5,
+    "h1": "技术：完整 Go SSR 链路",
+    "title": "技术：完整 Go SSR 链路 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/technical"
+  },
+  "actualClickScroll": 709.5,
+  "exactBack": {
+    "url": "http://127.0.0.1:8103/post/technical",
+    "timeOrigin": 1791901159517.8,
+    "scrollY": 709.5,
+    "h1": "技术：完整 Go SSR 链路",
+    "title": "技术：完整 Go SSR 链路 - Stellar 2.0 验收站",
+    "canonical": "http://127.0.0.1:8103/post/technical"
+  }
+}

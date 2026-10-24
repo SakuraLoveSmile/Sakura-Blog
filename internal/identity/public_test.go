@@ -2,6 +2,10 @@ package identity
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base32"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,12 +13,280 @@ import (
 	"path/filepath"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
+
+const publicTestTOTPSecret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
+
+func publicTestTOTPCode(counter int64) string {
+	key, _ := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(publicTestTOTPSecret)
+	var input [8]byte
+	binary.BigEndian.PutUint64(input[:], uint64(counter))
+	mac := hmac.New(sha1.New, key)
+	_, _ = mac.Write(input[:])
+	digest := mac.Sum(nil)
+	offset := digest[len(digest)-1] & 15
+	value := (binary.BigEndian.Uint32(digest[offset:offset+4]) & 0x7fffffff) % 1000000
+	return fmt.Sprintf("%06d", value)
+}
+
+func publicTestTOTPUser(t *testing.T, st *store.Store, role string) *store.User {
+	t.Helper()
+	hash, err := store.HashPassword("reader-pass")
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := &store.User{Username: "totp-reader", PasswordHash: hash, AuthSecret: store.GenerateAuthSecret(), Role: role, TOTPSecret: publicTestTOTPSecret}
+	if err := st.CreateUser(u); err != nil {
+		t.Fatal(err)
+	}
+	return u
+}
+
+func TestPublicLoginRequiresTOTP(t *testing.T) {
+	for _, role := range []string{store.RoleReader, store.RoleAuthor} {
+		t.Run(role, func(t *testing.T) {
+			r, st := newPublicTestRouter(t)
+			u := publicTestTOTPUser(t, st, role)
+			body := map[string]string{"username": u.Username, "password": "reader-pass"}
+			for _, code := range []string{"", "123", "abcdef", "1234567"} {
+				body["code"] = code
+				response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+				if response.Code != http.StatusUnauthorized || !bytes.Contains(response.Body.Bytes(), []byte("请输入有效的两步验证码")) || len(response.Result().Cookies()) != 0 {
+					t.Fatalf("TOTP required: status=%d body=%s cookies=%v", response.Code, response.Body.String(), response.Result().Cookies())
+				}
+			}
+			body["code"] = publicTestTOTPCode(time.Now().Unix() / 30)
+			response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if response.Code != http.StatusOK || len(response.Result().Cookies()) != 1 {
+				t.Fatalf("correct TOTP: status=%d body=%s", response.Code, response.Body.String())
+			}
+			cookie := response.Result().Cookies()[0]
+			if _, _, ok := VerifyCookie(cookie.Value, ReaderAudience, u.AuthSecret, time.Now()); !ok || !cookie.HttpOnly || cookie.Path != "/" {
+				t.Fatal("invalid reader session cookie")
+			}
+			me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, cookie)
+			var reader publicUserResponse
+			if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != role {
+				t.Fatalf("authenticated me: %+v / %v", reader, err)
+			}
+			if err := st.UpdatePassword(u.ID, u.PasswordHash, store.GenerateAuthSecret()); err != nil {
+				t.Fatal(err)
+			}
+			me = publicRequest(r, http.MethodGet, "/api/auth/me", nil, cookie)
+			if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || reader.Verified {
+				t.Fatalf("rotated auth secret accepted old session: %+v / %v", reader, err)
+			}
+		})
+	}
+}
+
+func TestPublicLoginTOTPFailureLimit(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	body := map[string]string{"username": u.Username, "password": "reader-pass"}
+	for range loginMaxFails {
+		response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+		if response.Code != http.StatusUnauthorized || len(response.Result().Cookies()) != 0 {
+			t.Fatalf("invalid TOTP attempt: %d cookies=%v", response.Code, response.Result().Cookies())
+		}
+	}
+	body["code"] = publicTestTOTPCode(time.Now().Unix() / 30)
+	blocked := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+	if blocked.Code != http.StatusTooManyRequests || len(blocked.Result().Cookies()) != 0 {
+		t.Fatalf("TOTP failures did not enforce login limit: %d", blocked.Code)
+	}
+}
+
+func TestPublicLoginTOTPValidCodeClearsFailures(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	body := map[string]string{"username": u.Username, "password": "reader-pass"}
+	for range 2 {
+		for range loginMaxFails - 1 {
+			body["code"] = ""
+			if response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); response.Code != http.StatusUnauthorized {
+				t.Fatalf("failure attempts were not cleared: %d", response.Code)
+			}
+		}
+		body["code"] = publicTestTOTPCode(time.Now().Unix() / 30)
+		if response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); response.Code != http.StatusOK {
+			t.Fatalf("valid TOTP login = %d %s", response.Code, response.Body.String())
+		}
+	}
+}
+
+func TestPublicLoginTOTPAccountBoundaries(t *testing.T) {
+	for _, scenario := range []string{"wrong-six-digits", "malformed-secret", "banned", "admin", "wrong-password"} {
+		t.Run(scenario, func(t *testing.T) {
+			r, st := newPublicTestRouter(t)
+			role := store.RoleReader
+			if scenario == "admin" {
+				role = store.RoleAdmin
+			}
+			u := publicTestTOTPUser(t, st, role)
+			body := map[string]string{"username": u.Username, "password": "reader-pass", "code": publicTestTOTPCode(time.Now().Unix() / 30)}
+			want := http.StatusUnauthorized
+			message := "请输入有效的两步验证码"
+			switch scenario {
+			case "wrong-six-digits":
+				counter := time.Now().Unix() / 30
+				for candidate := 0; ; candidate++ {
+					code := fmt.Sprintf("%06d", candidate)
+					if code != publicTestTOTPCode(counter-1) && code != publicTestTOTPCode(counter) && code != publicTestTOTPCode(counter+1) {
+						body["code"] = code
+						break
+					}
+				}
+			case "malformed-secret":
+				if err := st.UpdateTOTPSecret(u.ID, "not a base32 secret!", nil); err != nil {
+					t.Fatal(err)
+				}
+			case "banned":
+				if err := st.UpdateUserStatus(u.ID, store.UserStatusBanned); err != nil {
+					t.Fatal(err)
+				}
+				message = "用户名或密码错误"
+			case "admin":
+				want, message = http.StatusForbidden, "管理员账号请从后台登录"
+			case "wrong-password":
+				body["password"], message = "wrong-password", "用户名或密码错误"
+			}
+			response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if response.Code != want || !bytes.Contains(response.Body.Bytes(), []byte(message)) || len(response.Result().Cookies()) != 0 {
+				t.Fatalf("account boundary: status=%d body=%s cookies=%v", response.Code, response.Body.String(), response.Result().Cookies())
+			}
+		})
+	}
+}
+
+func publicRecoveryCodes(t *testing.T, st *store.Store, id int64) []string {
+	t.Helper()
+	u, err := st.GetUserByID(id)
+	if err != nil || u == nil {
+		t.Fatalf("get recovery user: %v", err)
+	}
+	var codes []string
+	if err := json.Unmarshal([]byte(u.TOTPRecoveryCodes), &codes); err != nil {
+		t.Fatal(err)
+	}
+	return codes
+}
+
+func TestPublicLoginRecoveryCodeOneTime(t *testing.T) {
+	for _, role := range []string{store.RoleReader, store.RoleAuthor} {
+		t.Run(role, func(t *testing.T) {
+			r, st := newPublicTestRouter(t)
+			u := publicTestTOTPUser(t, st, role)
+			if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd", "98ef76ab"}); err != nil {
+				t.Fatal(err)
+			}
+			body := map[string]string{"username": u.Username, "password": "wrong-password", "code": "12ab34cd"}
+			wrongPassword := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if wrongPassword.Code != http.StatusUnauthorized || len(wrongPassword.Result().Cookies()) != 0 {
+				t.Fatalf("recovery bypassed password: %d", wrongPassword.Code)
+			}
+			body["password"], body["code"] = "reader-pass", "12AB34CD"
+			wrongCode := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if wrongCode.Code != http.StatusUnauthorized || len(wrongCode.Result().Cookies()) != 0 {
+				t.Fatalf("recovery did not match strictly: %d", wrongCode.Code)
+			}
+			if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 2 {
+				t.Fatalf("failed login consumed code: %v", codes)
+			}
+			body["code"] = "12ab34cd"
+			login := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if login.Code != http.StatusOK || len(login.Result().Cookies()) != 1 {
+				t.Fatalf("recovery login: %d %s", login.Code, login.Body.String())
+			}
+			cookie := login.Result().Cookies()[0]
+			me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, cookie)
+			var reader publicUserResponse
+			if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != role {
+				t.Fatalf("recovery session = %+v / %v", reader, err)
+			}
+			if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "98ef76ab" {
+				t.Fatalf("recovery not consumed: %v", codes)
+			}
+			reused := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if reused.Code != http.StatusUnauthorized || len(reused.Result().Cookies()) != 0 {
+				t.Fatalf("recovery reused: %d", reused.Code)
+			}
+			body["code"] = "98ef76ab"
+			if last := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); last.Code != http.StatusOK {
+				t.Fatalf("remaining recovery failed: %d %s", last.Code, last.Body.String())
+			}
+		})
+	}
+}
+
+func TestPublicRecoveryLoginLimitDoesNotConsume(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd"}); err != nil {
+		t.Fatal(err)
+	}
+	body := map[string]string{"username": u.Username, "password": "reader-pass", "code": "wrong123"}
+	for range loginMaxFails {
+		response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+		if response.Code != http.StatusUnauthorized || len(response.Result().Cookies()) != 0 {
+			t.Fatalf("invalid recovery attempt = %d", response.Code)
+		}
+	}
+	body["code"] = "12ab34cd"
+	blocked := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+	if blocked.Code != http.StatusTooManyRequests || len(blocked.Result().Cookies()) != 0 {
+		t.Fatalf("recovery limit = %d", blocked.Code)
+	}
+	if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "12ab34cd" {
+		t.Fatalf("blocked recovery consumed: %v", codes)
+	}
+}
+
+func TestPublicTOTPLoginRetainsRecoveryCodes(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd"}); err != nil {
+		t.Fatal(err)
+	}
+	body := map[string]string{"username": u.Username, "password": "reader-pass", "code": publicTestTOTPCode(time.Now().Unix() / 30)}
+	if login := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); login.Code != http.StatusOK {
+		t.Fatalf("TOTP login = %d %s", login.Code, login.Body.String())
+	}
+	if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "12ab34cd" {
+		t.Fatalf("TOTP login consumed recovery: %v", codes)
+	}
+}
+
+func TestPublicRecoveryWriteFailureDoesNotConsume(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.DB().Exec(`CREATE TRIGGER fail_recovery_login BEFORE UPDATE OF totp_recovery_codes ON users BEGIN SELECT RAISE(ABORT, 'injected write failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	body := map[string]string{"username": u.Username, "password": "reader-pass", "code": "12ab34cd"}
+	failed := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+	if failed.Code != http.StatusUnauthorized || len(failed.Result().Cookies()) != 0 {
+		t.Fatalf("failed consume emitted session: %d", failed.Code)
+	}
+	if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "12ab34cd" {
+		t.Fatalf("failed consume lost code: %v", codes)
+	}
+	if _, err := st.DB().Exec(`DROP TRIGGER fail_recovery_login`); err != nil {
+		t.Fatal(err)
+	}
+	if retry := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); retry.Code != http.StatusOK {
+		t.Fatalf("recovery retry: %d %s", retry.Code, retry.Body.String())
+	}
+}
 
 func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	t.Helper()
@@ -32,7 +304,6 @@ func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	r.Use(h.Middleware())
 	routes := h.PublicRoutes()
 	auth := r.Group("/api/auth")
-	auth.GET("/register/challenge", routes.RegisterChallenge)
 	auth.POST("/register", routes.Register)
 	auth.POST("/login", routes.Login)
 	auth.GET("/me", routes.Me)
@@ -57,24 +328,31 @@ func publicRequest(r *gin.Engine, method, path string, body any, cookie *http.Co
 	return w
 }
 
-func TestPublicRegistrationCaptchaAndReaderUpgrade(t *testing.T) {
+func publicTestInvite(t *testing.T, st *store.Store) string {
+	t.Helper()
+	admin, err := st.GetUserByUsername("invite-admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if admin == nil {
+		admin = &store.User{Username: "invite-admin", PasswordHash: "unused", Role: store.RoleAdmin}
+		if err := st.CreateUser(admin); err != nil {
+			t.Fatal(err)
+		}
+	}
+	code, err := st.CreateRegistrationInvite(admin.ID, time.Now().Add(7*24*time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return code
+}
+
+func TestPublicRegistrationInviteAndReaderUpgrade(t *testing.T) {
 	r, st := newPublicTestRouter(t)
-	challengeResponse := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
-	if challengeResponse.Code != http.StatusOK {
-		t.Fatalf("challenge status = %d", challengeResponse.Code)
-	}
-	var challenge registerChallengeResponse
-	if err := json.Unmarshal(challengeResponse.Body.Bytes(), &challenge); err != nil {
-		t.Fatalf("decode challenge: %v", err)
-	}
-	var first, second int
-	if _, err := fmt.Sscanf(challenge.Question, "%d + %d = ?", &first, &second); err != nil {
-		t.Fatalf("parse challenge %q: %v", challenge.Question, err)
-	}
+	code := publicTestInvite(t, st)
 	register := publicRequest(r, http.MethodPost, "/api/auth/register", map[string]string{
 		"username": "reader-uc", "password": "reader-pass", "display_name": "UC Reader",
-		"email": "reader-uc@example.com", "captcha_token": challenge.Token,
-		"captcha_answer": fmt.Sprintf("%d", first+second),
+		"email": "reader-uc@example.com", "invitation_code": code,
 	}, nil)
 	if register.Code != http.StatusCreated {
 		t.Fatalf("register status = %d body=%s", register.Code, register.Body.String())
@@ -108,41 +386,75 @@ func TestPublicRegistrationCaptchaAndReaderUpgrade(t *testing.T) {
 	}
 }
 
-func TestPublicRegistrationCaptchaIsOneTime(t *testing.T) {
-	r, _ := newPublicTestRouter(t)
-	challengeResponse := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
-	var challenge registerChallengeResponse
-	_ = json.Unmarshal(challengeResponse.Body.Bytes(), &challenge)
-	body := map[string]string{
-		"username": "reader-once", "password": "reader-pass", "display_name": "Reader", "email": "once@example.com",
-		"captcha_token": challenge.Token, "captcha_answer": "0",
-	}
+func TestPublicRegistrationInviteIsOneTime(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	code := publicTestInvite(t, st)
+	body := map[string]string{"username": "reader-once", "password": "reader-pass", "email": "once@example.com", "invitation_code": "wrong"}
 	first := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
 	if first.Code != http.StatusBadRequest {
-		t.Fatalf("wrong captcha status = %d", first.Code)
+		t.Fatalf("wrong invite status = %d", first.Code)
 	}
-	body["captcha_answer"] = "1"
-	second := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
-	if second.Code != http.StatusBadRequest {
-		t.Fatalf("reused captcha status = %d", second.Code)
+	body["invitation_code"] = code
+	created := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if created.Code != http.StatusCreated {
+		t.Fatalf("register = %d body=%s", created.Code, created.Body.String())
+	}
+	body["username"] = "reader-reused"
+	reused := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if reused.Code != http.StatusBadRequest {
+		t.Fatalf("reused invite status = %d", reused.Code)
+	}
+	if user, err := st.GetUserByUsername("reader-reused"); err != nil || user != nil {
+		t.Fatalf("invalid invite created user: %v / %v", user, err)
+	}
+	me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, created.Result().Cookies()[0])
+	var reader publicUserResponse
+	if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != store.RoleReader || reader.IsAdmin {
+		t.Fatalf("me = %+v err=%v", reader, err)
+	}
+	login := publicRequest(r, http.MethodPost, "/api/auth/login", map[string]string{"username": "reader-once", "password": "reader-pass"}, nil)
+	if login.Code != http.StatusOK {
+		t.Fatalf("reader login = %d %s", login.Code, login.Body.String())
+	}
+	loggedIn := publicRequest(r, http.MethodGet, "/api/auth/me", nil, login.Result().Cookies()[0])
+	if err := json.Unmarshal(loggedIn.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != store.RoleReader {
+		t.Fatalf("logged-in me = %+v err=%v", reader, err)
+	}
+}
+
+func TestPublicRegistrationRequiresInviteNotCaptcha(t *testing.T) {
+	r, _ := newPublicTestRouter(t)
+	removed := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
+	if removed.Code != http.StatusNotFound {
+		t.Fatalf("removed challenge = %d", removed.Code)
+	}
+	response := publicRequest(r, http.MethodPost, "/api/auth/register", map[string]string{"username": "old-captcha", "password": "reader-pass", "email": "captcha@example.com", "captcha_token": "token", "captcha_answer": "2"}, nil)
+	if response.Code != http.StatusBadRequest || !bytes.Contains(response.Body.Bytes(), []byte("邀请码")) {
+		t.Fatalf("captcha-only registration = %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestPublicRegistrationValidationDoesNotConsumeInvite(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	code := publicTestInvite(t, st)
+	body := map[string]string{"username": "reader-valid", "password": "bad", "email": "valid@example.com", "invitation_code": code}
+	invalid := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if invalid.Code != http.StatusBadRequest {
+		t.Fatalf("invalid password = %d", invalid.Code)
+	}
+	body["password"] = "reader-pass"
+	created := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if created.Code != http.StatusCreated {
+		t.Fatalf("valid retry = %d %s", created.Code, created.Body.String())
 	}
 }
 
 func TestPublicRegistrationRateLimit(t *testing.T) {
-	r, _ := newPublicTestRouter(t)
+	r, st := newPublicTestRouter(t)
 	for i := 0; i < 6; i++ {
-		challengeResponse := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
-		var challenge registerChallengeResponse
-		if err := json.Unmarshal(challengeResponse.Body.Bytes(), &challenge); err != nil {
-			t.Fatalf("decode challenge %d: %v", i, err)
-		}
-		var first, second int
-		if _, err := fmt.Sscanf(challenge.Question, "%d + %d = ?", &first, &second); err != nil {
-			t.Fatalf("parse challenge %d: %v", i, err)
-		}
 		response := publicRequest(r, http.MethodPost, "/api/auth/register", map[string]string{
 			"username": fmt.Sprintf("rate-%d", i), "password": "reader-pass", "email": fmt.Sprintf("rate-%d@example.com", i),
-			"captcha_token": challenge.Token, "captcha_answer": fmt.Sprintf("%d", first+second),
+			"invitation_code": publicTestInvite(t, st),
 		}, nil)
 		if i < 5 && response.Code != http.StatusCreated {
 			t.Fatalf("registration %d status = %d body=%s", i, response.Code, response.Body.String())

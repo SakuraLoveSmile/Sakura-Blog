@@ -75,20 +75,24 @@ export interface NotificationItem {
   created_at: string;
 }
 
-export const notificationApi = {
-  /** 分页查询（未读优先），响应含 unread 未读数 */
-  list: (params: { page?: number; size?: number }) =>
-    http.get<{ items: NotificationItem[]; total: number; unread: number; page: number; size: number }>(
-      "/notifications",
-      { params },
-    ),
-  /** 未读数（铃铛角标轮询用） */
-  unreadCount: () => http.get<{ count: number }>("/notifications/unread-count", { mute: true }),
-  /** 标记单条已读 */
-  markRead: (id: number) => http.put(`/notifications/${id}/read`),
-  /** 全部标记已读 */
-  markAllRead: () => http.put("/notifications/read-all"),
-};
+function createNotificationApi(prefix: string) {
+  return {
+    /** 分页查询（未读优先），响应含 unread 未读数 */
+    list: (params: { page?: number; size?: number }, signal?: AbortSignal) =>
+      http.get<{ items: NotificationItem[]; total: number; unread: number; page: number; size: number }>(prefix, {
+        params,
+        signal,
+      }),
+    /** 未读数（铃铛角标轮询用） */
+    unreadCount: () => http.get<{ count: number }>(`${prefix}/unread-count`, { mute: true }),
+    /** 标记单条已读 */
+    markRead: (id: number, signal?: AbortSignal) => http.put(`${prefix}/${id}/read`, undefined, { signal }),
+    /** 全部标记已读 */
+    markAllRead: (signal?: AbortSignal) => http.put(`${prefix}/read-all`, undefined, { signal }),
+  };
+}
+export const notificationApi = createNotificationApi("/notifications");
+export const ucNotificationApi = createNotificationApi("/uc/notifications");
 
 // --- 系统更新（检查更新 / 版本识别；v1.7.3 起移除一键更新执行链） ---
 import type { SystemVersionResponse, UpdateCheckResponse } from "../generated";

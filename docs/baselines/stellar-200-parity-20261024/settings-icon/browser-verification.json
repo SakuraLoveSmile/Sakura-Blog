@@ -1,0 +1,345 @@
+{
+  "checks": [
+    {
+      "case": "first-load-dark",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "reload",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "open-settings",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/settings",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "return-from-settings",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "collapsed-leftbar",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 252,
+        "y": 640
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible",
+      "sampledDuringTransition": true
+    },
+    {
+      "case": "article-first",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/post/parity-45",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "article-next",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/post/parity-44",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "article-light",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "color": "rgba(0, 0, 0, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/post/parity-44",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "home-light",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "color": "rgba(0, 0, 0, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 53,
+        "y": 676
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "mobile-menu-light",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "color": "rgba(0, 0, 0, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 25.5,
+        "width": 25.5,
+        "x": -44.71233367919922,
+        "y": 735.25
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "visibility": "visible",
+      "sampledDuringTransition": true
+    },
+    {
+      "case": "mobile-menu-dark",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 25.5,
+        "width": 25.5,
+        "x": -31.640525817871097,
+        "y": 735.25
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "visibility": "visible",
+      "sampledDuringTransition": true
+    },
+    {
+      "case": "mobile-settings-page",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 25.5,
+        "width": 25.5,
+        "x": -267.75,
+        "y": 735.25
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/settings",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "visibility": "visible",
+      "drawerClosedAfterNavigation": true
+    },
+    {
+      "case": "mobile-menu-dark-settled",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 25.5,
+        "width": 25.5,
+        "x": 36.25,
+        "y": 735.25
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "mobile-menu-light-settled",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "color": "rgba(0, 0, 0, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 25.5,
+        "width": 25.5,
+        "x": 36.25,
+        "y": 735.25
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "visibility": "visible"
+    },
+    {
+      "case": "collapsed-leftbar-settled",
+      "ariaLabel": "设置",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "color": "rgba(255, 255, 255, 0.7)",
+      "display": "block",
+      "href": "/settings",
+      "overflow": false,
+      "svgBox": {
+        "height": 24,
+        "width": 24,
+        "x": 252,
+        "y": 640
+      },
+      "svgPresent": true,
+      "url": "http://127.0.0.1:8125/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "visibility": "visible"
+    }
+  ],
+  "notes": [
+    "手机菜单早期采样处于展开过渡中，最终可见性只由*-settled样本确认。",
+    "390×844为CSS视口模拟；未将工具的缩放截图作为手机视觉证据。",
+    "身份头像失败与退出回退使用隔离Node回归；没有操作真实读者身份。",
+    "同集合文章链接已实际点击，未声明额外BFCache验证。",
+    "所有配色和视口模拟均已清除。"
+  ]
+}

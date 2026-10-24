@@ -1,0 +1,587 @@
+{
+  "fixture_only": true,
+  "built_head": "5f944882",
+  "theme_variants": [
+    {
+      "ratio": 2.4,
+      "reopened": {
+        "card_layout": "hero",
+        "cover_ratio": 2.4,
+        "excerpt_length": 160,
+        "pinned_layout": "carousel",
+        "show_tags": true
+      },
+      "computed": {
+        "cards": [
+          "post-card post photo card-hover card-hover--spotlight card-hover--tilt",
+          "post-card post photo card-hover card-hover--spotlight card-hover--tilt"
+        ],
+        "covers": [
+          {
+            "loaded": true,
+            "ratio": "2.4 / 1"
+          },
+          {
+            "loaded": true,
+            "ratio": "2.4 / 1"
+          }
+        ],
+        "normal": [],
+        "pins": [
+          {
+            "cls": "pin-slide post-slide",
+            "ratio": "2.4 / 1"
+          },
+          {
+            "cls": "pin-slide post-slide",
+            "ratio": "2.4 / 1"
+          },
+          {
+            "cls": "pin-slide post-slide",
+            "ratio": "2.4 / 1"
+          }
+        ]
+      }
+    },
+    {
+      "ratio": 1.25,
+      "reopened": {
+        "card_layout": "classic",
+        "cover_ratio": 1.25,
+        "excerpt_length": 160,
+        "pinned_layout": "flat",
+        "show_tags": true
+      },
+      "computed": {
+        "cards": [
+          "post-card post card-hover card-hover--spotlight card-hover--tilt",
+          "post-card post card-hover card-hover--spotlight card-hover--tilt"
+        ],
+        "covers": [
+          {
+            "loaded": true,
+            "ratio": "1.25 / 1"
+          },
+          {
+            "loaded": true,
+            "ratio": "1.25 / 1"
+          }
+        ],
+        "pins": 0
+      }
+    }
+  ],
+  "posts": [
+    {
+      "slug": "t3-ai-manual",
+      "reopened": {
+        "title": "T3 AI manual",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "manual",
+          "paragraph_indent": "always"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 manual",
+          "tagline": "T3 副标题 manual"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        },
+        "inject": {
+          "head_begin": "<meta name=\"t3-page-head_begin\" content=\"present\">",
+          "head_end": "<meta name=\"t3-page-head_end\" content=\"present\">",
+          "body_begin": "<div data-t3-page=\"body_begin\"></div>",
+          "body_end": "<div data-t3-page=\"body_end\"></div>"
+        }
+      },
+      "front": {
+        "ai": [
+          {
+            "cls": "cap ai-label",
+            "text": "本文完全由人类完成"
+          }
+        ],
+        "article": "T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+        "banner": "主页\n文章\n35 字 · 预计阅读 1 分钟\n本文完全由人类完成\n验收管理员\n9 分钟前\nT3 横幅 manual\nT3 副标题 manual",
+        "indent": "32px",
+        "pageInject": 2,
+        "shares": [
+          {
+            "href": null,
+            "label": "分享文章: QR Code"
+          },
+          {
+            "href": "https://service.weibo.com/share/share.php?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-manual&title=T3%20AI%20manual%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&pics=%2Fuploads%2Fcover.png&summary=T3%20%E9%9A%94%E7%A6%BB%E5%8F%82%E6%95%B0%E6%AD%A3%E6%96%87%0A%E8%BF%99%E6%98%AF%E8%99%9A%E6%9E%84%E7%9A%84%E5%8F%82%E6%95%B0%E9%AA%8C%E6%94%B6%E6%95%B0%E6%8D%AE%E3%80%82%E4%BF%9D%E5%AD%98%E5%90%8E%E9%87%8D%E6%96%B0%E6%89%93%E5%BC%80%E7%BC%96%E8%BE%91%E5%99%A8%EF%BC%8C%E6%A0%B8%E5%AF%B9%E5%AE%8C%E6%95%B4%20JSON%20%E5%8E%9F%E6%96%87%E3%80%82%0A",
+            "label": "分享文章: Weibo"
+          },
+          {
+            "href": "https://x.com/intent/tweet?text=T3%20AI%20manual%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-manual",
+            "label": "分享文章: X"
+          },
+          {
+            "href": "https://t.me/share/url?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-manual&text=T3%20AI%20manual%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99",
+            "label": "分享文章: Telegram"
+          },
+          {
+            "href": "https://wa.me/?text=T3%20AI%20manual%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99%0Ahttps%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-manual",
+            "label": "分享文章: WhatsApp"
+          },
+          {
+            "href": "mailto:?subject=T3%20AI%20manual%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&body=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-manual",
+            "label": "分享文章: Email"
+          }
+        ],
+        "tags": [
+          "T3",
+          "参数"
+        ]
+      }
+    },
+    {
+      "slug": "t3-ai-reviewed",
+      "reopened": {
+        "title": "T3 AI reviewed",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "reviewed",
+          "paragraph_indent": "never"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 reviewed",
+          "tagline": "T3 副标题 reviewed"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        }
+      },
+      "front": {
+        "ai": [
+          {
+            "cls": "cap ai-label",
+            "text": "已 AI 审核"
+          }
+        ],
+        "article": "T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+        "banner": "主页\n文章\n35 字 · 预计阅读 1 分钟\n已 AI 审核\n验收管理员\n9 分钟前\nT3 横幅 reviewed\nT3 副标题 reviewed",
+        "indent": "0px",
+        "pageInject": 0,
+        "shares": [
+          {
+            "href": null,
+            "label": "分享文章: QR Code"
+          },
+          {
+            "href": "https://service.weibo.com/share/share.php?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-reviewed&title=T3%20AI%20reviewed%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&pics=%2Fuploads%2Fcover.png&summary=T3%20%E9%9A%94%E7%A6%BB%E5%8F%82%E6%95%B0%E6%AD%A3%E6%96%87%0A%E8%BF%99%E6%98%AF%E8%99%9A%E6%9E%84%E7%9A%84%E5%8F%82%E6%95%B0%E9%AA%8C%E6%94%B6%E6%95%B0%E6%8D%AE%E3%80%82%E4%BF%9D%E5%AD%98%E5%90%8E%E9%87%8D%E6%96%B0%E6%89%93%E5%BC%80%E7%BC%96%E8%BE%91%E5%99%A8%EF%BC%8C%E6%A0%B8%E5%AF%B9%E5%AE%8C%E6%95%B4%20JSON%20%E5%8E%9F%E6%96%87%E3%80%82%0A",
+            "label": "分享文章: Weibo"
+          },
+          {
+            "href": "https://x.com/intent/tweet?text=T3%20AI%20reviewed%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-reviewed",
+            "label": "分享文章: X"
+          },
+          {
+            "href": "https://t.me/share/url?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-reviewed&text=T3%20AI%20reviewed%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99",
+            "label": "分享文章: Telegram"
+          },
+          {
+            "href": "https://wa.me/?text=T3%20AI%20reviewed%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99%0Ahttps%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-reviewed",
+            "label": "分享文章: WhatsApp"
+          },
+          {
+            "href": "mailto:?subject=T3%20AI%20reviewed%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&body=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-reviewed",
+            "label": "分享文章: Email"
+          }
+        ],
+        "tags": [
+          "T3",
+          "参数"
+        ]
+      }
+    },
+    {
+      "slug": "t3-ai-polished",
+      "reopened": {
+        "title": "T3 AI polished",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "polished",
+          "paragraph_indent": "never"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 polished",
+          "tagline": "T3 副标题 polished"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        }
+      },
+      "front": {
+        "ai": [
+          {
+            "cls": "cap ai-label",
+            "text": "已 AI 润色"
+          }
+        ],
+        "article": "T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+        "banner": "主页\n文章\n35 字 · 预计阅读 1 分钟\n已 AI 润色\n验收管理员\n9 分钟前\nT3 横幅 polished\nT3 副标题 polished",
+        "indent": "0px",
+        "pageInject": 0,
+        "shares": [
+          {
+            "href": null,
+            "label": "分享文章: QR Code"
+          },
+          {
+            "href": "https://service.weibo.com/share/share.php?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-polished&title=T3%20AI%20polished%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&pics=%2Fuploads%2Fcover.png&summary=T3%20%E9%9A%94%E7%A6%BB%E5%8F%82%E6%95%B0%E6%AD%A3%E6%96%87%0A%E8%BF%99%E6%98%AF%E8%99%9A%E6%9E%84%E7%9A%84%E5%8F%82%E6%95%B0%E9%AA%8C%E6%94%B6%E6%95%B0%E6%8D%AE%E3%80%82%E4%BF%9D%E5%AD%98%E5%90%8E%E9%87%8D%E6%96%B0%E6%89%93%E5%BC%80%E7%BC%96%E8%BE%91%E5%99%A8%EF%BC%8C%E6%A0%B8%E5%AF%B9%E5%AE%8C%E6%95%B4%20JSON%20%E5%8E%9F%E6%96%87%E3%80%82%0A",
+            "label": "分享文章: Weibo"
+          },
+          {
+            "href": "https://x.com/intent/tweet?text=T3%20AI%20polished%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-polished",
+            "label": "分享文章: X"
+          },
+          {
+            "href": "https://t.me/share/url?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-polished&text=T3%20AI%20polished%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99",
+            "label": "分享文章: Telegram"
+          },
+          {
+            "href": "https://wa.me/?text=T3%20AI%20polished%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99%0Ahttps%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-polished",
+            "label": "分享文章: WhatsApp"
+          },
+          {
+            "href": "mailto:?subject=T3%20AI%20polished%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&body=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-polished",
+            "label": "分享文章: Email"
+          }
+        ],
+        "tags": [
+          "T3",
+          "参数"
+        ]
+      }
+    },
+    {
+      "slug": "t3-ai-generated",
+      "reopened": {
+        "title": "T3 AI generated",
+        "cover": "/uploads/cover.png",
+        "article": {
+          "style": "tech",
+          "ai_label": "generated",
+          "paragraph_indent": "never"
+        },
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "avatar": "/assets/img/icon-512.png",
+          "headline": "T3 横幅 generated",
+          "tagline": "T3 副标题 generated"
+        },
+        "tags": [
+          "T3",
+          "参数"
+        ],
+        "footer": {
+          "references": [
+            "[Stellar 官方固定版本](https://github.com/xaoxuu/hexo-theme-stellar/tree/9d11978a24fe6610e3a7dbab741cf62634539d05)",
+            "**T3 Markdown 引用**"
+          ],
+          "license": "T3 license by {author.name} · {author.url}",
+          "share": [
+            "qrcode",
+            "weibo",
+            "x",
+            "telegram",
+            "whatsapp",
+            "email"
+          ],
+          "show_tags": true
+        },
+        "listing": {
+          "priority": 0
+        }
+      },
+      "front": {
+        "ai": [
+          {
+            "cls": "cap ai-label",
+            "text": "由 AI 生成"
+          }
+        ],
+        "article": "T3 隔离参数正文\n\n这是虚构的参数验收数据。保存后重新打开编辑器，核对完整 JSON 原文。",
+        "banner": "主页\n文章\n35 字 · 预计阅读 1 分钟\n由 AI 生成\n验收管理员\n9 分钟前\nT3 横幅 generated\nT3 副标题 generated",
+        "indent": "0px",
+        "pageInject": 0,
+        "shares": [
+          {
+            "href": null,
+            "label": "分享文章: QR Code"
+          },
+          {
+            "href": "https://service.weibo.com/share/share.php?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-generated&title=T3%20AI%20generated%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&pics=%2Fuploads%2Fcover.png&summary=T3%20%E9%9A%94%E7%A6%BB%E5%8F%82%E6%95%B0%E6%AD%A3%E6%96%87%0A%E8%BF%99%E6%98%AF%E8%99%9A%E6%9E%84%E7%9A%84%E5%8F%82%E6%95%B0%E9%AA%8C%E6%94%B6%E6%95%B0%E6%8D%AE%E3%80%82%E4%BF%9D%E5%AD%98%E5%90%8E%E9%87%8D%E6%96%B0%E6%89%93%E5%BC%80%E7%BC%96%E8%BE%91%E5%99%A8%EF%BC%8C%E6%A0%B8%E5%AF%B9%E5%AE%8C%E6%95%B4%20JSON%20%E5%8E%9F%E6%96%87%E3%80%82%0A",
+            "label": "分享文章: Weibo"
+          },
+          {
+            "href": "https://x.com/intent/tweet?text=T3%20AI%20generated%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-generated",
+            "label": "分享文章: X"
+          },
+          {
+            "href": "https://t.me/share/url?url=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-generated&text=T3%20AI%20generated%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99",
+            "label": "分享文章: Telegram"
+          },
+          {
+            "href": "https://wa.me/?text=T3%20AI%20generated%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99%0Ahttps%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-generated",
+            "label": "分享文章: WhatsApp"
+          },
+          {
+            "href": "mailto:?subject=T3%20AI%20generated%20-%20Stellar%202.0%20%E9%AA%8C%E6%94%B6%E7%AB%99&body=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-generated",
+            "label": "分享文章: Email"
+          }
+        ],
+        "tags": [
+          "T3",
+          "参数"
+        ]
+      }
+    }
+  ],
+  "notebooks": [
+    {
+      "id": "reading",
+      "collection_ui_saved_reopened": true,
+      "tagtree_filter": {
+        "path": "http://127.0.0.1:8113/reading/tags/%E6%8A%80%E6%9C%AF/go/ssr",
+        "headings": [
+          "T3 阅读 alpha"
+        ],
+        "active": [
+          {
+            "href": "/reading/tags/技术/go/ssr",
+            "text": "SSR"
+          }
+        ],
+        "expanded": [
+          "技术",
+          "技术/go",
+          "技术/go/ssr"
+        ]
+      }
+    },
+    {
+      "note": "alpha",
+      "ui_save_reopen_equal": true,
+      "front": {
+        "paragraphIndent": "32px",
+        "path": "/reading/alpha",
+        "tags": [
+          {
+            "href": "/reading/tags/技术/go/ssr",
+            "text": "技术/Go/SSR"
+          },
+          {
+            "href": "/reading/tags/生活/阅读",
+            "text": "生活/阅读"
+          }
+        ],
+        "tagtree": "标签所所有笔记技术GoSSR生活阅读书评\n",
+        "title": "T3 阅读 alpha"
+      }
+    },
+    {
+      "note": "beta",
+      "ui_save_reopen_equal": true,
+      "front": {
+        "paragraphIndent": "32px",
+        "path": "/reading/beta",
+        "tags": [
+          {
+            "href": "/reading/tags/技术/go",
+            "text": "技术/Go"
+          },
+          {
+            "href": "/reading/tags/生活/阅读/书评",
+            "text": "生活/阅读/书评"
+          }
+        ],
+        "tagtree": "标签所所有笔记技术GoSSR生活阅读书评\n",
+        "title": "T3 阅读 beta"
+      }
+    }
+  ],
+  "footer_interaction": {
+    "path": "http://127.0.0.1:8113/post/t3-ai-manual",
+    "qrcode": {
+      "class": "share-qrcode display",
+      "height": "128px",
+      "imageLoaded": true,
+      "imageSrc": "https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=https%3A%2F%2F127.0.0.1%2Fpost%2Ft3-ai-manual",
+      "opacity": "1"
+    },
+    "references": 1,
+    "license": 1,
+    "qrcode_icon_before": "<a aria-label=\"分享文章: QR Code\" class=\"social share-item qrcode ui-interactive is-icon-only\" onclick=\"util.toggle(&quot;share-qrcode&quot;)\" title=\"分享文章: QR Code\"><span class=\"share-item__icon ui-icon\"><span class=\"icon-missing\" data-icon=\"share:qrcode\"></span></span></a>",
+    "note": "QR expanded with real click; no external share was submitted; empty icon is a discovered defect being repaired"
+  },
+  "special_banners": [
+    {
+      "slug": "t3-banner-disabled",
+      "config": {
+        "title": "T3 banner-disabled",
+        "cover": "/uploads/cover.png",
+        "banner": {
+          "enabled": false,
+          "background": true,
+          "headline": "Must not render"
+        },
+        "footer": {
+          "share": false,
+          "license": false
+        }
+      },
+      "reopened_equal": true,
+      "front": {
+        "banners": [],
+        "headings": []
+      }
+    },
+    {
+      "slug": "t3-banner-no-bg",
+      "config": {
+        "title": "T3 banner-no-bg",
+        "cover": "/uploads/cover.png",
+        "banner": {
+          "enabled": true,
+          "background": false,
+          "headline": "T3 无背景横幅",
+          "avatar": "/assets/img/icon-512.png",
+          "tagline": "T3 无背景副标题"
+        },
+        "footer": {
+          "share": false,
+          "license": false
+        }
+      },
+      "reopened_equal": true,
+      "front": {
+        "banners": [],
+        "headings": [
+          "T3 无背景横幅"
+        ]
+      }
+    },
+    {
+      "slug": "t3-banner-empty-headline",
+      "config": {
+        "title": "T3 banner-empty-headline",
+        "cover": "/uploads/cover.png",
+        "banner": {
+          "enabled": true,
+          "background": true,
+          "headline": "",
+          "tagline": "T3 empty headline hidden"
+        },
+        "footer": {
+          "share": false,
+          "license": false
+        }
+      },
+      "reopened_equal": true,
+      "front": {
+        "banners": [],
+        "headings": []
+      }
+    }
+  ],
+  "canonical_fixture": {
+    "synthetic_origin_check": true,
+    "official": {
+      "class": "canonical-tip official",
+      "href": "https://t3-origin.test/post/t3-ai-manual",
+      "text": "\n          \n          本站为官方备用站，仅供应急。点击移步主站https://t3-origin.test\n          \n        "
+    },
+    "robots": [
+      "noindex, nofollow"
+    ],
+    "unofficial": {
+      "class": "canonical-tip unofficial",
+      "href": "https://t3-origin.test/post/t3-ai-manual",
+      "text": "\n        \n        ☠️\n        本站为非法克隆站，请前往官方源站访问。\n        源站：https://t3-origin.test\n        \n        "
+    }
+  },
+  "contributors_fixture": {
+    "path": "http://127.0.0.1:8113/post/t3-ai-manual",
+    "boundary": "same-origin missing endpoint; no real GitHub account",
+    "html": "<section id=\"contributors\"><div class=\"header\"><span>本文贡献者</span><span class=\"spacer\"></span><a class=\"edit\" href=\"https://github.com/fixture/narrow/blob/narrow/ai-manual.md\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 24 24\"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill=\"currentColor\"><circle cx=\"12\" cy=\"12\" r=\"10\" opacity=\".5\"></circle><path d=\"M13.9261 14.3018C14.1711 14.1107 14.3933 13.8885 14.8377 13.4441L20.378 7.90374C20.512 7.7698 20.4507 7.53909 20.2717 7.477C19.6178 7.25011 18.767 6.82414 17.9713 6.02835C17.1755 5.23257 16.7495 4.38186 16.5226 3.72788C16.4605 3.54892 16.2298 3.48761 16.0959 3.62156L10.5555 9.16192C10.1111 9.60634 9.88888 9.82854 9.69778 10.0736C9.47235 10.3626 9.27908 10.6753 9.12139 11.0062C8.98771 11.2867 8.88834 11.5848 8.68959 12.181L8.43278 12.9515L8.02443 14.1765L7.64153 15.3252C7.54373 15.6186 7.6201 15.9421 7.8388 16.1608C8.0575 16.3795 8.38099 16.4559 8.67441 16.3581L9.82308 15.9752L11.0481 15.5668L11.8186 15.31L11.8186 15.31C12.4148 15.1113 12.7129 15.0119 12.9934 14.8782C13.3243 14.7205 13.637 14.5273 13.9261 14.3018Z\"></path><path d=\"M22.1127 6.16905C23.2952 4.98656 23.2952 3.06936 22.1127 1.88687C20.9302 0.704377 19.013 0.704377 17.8306 1.88687L17.6524 2.06499C17.4806 2.23687 17.4027 2.47695 17.4456 2.7162C17.4726 2.8667 17.5227 3.08674 17.6138 3.3493C17.796 3.87439 18.14 4.56368 18.788 5.21165C19.4359 5.85961 20.1252 6.20364 20.6503 6.38581C20.9129 6.4769 21.1329 6.52697 21.2834 6.55399C21.5227 6.59693 21.7627 6.51905 21.9346 6.34717L22.1127 6.16905Z\"></path></g></svg><span>编辑本文</span></a></div><div class=\"body\"><div class=\"ds-contributors users-wrap\" api-type=\"commits\" data-api=\"http://127.0.0.1:8113/t3-github/repos/fixture/narrow/commits?path=ai-manual.md\"><div class=\"grid-box\"></div><div class=\"loading-wrap error\"><div class=\"lazy-icon\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 24 24\"><g fill=\"currentColor\"><path d=\"M12 3C9.68925 3 8.23007 5.58716 5.31171 10.7615L4.94805 11.4063C2.52291 15.7061 1.31034 17.856 2.40626 19.428C3.50217 21 6.21356 21 11.6363 21H12.3637C17.7864 21 20.4978 21 21.5937 19.428C22.6897 17.856 21.4771 15.7061 19.0519 11.4063L18.6883 10.7615C15.7699 5.58716 14.3107 3 12 3Z\" opacity=\".5\"></path><path d=\"M12 7.25C12.4142 7.25 12.75 7.58579 12.75 8V13C12.75 13.4142 12.4142 13.75 12 13.75C11.5858 13.75 11.25 13.4142 11.25 13V8C11.25 7.58579 11.5858 7.25 12 7.25Z\"></path><path d=\"M12 17C12.5523 17 13 16.5523 13 16C13 15.4477 12.5523 15 12 15C11.4477 15 11 15.4477 11 16C11 16.5523 11.4477 17 12 17Z\"></path></g></svg></div></div></div></section>"
+  },
+  "baseline_restored": true
+}

@@ -1,0 +1,115 @@
+{
+  "opaque": [
+    {
+      "sandbox": "allow-scripts",
+      "opaque": true,
+      "tocHrefs": [
+        "/wiki/galaxy/intro",
+        "/wiki/galaxy/second"
+      ]
+    }
+  ],
+  "note": {
+    "url": "http://127.0.0.1:8103/journal/beta",
+    "tocHrefs": [
+      {
+        "href": "/wiki/galaxy/intro",
+        "resolved": "http://127.0.0.1:8103/wiki/galaxy/intro"
+      },
+      {
+        "href": "/wiki/galaxy/second",
+        "resolved": "http://127.0.0.1:8103/wiki/galaxy/second"
+      }
+    ],
+    "swiperCount": 2
+  },
+  "consumers": [
+    {
+      "locale": "zh-CN",
+      "reopenedLocale": "zh-CN",
+      "lang": "zh-CN",
+      "trees": [
+        [
+          "/wiki/galaxy/intro",
+          "/wiki/galaxy/second"
+        ],
+        [
+          "/wiki/galaxy/intro",
+          "/wiki/galaxy/second"
+        ]
+      ],
+      "localLinks": [
+        {
+          "href": "/about",
+          "text": "FooterLocalhttp://127.0.0.1:8103/about"
+        },
+        {
+          "href": "/about",
+          "text": "WidgetLocalhttp://127.0.0.1:8103/about"
+        }
+      ],
+      "mbti": [
+        "我的 MBTI 人格：INTJ（架构师）",
+        "我的 MBTI 人格：INTJ（架构师）"
+      ]
+    },
+    {
+      "locale": "zh-TW",
+      "reopenedLocale": "zh-TW",
+      "lang": "zh-TW",
+      "trees": [
+        [
+          "/wiki/galaxy/intro",
+          "/wiki/galaxy/second"
+        ],
+        [
+          "/wiki/galaxy/intro",
+          "/wiki/galaxy/second"
+        ]
+      ],
+      "localLinks": [
+        {
+          "href": "/about",
+          "text": "FooterLocalhttp://127.0.0.1:8103/about"
+        },
+        {
+          "href": "/about",
+          "text": "WidgetLocalhttp://127.0.0.1:8103/about"
+        }
+      ],
+      "mbti": [
+        "我的 MBTI 人格：INTJ（架構師）",
+        "我的 MBTI 人格：INTJ（架構師）"
+      ]
+    },
+    {
+      "locale": "en",
+      "reopenedLocale": "en",
+      "lang": "en",
+      "trees": [
+        [
+          "/wiki/galaxy/intro",
+          "/wiki/galaxy/second"
+        ],
+        [
+          "/wiki/galaxy/intro",
+          "/wiki/galaxy/second"
+        ]
+      ],
+      "localLinks": [
+        {
+          "href": "/about",
+          "text": "FooterLocalhttp://127.0.0.1:8103/about"
+        },
+        {
+          "href": "/about",
+          "text": "WidgetLocalhttp://127.0.0.1:8103/about"
+        }
+      ],
+      "mbti": [
+        "My MBTI Type: INTJ (Architect)",
+        "My MBTI Type: INTJ (Architect)"
+      ]
+    }
+  ]
+}

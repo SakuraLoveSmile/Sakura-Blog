@@ -22,19 +22,16 @@ test("SettingsView protects against concurrent duplicate saves and isolates sect
   assert.match(code, /beforeunload/);
 });
 
-test("AppearanceView wires dirty state tracking, route leave guard, and duplicate save prevention", () => {
+test("主题设置停止旧主题写入并引导 canonical，保留 Feedback 旧链接", () => {
   const code = read("modules/console/web/src/modules/appearance/AppearanceView.vue");
-  // 脏状态计算与单段快照更新
-  assert.match(code, /dirtySections\s*=\s*computed/);
-  assert.match(code, /updateSectionSnapshot/);
-  // 未保存离开拦截
-  assert.match(code, /onBeforeRouteLeave/);
-  assert.match(code, /beforeunload/);
-  // 防重提交
-  assert.match(code, /if\s*\(savingKey\.value\)\s*return;/);
-  // 重命名为样式 YAML
-  assert.match(code, /title="样式 YAML"/);
-  assert.doesNotMatch(code, /title="主题 YAML"/);
+  assert.match(code, /CanonicalSettingsNotice/);
+  assert.doesNotMatch(code, /settingsApi\.updateSection/);
+  assert.match(code, /route\.query\.tab === "feedback"/);
+  const notice = read("modules/console/web/src/modules/settings/CanonicalSettingsNotice.vue");
+  assert.match(notice, /stellarSettingsApi\.get\(\)/);
+  assert.match(notice, /stellar_migration_required/);
+  assert.match(notice, /先审阅完整迁移预览/);
+  assert.match(notice, /tab: 'stellar2'/);
 });
 
 test("ThemeYamlTab correctly exposes loading/saving states, error feedback, and dirty guards", () => {

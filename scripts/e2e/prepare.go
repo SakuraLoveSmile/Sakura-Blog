@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"blog/internal/config"
 	"blog/internal/store"
 )
 
@@ -23,6 +24,16 @@ func main() {
 		panic(err)
 	}
 	defer st.Close()
+	// 写作验收使用隔离的 2.0 空站点，旧站升级由迁移夹具单独验证。
+	if err := st.EnsureSettingsTable(); err != nil {
+		panic(err)
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{}); err != nil {
+		panic(err)
+	}
+	if err := st.PutSetting(config.SectionSite, `{"title":"E2E Blog","url":"http://127.0.0.1:8096"}`); err != nil {
+		panic(err)
+	}
 	if err := st.EnsureUsersTable(); err != nil {
 		panic(err)
 	}

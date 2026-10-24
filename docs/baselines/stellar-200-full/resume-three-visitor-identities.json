@@ -1,0 +1,86 @@
+{
+  "kind": "formal settings UI with synthetic visitor fields",
+  "providers": [
+    {
+      "provider": "artalk",
+      "reopened": {
+        "name": "Fixture artalk",
+        "email": "artalk@fixture.invalid",
+        "url": "http://127.0.0.1:8111/fixture-profile",
+        "avatar": "<img class=\"lazy entered loaded\" data-profile-avatar=\"\" data-src=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg\" data-ll-status=\"loaded\">",
+        "fallbackHidden": true,
+        "storage": {
+          "artalk": "{\"name\":\"Fixture artalk\",\"email\":\"artalk@fixture.invalid\",\"link\":\"http://127.0.0.1:8111/fixture-profile\"}",
+          "twikoo": null,
+          "waline": null
+        }
+      },
+      "logout": {
+        "name": "",
+        "email": "",
+        "url": "",
+        "avatarHidden": false,
+        "fallbackHidden": true,
+        "storage": {
+          "artalk": null,
+          "twikoo": null,
+          "waline": null
+        }
+      }
+    },
+    {
+      "provider": "twikoo",
+      "reopened": {
+        "name": "Fixture twikoo",
+        "email": "twikoo@fixture.invalid",
+        "url": "http://127.0.0.1:8111/fixture-profile",
+        "avatar": "<img class=\"lazy entered loaded\" data-profile-avatar=\"\" data-src=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg\" data-ll-status=\"loaded\">",
+        "fallbackHidden": true,
+        "storage": {
+          "artalk": null,
+          "twikoo": "{\"nick\":\"Fixture twikoo\",\"mail\":\"twikoo@fixture.invalid\",\"link\":\"http://127.0.0.1:8111/fixture-profile\"}",
+          "waline": null
+        }
+      },
+      "logout": {
+        "name": "",
+        "email": "",
+        "url": "",
+        "avatarHidden": false,
+        "fallbackHidden": true,
+        "storage": {
+          "artalk": null,
+          "twikoo": null,
+          "waline": null
+        }
+      }
+    },
+    {
+      "provider": "waline",
+      "reopened": {
+        "name": "Fixture waline",
+        "email": "waline@fixture.invalid",
+        "url": "http://127.0.0.1:8111/fixture-profile",
+        "avatar": "<img class=\"lazy entered loaded\" data-profile-avatar=\"\" data-src=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg\" data-ll-status=\"loaded\">",
+        "fallbackHidden": true,
+        "storage": {
+          "artalk": null,
+          "twikoo": null,
+          "waline": "{\"nick\":\"Fixture waline\",\"mail\":\"waline@fixture.invalid\",\"link\":\"http://127.0.0.1:8111/fixture-profile\"}"
+        }
+      },
+      "logout": {
+        "name": "",
+        "email": "",
+        "url": "",
+        "avatarHidden": false,
+        "fallbackHidden": true,
+        "storage": {
+          "artalk": null,
+          "twikoo": null,
+          "waline": null
+        }
+      }
+    }
+  ]
+}

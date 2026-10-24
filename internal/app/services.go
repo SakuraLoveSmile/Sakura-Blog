@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -48,6 +49,8 @@ type Options struct {
 	IconsPath  string
 	DevMode    bool
 	Seed       bool
+	// ResolvedApp使用已持有运行锁的路径快照，避免启动再次解析到另一个数据库。
+	ResolvedApp *config.App
 }
 
 // Services is the process-wide owner of shared business services. HTTP module
@@ -94,14 +97,21 @@ func Bootstrap(options Options) (*Services, error) {
 	if configPath == "" {
 		configPath = filepath.Join(root, "config", "app.yml")
 	}
-	appConfig, err := config.LoadApp(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("load app config: %w", err)
+	var appConfig *config.App
+	var err error
+	if options.ResolvedApp != nil {
+		snapshot := *options.ResolvedApp
+		appConfig = &snapshot
+	} else {
+		appConfig, err = config.LoadApp(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("load app config: %w", err)
+		}
+		if options.Root != "" {
+			appConfig.Root = options.Root
+		}
+		appConfig = config.ResolveApp(appConfig)
 	}
-	if options.Root != "" {
-		appConfig.Root = options.Root
-	}
-	appConfig = config.ResolveApp(appConfig)
 
 	sitePath := filepath.Join(appConfig.Root, "config", "site.yml")
 	if err := recoverBeforeBootstrap(appConfig, sitePath); err != nil {
@@ -111,12 +121,21 @@ func Bootstrap(options Options) (*Services, error) {
 		return &Services{App: appConfig, Maintenance: gate, SitePath: sitePath}, nil
 	}
 	site, err := config.LoadSite(sitePath)
+	siteFromStore := false
 	if err != nil {
 		if !options.DevMode {
-			return nil, fmt.Errorf("load site config: %w", err)
+			if !errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("load site config: %w", err)
+			}
+			site, err = loadStoredStellarSite(appConfig.DBPath)
+			if err != nil {
+				return nil, fmt.Errorf("load persisted site config: %w", err)
+			}
+			siteFromStore = true
+		} else {
+			log.Printf("load site config failed (%v), fallback to DefaultSite", err)
+			site = config.DefaultSite()
 		}
-		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
-		site = config.DefaultSite()
 	} else {
 		log.Printf("loaded site config: %s", sitePath)
 	}
@@ -142,8 +161,26 @@ func Bootstrap(options Options) (*Services, error) {
 		st.Close()
 		return nil, err
 	}
+	if options.Seed || appConfig.SeedOnStart {
+		// 显式 seed 先检查门禁，不能通过后面的旧 Bootstrap 补配置来迁移。
+		if _, err := config.LoadStellarV2(st); err != nil {
+			return fail(fmt.Errorf("%w: seed requires reviewed Stellar v2 migration: %w", store.ErrStellarMigrationRequired, err))
+		}
+	}
 	if err := st.EnsureTopicsTable(); err != nil {
 		return fail(fmt.Errorf("ensure topics table: %w", err))
+	}
+	if err := st.EnsureNotebooksTable(); err != nil {
+		return fail(fmt.Errorf("ensure notebooks table: %w", err))
+	}
+	if err := st.EnsureNotesTable(); err != nil {
+		return fail(fmt.Errorf("ensure notes table: %w", err))
+	}
+	if legacy, err := st.DetectLegacyNotebookSchema(); err != nil {
+		return fail(err)
+	} else if legacy.Required() {
+		// 保留 Console 迁移预览入口，旧集合访问由 store 返回明确门禁。
+		log.Printf("notebook migration pending: %v", legacy.Error())
 	}
 	pluginRuntime := plugin.NewRuntime()
 	if err := pluginRuntime.LoadDir(filepath.Join(appConfig.Root, "plugins")); err != nil {
@@ -269,8 +306,10 @@ func Bootstrap(options Options) (*Services, error) {
 	}
 	ogGen := og.New(ogFontPath, ogCacheDir)
 
-	if err := config.Bootstrap(st, site); err != nil {
-		return fail(fmt.Errorf("bootstrap settings: %w", err))
+	if !siteFromStore {
+		if err := config.Bootstrap(st, site); err != nil {
+			return fail(fmt.Errorf("bootstrap settings: %w", err))
+		}
 	}
 	if err := config.RebuildSite(st, sitePtr); err != nil {
 		return fail(fmt.Errorf("rebuild site from db: %w", err))
@@ -286,29 +325,27 @@ func Bootstrap(options Options) (*Services, error) {
 
 	seedOnStart := options.Seed || appConfig.SeedOnStart
 	if seedOnStart {
-		n, _ := seedpkg.Count(posts)
-		if err := seedpkg.Import(st, posts); err != nil {
+		n, err := seedpkg.ImportStellar(st, posts, filepath.Join(appConfig.Root, "content"), false)
+		if err != nil {
 			return fail(fmt.Errorf("seed: %w", err))
 		}
-		if err := st.MigrateTopicBackfill(); err != nil {
-			return fail(fmt.Errorf("migrate topic backfill after seed: %w", err))
-		}
-		log.Printf("seed: imported %d posts from content/posts", n)
+		log.Printf("seed: imported %d canonical content records", n)
 	}
 
 	// 增量自动发现：未做全量 seed 时，把 content/posts 里 DB 缺失的新文件补录进来
 	// （只增不改，Console 编辑过的记录不被文件覆盖），新文章无需手动 -seed 即可上列表。
 	discovered := 0
 	if !seedOnStart {
-		n, err := seedpkg.ImportMissing(st, posts)
+		n, err := seedpkg.ImportStellar(st, posts, filepath.Join(appConfig.Root, "content"), true)
 		if err != nil {
-			return fail(fmt.Errorf("discover new posts: %w", err))
+			if !errors.Is(err, store.ErrStellarMigrationRequired) {
+				return fail(fmt.Errorf("discover new posts: %w", err))
+			}
+			// Console 的迁移预览仍可打开；普通启动不得自动迁移/降级 seed。
+			log.Printf("seed: automatic discovery requires reviewed Stellar v2 migration")
 		}
 		discovered = n
 		if n > 0 {
-			if err := st.MigrateTopicBackfill(); err != nil {
-				return fail(fmt.Errorf("migrate topic backfill after discover: %w", err))
-			}
 			log.Printf("seed: discovered %d new posts from content/posts", n)
 		}
 	}
@@ -399,6 +436,16 @@ func Bootstrap(options Options) (*Services, error) {
 	})
 
 	return services, nil
+}
+
+// 在任何可写Store初始化前只读验证，不能为缺文件的空库或旧库补配置。
+func loadStoredStellarSite(dbPath string) (*settings.Site, error) {
+	st, err := store.OpenExisting(dbPath, true)
+	if err != nil {
+		return nil, err
+	}
+	site, loadErr := config.LoadPersistedStellarSite(st)
+	return site, errors.Join(loadErr, st.Close())
 }
 
 // StartBackground starts process loops after both HTTP modules have mounted.

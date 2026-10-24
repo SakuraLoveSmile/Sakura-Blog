@@ -12,14 +12,14 @@ import (
 
 // TestTaxonomyFlow 分类与标签：创建文章 → 计数列表 → 重命名 → 删除 → 合并。
 func TestTaxonomyFlow(t *testing.T) {
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
 
 	// 两篇文章：一篇 Go/后端，一篇 Go/前端
 	do2FA(r, http.MethodPost, "/api/v1/posts",
-		`{"title":"Go 后端","slug":"go-backend","category":"后端","tags":"go,后端","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"Go 后端","slug":"go-backend","category":"后端","tags":"go,后端","status":"published"}`, cookie)
 	do2FA(r, http.MethodPost, "/api/v1/posts",
-		`{"title":"Go 前端","slug":"go-front","category":"前端","tags":"go,前端","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"Go 前端","slug":"go-front","category":"前端","tags":"go,前端","status":"published"}`, cookie)
 
 	// 分类计数：按 count 降序
 	w := do2FA(r, http.MethodGet, "/api/v1/categories", "", cookie)
@@ -116,12 +116,12 @@ func TestTaxonomyFlow(t *testing.T) {
 
 // TestTopicFlow 专题：创建（slug 自动生成/冲突 409）→ 列表（含 post_count）→ 更新 → 删除。
 func TestTopicFlow(t *testing.T) {
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
 
 	// 创建
 	w := do2FA(r, http.MethodPost, "/api/v1/topics",
-		`{"name":"Go 专题","description":"Go 语言","icon":"go","sort":1}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","name":"Go 专题","description":"Go 语言","icon":"go","sort":1}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create topic: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -133,12 +133,12 @@ func TestTopicFlow(t *testing.T) {
 	}
 	topicID := created.ID
 	// 重复 name → 409
-	w = do2FA(r, http.MethodPost, "/api/v1/topics", `{"name":"Go 专题"}`, cookie)
+	w = do2FA(r, http.MethodPost, "/api/v1/topics", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","name":"Go 专题"}`, cookie)
 	if w.Code != http.StatusConflict {
 		t.Errorf("dup topic name: status = %d, want 409", w.Code)
 	}
 	// 空 name → 400
-	w = do2FA(r, http.MethodPost, "/api/v1/topics", `{"name":""}`, cookie)
+	w = do2FA(r, http.MethodPost, "/api/v1/topics", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","name":""}`, cookie)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("empty topic name: status = %d, want 400", w.Code)
 	}
@@ -161,12 +161,12 @@ func TestTopicFlow(t *testing.T) {
 
 	// 更新
 	w = do2FA(r, http.MethodPut, "/api/v1/topics/"+itoa(topicID),
-		`{"name":"Go 合集","description":"更新","sort":2}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","name":"Go 合集","description":"更新","sort":2}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("update topic: status = %d", w.Code)
 	}
 	// 更新不存在 → 404
-	w = do2FA(r, http.MethodPut, "/api/v1/topics/99999", `{"name":"x"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/topics/99999", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","name":"x"}`, cookie)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("update missing topic: status = %d, want 404", w.Code)
 	}
@@ -185,12 +185,12 @@ func TestTopicFlow(t *testing.T) {
 
 // TestDashboardStats 仪表盘：统计、最近评论、快捷操作读/写。
 func TestDashboardStats(t *testing.T) {
-	r, st, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
 
 	// 先造数据：1 篇文章 + 1 条已审评论（最近评论接口只查 approved）
 	do2FA(r, http.MethodPost, "/api/v1/posts",
-		`{"title":"统计","slug":"stats-post","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"统计","slug":"stats-post","status":"published"}`, cookie)
 	seedComment(t, st, &store.Comment{PageKey: "/post/stats-post", Nick: "n", ContentMD: "c", Status: store.CommentApproved})
 
 	// 仪表盘统计

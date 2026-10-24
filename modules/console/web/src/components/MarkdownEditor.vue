@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { inject, ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { stellarEditorContextKey } from "./editor/stellar-context";
 import { Icon } from "@iconify/vue";
-import { previewApi, attachmentApi } from "@/api";
+import { previewApi, attachmentApi, ucApi } from "@/api";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { useLocalDraft } from "@/composables/useLocalDraft";
 
@@ -9,11 +10,14 @@ import { useLocalDraft } from "@/composables/useLocalDraft";
 // + 图片粘贴/拖拽直传 + 快捷键 + localStorage 草稿保护。
 // toolbar=false 时隐藏内置工具栏，由宿主页面通过 expose 的动作自建工具栏（如 PostEditor）。
 // 注意：Boolean prop 缺省会被 Vue 转为 false，必须用 withDefaults 默认 true 保证老调用方不受影响。
+const stellarContext = inject(stellarEditorContextKey, undefined);
 const props = withDefaults(
   defineProps<{
     modelValue: string;
     storageKey?: string;
+    followStorageKey?: boolean;
     toolbar?: boolean;
+    userCenter?: boolean;
   }>(),
   { storageKey: undefined, toolbar: true },
 );
@@ -40,72 +44,16 @@ const uploadError = ref("");
 
 // 本地草稿保护（与 RichTextEditor 共用同一 storageKey 草稿）
 const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, checkDraft } = useLocalDraft({
-  storageKey: props.storageKey,
+  storageKey: props.followStorageKey ? () => props.storageKey : props.storageKey,
   getValue: () => props.modelValue,
   setValue: (v) => emit("update:modelValue", v),
 });
 
-// ---------- iframe 沙箱预览：引入前台全量样式（main.css/tag-plugins.css/highlight.css），
-// 与 PluginLibrary.vue 的 srcdoc 预览同模式；标签插件/代码高亮/KaTeX 与前台完全一致，
-// 且样式与 Console UI 完全隔离。srcdoc 只加载一次，内容更新直接写 .md-text，避免闪烁。 ----------
-
-// KaTeX 定界符与前台 head.html 保持一致
-const mathDelimiters = [
-  { left: "$$", right: "$$", display: true },
-  { left: "\\[", right: "\\]", display: true },
-  { left: "$", right: "$", display: false },
-  { left: "\\(", right: "\\)", display: false },
-];
-
-// 初始主题跟随 Console（深色-only，html[data-theme=dark] 恒挂）
-const previewSrcdoc = `<!DOCTYPE html>
-<html data-theme="dark">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/assets/css/main.css">
-<link rel="stylesheet" href="/assets/css/tag-plugins.css">
-<link rel="stylesheet" href="/assets/css/highlight.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"><\/script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"><\/script>
-<style>
- html,body{margin:0;padding:0;}
- /* 关闭 Stellar main.css 的平滑滚动，使分屏同步滚动即时跟随而非动画滞后 */
- html{scroll-behavior:auto !important;}
- /* isolated iframe fallback keeps the console card token */ body{padding:16px 20px;background:var(--color-card, #1c1c1e);}
- .md-text{max-width:100%;}
-</style>
-</head>
-<body><article class="md-text content"></article></body>
-</html>`;
-
-let iframeReady = false;
-let pendingHtml: string | null = null;
-
+// 完整预览文档由前台组装，opaque iframe通过token消息同步滚动。
+const previewSrcdoc = ref("");
+const previewToken = ref("");
 function onIframeLoad() {
-  iframeReady = true;
-  if (pendingHtml !== null) {
-    applyPreview(pendingHtml);
-    pendingHtml = null;
-  }
-  bindPreviewScroll();
-}
-
-// 把渲染结果写入 iframe 内的 .md-text 容器，并补渲染 KaTeX 公式
-function applyPreview(html: string) {
-  if (!iframeReady) {
-    pendingHtml = html;
-    return;
-  }
-  const doc = iframeRef.value?.contentDocument;
-  const container = doc?.querySelector(".md-text");
-  if (!container) return;
-  container.innerHTML = html;
-  const win = iframeRef.value?.contentWindow as any;
-  if (typeof win?.renderMathInElement === "function") {
-    win.renderMathInElement(container, { delimiters: mathDelimiters, throwOnError: false });
-  }
+  onEditorScroll();
 }
 
 // 深色-only：iframe 固定 data-theme=dark，无需观察切换
@@ -132,12 +80,13 @@ async function refreshPreview() {
   const seq = ++previewSeq;
   rendering.value = true;
   try {
-    const { data } = await previewApi.render(props.modelValue);
+    const { data } = await previewApi.render(props.modelValue, undefined, stellarContext?.value);
     if (seq !== previewSeq) return; // 过期响应丢弃（已有更新的输入在途）
-    applyPreview(data.html);
+    previewToken.value = data.preview_token;
+    previewSrcdoc.value = data.document;
   } catch {
     if (seq !== previewSeq) return;
-    applyPreview('<p style="color:var(--color-state-error, #FF453A)">预览渲染失败</p>');
+    previewSrcdoc.value = "";
   } finally {
     if (seq === previewSeq) rendering.value = false;
   }
@@ -168,13 +117,6 @@ function setMode(next: ViewMode) {
 let syncingScroll = false;
 let syncReleaseTimer: ReturnType<typeof setTimeout> | undefined;
 
-function syncScrollRatio(from: HTMLElement, to: HTMLElement) {
-  const fromMax = from.scrollHeight - from.clientHeight;
-  const toMax = to.scrollHeight - to.clientHeight;
-  if (fromMax <= 0 || toMax <= 0) return;
-  to.scrollTop = (from.scrollTop / fromMax) * toMax;
-}
-
 // 同步完成后用 setTimeout 短延时释放守卫标志（而非 requestAnimationFrame：
 // rAF 在后台标签/非渲染场景会被节流甚至不触发，会把 syncingScroll 永久卡在 true）。
 function releaseSyncGuard() {
@@ -185,35 +127,36 @@ function releaseSyncGuard() {
 function onEditorScroll() {
   if (mode.value !== "split" || syncingScroll) return;
   const ta = textareaRef.value;
-  const doc = iframeRef.value?.contentDocument;
-  if (!ta || !doc?.scrollingElement) return;
+  if (!ta || !previewToken.value) return;
+  const range = ta.scrollHeight - ta.clientHeight;
   syncingScroll = true;
-  syncScrollRatio(ta, doc.scrollingElement as HTMLElement);
+  iframeRef.value?.contentWindow?.postMessage(
+    { type: "stellar-preview-scroll-to", token: previewToken.value, ratio: range > 0 ? ta.scrollTop / range : 0 },
+    "*",
+  );
   releaseSyncGuard();
 }
-
-function onPreviewScroll() {
+function onPreviewMessage(event: MessageEvent) {
+  if (
+    event.source !== iframeRef.value?.contentWindow ||
+    event.data?.token !== previewToken.value ||
+    event.data?.type !== "stellar-preview-scroll"
+  )
+    return;
   if (mode.value !== "split" || syncingScroll) return;
+  const ratio = event.data.ratio;
   const ta = textareaRef.value;
-  const doc = iframeRef.value?.contentDocument;
-  if (!ta || !doc?.scrollingElement) return;
+  if (!ta || typeof ratio !== "number" || !Number.isFinite(ratio)) return;
   syncingScroll = true;
-  syncScrollRatio(doc.scrollingElement as HTMLElement, ta);
+  ta.scrollTop = Math.max(0, Math.min(1, ratio)) * Math.max(0, ta.scrollHeight - ta.clientHeight);
   releaseSyncGuard();
 }
+onMounted(() => window.addEventListener("message", onPreviewMessage));
+onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
 
-// iframe 加载完成后绑定预览侧滚动监听（srcdoc 只加载一次）
-function bindPreviewScroll() {
-  iframeRef.value?.contentWindow?.addEventListener("scroll", onPreviewScroll);
-}
-
-watch(
-  () => props.modelValue,
-  () => {
-    schedulePreview();
-    scheduleDraft();
-  },
-);
+watch([() => props.modelValue, () => stellarContext?.value], () => {
+  schedulePreview();
+});
 
 // ---------- 本地草稿保护（逻辑已抽到 useLocalDraft composable） ----------
 
@@ -224,8 +167,19 @@ onBeforeUnmount(() => {
 
 // ---------- 工具栏动作（基于选区包裹/插入，操作后恢复焦点与选区） ----------
 
-function updateValue(next: string, selStart: number, selEnd: number) {
+function editValue(next: string) {
+  if (next === props.modelValue) return;
   emit("update:modelValue", next);
+  // API 水合和预览上下文更新不是编辑；未决旧草稿必须先恢复或丢弃，不能被新输入覆盖。
+  if (!draftBanner.value) scheduleDraft();
+}
+
+function onInput(event: Event) {
+  editValue((event.target as HTMLTextAreaElement).value);
+}
+
+function updateValue(next: string, selStart: number, selEnd: number) {
+  editValue(next);
   nextTick(() => {
     const ta = textareaRef.value;
     if (!ta) return;
@@ -286,8 +240,10 @@ function scrollToLine(line: number) {
     ta.setSelectionRange(offset, offset);
     ta.scrollTop = ratio * (ta.scrollHeight - ta.clientHeight);
   } else {
-    const el = iframeRef.value?.contentDocument?.scrollingElement as HTMLElement | null;
-    if (el) el.scrollTop = ratio * (el.scrollHeight - el.clientHeight);
+    iframeRef.value?.contentWindow?.postMessage(
+      { type: "stellar-preview-scroll-to", token: previewToken.value, ratio },
+      "*",
+    );
   }
 }
 
@@ -332,19 +288,35 @@ const toolbarActions = [
 // ---------- 图片上传（工具栏按钮 / 粘贴 / 拖拽） ----------
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
+let uploadActive = true;
+const uploadControllers = new Set<AbortController>();
+onBeforeUnmount(() => {
+  uploadActive = false;
+  for (const controller of uploadControllers) controller.abort();
+  uploadControllers.clear();
+});
 
 async function uploadAndInsert(file: File) {
+  if (!uploadActive) return;
+  const controller = new AbortController();
+  uploadControllers.add(controller);
   uploadError.value = "";
   const placeholder = `![上传中 ${file.name}...]()`;
   insertBlock(placeholder);
   try {
-    const { data } = await attachmentApi.upload(file);
+    const { data } = props.userCenter
+      ? await ucApi.attachments.upload(file, controller.signal)
+      : await attachmentApi.upload(file);
+    if (!uploadActive || controller.signal.aborted) return;
     const md = `![${file.name}](${data.url})`;
     const replaced = props.modelValue.replace(placeholder, md);
-    emit("update:modelValue", replaced);
+    editValue(replaced);
   } catch {
-    emit("update:modelValue", props.modelValue.replace(placeholder, ""));
+    if (!uploadActive || controller.signal.aborted) return;
+    editValue(props.modelValue.replace(placeholder, ""));
     uploadError.value = `图片 ${file.name} 上传失败`;
+  } finally {
+    uploadControllers.delete(controller);
   }
 }
 
@@ -499,7 +471,7 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
         v-show="mode !== 'preview'"
         ref="textareaRef"
         :value="modelValue"
-        @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+        @input="onInput"
         @keydown="onKeydown"
         @paste="onPaste"
         @drop="onDrop"
@@ -516,6 +488,7 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
         <iframe
           ref="iframeRef"
           :srcdoc="previewSrcdoc"
+          sandbox="allow-scripts"
           @load="onIframeLoad"
           class="w-full min-h-[560px] h-[75vh] border-0 block"
           title="预览"
@@ -523,6 +496,11 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
       </div>
     </div>
 
-    <AttachmentPickerModal :open="pickerOpen" @select="onPickerSelect" @close="pickerOpen = false" />
+    <AttachmentPickerModal
+      :user-center="userCenter"
+      :open="pickerOpen"
+      @select="onPickerSelect"
+      @close="pickerOpen = false"
+    />
   </div>
 </template>

@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-24",
+  "reference": {
+    "url": "https://xaoxuu.com/",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    },
+    "dataTheme": null,
+    "systemDark": true,
+    "bodyBackground": "rgb(34, 32, 27)",
+    "bodyFont": "16px \"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+    "tokens": {
+      "--accent": "#f60",
+      "--background": "hsla(44 12% 12% / 1)",
+      "--card": "hsla(44 10% 14% / 1)",
+      "--link": "hsla(166deg 66% 32% / 1)",
+      "--text": "hsla(210deg 0% 100% / 1)",
+      "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+      "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+      "--theme": "hsla(40deg 96% 55% / 1)"
+    }
+  },
+  "live": {
+    "url": "https://blog.xn--fhqths51enha.cn/",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    },
+    "dataTheme": null,
+    "systemDark": true,
+    "bodyBackground": "rgb(28, 31, 33)",
+    "bodyFont": "16px system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+    "tokens": {
+      "--accent": "#ff5724",
+      "--background": "hsla(210deg 8% 12% / 1)",
+      "--card": "hsla(210deg 10% 24% / 1)",
+      "--link": "hsla(207deg 90% 54% / 1)",
+      "--text": "hsla(210deg 0% 100% / 1)",
+      "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+      "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+      "--theme": "hsla(192deg 98% 55% / 1)"
+    }
+  },
+  "finding": "Production still serves card preset and default cyan/blue colors. Previous adjustment only changed the isolated preview.",
+  "light": {
+    "live": {
+      "url": "https://blog.xn--fhqths51enha.cn/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "dataTheme": null,
+      "systemDark": false,
+      "bodyBackground": "rgb(249, 250, 251)",
+      "bodyFont": "16px system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+      "tokens": {
+        "--accent": "#ff5724",
+        "--background": "hsla(210deg 20% 98% / 1)",
+        "--card": "#fff",
+        "--link": "hsla(207deg 90% 54% / 1)",
+        "--text": "hsla(210deg 0% 0% / 1)",
+        "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+        "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+        "--theme": "hsla(192deg 98% 55% / 1)"
+      }
+    },
+    "reference": {
+      "url": "https://xaoxuu.com/",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      },
+      "dataTheme": null,
+      "systemDark": false,
+      "bodyBackground": "rgb(250, 247, 240)",
+      "bodyFont": "16px \"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+      "tokens": {
+        "--accent": "#f60",
+        "--background": "hsla(44 50% 96% / 1)",
+        "--card": "hsla(44 50% 98% / 1)",
+        "--link": "hsla(166deg 66% 32% / 1)",
+        "--text": "hsla(210deg 0% 0% / 1)",
+        "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+        "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+        "--theme": "hsla(40deg 96% 55% / 1)"
+      }
+    }
+  }
+}

@@ -25,6 +25,9 @@ async function ensurePosts(page: Page, count = 5, token = "mobile-e2e-post"): Pr
         title,
         content_md: `这是第 ${i} 篇用于验证移动端滚动不被遮挡的测试文章内容。`,
         status: "published",
+        stellar_version: 2,
+        stellar_config: "{}",
+        blog_extensions: "{}",
       },
     });
     expect(response.ok(), `夹具文章 ${slug} 必须创建成功（HTTP ${response.status()}）`).toBe(true);
@@ -480,51 +483,21 @@ test.describe("Console UI 一致性测试", () => {
     }
   });
 
-  test("系统设置保存当前分区 JSON 后同步规范化快照，消除未保存假脏态", async ({ page }) => {
+  test("系统设置高级页已移除原始 JSON 分区编辑器：不渲染分区选择与 site JSON 保存入口", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/settings?tab=advanced");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "原始 JSON 配置（高级兜底）" })).toBeVisible();
-
-    // 初始状态：无黄点与脏标记
-    const dirtyDots = page.locator(".settings-tab-dirty-dot");
-    await expect(dirtyDots).toHaveCount(0);
-    const dirtyBadge = page.locator(".settings-dirty-badge");
-    await expect(dirtyBadge).toHaveCount(0);
-
-    // 选择 site 分区
-    const sectionSelect = page.locator("#settings-raw-section");
-    await sectionSelect.selectOption("site");
-
-    // 获取当前 raw JSON 内容并做轻微合规修改
-    const rawTextarea = page.locator("#settings-raw-content");
-    const currentVal = await rawTextarea.inputValue();
-    const parsed = JSON.parse(currentVal || "{}");
-    parsed.subtitle = parsed.subtitle === "E2E Tested" ? "E2E Updated" : "E2E Tested";
-    await rawTextarea.fill(JSON.stringify(parsed, null, 2));
-
-    // 此时表单在本地发生变更，出现未保存标记
-    const saveJsonBtn = page.getByRole("button", { name: /保存 site JSON/ });
-    await expect(saveJsonBtn).toBeVisible();
-    await saveJsonBtn.click();
-
-    // 等待保存完成
-    await expect(page.locator(".apple-toast-item")).toBeVisible();
-
-    // 保存后快照已同步更新，不产生未保存假脏态
-    await expect(dirtyDots).toHaveCount(0);
-    await expect(dirtyBadge).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "原始 JSON 配置（高级兜底）" })).toHaveCount(0);
+    await expect(page.locator("#settings-raw-section")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /保存 site JSON/ })).toHaveCount(0);
   });
 
-  test("主题设置初始加载无未保存黄点误报，真实修改后出现黄点并可保存恢复", async ({ page }) => {
+  test("系统设置基本分区初始加载无未保存黄点误报，真实修改后出现黄点并可保存恢复", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/appearance");
-    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
-
-    // 等待数据加载完成
-    await expect(page.locator(".appearance-state")).toHaveCount(0);
+    await page.goto("/console/settings?tab=basic");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
 
     // 初始状态：无黄点、无未保存告警徽章
     const dirtyDots = page.locator(".settings-tab-dirty-dot");
@@ -532,21 +505,21 @@ test.describe("Console UI 一致性测试", () => {
     const dirtyBadge = page.locator(".settings-dirty-badge");
     await expect(dirtyBadge).toHaveCount(0);
 
-    // 模拟用户修改主题色输入框
-    const themeInput = page.locator('input[placeholder*="#2E8DFF"]').first();
-    await expect(themeInput).toBeVisible();
-    await themeInput.fill("#3b82f6");
+    // 模拟用户修改站点标题
+    const titleInput = page.locator("#settings-site-title");
+    await expect(titleInput).toBeVisible();
+    await titleInput.fill("E2E Dirty Dot Title");
 
     // 此时出现黄点与脏标记
-    await expect(dirtyDots).toHaveCount(1);
+    // 基本与 SEO 共享站点字段，两个分区都会提示未保存
+    await expect(dirtyDots).toHaveCount(2);
     await expect(dirtyBadge).toBeVisible();
 
-    // 点击保存按钮
-    const saveBtn = page.getByRole("button", { name: "保存外观设置" });
-    await expect(saveBtn).toBeVisible();
+    // 点击基本分区保存按钮
+    const saveBtn = page.locator(".settings-basic-actions button[type='submit']");
     await saveBtn.click();
 
-    // 保存成功提示后，黄点消失
+    // 保存成功后，黄点消失
     await expect(dirtyDots).toHaveCount(0);
     await expect(dirtyBadge).toHaveCount(0);
   });
@@ -608,36 +581,12 @@ test.describe("Console UI 一致性测试", () => {
     await page.screenshot({ path: testInfo.outputPath("t3-posts-empty.png") });
   });
 
-  test("主题设置与系统设置统一分段 Tabs 结构，单层卡片包裹并消除多层嵌套卡片", async ({ page }, testInfo) => {
+  test("主题设置已退役为通知页：不再渲染分段 Tabs", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/appearance");
     await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
-    await expect(page.locator(".appearance-state")).toHaveCount(0);
-
-    // 检查分段 Tabbar 结构与 ARIA 规范
-    const tablist = page.locator('.appearance-tabs [role="tablist"]');
-    await expect(tablist).toBeVisible();
-    const tabs = tablist.locator('[role="tab"]');
-    await expect(tabs).toHaveCount(7);
-
-    // 单一卡片边界：外层为 .settings-basic-panel
-    const mainPanel = page.locator(".settings-basic-panel");
-    await expect(mainPanel).toBeVisible();
-
-    await page.screenshot({ path: testInfo.outputPath("t3-appearance-desktop.png") });
-
-    // 切换到“布局”Tab
-    const layoutTab = tabs.filter({ hasText: "布局" });
-    await expect(layoutTab).toBeVisible();
-    await layoutTab.click();
-    await expect(page).toHaveURL(/tab=layout/);
-
-    // 验证“布局”中的小节采用 flat 的 section 结构，不再有内层嵌套卡片 .card-wrapper
-    await expect(page.getByRole("heading", { name: "右栏与页脚" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "组件编排" })).toBeVisible();
-    const innerNestedCards = page.locator(".appearance-tab-content .card-wrapper");
-    await expect(innerNestedCards).toHaveCount(0);
+    await expect(page.locator('.appearance-tabs [role="tablist"]')).toHaveCount(0);
   });
 
   test("ConsoleStatsCard 在用户管理与备份管理均采用统一规范", async ({ page }) => {
@@ -752,29 +701,18 @@ test.describe("Console UI 一致性测试", () => {
     await expect(dirtyBadge).toBeVisible();
   });
 
-  test("系统设置高级原始 JSON 语法错误时前置拦截并保持未保存状态", async ({ page }) => {
+  test("评论分区第三方评论 JSON 语法错误时前置拦截：错误提示可见且保存按钮禁用", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/settings?tab=advanced");
-    await expect(page.getByRole("heading", { name: "原始 JSON 配置（高级兜底）" })).toBeVisible();
+    await page.goto("/console/settings?tab=comments");
 
-    const sectionSelect = page.locator("#settings-raw-section");
-    await sectionSelect.selectOption("site");
+    const jsonField = page.locator('[data-setting-path="theme.comments"]').locator("input,textarea");
+    await jsonField.fill("{\ninvalid_json: true,\n}");
 
-    const rawTextarea = page.locator("#settings-raw-content");
-    await rawTextarea.fill("{\ninvalid_json: true,\n}");
-
-    // 未保存黄点与标记出现
-    const dirtyBadge = page.locator(".settings-dirty-badge");
-    await expect(dirtyBadge).toBeVisible();
-
-    const saveJsonBtn = page.getByRole("button", { name: /保存 site JSON/ });
-    await saveJsonBtn.click();
-
-    // 弹出错误 Toast
-    await expect(page.locator(".apple-toast-item")).toContainText("JSON 格式错误");
-    // 依然保持脏状态
-    await expect(dirtyBadge).toBeVisible();
+    await expect(page.getByText("请输入有效的 JSON 对象")).toBeVisible();
+    await expect(
+      page.locator(".canonical-settings-form:visible").getByRole("button", { name: "保存全部主题设置", exact: true }),
+    ).toBeDisabled();
   });
 });
 
@@ -909,12 +847,12 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await assertTabRevealContract(page, ".settings-tabs", "基本", "高级");
   });
 
-  test("390px 真实溢出下主题设置 Tabs 由组件自身滚动，首尾标签完整可见且纵向位置不变", async ({ page }) => {
+  test("390px 真实溢出下系统设置 Tabs 由组件自身滚动，Stellar 2 首标签与高级末标签完整可达且纵向位置不变", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/console/appearance?tab=appearance");
-    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
-    await assertTabRevealContract(page, ".appearance-tabs", "外观", "高级");
+    await page.goto("/console/settings?tab=basic");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+    await assertTabRevealContract(page, ".settings-tabs", "Stellar 2", "高级");
   });
 
   test("query 直接命中末尾标签时初始加载即完成显露，Home/End 切换保持显露与焦点", async ({ page }) => {
@@ -931,8 +869,8 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     // Home/End 切换同样触发显露，且焦点停留在被激活的标签上
     await tabbar.locator("#tab-advanced").focus();
     await page.keyboard.press("Home");
-    await expect(tabbar.locator("#tab-basic")).toHaveAttribute("aria-selected", "true");
-    await expect(tabbar.locator("#tab-basic")).toBeFocused();
+    await expect(tabbar.locator("#tab-stellar2")).toHaveAttribute("aria-selected", "true");
+    await expect(tabbar.locator("#tab-stellar2")).toBeFocused();
     await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
 
     await page.keyboard.press("End");
@@ -1000,7 +938,15 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     const slug = `e2e-empty-selection-${Date.now()}`;
     const title = "空态选择路径夹具";
     const created = await page.request.post("/api/v1/posts", {
-      data: { slug, title, content_md: "夹具正文", status: "published" },
+      data: {
+        slug,
+        title,
+        content_md: "夹具正文",
+        status: "published",
+        stellar_version: 2,
+        stellar_config: "{}",
+        blog_extensions: "{}",
+      },
     });
     expect(created.ok(), "夹具文章必须创建成功").toBe(true);
 
@@ -1032,7 +978,15 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     const slug = `e2e-table-empty-selection-${Date.now()}`;
     const title = "表格空态选择路径夹具";
     const created = await page.request.post("/api/v1/posts", {
-      data: { slug, title, content_md: "夹具正文", status: "published" },
+      data: {
+        slug,
+        title,
+        content_md: "夹具正文",
+        status: "published",
+        stellar_version: 2,
+        stellar_config: "{}",
+        blog_extensions: "{}",
+      },
     });
     expect(created.ok(), "夹具文章必须创建成功").toBe(true);
 

@@ -1,5 +1,7 @@
 # 部署指南
 
+从旧 1.x 升级到 Stellar 2.0 时，先按 [Docker / Compose 迁移与 Markdown 导入](upgrade-v1-to-v2.md) 完成旧库预览、隔离演练和停服迁移，再启动新版本；普通镜像更新和 `-seed` 不替代数据迁移。
+
 单二进制部署：systemd 服务 + nginx 反代 + 手动更新（`sudo update.sh` 从 GitHub Release 拉取，并校验 SHA256）。容器化部署见文末「Docker 容器部署」。v1.7.3 起 Console 只提供「检查更新」，不再从后台一键触发更新。
 
 `update.sh` 依赖 `curl`、`sha256sum`、`systemctl` 和 `python3`。它适用于公开或私有 GitHub 仓库；私有仓库通过 `/opt/blog/.token` 使用仅 `contents:read` 的 PAT 读取 Release 资产。
@@ -186,7 +188,7 @@ sudo /opt/blog/update-docker.sh
 
 ### 镜像部署（GHCR，可选形态）
 
-`.github/workflows/docker-release.yml` 在 tag 推送时构建并推送 `ghcr.io/sakuralovesmile/sakura-blog:<version>`（含 `latest`）。镜像为自包含多阶段构建（node → go → debian-slim），二进制位于镜像内 `/usr/local/bin/blog`，入口 `blog -root /app`。
+`.github/workflows/docker-release.yml` 在 tag 推送时构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，标签为去掉 `v` 的版本号（如 `1.7.4`），另有 `1.7`、`1` 与 `latest`；`latest` 只由 tag 推送更新。镜像为自包含多阶段构建（node → go → debian-slim），二进制位于镜像内 `/usr/local/bin/blog`，入口 `blog -root /app`。生产环境应把 compose 的 `image` 固定为具体版本标签，升级与回退都改这一行；`docker-compose.image.yml` 示例中的 `:latest` 仅作演示，不作为版本证据。
 
 ```bash
 docker compose -f deploy/docker-compose.image.yml up -d

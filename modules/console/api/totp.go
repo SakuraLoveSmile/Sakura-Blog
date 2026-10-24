@@ -9,14 +9,13 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"strings"
-	"time"
+
+	"blog/internal/identity"
 )
 
 const (
 	totpPeriod = 30
 	totpDigits = 6
-	totpWindow = 1 // ±1 窗口（允许前后各 30s）
 )
 
 // GenerateSecret 生成 TOTP secret（随机 20 字节 → base32 编码，无 padding）。
@@ -39,21 +38,7 @@ func GenerateRecoveryCodes(n int) []string {
 
 // ValidateTOTP 验证 TOTP code（HMAC-SHA1、30s 窗口 ±1）。
 func ValidateTOTP(secret, code string) bool {
-	// base32 decode secret
-	key, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(strings.ToUpper(secret))
-	if err != nil {
-		return false
-	}
-
-	t := time.Now().Unix() / totpPeriod
-
-	// 检查 ±1 窗口
-	for i := int64(-totpWindow); i <= int64(totpWindow); i++ {
-		if generateTOTP(key, t+i) == code {
-			return true
-		}
-	}
-	return false
+	return identity.ValidateTOTP(secret, code)
 }
 
 // generateTOTP 对指定时间计数器生成 6 位 TOTP code。

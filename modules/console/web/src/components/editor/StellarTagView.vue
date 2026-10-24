@@ -1,11 +1,6 @@
-<script lang="ts">
-// module 级预览缓存（按 raw 全文缓存渲染结果，跨节点实例共享）
-const previewCache = new Map<string, string>();
-export default {};
-</script>
-
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { inject, ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { stellarEditorContextKey } from "./stellar-context";
 import { NodeViewWrapper, nodeViewProps } from "@tiptap/vue-3";
 import { Icon } from "@iconify/vue";
 import { pluginApi, previewApi } from "@/api";
@@ -16,12 +11,14 @@ import { formForVariant } from "@/modules/plugins/shortcode";
 import { tagNameOf, typeLabelOf } from "./stellar-tag";
 
 // Stellar 标签节点的 NodeView：选中时浮出 Halo 同款操作气泡（类型标签 + 编辑/删除），iframe 渲染前台真实效果。
+const stellarContext = inject(stellarEditorContextKey, undefined);
 const props = defineProps(nodeViewProps);
 
 const raw = computed(() => (props.node.attrs.raw as string) || "");
 const typeLabel = computed(() => typeLabelOf(raw.value));
 
 const html = ref("");
+const previewToken = ref("");
 const loading = ref(false);
 const failed = ref(false);
 const iframeH = ref(64);
@@ -38,114 +35,54 @@ function onHandleDragEnd() {
   wrapperRef.value?.classList.remove("is-dragging");
 }
 
+let previewGeneration = 0;
 async function renderPreview() {
+  const generation = ++previewGeneration;
   const key = raw.value;
   if (!key.trim()) {
     html.value = "";
+    previewToken.value = "";
     return;
-  }
-  // links/moments 读取当前站点数据，不能使用跨节点/跨页面的长期缓存；否则新增友链、
-  // 编辑瞬间后重新打开编辑器仍会展示旧卡片。其它纯内容标签继续复用缓存，避免重复请求。
-  const dynamicTags = new Set(["links", "moments"]);
-  const cacheable = !dynamicTags.has(tagNameOf(key).toLowerCase());
-  if (cacheable) {
-    const cached = previewCache.get(key);
-    if (cached !== undefined) {
-      html.value = cached;
-      failed.value = false;
-      return;
-    }
   }
   loading.value = true;
   failed.value = false;
   try {
-    const { data } = await previewApi.render(key);
-    if (cacheable) previewCache.set(key, data.html);
-    // 请求返回时 raw 可能已被编辑更新，只有仍一致才展示
-    if (raw.value === key) html.value = data.html;
+    const { data } = await previewApi.render(key, undefined, { ...stellarContext?.value, mode: "content" });
+    if (generation !== previewGeneration) return;
+    html.value = data.document;
+    previewToken.value = data.preview_token;
   } catch {
-    if (raw.value === key) failed.value = true;
+    if (generation === previewGeneration) failed.value = true;
   } finally {
-    loading.value = false;
+    if (generation === previewGeneration) loading.value = false;
   }
 }
+onBeforeUnmount(() => {
+  previewGeneration++;
+});
 
 onMounted(renderPreview);
 onMounted(() => {
   void loadPluginCatalog();
 });
-watch(raw, renderPreview);
+watch([raw, () => stellarContext?.value], renderPreview);
 
-// iframe srcdoc：深色-only，固定 dark 主题
-// body 背景透明与编辑器融合（无缝渲染）；首尾 margin 归零减少卡片余白
-const srcdoc = computed(() => {
-  // {% friends %} 等数据服务标签输出 ds-* 容器，需前端 service JS 抓数据渲染卡片：
-  // 预览注入最小 utils/def shim + 对应 service 脚本（仅含 ds-friends 容器时）。
-  const hasFriendsService = /ds-friends/.test(html.value);
-  const hasMarkdownService = /ds-mdrender/.test(html.value);
-  const dsBootstrap =
-    hasFriendsService || hasMarkdownService
-      ? `<script>
-window.def = { avatar: 'https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg' };
-window.wrapLazyloadImages = function () {};
-window.utils = {
- request: function (el, api, cb) { fetch(api).then(cb).catch(function () {}); },
- dom: function (sel) {
-  var els = typeof sel === 'string' ? Array.prototype.slice.call(document.querySelectorAll(sel)) : (sel && sel.nodeType === 1 ? [sel] : Array.prototype.slice.call(sel || []));
-  var apiObj = {
-   find: function (s) { var r = []; els.forEach(function (el) { Array.prototype.push.apply(r, el.querySelectorAll(s)); }); return window.utils.dom(r); },
-   append: function (c) { els.forEach(function (el) { el.insertAdjacentHTML('beforeend', c); }); return apiObj; }
-  };
-  return apiObj;
- }
-};
-<\/script>${
-          hasMarkdownService
-            ? `<script src="/assets/vendor/marked/marked.umd.min.js?v=tagprev1"><\/script>
-<script src="/assets/js/services/mdrender.js?v=tagprev1"><\/script>`
-            : ""
-        }${
-          hasFriendsService
-            ? `<script src="/assets/js/services/friends_and_posts.js?v=tagprev1"><\/script>
-<script src="/assets/js/services/friends.js?v=tagprev1"><\/script>`
-            : ""
-        }`
-      : "";
-  return `<!DOCTYPE html>
-<html data-theme="dark">
-<head>
-<meta charset="utf-8">
-<link rel="stylesheet" href="/assets/css/main.css">
-<link rel="stylesheet" href="/assets/css/tag-plugins.css">
-<link rel="stylesheet" href="/assets/css/highlight.css">
-<style>
-html,body{margin:0;padding:0;}
-html{scroll-behavior:auto !important;color-scheme:dark;background:transparent;}
-body{padding:0;background:transparent;overflow:hidden;}
-.md-text{max-width:100%;}
-.md-text,.md-text.content{padding:0 !important;}
-.md-text>:first-child{margin-top:0;}
-.md-text>:last-child{margin-bottom:0;}
-</style>
-</head>
-<body><article class="md-text content">${html.value}</article>${dsBootstrap}</body>
-</html>`;
-});
-
-// iframe 加载后按内容自适应高度（上限 500px，超出内部滚动）；
-// 用 .md-text 实际盒高测量，body 无 padding 保证所见即所得；
-// 图片等异步资源加载后延时补测一次
-function measure() {
-  const doc = iframeRef.value?.contentDocument;
-  const art = doc?.querySelector(".md-text");
-  if (!art) return;
-  const h = Math.ceil(art.getBoundingClientRect().height);
-  iframeH.value = Math.min(Math.max(h, 32), 500);
+const srcdoc = computed(() => html.value);
+function onPreviewMessage(event: MessageEvent) {
+  if (
+    event.source !== iframeRef.value?.contentWindow ||
+    event.data?.token !== previewToken.value ||
+    event.data?.type !== "component-preview-resize"
+  )
+    return;
+  const height = event.data.height;
+  if (typeof height === "number" && Number.isFinite(height) && height > 0)
+    iframeH.value = Math.max(Math.ceil(height), 32);
 }
+onMounted(() => window.addEventListener("message", onPreviewMessage));
+onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
 function onIframeLoad() {
-  measure();
-  setTimeout(measure, 600);
-  setTimeout(measure, 1600); // service 异步抓数据渲染后补测高度
+  /* 尺寸由子文档ResizeObserver异步回传。 */
 }
 
 // ---------- 编辑（优先属性表单，解析失败时保留源码编辑） ----------
@@ -155,6 +92,7 @@ const editingLoading = ref(false);
 const editingError = ref("");
 const editingPlugin = ref<PluginMeta | null>(null);
 const editingVariant = ref<PluginVariant | undefined>(undefined);
+const editingPresent = ref<string[] | undefined>(undefined);
 const editingValues = ref<Record<string, unknown> | undefined>(undefined);
 
 // hybrid 标签（frame 单行）需要按 variant 换一套属性字段；其余标签原样返回。
@@ -189,6 +127,7 @@ async function startEdit() {
     editingPlugin.value = plugin;
     editingVariant.value = data.variant;
     editingValues.value = data.values;
+    editingPresent.value = data.present || [];
   } catch {
     if (editing.value && raw.value === sourceRaw) editingError.value = "属性解析失败，可直接编辑源码。";
   } finally {
@@ -273,6 +212,7 @@ function closeEditor() {
       v-if="editing"
       :plugin="editingFormPlugin"
       :initial-values="editingValues"
+      :present="editingPresent"
       :variant="editingVariant"
       :raw="raw"
       :loading="editingLoading"
@@ -301,7 +241,7 @@ function closeEditor() {
         :style="{ height: iframeH + 'px' }"
         :class="['block w-full border-0 bg-transparent', !selected && 'pointer-events-none']"
         allowtransparency="true"
-        sandbox="allow-same-origin allow-scripts"
+        sandbox="allow-scripts"
         title="标签预览"
         @load="onIframeLoad"
       ></iframe>
@@ -316,6 +256,10 @@ function closeEditor() {
 </template>
 
 <style scoped>
+.stellar-tag-node iframe {
+  /* 与子文档的默认配色方案一致，让透明背景透出编辑器底色。 */
+  color-scheme: normal;
+}
 .stellar-tag-node.is-dragging iframe {
   display: none !important;
 }

@@ -53,8 +53,8 @@ export const WIDGET_META: WidgetMeta[] = [
       { key: "order", type: "number", label: "排序方向", def: -1, hint: "-1 降序 / 1 升序" },
       { key: "show_count", type: "checkbox", label: "显示文章数", def: false },
       { key: "color", type: "checkbox", label: "渐变色", def: false, hint: "开启后在起止颜色间渐变" },
-      { key: "start_color", type: "color", label: "起始颜色", def: "#999", hint: "color 开启时生效" },
-      { key: "end_color", type: "color", label: "结束颜色", def: "#1BCDFC", hint: "color 开启时生效" },
+      { key: "start_color", type: "color", label: "起始颜色", def: "#8e8e93", hint: "color 开启时生效" },
+      { key: "end_color", type: "color", label: "结束颜色", def: "#2e8dff", hint: "color 开启时生效" },
     ],
   },
   {

@@ -1,0 +1,33 @@
+{
+  "built_head": "aa1fa93",
+  "cards": [
+    "",
+    "",
+    "",
+    ""
+  ],
+  "iframes": [
+    {
+      "contentDocumentNull": false,
+      "height": 200,
+      "sandbox": "allow-scripts",
+      "src": "http://127.0.0.1:8103/stellar/embed/gist?gist=octocat%2F9257657#stellar-gist-token=b2d1b5590ce502a318b12cf9952346d6"
+    }
+  ],
+  "observation_scope": "Original contentDocumentNull came from readonly DOM mirror and is not a security measurement",
+  "real_cdp_before_fix": {
+    "height": 200,
+    "contentDocumentNull": true,
+    "sandbox": "allow-scripts",
+    "childBodyHeight": 850,
+    "bridgeReady": "complete",
+    "hashMatched": true
+  },
+  "diagnostic_only": {
+    "hashchangeProbe": true,
+    "messageOrigin": "null",
+    "sameSource": true,
+    "parentHeightAfterProbe": 850,
+    "temporaryListenerRemoved": true
+  }
+}

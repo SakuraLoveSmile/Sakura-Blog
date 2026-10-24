@@ -1,0 +1,85 @@
+# 1.x 升级与 Markdown 导入验收
+
+状态：T1、T2 待体验；生产已从 1.7.4 升至 `v2.0.0-local.f7d699b9`，最终展示补丁、服务器检查及公网桌面/手机核验均已完成。T1 为旧配置迁移命令，T2 为旧 Markdown 显式转换。用户已明确只保留线上文章，不另导入 Markdown；已批准停服、迁移和切换。后台登录后的账户操作仍由用户体验。
+
+## 界面参照与冻结差异
+
+唯一视觉基线为本目录 `before-post-editor.jpg`，来自 `dev@9616908e` 的真实构建和隔离站点（非真实文章）。保留编辑器工具栏、正文、侧栏、主题 token 与备份页结构。按本地 `resource/apple-design/library-consumption.json` 阅读设计库后，复用现有 `VModal`、`VButton`，只修改导入流程：
+
+- T2 工具栏原导入按钮先打开格式选择，可选择严格 2.0 或明确的 1.x 转换。
+- T2 复用现有弹窗结构显示可滚动正文、配置、转换说明，取消不回填；确认只回填，不保存、发布或修改已有文章 URL。
+- T2 备份页只增加“从 1.x 格式转换”复选框；确认说明状态与覆盖影响，显示后端具体错误。
+- 桌面与 390px 宽度检查弹窗边界、滚动、操作按钮及键盘关闭。
+
+## 联合验收
+
+T1 生产显示兼容补充：唯一参照为本目录 `production-article-before-fix.png`（上线后公网原文章、1280×720）。只修复旧日期显示和摘要样式加载，沿用已有 `reading.css` 的 21px 图标、主题变量和卡片结构；日期原值、正文、页面布局与其它样式保留。验收要求直接刷新和站内进入文章均显示原发布日期，摘要图标为 21×21px；阅读进度关闭时仍无进度条；1280px 与 390px 均无横向溢出。不调用模型生成摘要。
+
+- [x] T1 默认旧库预览、显式能力覆盖、具名决策、摘要批准、完整演练与隔离 apply/recover。
+- [x] T1 未确认正文、来源变化或篡改的报告不得通过批准；初次预览不得自动批准。
+- [x] T2 严格导入继续拒绝旧字段；显式转换支持旧状态、分类、置顶、日期与 slug。
+- [x] T2 预览和取消均不写库；保存草稿、重开、发布及公开页形成闭环。
+- [x] T2 单篇与 ZIP、同 slug、未知字段、整批失败不写入；严格模式保留 2.0 语义，旧模式统一转换旧 image 默认行为。
+- [x] 构建真实 Console 并重启隔离 Go 服务，核对实际服务的入口与资源 hash。
+
+上述勾选表示适用技术验证已完成，用户尚未确认验收。本节记录的是隔离合成夹具；真实生产迁移和最终公网证据见后文。
+
+## 本次证据（2026-10-19）
+
+- `make test` 通过：Console 273、Stellar 220 项，零失败、零跳过；含部署、来源、模块检查及 Go vet、Staticcheck、全部 Go 测试。
+- `TestStellarMigrationActualBinary` 在测试内重新编译单二进制，覆盖批准、离线门禁、演练、Apply、服务启动、搜索与恢复；不是 Docker 容器实测。
+- `make build` 通过：真实 Console/User Center 构建与 Go 编译。修复独立审查发现的旧 image 转换不一致后，相关转换测试通过。
+- `pnpm exec playwright test tests/e2e/editor-md-import.spec.ts tests/e2e/backup-import.spec.ts`：6 项通过。覆盖预览取消、确认前无写入、草稿重开和不公开、显式发布后前台展示、手机页面取消、严格入口拒绝旧字段、批量旧文件缺省草稿。
+- 主 agent 亲自用真实浏览器检查 1280×900 与 390×844：长文章可滚动，手机预览边界为 x=16..374、y=72..772；两个底部按钮为 y=711..755；Escape 关闭且不回填。旧页面回填后保存为草稿，重开保留标题、Slug、2020-02-03 与正文。
+- 界面截图：`after-import-desktop.jpg`、`after-import-mobile.jpg`、`after-page-saved-mobile.jpg`、`after-backup-desktop.jpg`。最终服务入口和主资源均与当前 dist 逐字匹配，SHA-256 见本目录 `served-assets.json`。
+- 独立只读审查发现 2 个 P2，均已修正：仅含 image 的旧文档保持旧 fancybox 默认行为；升级指南明确 rootful Docker 私密审查文件的 `sudo` / `sudoedit` 操作。
+
+## 真实 1.7.4 副本的补充修正
+
+以下为正式切换前的历史演练记录，生产结果见后文。
+
+- Termius 已正常连接，线上 Docker/Compose 仍运行 1.7.4。已核对容器挂载、共享实例和旧镜像准确 ID，上传并核验 `fa665805` 的 Linux 候选包，基于现有准确旧镜像离线构建候选容器；未改生产 Compose、停服或迁移生产数据。
+- SQLite backup API 取得一致副本，完整资源副本另存于运行目录之外。库内为 1 篇已发布文章、5 个页面（4 个公开、1 个已回收站）、1 个真实专栏、1 组旧 Notebook/Note；用户已明确只保留线上文章，不另导入 Markdown。
+- 2 GiB 服务器的首次副本预览退出 137，内核确认 OOM。副本中 20,666 个历史备份文件约 308 MB 已完整移至副本运行目录之外并保存逐文件摘要，生产原件未动。限制容器内存并设 `GOMEMLIMIT=512MiB` 后生成预览；此项是在线副本检查，不是正式停服恢复点。
+- 真实预览发现 33 个阻断，覆盖 1.7.4 的空配置、宿主 Feedback、旧插件形状、外观预设、失效示例专栏和缺失 Notebook 元数据。本轮补齐精确兼容；未知字段及不等效的旧行为仍阻断，不设通用忽略动作。
+- 用户批准移除三个未入库的示例卡片及三个 `#` 占位图标，显式列出真实专栏，显示名采用旧 title；头像环和过渡采用新版行为。新增 `choose_existing_project` 具名动作，要求真实存在的 `replacement_id`，禁止重复，不改变源项目和可见性。
+- 用户批准旧笔记归管理员账户 1，slug 为 `test`，状态为草稿，原日期保留；笔记本缺失修改日期用原创建日期。
+- 已检查唯一正文转换：`pages/3` 由 `{% links %}` 改为新版 `{% blog_links %}`，没有其它文字变化。`cbc345a6` 副本重预览确认仅此变化，正文摘要为 `3412f73b4af8eb3a16b79f213b03f4f8f8254cb8714a63ce86a829cd206188a9`。
+- 独立审查的两个 P2 已修正：真实专栏须显式列入新列表；非空旧页脚正文与非空备案号不能静默拼接，改为阻断并保留原值。`cbc345a6` 的迁移包及 Stellar 包测试、完整组合门禁和真实构建均已通过。
+
+- `cbc345a6` 固定 Linux 包已上传，归档、展开二进制和镜像内二进制摘要一致；服务器基于旧准确镜像离线构建新候选。副本 selected preview、approve 和 rehearse 均退出 0；approve 66.71 秒、rehearse 46.59 秒，包含正式 Bootstrap、搜索重建及 SSR 渲染。
+- 演练前后 SQLite 完整性为 `ok`。1 篇文章、5 个页面、57 条附件、1 个账号、1 个专栏、1 组笔记本与笔记及 87,068 条历史性能样本保留；账号/权限等非内容表逐行一致，121 个上传文件 SHA-256 一致，文章与页面原日期、Slug、状态及批准外正文一致。旧 settings 的 29 行值不变，仅新增新版配置项。
+- 真实 HTTP 副本检查已确认首页、原文章、四个公开页面、专栏、后台入口、local 模式的 `/search.json` 可用，测试草稿 404。旧 `/notes` 对应已删除页面，新版原先返回 404；本轮补齐兼容：有公开页面时照常渲染，否则 302 到当前笔记本目录，保留删除状态及草稿隐私。路径与隐私回归测试、独立审查、feature 的 `make merge-check`、合入根 `dev` 后的全套 `make test` 及真实 `make build` 均通过。
+- `v2.0.0-local.f3dc26a2` 是本地固定构建，不是远端正式 release。Linux 包本地构建并通过差分传输上传，服务器还原二进制与镜像内二进制 SHA-256 均为 `55fdeb4c5ff0a5469b1bd6dd29e34a8cd31ce58bf91187284a5622fa18b179ae`。准确镜像为 `sha256:c8a359eff7fe182a4d8ed50792804b5c43c6df28e1162f0068d0370b4fb630b6`。
+- 最新镜像的 selected preview、approve、rehearse 均退出 0，分别为 39.22、65.88、46.47 秒；selected candidate 与前轮已审阅对象逐字一致。再次核对原表数量、10 张非内容表逐行值、原 settings 值、内容日期/Slug/状态/正文、笔记作者/草稿及日期、笔记本补齐日期、121 个上传文件摘要，全部符合已批准选择；SQLite 完整性为 `ok`。
+- 最新镜像真实 HTTP 20 项通过，覆盖首页、原文章、四公开页面、真实专栏、笔记本、后台、搜索、上传图片及两个 Console 主资源内容摘要。真实服务器 `GET`/`HEAD /notes` 为 302 到 `/notebooks`，尾斜杠先 301 到 `/notes`；HEAD 均无正文。草稿直接访问为 404，公开笔记列表与搜索不含草稿路径。检查容器已停止，生产仍为原准确旧镜像且 Compose 摘要未变。
+- 首次人工核对脚本将 settings 的列名误写为 `key`，在只读 SQL 阶段停止；按实际 schema 改为 `section` 后上述全部核验通过。历史失败日志保留，不计作迁移失败。
+- 正确线上域名为 `https://blog.xn--fhqths51enha.cn/`，原 1.7.4 仍正常响应。曾抄错域名产生的连接失败不属于生产故障；曾用错误挂载路径启动 HTTP 副本产生的空库检查不属于迁移失败，均未影响生产。
+
+## 生产核验发现的展示补充（2026-10-20）
+
+- 正式迁移已完成，停服 440.63 秒。保留 1 篇文章、5 个页面（4 个公开、1 个软删除）、57 条附件、1 个用户、1 个真实专栏、1 组笔记本和草稿笔记、88,188 条迁移时性能样本及 121 个上传文件。
+- 完整备份及两份历史备份归档保留于服务器 `/home/ubuntu/blog-v2-cutover-f3dc26a2`，未清理旧镜像或备份。旧配置、原日期、账号权限与批准范围外正文均已核验保留。
+- `e7811caa` 补丁已修正原文章日期与摘要图标，替换后就绪 1.14 秒，21 项 HTTP、SQLite 完整性及 8 张关键表逐行比较通过。挂载按目的地比较完整属性，避免 Docker 返回顺序变化引起误判；首次误判已回退并保留日志。
+
+- 手机标题唯一参照 `production-article-before-mobile-title-fix.png`；保留原字号、背景和桌面比例。仅使带背景头部按原比例与文字实际高度中较高者排版，390px长标题完整显示，摘要位于头部之后，无横向溢出。
+- 独立页面日期使用原始Go时间值，SSR、离线输出和已有页面预览的日期与Open Graph均须正确；展示不得改写持久化值或覆盖预览新输入的日期。
+- 真实空专栏参照 `production-wiki-mobile-before-link-fix.png`；卡片指向既有专栏入口，显式外链及有公开文档的首页维持原规则，草稿不公开；不新建文档或改可见性。
+
+## 最终生产结果（2026-10-20）
+
+- 最终源码为 `f7d699b9f18991b76b63eff0f309ef116f94094e`，三项展示补丁已通过回归、独立只读审查、提交 hook、`make merge-check`（feature 和合入 dev 后全套测试）及真实 `make build`。Linux amd64 固定构建的二进制 SHA-256 为 `7ea9e9373a1f77e867511dc0efe0ab251813b30d27e34529eac45cb8d21905d1`。
+- 服务器最终副本检查通过后，只替换生产 2.0 镜像，没有重新迁移。准确镜像为 `sha256:64bb4e8966169006d73afeb6e54be4425edaae589871db78677b3588f0f1f2be`，版本 `v2.0.0-local.f7d699b9`。1.39 秒恢复就绪，24 项 HTTP 检查、9 张关键表逐行比较及 SQLite 完整性 `ok`；环境、挂载全部属性、端口、网络和重启策略一致。最终容器二进制摘要与固定构建一致，重启次数 0，启动日志中 error/fatal/panic 匹配为 0。
+- 主 agent 在真实公网站点检查 1280×900 与 390×844：直接刷新、首页卡片及搜索进入原文章均正确；原发布/更新日期为 2026-09-23，摘要 SVG 为 21×21px，阅读进度关闭时无进度条。手机标题完整显示，摘要在头部之后，页面无横向溢出；桌面头部保留 2.5 比例。最终截图为 `production-article-after-desktop.png`、`production-article-after-mobile.png`，不含临时注入样式。
+- `/friends`、`/memos`、`/links`、`/about` 的可见日期和两项 Open Graph 均与原始持久化日期一致，截图见 `production-page-*.png`，DOM 实读见 `production-page-dates.json`。原日期未被展示转换写回数据库。
+- 手机文库仅展示真实专栏，点击卡片进入 `/wiki/qfnuLibraryBook`。该项目当前没有公开文档，不新建内容或改变可见性；截图 `production-wiki-after-mobile.png`。
+- 原文章可通过站内搜索打开；全站搜索“测试”只出现原已发布文章。旧 `/notes` 实际跳转到 `/notebooks`，公开笔记本不列出草稿；`/notebooks/1/test` 显示页面不存在。服务器再次确认 GET/HEAD 跳转、草稿 404、搜索索引不泄露。截图 `production-search.png`、`production-draft-private.png`。
+- 上传头像和文章背景加载正常，两个上传文件 HTTP 通过。Console 入口实际进入登录页，主 JS/CSS 摘要与真实 dist 一致；截图 `production-console-login.png`。没有线上后台会话，未操作账号、修改密码或调用摘要模型。
+- 服务器完整记录位于 `/home/ubuntu/blog-v2-cutover-f3dc26a2/display-f7d699b9/`，最终浏览器与健康记录为同一 cutover 目录内的 `public-browser-verification.private.json`。完整备份、历史备份、旧镜像和各 worktree 均保留。
+
+## 用户体验与发布边界
+
+- 访问 `https://blog.xn--fhqths51enha.cn/` 和 `/console/`，使用原账号自行体验后台；当前为“待体验”，没有代替用户确认验收。
+- GitHub Actions 可以构建，但现有工作流会发布 GHCR 并更新 `latest`；本次未获授权推送、打标签或触发发布，使用本地固定构建。升级指南位于 `deploy/upgrade-v1-to-v2.md`。
+
+并行归属：迁移 CLI 专家独占 sibling `Blog-v1-upgrade-migration` 的 CLI 与其测试；导入后端专家独占 sibling `Blog-v1-upgrade-import` 的转换、backup 与 API；主 agent 独占 `Blog-v1-upgrade` 的 API client、界面、E2E、升级指南与最终集成。主 agent 核对补丁、执行组合门禁并亲自检查真实浏览器。

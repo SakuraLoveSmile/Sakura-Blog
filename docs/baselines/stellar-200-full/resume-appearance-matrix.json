@@ -1,0 +1,173 @@
+{
+  "builtHead": "172ce92",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "results": [
+    {
+      "preset": "card",
+      "scheme": "light",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(249, 250, 251)",
+        "scheme": "light",
+        "overflow": false,
+        "cardBackground": "rgb(255, 255, 255)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "card",
+      "scheme": "dark",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(28, 31, 33)",
+        "scheme": "dark",
+        "overflow": false,
+        "cardBackground": "rgb(55, 61, 67)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "card",
+      "scheme": "auto",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(28, 31, 33)",
+        "overflow": false,
+        "cardBackground": "rgb(55, 61, 67)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "glass",
+      "scheme": "light",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(249, 250, 251)",
+        "scheme": "light",
+        "overflow": false,
+        "cardBackground": "rgb(255, 255, 255)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "glass",
+      "scheme": "dark",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(28, 31, 33)",
+        "scheme": "dark",
+        "overflow": false,
+        "cardBackground": "rgb(55, 61, 67)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "glass",
+      "scheme": "auto",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(28, 31, 33)",
+        "overflow": false,
+        "cardBackground": "rgb(55, 61, 67)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "minimal",
+      "scheme": "light",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(250, 247, 240)",
+        "scheme": "light",
+        "overflow": false,
+        "cardBackground": "rgba(0, 0, 0, 0)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "minimal",
+      "scheme": "dark",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(34, 32, 27)",
+        "scheme": "dark",
+        "overflow": false,
+        "cardBackground": "rgba(0, 0, 0, 0)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "minimal",
+      "scheme": "auto",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(34, 32, 27)",
+        "overflow": false,
+        "cardBackground": "rgba(0, 0, 0, 0)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "flat",
+      "scheme": "light",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(249, 250, 251)",
+        "scheme": "light",
+        "overflow": false,
+        "cardBackground": "rgba(15, 31, 46, 0.04)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "flat",
+      "scheme": "dark",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(28, 31, 33)",
+        "scheme": "dark",
+        "overflow": false,
+        "cardBackground": "rgba(166, 184, 201, 0.08)"
+      },
+      "saved": true
+    },
+    {
+      "preset": "flat",
+      "scheme": "auto",
+      "persisted": true,
+      "metrics": {
+        "width": 1280,
+        "height": 720,
+        "background": "rgb(28, 31, 33)",
+        "overflow": false,
+        "cardBackground": "rgba(166, 184, 201, 0.08)"
+      },
+      "saved": true
+    }
+  ]
+}

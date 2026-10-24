@@ -26,7 +26,7 @@ async function submit() {
 <template>
   <div class="mx-auto max-w-xl">
     <div class="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-9">
-      <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Author access</p>
+      <p class="mb-2 text-xs font-medium text-text-tertiary">申请作者权限</p>
       <h1 class="text-3xl font-semibold tracking-tight">升级为作者</h1>
       <p class="mt-3 max-w-lg text-sm leading-6 text-text-secondary">
         作者可以使用受限编辑器发布自己的文章，并管理自己上传的附件。请输入当前密码确认升级。
@@ -70,7 +70,6 @@ async function submit() {
 }
 .uc-input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 .uc-primary-button,
 .uc-secondary-button {

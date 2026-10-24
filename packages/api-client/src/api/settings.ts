@@ -1,11 +1,13 @@
 import { http } from "../transport";
 import type { JsonValue } from "./contracts";
 import type {
+  StellarAuthorCatalogResponse,
   StyleYAMLResponse,
   StyleYAMLUpdateResponse,
   RestoreTaskResponse,
   RestoreTasksResponse,
   FeedbackCheckResponse,
+  PostsMarkdownImportResponse,
 } from "../generated";
 
 // --- 备份与导出 ---
@@ -35,11 +37,20 @@ async function readRestoreTaskResponse(response: Response): Promise<RestoreTaskR
 
 export const backupApi = {
   status: () => http.get("/backup/status"),
-  importMarkdown: (file: File) => {
+  importMarkdown: (
+    file: File,
+    legacy = false,
+    createTopics: string[] = [],
+    ignoredParameters: { source: string; path: string }[] = [],
+  ) => {
     const form = new FormData();
     form.append("file", file);
-    return http.post("/backup/import/markdown", form, {
+    if (legacy) form.append("legacy", "true");
+    if (createTopics.length) form.append("create_topics", JSON.stringify(createTopics));
+    if (ignoredParameters.length) form.append("ignored_parameters", JSON.stringify(ignoredParameters));
+    return http.post<PostsMarkdownImportResponse>("/backup/import/markdown", form, {
       headers: { "Content-Type": "multipart/form-data" },
+      mute: true,
     });
   },
   // 整站恢复（Spec 41）：上传全量备份 zip / 从服务器留存备份还原
@@ -77,6 +88,7 @@ export const backupApi = {
 // 段名与后端 KnownSections 对齐；Spec 42 新增 seo（站点级 SEO）与 inject（代码注入 inject_head/inject_footer）两段。
 export const settingsApi = {
   all: () => http.get("/settings"),
+  authorCatalog: () => http.get<StellarAuthorCatalogResponse>("/authors/catalog"),
   updateSection: (section: string, data: JsonValue | undefined) => http.put(`/settings/${section}`, data),
   testNotify: () => http.post("/settings/notify/test"),
   // Feedback 服务连通性自测：提交当前草稿 api_base，后端探测其 /healthz

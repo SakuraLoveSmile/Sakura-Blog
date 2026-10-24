@@ -25,7 +25,7 @@ const colors = themeColors({
   success: "#30D158",
   warning: "#FF9F0A",
   chart5: "#BF5AF2",
-  chart2: "#00C7BE",
+  chart2: "#2e8dff",
   error: "#FF453A",
   primaryHover: "#66ABFF",
   primaryActive: "#007AFF",
@@ -98,7 +98,7 @@ const extendedActions: QuickAction[] = [
     desc: "文件与图片",
     icon: "ri:attachment-2",
     color: colors.chart2,
-    bgColor: "color-mix(in srgb, #00C7BE 14%, transparent)",
+    bgColor: "color-mix(in srgb, #2e8dff 14%, transparent)",
     path: "/attachments",
   },
   {
@@ -256,7 +256,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadAction
   background: color-mix(in srgb, #fff 6%, transparent);
   border-color: color-mix(in srgb, #fff 8%, transparent);
   transform: scale(1.02);
-  box-shadow: 0 10px 24px -18px #000, 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  box-shadow: 0 10px 24px -18px #000;
 }
 
 .quick-action-item:active {
@@ -264,7 +264,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadAction
 }
 
 .quick-action-item.quick-action-featured {
-  background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 15%, transparent), color-mix(in srgb, #fff 4%, transparent));
+  background: var(--color-card);
   border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent), 0 12px 28px -22px var(--color-primary);
 }

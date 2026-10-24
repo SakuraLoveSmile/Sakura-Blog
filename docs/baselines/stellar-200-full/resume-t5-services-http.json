@@ -1,0 +1,13 @@
+{
+  "transport": "isolated real HTTP fixture",
+  "success_rating_posts": 1,
+  "success_vote_posts": 1,
+  "rating": {
+    "4": 2,
+    "5": 2
+  },
+  "vote": {
+    "up": 3,
+    "down": 1
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "built_head": "c2cee18",
+  "before": {
+    "result": {
+      "type": "object",
+      "value": {
+        "height": 200,
+        "played": true,
+        "timeOrigin": 1791905247963.5,
+        "token": "http://127.0.0.1:8103/stellar/embed/gist?gist=octocat%2F9257657#stellar-gist-token=53544a730ae59ebcabf0adab28d5852b"
+      }
+    }
+  },
+  "after": {
+    "result": {
+      "type": "string",
+      "value": "{\"url\":\"http://127.0.0.1:8103/post/t5-lifecycle-b\",\"timeOriginSame\":true,\"oldSrc\":\"about:blank\",\"frameConnected\":false,\"media\":[{\"tag\":\"AUDIO\",\"paused\":true,\"connected\":false},{\"tag\":\"VIDEO\",\"paused\":true,\"connected\":false},{\"tag\":\"AUDIO\",\"paused\":true,\"connected\":false},{\"tag\":\"VIDEO\",\"paused\":true,\"connected\":false}]}"
+    }
+  },
+  "returned": {
+    "result": {
+      "type": "string",
+      "value": "{\"url\":\"http://127.0.0.1:8103/post/t5-lifecycle-a\",\"timeOriginSame\":true,\"newToken\":true,\"newFrame\":true,\"voices\":1,\"audios\":2,\"oldPaused\":true}"
+    }
+  }
+}

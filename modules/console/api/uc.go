@@ -10,8 +10,38 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/identity"
 	"blog/internal/store"
 )
+
+const authenticationSurfaceKey = "blog.api.authenticationSurface"
+const authenticationSurfaceUC = "user-center"
+
+// ucAuth 只使用经过公共身份中间件验证的 blog_user 会话。
+// 同一浏览器的后台 cookie 和 Bearer 凭证不得替换 User Center 的账号。
+func (h *Handler) ucAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		public := identity.CurrentUser(c)
+		if !public.Verified || public.ID <= 0 {
+			AbortFail(c, http.StatusUnauthorized, "未登录或登录已过期")
+			return
+		}
+		user, err := h.store.GetUserByID(public.ID)
+		if err != nil {
+			AbortFail(c, http.StatusInternalServerError, "读取用户身份失败")
+			return
+		}
+		if user == nil || user.Status != store.UserStatusActive || (user.Role != store.RoleReader && user.Role != store.RoleAuthor) {
+			AbortFail(c, http.StatusUnauthorized, "登录状态无效")
+			return
+		}
+		if !h.setAuthorizationContext(c, user.ID, user.Role) {
+			return
+		}
+		c.Set(authenticationSurfaceKey, authenticationSurfaceUC)
+		c.Next()
+	}
+}
 
 // UCMeResponse is the account summary consumed by the User Center shell.
 type UCMeResponse struct {
@@ -44,6 +74,7 @@ type UCAttachmentListResponse struct {
 // contains no site-setting mutation contract; the editor only sends the
 // limited fields handled by mergeUCPostBody.
 type UCPostResponse struct {
+	StellarContentMetadata
 	Slug      string          `json:"slug"`
 	Title     string          `json:"title"`
 	Excerpt   string          `json:"excerpt"`
@@ -78,7 +109,8 @@ func toUCPostResponse(p *postJSON) *UCPostResponse {
 		return nil
 	}
 	return &UCPostResponse{
-		Slug: p.Slug, Title: p.Title, Excerpt: p.Excerpt, ContentMD: p.ContentMD, Status: p.Status,
+		StellarContentMetadata: p.StellarContentMetadata,
+		Slug:                   p.Slug, Title: p.Title, Excerpt: p.Excerpt, ContentMD: p.ContentMD, Status: p.Status,
 		Cover: p.Cover, Tags: p.Tags, Authors: append([]string(nil), p.Authors...), Author: p.Author,
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Views: p.Views, HasDraft: p.HasDraft, Draft: p.Draft,
 	}
@@ -152,6 +184,7 @@ func (h *Handler) getUCPost(c *gin.Context) {
 }
 
 type ucPostPayload struct {
+	StellarContentMetadata
 	Slug      string `json:"slug"`
 	Title     string `json:"title"`
 	Excerpt   string `json:"excerpt"`
@@ -172,7 +205,8 @@ func (h *Handler) createUCPost(c *gin.Context) {
 		return
 	}
 	encoded, err := json.Marshal(postRequest{
-		Slug: input.Slug, Title: input.Title, Excerpt: input.Excerpt,
+		StellarContentMetadata: input.StellarContentMetadata,
+		Slug:                   input.Slug, Title: input.Title, Excerpt: input.Excerpt,
 		ContentMD: input.ContentMD, Status: input.Status, Tags: input.Tags,
 	})
 	if err != nil {
@@ -211,7 +245,8 @@ func (h *Handler) mergeUCPostBody(c *gin.Context) bool {
 		publishAt = existing.PublishAt.Format("2006-01-02T15:04")
 	}
 	full := postRequest{
-		Slug: existing.Slug, Title: input.Title, Excerpt: input.Excerpt,
+		StellarContentMetadata: input.StellarContentMetadata,
+		Slug:                   existing.Slug, Title: input.Title, Excerpt: input.Excerpt,
 		Cover: existing.Cover, Banner: existing.Banner, Category: existing.Category,
 		Categories: append([]string(nil), existing.Categories...), Topic: existing.Topic,
 		TopicID: json.RawMessage(strconv.FormatInt(existing.TopicID, 10)), Tags: input.Tags,

@@ -1,0 +1,16 @@
+{
+  "kind": "ordinary full navigation to settings then browser back",
+  "before": {
+    "origin": 1791906343470.8,
+    "url": "http://127.0.0.1:8103/post/t5-lifecycle-a"
+  },
+  "after": {
+    "gist": "http://127.0.0.1:8103/stellar/embed/gist?gist=octocat%2F9257657#stellar-gist-token=8ffb5746581ae4cc6f677bc469d2132c",
+    "media": 4,
+    "origin": 1791906663884.6,
+    "pageshow": null,
+    "url": "http://127.0.0.1:8103/post/t5-lifecycle-a"
+  },
+  "bfcacheExercised": false,
+  "limitation": "return restored correct page but new timeOrigin; no persisted pageshow observed, BFCache branch remains unverified"
+}

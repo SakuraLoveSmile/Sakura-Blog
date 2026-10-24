@@ -1,0 +1,22 @@
+{
+  "kind": "real browser click with synthetic XHR content-type response",
+  "before": {
+    "origin": 1791905507115.8,
+    "url": "http://127.0.0.1:8103/post/t5-lifecycle-a"
+  },
+  "after": {
+    "canonical": "http://127.0.0.1:8103/post/t5-lifecycle-b",
+    "heading": "T5 生命周期 B",
+    "loading": 0,
+    "origin": 1791906024139.8,
+    "title": "T5 生命周期 B - Stellar 2.0 验收站",
+    "url": "http://127.0.0.1:8103/post/t5-lifecycle-b"
+  },
+  "injected": [
+    {
+      "id": "interception-job-2351.0",
+      "url": "http://127.0.0.1:8103/post/t5-lifecycle-b"
+    }
+  ],
+  "fullDocumentFallback": true
+}

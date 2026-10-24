@@ -2,9 +2,13 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 )
+
+// 审核迁移尚未执行时，延后该迁移及其 ledger，不阻断普通启动。
+var errSchemaMigrationDeferred = errors.New("schema migration deferred pending reviewed content migration")
 
 // Migration describes one schema change after the legacy schema baseline.
 // Each Up function runs in its own transaction; the ledger row is committed
@@ -20,6 +24,12 @@ type Migration struct {
 // through the ledger. New migrations should be appended in increasing order.
 var schemaMigrations = []Migration{
 	{Version: 1, Name: "legacy-baseline"},
+	{Version: 2, Name: "stellar-v2-content-metadata", Up: migrateStellarContentTx},
+	{Version: 3, Name: "notebook-note-ownership", Up: migrateNotebookOwnershipTx},
+	{Version: 4, Name: "registration-invites", Up: func(tx *sql.Tx) error {
+		_, err := tx.Exec(tableDDL["registration_invites"])
+		return err
+	}},
 }
 
 const schemaMigrationsDDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -33,6 +43,16 @@ const schemaMigrationsDDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
 // post.go createTables 管理（含专用 ALTER 迁移），不在此注册。
 // 各表如需补列迁移（ALTER），保留在对应 Ensure*Table 方法内（见下表注释）。
 var tableDDL = map[string]string{
+	"registration_invites": `CREATE TABLE IF NOT EXISTS registration_invites (
+		code_hash  TEXT PRIMARY KEY,
+		created_by INTEGER NOT NULL,
+		created_at INTEGER NOT NULL,
+		expires_at INTEGER NOT NULL,
+		used_at    INTEGER,
+		used_by    INTEGER
+	);`,
+	"notebooks": notebooksDDL,
+	"notes":     notesDDL,
 	"links": `CREATE TABLE IF NOT EXISTS links (
 		id          INTEGER PRIMARY KEY AUTOINCREMENT,
 		group_title TEXT NOT NULL DEFAULT '',
@@ -444,6 +464,9 @@ func (s *Store) applyMigrations(migrations []Migration) error {
 		if migration.Up != nil {
 			if err := migration.Up(tx); err != nil {
 				tx.Rollback()
+				if errors.Is(err, errSchemaMigrationDeferred) {
+					continue
+				}
 				return fmt.Errorf("apply schema migration %d %s: %w", migration.Version, migration.Name, err)
 			}
 		}
@@ -461,6 +484,16 @@ func (s *Store) applyMigrations(migrations []Migration) error {
 
 // ensureTable 执行单表 DDL（含建表与索引，幂等）。
 func (s *Store) ensureTable(table string) error {
+	if table == "notebooks" || table == "notes" {
+		report, err := s.DetectLegacyNotebookSchema()
+		if err != nil {
+			return err
+		}
+		if report.Required() {
+			// 不能在旧同名表上执行新索引、补 owner 或半创建另一张表。
+			return nil
+		}
+	}
 	ddl, ok := tableDDL[table]
 	if !ok {
 		return fmt.Errorf("ensure table %s: not registered", table)
@@ -468,5 +501,5 @@ func (s *Store) ensureTable(table string) error {
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create %s table: %w", table, err)
 	}
-	return nil
+	return s.ensureStellarContentColumns(table)
 }

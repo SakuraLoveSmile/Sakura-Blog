@@ -11,8 +11,11 @@ import (
 
 // ViewData 贯穿所有模板的渲染上下文，对齐 Stellar layout.ejs 的 page/theme/config 三层。
 type ViewData struct {
-	Site           *Site
-	Page           *Page
+	Site *Site
+	Page *Page
+	// Stellar 保存严格 2.0 内容模型输入；普通聚合页可为空，内容详情必须
+	// 由路由在通过记录迁移版本和归属校验后填充，不能从旧字段猜测配置。
+	Stellar        *StellarRenderContext
 	Content        template.HTML // 文章正文 HTML（goldmark 渲染后）
 	TOC            template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
 	QAEnabled      bool          // AI 公开问答入口开关，由前台 fillSidebar 读取 settings.ai
@@ -421,6 +424,9 @@ type Site struct {
 	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
 	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
 	SWCacheVersion string `yaml:"-" json:"-"`
+
+	// StellarV2 仅由显式迁移/严格 v2 配置入口装配。
+	StellarV2 *StellarV2Config `yaml:"-" json:"stellar_v2,omitempty"`
 }
 
 // ServicesConfig 外部数据服务配置（对齐上游 _config.yml services 段）。

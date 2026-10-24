@@ -1,0 +1,27 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "definesAliasBeforeProfile": true,
+      "settingsSVGInPayload": true,
+      "profileSVGInPayload": true
+    },
+    {
+      "path": "/settings",
+      "definesAliasBeforeProfile": true,
+      "settingsSVGInPayload": true,
+      "profileSVGInPayload": true
+    },
+    {
+      "path": "/post/parity-45",
+      "definesAliasBeforeProfile": true,
+      "settingsSVGInPayload": true,
+      "profileSVGInPayload": true
+    }
+  ],
+  "profileHTTPMatchesSource": true,
+  "profileSHA256": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d",
+  "readyz": {
+    "ok": true
+  }
+}

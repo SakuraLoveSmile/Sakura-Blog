@@ -6,9 +6,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import vm from 'node:vm';
+import { mountBlogService } from './blog-service-fixture.mjs';
 
-const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/services/vote.js');
+const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/blog/services/vote.js');
 const SURFACE = '投票组件';
 
 function makeClassList() {
@@ -44,8 +44,7 @@ function loadVote(fetchImpl) {
     addEventListener: noop,
   };
   sandbox.window = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(readFileSync(SRC_PATH, 'utf8'), sandbox, { filename: SRC_PATH });
+  mountBlogService(readFileSync(SRC_PATH, 'utf8'), sandbox, { exports: ['submitVote', 'revertVote', 'hasVoted', 'storeVote', 'getVotedValue'] });
   assert.ok(
     sandbox.submitVote && sandbox.revertVote && sandbox.hasVoted,
     `[${SURFACE}] vote.js 顶层函数（submitVote/revertVote/hasVoted）未暴露，机械校验入口断裂`

@@ -22,7 +22,9 @@ test("Stellar 标签编辑器识别动态 links/moments 并刷新预览", () => 
   assert.match(tagSource.slice(pairedStart, pairedEnd), /"table"/);
   assert.match(tagSource.slice(pairedStart, pairedEnd), /"tip"/);
   assert.match(tagSource, /SINGLE_TAGS\.join\("\|"\)/);
-  assert.match(viewSource, /new Set\(\["links", "moments"\]\)/);
-  assert.match(viewSource, /const cacheable = !dynamicTags\.has\(tagNameOf\(key\)\.toLowerCase\(\)\)/);
-  assert.match(viewSource, /if \(cacheable\) previewCache\.set\(key, data\.html\)/);
+  assert.match(viewSource, /previewGeneration/);
+  assert.match(viewSource, /data\.document/);
+  assert.match(viewSource, /event\.source\s*!==\s*iframeRef\.value\?\.contentWindow/);
+  assert.match(viewSource, /event\.data\?\.token\s*!==\s*previewToken\.value/);
+  assert.doesNotMatch(viewSource, /window\.utils\s*=/);
 });

@@ -7,9 +7,11 @@ package search
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"html"
 	"strings"
+	"sync"
 	"unicode"
 )
 
@@ -47,7 +49,19 @@ type Item struct {
 
 // Index FTS5 索引访问对象。与 store 解耦：仅持 *sql.DB，由 main.go 装配回调。
 type Index struct {
-	db *sql.DB
+	db          *sql.DB
+	mu          sync.RWMutex
+	unavailable bool
+}
+
+// ErrUnavailable 表示索引失败后必须完整重建，禁止继续使用旧结果。
+var ErrUnavailable = errors.New("search index unavailable: full rebuild required")
+
+// SetUnavailable 阻止共享消费者读取陈旧索引，仅完整 Rebuild 成功后恢复。
+func (ix *Index) SetUnavailable() {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
+	ix.unavailable = true
 }
 
 // New 创建索引对象，db 复用 store 的连接（SetMaxOpenConns(1) 已串行化写）。
@@ -60,6 +74,8 @@ func New(db *sql.DB) *Index {
 // 若存在旧版不兼容结构（历史实验表、无 doc_type 列的旧索引）则丢弃重建，
 // 重建后 Count=0 触发启动回填。
 func (ix *Index) Ensure() error {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
 	// 清理历史遗留的基于触发器的 FTS 同步（早期实验方案，引用 content_md/content_html 列）。
 	// 现方案改用显式 IndexDoc/Unindex（写路径回调调用）；遗留触发器会因
 	// 新表结构（title/content/slug/title_raw）无 content_md 列而在 posts 增删改时报错，必须先删除。
@@ -87,6 +103,11 @@ func (ix *Index) Ensure() error {
 
 // Count 返回索引条目数（启动判断是否需要全量回填）。
 func (ix *Index) Count() (int, error) {
+	ix.mu.RLock()
+	defer ix.mu.RUnlock()
+	if ix.unavailable {
+		return 0, ErrUnavailable
+	}
 	var n int
 	if err := ix.db.QueryRow(`SELECT count(*) FROM posts_fts`).Scan(&n); err != nil {
 		return 0, fmt.Errorf("count posts_fts: %w", err)
@@ -97,7 +118,12 @@ func (ix *Index) Count() (int, error) {
 // IndexDoc 增量写入（先删后插，幂等）。docType 取 TypePost/TypePage/TypeMoment；
 // content 传纯文本；受保护文章传空串。
 func (ix *Index) IndexDoc(docType, slug, title, content string) error {
-	if err := ix.Unindex(docType, slug); err != nil {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
+	if ix.unavailable {
+		return ErrUnavailable
+	}
+	if err := ix.unindex(docType, slug); err != nil {
 		return err
 	}
 	_, err := ix.db.Exec(`INSERT INTO posts_fts(title, content, slug, title_raw, doc_type) VALUES (?, ?, ?, ?, ?)`,
@@ -110,6 +136,14 @@ func (ix *Index) IndexDoc(docType, slug, title, content string) error {
 
 // Unindex 从索引移除指定文档（删除/下线/进回收站时调用），docType 与 slug 共同定位。
 func (ix *Index) Unindex(docType, slug string) error {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
+	if ix.unavailable {
+		return ErrUnavailable
+	}
+	return ix.unindex(docType, slug)
+}
+func (ix *Index) unindex(docType, slug string) error {
 	if _, err := ix.db.Exec(`DELETE FROM posts_fts WHERE doc_type = ? AND slug = ?`, docType, slug); err != nil {
 		return fmt.Errorf("unindex doc %s %s: %w", docType, slug, err)
 	}
@@ -119,6 +153,9 @@ func (ix *Index) Unindex(docType, slug string) error {
 // Rebuild 全量重建（清空后回填）。启动时空表回填用，幂等。
 // Rebuild 全量重建 FTS 索引（Spec 61 阶段 5：整体包事务，中途失败不留半成品索引）。
 func (ix *Index) Rebuild(items []Item) error {
+	ix.mu.Lock()
+	defer ix.mu.Unlock()
+	ix.unavailable = true
 	tx, err := ix.db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin rebuild: %w", err)
@@ -140,12 +177,18 @@ func (ix *Index) Rebuild(items []Item) error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit rebuild: %w", err)
 	}
+	ix.unavailable = false
 	return nil
 }
 
 // Search 按 BM25 相关性搜索（标题权重 10 倍），snippet 服务端高亮。
-// docType 非空时限定类型（post/page/moment），空串搜索全部；空关键词返回空结果不报错。
+// docType 非空时限定类型（post/page/moment），空串搜索全部；可用索引的空关键词返回空结果。
 func (ix *Index) Search(q, docType string, limit int) ([]Result, error) {
+	ix.mu.RLock()
+	defer ix.mu.RUnlock()
+	if ix.unavailable {
+		return nil, ErrUnavailable
+	}
 	match := buildMatch(q)
 	if match == "" {
 		return []Result{}, nil

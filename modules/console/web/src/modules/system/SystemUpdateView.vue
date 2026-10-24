@@ -250,7 +250,7 @@ onMounted(() => {
           </span>
         </div>
 
-        <div v-if="checkData?.release_notes" class="rounded-base border border-border bg-[#0d0d0e] p-4">
+        <div v-if="checkData?.release_notes" class="rounded-base border border-border bg-[#0f0f10] p-4">
           <div
             class="custom-scrollbar max-h-72 overflow-y-auto font-mono text-xs leading-relaxed text-text-secondary whitespace-pre-wrap"
           >

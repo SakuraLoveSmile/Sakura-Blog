@@ -169,7 +169,7 @@ const displayedItems = computed(() => {
       <button
         v-for="item in displayedItems"
         :key="item.id"
-        class="w-full flex items-start gap-2 p-1.5 rounded-xl border border-transparent hover:border-white/5 hover:bg-white/5 text-left transition-all"
+        class="w-full flex items-start gap-2 p-1.5 rounded-xl border border-transparent hover:border-white/5 hover:bg-white/5 text-left transition-colors duration-150"
         type="button"
         @click="openComment(item)"
       >
@@ -406,7 +406,6 @@ const displayedItems = computed(() => {
 
 .comment-reply-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
 .comment-popover-btn {

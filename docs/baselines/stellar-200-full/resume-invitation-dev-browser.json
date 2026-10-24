@@ -1,0 +1,19 @@
+{
+  "production_source_commit": "f14e454c06d6fe335fb1d10edf73ad8ed9f40f8a",
+  "binary_sha256": "3e80e6ef5830e75418f07e2f47a68d75e7059b9efbe820a760c8bfe18f4576bb",
+  "native": {
+    "captchaInputs": 0,
+    "codeLabel": "两步验证码或恢复码（已开启时填写）",
+    "codeMaxLength": 8,
+    "emptyForm": true,
+    "invitationVisible": true,
+    "modalOwned": true,
+    "passwordLabel": "密码"
+  },
+  "admin_default_days": 7,
+  "registered_reader_labels_correct": true,
+  "uc_author_profile_correct": true,
+  "real_source_modified": false,
+  "experience_origin": "http://localhost:8112",
+  "same_fixture_admin_and_register": true
+}

@@ -12,12 +12,12 @@ import (
 // TestPageCRUDFlow 页面生命周期：创建（slug 冲突 409）→ 列表 → 详情 →
 // 更新（改 slug 冲突 409）→ 删除 → 回收站 → 恢复 → 再删除 → 彻底删除。
 func TestPageCRUDFlow(t *testing.T) {
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
 
 	// 创建
 	w := do2FA(r, http.MethodPost, "/api/v1/pages",
-		`{"slug":"about","title":"关于","content_md":"# 关于我","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"about","title":"关于","content_md":"# 关于我","status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create page: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -34,11 +34,11 @@ func TestPageCRUDFlow(t *testing.T) {
 	}
 
 	// 创建：slug 空 → 400；slug 冲突 → 409
-	w = do2FA(r, http.MethodPost, "/api/v1/pages", `{"slug":"","title":"x"}`, cookie)
+	w = do2FA(r, http.MethodPost, "/api/v1/pages", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"","title":"x"}`, cookie)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("create page empty slug: status = %d, want 400", w.Code)
 	}
-	w = do2FA(r, http.MethodPost, "/api/v1/pages", `{"slug":"about","title":"dup"}`, cookie)
+	w = do2FA(r, http.MethodPost, "/api/v1/pages", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"about","title":"dup"}`, cookie)
 	if w.Code != http.StatusConflict {
 		t.Errorf("create page dup slug: status = %d, want 409", w.Code)
 	}
@@ -65,7 +65,7 @@ func TestPageCRUDFlow(t *testing.T) {
 
 	// 更新：改标题与内容
 	w = do2FA(r, http.MethodPut, "/api/v1/pages/about",
-		`{"slug":"about","title":"关于我","content_md":"# 新内容","status":"published"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"about","title":"关于我","content_md":"# 新内容","status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("update page: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -78,13 +78,13 @@ func TestPageCRUDFlow(t *testing.T) {
 	}
 
 	// 更新：slug 被占用 → 409（先建第二页）
-	do2FA(r, http.MethodPost, "/api/v1/pages", `{"slug":"links","title":"友链"}`, cookie)
-	w = do2FA(r, http.MethodPut, "/api/v1/pages/about", `{"slug":"links","title":"x"}`, cookie)
+	do2FA(r, http.MethodPost, "/api/v1/pages", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"links","title":"友链"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/pages/about", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"links","title":"x"}`, cookie)
 	if w.Code != http.StatusConflict {
 		t.Errorf("update page occupied slug: status = %d, want 409", w.Code)
 	}
 	// 更新：不存在 → 404
-	w = do2FA(r, http.MethodPut, "/api/v1/pages/no-such", `{"title":"x"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/pages/no-such", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"x"}`, cookie)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("update missing page: status = %d, want 404", w.Code)
 	}
@@ -130,12 +130,12 @@ func TestPageCRUDFlow(t *testing.T) {
 
 // TestMomentCRUDFlow 瞬间：发布（纯图允许）→ 列表 → 编辑 → 删除 → 参数校验。
 func TestMomentCRUDFlow(t *testing.T) {
-	r, _, user, _ := newFullEnv(t)
+	r, _, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
 
 	// 发布
 	w := do2FA(r, http.MethodPost, "/api/v1/moments",
-		`{"content_md":"今天的瞬间","visibility":"public"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","content_md":"今天的瞬间","visibility":"public"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create moment: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -148,7 +148,7 @@ func TestMomentCRUDFlow(t *testing.T) {
 	}
 
 	// 空内容 → 400
-	w = do2FA(r, http.MethodPost, "/api/v1/moments", `{"content_md":""}`, cookie)
+	w = do2FA(r, http.MethodPost, "/api/v1/moments", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","content_md":""}`, cookie)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("empty moment: status = %d, want 400", w.Code)
 	}
@@ -170,7 +170,7 @@ func TestMomentCRUDFlow(t *testing.T) {
 
 	// 编辑
 	w = do2FA(r, http.MethodPut, "/api/v1/moments/"+itoa(m.ID),
-		`{"content_md":"已编辑","visibility":"private"}`, cookie)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","content_md":"已编辑","visibility":"private"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("update moment: status = %d, body = %s", w.Code, w.Body.String())
 	}
@@ -179,15 +179,15 @@ func TestMomentCRUDFlow(t *testing.T) {
 		t.Errorf("updated moment mismatch: %+v", m)
 	}
 	// 编辑：不存在 → 404；非法 id → 400；空内容 → 400
-	w = do2FA(r, http.MethodPut, "/api/v1/moments/99999", `{"content_md":"x"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/moments/99999", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","content_md":"x"}`, cookie)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("update missing moment: status = %d, want 404", w.Code)
 	}
-	w = do2FA(r, http.MethodPut, "/api/v1/moments/abc", `{"content_md":"x"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/moments/abc", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","content_md":"x"}`, cookie)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("update bad id: status = %d, want 400", w.Code)
 	}
-	w = do2FA(r, http.MethodPut, "/api/v1/moments/"+itoa(m.ID), `{"content_md":""}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/moments/"+itoa(m.ID), `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","content_md":""}`, cookie)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("update empty moment: status = %d, want 400", w.Code)
 	}

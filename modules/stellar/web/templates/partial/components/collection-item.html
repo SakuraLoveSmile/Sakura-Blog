@@ -1,9 +1,9 @@
 {{- /* collection-item.html: 文本/属性默认由 html/template 转义；Before、After、RawIcon
        仅接受服务端生成的 template.HTML 受信任片段。 */ -}}
-<a class="{{.ClassAttribute}} card-hover card-hover--spotlight" href="{{url_for .Href}}" title="{{.Title}}"{{if .Active}} aria-current="page"{{end}}{{if .Style}} style="{{.Style}}"{{end}}>
+<a class="{{.ClassAttribute}} ui-interactive card-hover card-hover--spotlight" href="{{url_for .Href}}" title="{{.Title}}"{{if .Active}} aria-current="page"{{end}}{{if .Style}} style="{{.Style}}"{{end}}>
   {{if and .LegacyLink .Active}}<span class="link active" hidden aria-hidden="true"></span>{{end}}
   {{.Before}}
-  {{if .Icon}}<span class="ui-collection__leading">{{icon .Icon}}</span>{{else if .RawIcon}}<span class="ui-collection__leading">{{.RawIcon}}</span>{{end}}
+  {{if .Icon}}<span class="ui-collection__leading ui-icon">{{icon .Icon}}</span>{{else if .RawIcon}}<span class="ui-collection__leading ui-icon">{{.RawIcon}}</span>{{end}}
   {{if or .ShouldShowTitle .Prefix .Description .Meta}}
   <span class="ui-collection__content">
     {{if .Prefix}}<span class="ui-collection__prefix">{{.Prefix}}</span>{{end}}

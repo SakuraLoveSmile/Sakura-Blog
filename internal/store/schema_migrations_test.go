@@ -26,12 +26,12 @@ func TestSchemaMigrationLedgerRecordsLegacyBaseline(t *testing.T) {
 	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatalf("count migration ledger: %v", err)
 	}
-	if count != 1 {
-		t.Fatalf("migration ledger rows = %d, want 1 baseline row", count)
+	if count != len(schemaMigrations) {
+		t.Fatalf("migration ledger rows = %d, want %d", count, len(schemaMigrations))
 	}
 	var version int
 	var name string
-	if err := s.DB().QueryRow(`SELECT version, name FROM schema_migrations`).Scan(&version, &name); err != nil {
+	if err := s.DB().QueryRow(`SELECT version, name FROM schema_migrations WHERE version = 1`).Scan(&version, &name); err != nil {
 		t.Fatalf("read baseline migration: %v", err)
 	}
 	if version != 1 || name != "legacy-baseline" {
@@ -42,7 +42,7 @@ func TestSchemaMigrationLedgerRecordsLegacyBaseline(t *testing.T) {
 func TestSchemaMigrationRunsOnlyOnce(t *testing.T) {
 	s := newMigrationStore(t)
 	runs := 0
-	migrations := []Migration{{Version: 2, Name: "create-test-table", Up: func(tx *sql.Tx) error {
+	migrations := []Migration{{Version: 100, Name: "create-test-table", Up: func(tx *sql.Tx) error {
 		runs++
 		_, err := tx.Exec(`CREATE TABLE migration_test (value TEXT NOT NULL)`)
 		return err
@@ -58,7 +58,7 @@ func TestSchemaMigrationRunsOnlyOnce(t *testing.T) {
 		t.Fatalf("migration runs = %d, want 1", runs)
 	}
 	var count int
-	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE version = 2`).Scan(&count); err != nil {
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE version = 100`).Scan(&count); err != nil {
 		t.Fatalf("count applied migration: %v", err)
 	}
 	if count != 1 {
@@ -69,7 +69,7 @@ func TestSchemaMigrationRunsOnlyOnce(t *testing.T) {
 func TestSchemaMigrationFailureDoesNotRecordSuccess(t *testing.T) {
 	s := newMigrationStore(t)
 	wantErr := errors.New("forced migration failure")
-	failing := []Migration{{Version: 2, Name: "failed-migration", Up: func(tx *sql.Tx) error {
+	failing := []Migration{{Version: 100, Name: "failed-migration", Up: func(tx *sql.Tx) error {
 		if _, err := tx.Exec(`CREATE TABLE rollback_test (value TEXT NOT NULL)`); err != nil {
 			return err
 		}
@@ -80,7 +80,7 @@ func TestSchemaMigrationFailureDoesNotRecordSuccess(t *testing.T) {
 	}
 
 	var count int
-	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE version = 2`).Scan(&count); err != nil {
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE version = 100`).Scan(&count); err != nil {
 		t.Fatalf("count failed migration: %v", err)
 	}
 	if count != 0 {
@@ -94,7 +94,7 @@ func TestSchemaMigrationFailureDoesNotRecordSuccess(t *testing.T) {
 		t.Fatal("failed migration DDL should be rolled back")
 	}
 
-	if err := s.applyMigrations([]Migration{{Version: 2, Name: "failed-migration", Up: func(tx *sql.Tx) error {
+	if err := s.applyMigrations([]Migration{{Version: 100, Name: "failed-migration", Up: func(tx *sql.Tx) error {
 		_, err := tx.Exec(`CREATE TABLE rollback_test (value TEXT NOT NULL)`)
 		return err
 	}}}); err != nil {
@@ -105,8 +105,8 @@ func TestSchemaMigrationFailureDoesNotRecordSuccess(t *testing.T) {
 func TestSchemaMigrationOrderMustBeStrictlyIncreasing(t *testing.T) {
 	s := newMigrationStore(t)
 	for _, migrations := range [][]Migration{
-		{{Version: 2, Name: "second"}, {Version: 1, Name: "first"}},
-		{{Version: 2, Name: "duplicate-a"}, {Version: 2, Name: "duplicate-b"}},
+		{{Version: 100, Name: "second"}, {Version: 1, Name: "first"}},
+		{{Version: 100, Name: "duplicate-a"}, {Version: 100, Name: "duplicate-b"}},
 	} {
 		if err := s.applyMigrations(migrations); err == nil {
 			t.Fatalf("unordered or duplicate migrations should fail: %#v", migrations)

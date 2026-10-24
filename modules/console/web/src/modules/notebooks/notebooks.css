@@ -1,0 +1,125 @@
+.notebooks-body {
+  padding: 20px 16px;
+  min-width: 0;
+}
+.notebooks-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.notebooks-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.notebooks-field {
+  display: block;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+.notebooks-field > span {
+  display: block;
+  color: var(--color-foreground);
+  font-size: 13px;
+  font-weight: 550;
+  margin-bottom: 8px;
+}
+.notebooks-control {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-secondary);
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: 13px;
+}
+.notebooks-control:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+.notebooks-control:disabled {
+  opacity: 0.6;
+}
+.notebooks-json {
+  font-family: var(--font-mono);
+  line-height: 1.65;
+  resize: vertical;
+  min-height: 180px;
+}
+.notebooks-help {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 8px 0 16px;
+  overflow-wrap: anywhere;
+}
+.notebooks-error {
+  color: var(--color-state-error);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.notebooks-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.notebooks-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.notebooks-row:last-child {
+  border-bottom: 0;
+}
+.notebooks-row-main {
+  flex: 1;
+  min-width: 140px;
+  overflow-wrap: anywhere;
+}
+.notebooks-link {
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 550;
+  text-decoration: none;
+}
+.notebooks-link:hover {
+  color: var(--color-primary);
+}
+.notebooks-pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+@media (min-width: 768px) {
+  .notebooks-body {
+    padding: 24px 28px;
+  }
+  .notebooks-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .notebooks-control {
+    min-height: 44px;
+  }
+}

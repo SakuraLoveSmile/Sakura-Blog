@@ -3,6 +3,10 @@
    - 图片灯箱已由 fancybox 接管（base.html 懒加载绑定），此文件不再处理图片点击
    - scroll 只绑一次（window.__readingBound） */
 (function () {
+  function mount(rootRegion, context) {
+  var scope = window.blogRuntime.createScope(rootRegion, context);
+  var document = scope.document;
+  var requestAnimationFrame = scope.requestAnimationFrame;
   'use strict';
 
   var progressEl = null;
@@ -46,10 +50,7 @@
   }
 
   function bindGlobalOnce() {
-    if (window.__readingBound) return;
-    window.__readingBound = true;
-
-    window.addEventListener('scroll', onScroll, { passive: true });
+    scope.listen(window, 'scroll', onScroll, { passive: true });
   }
 
   function init() {
@@ -60,5 +61,8 @@
     updateProgress();
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  init();
+  return scope.cleanup;
+  }
+  window.blogReading = { mount: mount };
 })();

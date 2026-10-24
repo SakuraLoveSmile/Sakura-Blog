@@ -5,7 +5,50 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"blog/internal/config"
 )
+
+func TestBootstrapUsesResolvedPathSnapshot(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, "config", "app.yml")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "config", "site.yml"), []byte("title: Snapshot Test\nadmin:\n  password: test-password\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	snapshot := config.DefaultApp()
+	snapshot.Root = root
+	snapshot.DBPath = filepath.Join(root, "data", "locked.db")
+	snapshot.UploadDir = filepath.Join(root, "data", "locked-uploads")
+	snapshot.AutoBackup = false
+	// 模拟持锁后配置与环境变化，不能让 Store 打开未持锁的新路径。
+	unexpected := filepath.Join(t.TempDir(), "unlocked.db")
+	if err := os.WriteFile(configPath, []byte("db_path: "+unexpected+"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BLOG_DB", unexpected)
+	t.Setenv("BLOG_ROOT", t.TempDir())
+	services, err := Bootstrap(Options{Root: t.TempDir(), ConfigPath: configPath, ResolvedApp: snapshot})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := services.Close(context.Background()); err != nil {
+			t.Error(err)
+		}
+	}()
+	if services.App.DBPath != snapshot.DBPath || services.App.Root != snapshot.Root || services.App.UploadDir != snapshot.UploadDir || services.App == snapshot {
+		t.Fatal("bootstrap did not own a copy of the locked configuration snapshot")
+	}
+	if _, err := os.Stat(snapshot.DBPath); err != nil {
+		t.Fatalf("locked database was not opened: %v", err)
+	}
+	if _, err := os.Stat(unexpected); !os.IsNotExist(err) {
+		t.Fatal("bootstrap opened the newly configured unlocked database")
+	}
+}
 
 func TestBootstrapOwnsSharedServices(t *testing.T) {
 	root := t.TempDir()

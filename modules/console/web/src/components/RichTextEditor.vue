@@ -7,11 +7,13 @@ import { StellarTag } from "@/components/editor/stellar-tag";
 const props = defineProps<{
   modelValue: string;
   storageKey?: string;
+  followStorageKey?: boolean;
 }>();
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: string): void;
   (event: "save"): void;
+  (event: "pending-change", pending: boolean): void;
 }>();
 
 const inner = ref<any>(null);
@@ -35,11 +37,15 @@ function openImagePicker() {
 function clearDraft() {
   inner.value?.clearDraft();
 }
+async function flushPendingChanges() {
+  await inner.value?.flushPendingChanges();
+}
 function openSearch() {
   inner.value?.openSearch();
 }
 
 defineExpose({
+  flushPendingChanges,
   applyFormat,
   insertMarkdown,
   scrollToHeading,
@@ -56,9 +62,11 @@ defineExpose({
     ref="inner"
     :model-value="props.modelValue"
     :storage-key="props.storageKey"
+    :follow-storage-key="props.followStorageKey"
     :extensions="[StellarTag]"
     :attachment-picker="AttachmentPickerModal"
     @update:model-value="emit('update:modelValue', $event)"
     @save="emit('save')"
+    @pending-change="emit('pending-change', $event)"
   />
 </template>

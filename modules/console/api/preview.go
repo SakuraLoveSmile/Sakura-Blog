@@ -1,9 +1,15 @@
 package api
 
 import (
+	"blog/internal/content"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
+	"regexp"
 
+	"blog/internal/post"
+	"blog/internal/stellarv2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,29 +18,100 @@ import (
 // preview_profile=component-library（Spec 63）时进入本地 Fixture 模式：
 // GitHub/友链用确定性数据，rating/vote/friends/sites/md 端点改写为 /api/v1/preview/*，
 // 不依赖公网、不写入真实数据；缺省保持原有渲染行为不变。
-func (h *Handler) previewMarkdown(c *gin.Context) {
-	var req struct {
-		Markdown       string `json:"markdown"`
-		PreviewProfile string `json:"preview_profile"`
+type StellarMarkdownPreviewRequest struct {
+	StellarContentMetadata
+	Markdown       string `json:"markdown"`
+	PreviewProfile string `json:"preview_profile"`
+	Title          string `json:"title"`
+	Layout         string `json:"layout"`
+	Language       string `json:"language"`
+	Path           string `json:"path"`
+	PreviewToken   string `json:"preview_token"`
+	Mode           string `json:"mode"`
+}
+type StellarMarkdownPreviewResponse struct {
+	HTML         string `json:"html"`
+	Document     string `json:"document"`
+	PreviewToken string `json:"preview_token"`
+}
+
+func previewRequestURL(c *gin.Context) (string, error) {
+	// Stellar middleware 已验证直接代理，仅消费它的协议决策，不信任原始转发头。
+	scheme := c.GetString("blog.request_scheme")
+	if scheme != "http" && scheme != "https" {
+		scheme = "http"
+		if c.Request.TLS != nil {
+			scheme = "https"
+		}
 	}
+	origin, err := url.Parse(scheme + "://" + c.Request.Host)
+	if err != nil || origin.Hostname() == "" || origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.Fragment != "" {
+		return "", fmt.Errorf("无效的请求来源")
+	}
+	origin.Path = c.Request.URL.Path
+	return origin.String(), nil
+}
+
+func (h *Handler) previewMarkdown(c *gin.Context) {
+	var req StellarMarkdownPreviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
-	var (
-		html string
-		err  error
-	)
-	if req.PreviewProfile == "component-library" {
-		html, err = h.posts.RenderComponentPreview(req.Markdown)
-	} else {
-		html, err = h.posts.Render(req.Markdown)
+	if req.Layout == "" {
+		req.Layout = "page"
 	}
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, "渲染失败: "+err.Error())
+	if req.Mode == "" {
+		req.Mode = string(content.StellarPreviewModeDocument)
+	}
+	switch req.Mode {
+	case string(content.StellarPreviewModeDocument), string(content.StellarPreviewModeContent):
+	default:
+		Fail(c, http.StatusBadRequest, "不支持的预览模式")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"html": html})
+	switch req.Layout {
+	case "page", "post", "wiki", "note":
+	default:
+		Fail(c, http.StatusBadRequest, "不支持的预览 layout")
+		return
+	}
+	if !regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}$`).MatchString(req.PreviewToken) {
+		Fail(c, http.StatusBadRequest, "无效的预览 token")
+		return
+	}
+	var html string
+	var markdown *string
+	var err error
+	if req.PreviewProfile == "component-library" {
+		var parsed stellarv2.Result
+		parsed, err = validateEditorMetadata(req.StellarContentMetadata, req.Layout, false)
+		if err == nil {
+			html, err = h.posts.RenderComponentPreviewStellarV2(req.Markdown, post.StellarRenderContext{Page: parsed.Value, Language: req.Language})
+		}
+	} else {
+		_, err = validateEditorMetadata(req.StellarContentMetadata, req.Layout, false)
+		markdown = &req.Markdown
+	}
+	if err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	if h.renderStellarContentPreview == nil {
+		Fail(c, http.StatusNotImplemented, "Stellar 2 文档预览尚未装配")
+		return
+	}
+	requestURL, err := previewRequestURL(c)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	output, err := h.renderStellarContentPreview(content.StellarPreviewInput{Mode: content.StellarPreviewMode(req.Mode), StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions, HTML: html, Markdown: markdown, Title: req.Title, Layout: req.Layout, Language: req.Language, Path: req.Path, RequestURL: requestURL, PreviewToken: req.PreviewToken})
+	if err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, StellarMarkdownPreviewResponse{HTML: output.HTML, Document: output.Document, PreviewToken: req.PreviewToken})
 }
 
 // previewSite POST /api/v1/preview/site：设置页「前端预览」所见即所得。

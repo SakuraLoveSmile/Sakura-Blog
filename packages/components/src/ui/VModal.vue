@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
     <Transition name="modal-fade">
       <div v-if="visible" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
         <div
-          class="absolute inset-0 backdrop-blur-sm"
+          class="absolute inset-0 bg-black/70"
           style="background: color-mix(in srgb, #000 60%, transparent)"
           @click="close"
         ></div>
@@ -167,7 +167,7 @@ onBeforeUnmount(() => {
 .modal-zoom-leave-active {
   /* Spec 62：`var(--ease-standard)-out` 把 -out 拼在变量值后是非法值（回退默认 ease），
      且缺 leave-active 导致关闭无动画；修正为规范 token 写法并补齐离开态。 */
-  transition: all var(--duration-normal) var(--ease-standard);
+  transition: opacity var(--duration-normal) var(--ease-standard), transform var(--duration-normal) var(--ease-standard);
 }
 .modal-zoom-enter-from,
 .modal-zoom-leave-to {

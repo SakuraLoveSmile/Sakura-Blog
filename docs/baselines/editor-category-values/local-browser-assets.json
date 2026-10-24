@@ -1,0 +1,37 @@
+{
+  "modulePreloads": [
+    "http://localhost:8110/console/assets/api-C-H7IBEY.js",
+    "http://localhost:8110/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+    "http://localhost:8110/console/assets/pinia-CXeiBUD1.js",
+    "http://localhost:8110/console/assets/preload-helper-l0U7FUPx.js",
+    "http://localhost:8110/console/assets/registry-BfvKyqDN.js",
+    "http://localhost:8110/console/assets/chart-init-BhrNxZ3G.js",
+    "http://localhost:8110/console/assets/format-DaBMN9QY.js",
+    "http://localhost:8110/console/assets/DefaultLayout-DAO9vmHh.js",
+    "http://localhost:8110/console/assets/useQuery-CoinDq5U.js",
+    "http://localhost:8110/console/assets/useQueryClient-sfKayL2s.js",
+    "http://localhost:8110/console/assets/PostEditor-Yic9fnhp.js",
+    "http://localhost:8110/console/assets/VSwitch-OK9SpF8m.js",
+    "http://localhost:8110/console/assets/MarkdownEditor-PJRBL1Hq.js",
+    "http://localhost:8110/console/assets/AttachmentPickerModal-B2o-HjGj.js",
+    "http://localhost:8110/console/assets/PluginParamForm-CQwKsjj4.js",
+    "http://localhost:8110/console/assets/SchemaForm-Xc79xsaS.js",
+    "http://localhost:8110/console/assets/stellar-form-json-JZMf33Rj.js",
+    "http://localhost:8110/console/assets/stellar-form-fields-_EgFlOlx.js",
+    "http://localhost:8110/console/assets/EditorToolbar-DaOdKMAi.js",
+    "http://localhost:8110/console/assets/StellarContentConfig-B7ONxtRs.js",
+    "http://localhost:8110/console/assets/RichTextEditor-BaEoZuWS.js",
+    "http://localhost:8110/console/assets/index-DwUTODq1.js"
+  ],
+  "scripts": [
+    "http://localhost:8110/console/assets/index-DwUTODq1.js"
+  ],
+  "styles": [
+    "http://localhost:8110/console/assets/index-BihGOG2u.css",
+    "http://localhost:8110/console/assets/registry-BYJksN3f.css",
+    "http://localhost:8110/console/assets/DefaultLayout-C-a137it.css",
+    "http://localhost:8110/console/assets/EditorToolbar-B-TFNBcG.css",
+    "http://localhost:8110/console/assets/PostEditor-BGkt1DDz.css",
+    "http://localhost:8110/console/assets/RichTextEditor-BHvzqLau.css"
+  ]
+}

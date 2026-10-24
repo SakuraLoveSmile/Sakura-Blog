@@ -72,7 +72,10 @@ type Handler struct {
 	icons *tmpl.IconRegistry
 
 	// renderSitePreview 设置页「前端预览」渲染回调（由组合入口注入，nil 时端点 501）。
-	renderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
+	renderStellarMarkdown       func(content.StellarBodyInput) (string, error)
+	renderStellarContentPreview func(content.StellarPreviewInput) (content.StellarPreviewOutput, error)
+	stellarWidgetCatalog        func() (map[string]any, error)
+	renderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// events is the shared content-change publisher. Console does not know
 	// which module owns the derived caches that consume these events.
 	events content.Events
@@ -96,7 +99,10 @@ type Config struct {
 	Notify   *notify.Service    // 站内通知服务（Wave 3b），可空
 	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
-	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
+	RenderStellarMarkdown       func(content.StellarBodyInput) (string, error)
+	RenderStellarContentPreview func(content.StellarPreviewInput) (content.StellarPreviewOutput, error)
+	StellarWidgetCatalog        func() (map[string]any, error)
+	RenderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// Events publishes generic changes such as wiki/settings writes.
 	Events         content.Events
 	UploadDir      string
@@ -135,29 +141,32 @@ func New(cfg Config) *Handler {
 		storageBackend = cfg.StorageManager
 	}
 	return &Handler{
-		store:             cfg.Store,
-		posts:             cfg.Posts,
-		site:              cfg.Site,
-		comments:          cfg.Comments,
-		backups:           cfg.Backups,
-		modules:           cfg.Modules,
-		notify:            cfg.Notify,
-		icons:             cfg.Icons,
-		renderSitePreview: cfg.RenderSitePreview,
-		events:            cfg.Events,
-		storage:           attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
-		storageManager:    cfg.StorageManager,
-		plugins:           cfg.Plugins,
-		rag:               cfg.RAG,
-		maxUpload:         int64(maxMB) << 20,
-		linkWatch:         cfg.LinkWatch,
-		stellarVersion:    cfg.StellarVersion,
-		stellarOwner:      cfg.StellarOwner,
-		stellarRepo:       cfg.StellarRepo,
-		appVersion:        cfg.AppVersion,
-		root:              cfg.Root,
-		updateRepo:        repo,
-		generate2FA:       generate2FAToken,
+		store:                       cfg.Store,
+		posts:                       cfg.Posts,
+		site:                        cfg.Site,
+		comments:                    cfg.Comments,
+		backups:                     cfg.Backups,
+		modules:                     cfg.Modules,
+		notify:                      cfg.Notify,
+		icons:                       cfg.Icons,
+		renderSitePreview:           cfg.RenderSitePreview,
+		renderStellarContentPreview: cfg.RenderStellarContentPreview,
+		renderStellarMarkdown:       cfg.RenderStellarMarkdown,
+		stellarWidgetCatalog:        cfg.StellarWidgetCatalog,
+		events:                      cfg.Events,
+		storage:                     attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
+		storageManager:              cfg.StorageManager,
+		plugins:                     cfg.Plugins,
+		rag:                         cfg.RAG,
+		maxUpload:                   int64(maxMB) << 20,
+		linkWatch:                   cfg.LinkWatch,
+		stellarVersion:              cfg.StellarVersion,
+		stellarOwner:                cfg.StellarOwner,
+		stellarRepo:                 cfg.StellarRepo,
+		appVersion:                  cfg.AppVersion,
+		root:                        cfg.Root,
+		updateRepo:                  repo,
+		generate2FA:                 generate2FAToken,
 		loginFails: make(map[string]struct {
 			n int
 			t time.Time
@@ -193,8 +202,10 @@ func mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		name string
 		fn   func() error
 	}{
-		{"users", st.EnsureUsersTable},                      // 多用户/读者注册
-		{"post_authors", st.EnsurePostAuthorsTable},         // 文章 ownership（users.id）
+		{"users", st.EnsureUsersTable},              // 多用户/读者注册
+		{"post_authors", st.EnsurePostAuthorsTable}, // 文章 ownership（users.id）
+		{"notebooks", st.EnsureNotebooksTable},
+		{"notes", st.EnsureNotesTable},
 		{"ratings", st.EnsureRatingsTable},                  // 评分数据服务（Spec 20）
 		{"votes", st.EnsureVotesTable},                      // 投票数据服务（Spec 30）
 		{"revisions", st.EnsureRevisionsTable},              // 文章版本历史（Spec 22）
@@ -313,6 +324,9 @@ func (h *Handler) register(r *gin.Engine) {
 		author.GET("/stats/referrers", h.statsReferrers)
 		author.GET("/stats/hourly", h.statsHourly)
 
+		// 公开作者目录供内容编辑器使用，不授予设置管理权限。
+		author.GET("/authors/catalog", h.getStellarAuthorCatalog)
+
 		// 文章
 		author.GET("/posts", h.listPosts)
 		author.GET("/posts/:slug", h.getPost)
@@ -345,8 +359,12 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
 		author.POST("/preview/markdown", h.previewMarkdown)
+		author.POST("/preview/widget", h.previewStellarWidget)
 		// Markdown 导入（只解析内存，不落库；文章/页面编辑器共用）
 		author.POST("/editor/import/markdown", h.importMarkdown)
+		author.POST("/editor/import/stellar", h.importStellarMarkdown)
+		author.POST("/editor/export/stellar", h.exportStellarMarkdown)
+		author.POST("/editor/stellar/validate", h.validateStellarContent)
 		// 站点配置预览（设置页所见即所得：草稿分段 → 前台整页 HTML）
 		author.POST("/preview/site", h.previewSite)
 		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
@@ -395,6 +413,18 @@ func (h *Handler) register(r *gin.Engine) {
 		author.POST("/topics", h.createTopic)
 		author.PUT("/topics/:id", h.updateTopic)
 		author.DELETE("/topics/:id", h.deleteTopic)
+		author.GET("/notebooks", h.listNotebooks)
+		author.POST("/notebooks", h.createNotebook)
+		author.GET("/notebooks/:notebook", h.getNotebook)
+		author.PUT("/notebooks/:notebook", h.updateNotebook)
+		author.DELETE("/notebooks/:notebook", h.deleteNotebook)
+		author.GET("/notebooks/:notebook/notes", h.listNotebookNotes)
+		author.POST("/notebooks/:notebook/notes", h.createNotebookNote)
+		author.GET("/notebooks/:notebook/notes/:id", h.getNotebookNote)
+		author.PUT("/notebooks/:notebook/notes/:id", h.updateNotebookNote)
+		author.DELETE("/notebooks/:notebook/notes/:id", h.deleteNotebookNote)
+		author.POST("/notebooks/:notebook/notes/:id/publish", h.publishNotebookNote)
+		author.PUT("/notebooks/:notebook/notes/:id/draft", h.draftNotebookNote)
 
 		// 瞬间模块 API：模块停用时由 manifest 对齐的 Gate 返回 403。
 		momentRoutes := author
@@ -435,7 +465,9 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 标签插件 catalog：以 Go parser 注册表为真值，供 Console SchemaForm/插件库消费。
 		author.GET("/plugins/catalog", h.shortcodeCatalog)
+		author.GET("/plugins/widgets/catalog", h.getStellarWidgetCatalog)
 		author.POST("/plugins/shortcode/parse", h.shortcodeEdit)
+		author.POST("/plugins/shortcode/serialize", h.shortcodeSerialize)
 
 		// 模块 manifest 对 author 角色可读；启停写操作仍在 sys 组。
 		author.GET("/modules", h.listModules)
@@ -444,11 +476,25 @@ func (h *Handler) register(r *gin.Engine) {
 	// User Center: readers may inspect their account and upgrade; article and
 	// attachment surfaces require author. The write handlers reuse the Batch 4
 	// ownership checks and server-side author binding.
-	uc := v1.Group("/uc", h.apiAuth())
+	uc := v1.Group("/uc", h.ucAuth())
 	{
 		uc.GET("/me", h.ucMe)
+		uc.GET("/profile", h.handleGetProfile)
+		uc.PUT("/profile", h.handleUpdateProfile)
+		uc.PUT("/auth/password", h.changePassword)
+		uc.POST("/profile/2fa/setup", h.handle2FASetup)
+		uc.POST("/profile/2fa/confirm", h.handle2FAConfirm)
+		uc.POST("/profile/2fa/disable", h.handle2FADisable)
+		uc.GET("/profile/2fa/recovery-codes", h.handle2FARecoveryCodes)
+		uc.GET("/profile/api-token", h.apiTokenStatus)
+		uc.POST("/profile/api-token", h.generateAPIToken)
+		uc.DELETE("/profile/api-token", h.revokeAPIToken)
+		uc.GET("/notifications", h.listNotifications)
+		uc.GET("/notifications/unread-count", h.unreadNotifications)
+		uc.PUT("/notifications/:id/read", h.markNotificationRead)
+		uc.PUT("/notifications/read-all", h.markAllNotificationsRead)
 	}
-	ucAuthor := v1.Group("/uc", h.apiAuth(), h.requirePermission(store.PermissionContentWrite))
+	ucAuthor := uc.Group("", h.requirePermission(store.PermissionContentWrite))
 	{
 		ucAuthor.GET("/posts", h.listUCPosts)
 		ucAuthor.GET("/posts/:slug", h.getUCPost)
@@ -476,6 +522,7 @@ func (h *Handler) register(r *gin.Engine) {
 		// 用户管理（多用户体系）：列表/创建/更新/重置密码/删除
 		sys.GET("/users", h.listUsers)
 		sys.POST("/users", h.createUser)
+		sys.POST("/users/invitations", h.createRegistrationInvite)
 		sys.PUT("/users/:id", h.updateUser)
 		sys.PUT("/users/:id/password", h.resetUserPassword)
 		sys.DELETE("/users/:id", h.deleteUser)
@@ -491,6 +538,9 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 站点设置（分段）
 		sys.GET("/settings", h.getSettings)
+		sys.GET("/settings/stellar", h.getStellarSettings)
+		sys.PUT("/settings/stellar", h.updateStellarSettings)
+		sys.POST("/settings/stellar/validate", h.validateStellarSettings)
 		sys.PUT("/settings/:section", h.updateSection)
 		sys.POST("/settings/notify/test", h.testNotify)
 		// Feedback 服务连通性自测：探测草稿 api_base 的 /healthz（仅 admin，不回传响应体）

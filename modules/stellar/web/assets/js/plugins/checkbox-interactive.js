@@ -6,6 +6,9 @@
  * 无匹配元素时零副作用；状态变更写 localStorage（key: cb:<pathname>:<序号>）。
  */
 (function () {
+  function mount(rootRegion, context) {
+  var scope = window.blogRuntime.createScope(rootRegion, context);
+  var document = scope.document;
   'use strict';
 
   var STORE_PREFIX = 'cb:';
@@ -29,7 +32,7 @@
     }
   }
 
-  document.addEventListener('click', function (event) {
+  scope.listen(rootRegion, 'click', function (event) {
     var input = event.target;
     if (!input || input.tagName !== 'INPUT') return;
     var wrap = input.closest('.tag-plugin.checkbox, .tag-plugin.radio');
@@ -39,9 +42,8 @@
     try { localStorage.setItem(key, input.checked ? '1' : '0'); } catch (e) {}
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', restore);
-  } else {
-    restore();
+  restore();
+  return scope.cleanup;
   }
+  window.blogCheckbox = { mount: mount };
 })();

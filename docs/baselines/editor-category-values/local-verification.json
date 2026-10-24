@@ -1,0 +1,182 @@
+{
+  "isolated_root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-editor-category-values/.tmp/category-browser",
+  "port": 8110,
+  "original_import": "Software_03_FilterBox.md unmodified legacy import with consent",
+  "posts": [
+    {
+      "slug": "Perfdog",
+      "original_sha256": "56f0923cdaf3e9558a93a22d6aab6bb65d7bd2bf1fa9884ec2f4320df065df4a",
+      "body_sha256": "730b4021bcae30911a4f61c5010bf23c0aa210554a945036a4269337a0077376",
+      "body_bytes": 15213,
+      "body_exact": true,
+      "status": "published",
+      "config_categories": "应用使用指南",
+      "saved_and_reloaded": true,
+      "published_via_browser": true
+    },
+    {
+      "slug": "Software_03_FilterBox",
+      "original_sha256": "b02d860b94b6daf80dc1f5d9dc6435e9446b2550535109fa2c7a3cb0fbc82e08",
+      "body_sha256": "d77575bcaba172757a671f603aeff1f7b2c66acf5455b10694ac0a8bcc736087",
+      "body_bytes": 5835,
+      "body_exact": true,
+      "status": "published",
+      "config_categories": [
+        "应用使用指南",
+        "补充/兼容"
+      ],
+      "saved_and_reloaded": true,
+      "published_via_browser": true
+    }
+  ],
+  "fixture_posts_unchanged": true,
+  "users_settings_topics_unchanged": true,
+  "integrity_check": "ok",
+  "current_dom_assets": [
+    {
+      "path": "/console/assets/api-C-H7IBEY.js",
+      "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+      "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/pinia-CXeiBUD1.js",
+      "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/registry-BfvKyqDN.js",
+      "sha256": "fe1b0ce08dbb607e68b6b6cfdc8ee30a66399fc6f5111dbc8613d5486b6e085f",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/chart-init-BhrNxZ3G.js",
+      "sha256": "7611c10adc735595c79f05b8dfca742eb8e2c87d2b2d4a404d4cf59b3318958a",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/format-DaBMN9QY.js",
+      "sha256": "56bddbae35b89cadd93b9f303ef5fdcf9a89ba39878fdf8084e2aef1a4ebb5c5",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/DefaultLayout-DAO9vmHh.js",
+      "sha256": "17307b8bafa3950d5473d2d21a163d1e9639074c10a7f5587bec53f72a8b9831",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/useQuery-CoinDq5U.js",
+      "sha256": "35dde0691edff1716ba191b649d8ef413bcc8963118241318dd1e0625ecdcb31",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/useQueryClient-sfKayL2s.js",
+      "sha256": "e30792da00ea55e99c420654ea86f1f72b9d1c4970a7ff6dbaa9ec6f14404e07",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/PostEditor-Yic9fnhp.js",
+      "sha256": "a0e36bd9dbcef4f70f068145c064b15a6397b5d49b443a277f6e7b9dd4470e20",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/VSwitch-OK9SpF8m.js",
+      "sha256": "30d9883c7839e4a334f2142e431615e781758f4325e42fd0200155425612d5d5",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/MarkdownEditor-PJRBL1Hq.js",
+      "sha256": "f53b83da2d3bd4984cf840a6fa91dd30c43dcfa32cc859dd5e112accb9cde3f0",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/AttachmentPickerModal-B2o-HjGj.js",
+      "sha256": "53a336df4acaba835456b733485cc17ec6ab0f043e8e627264d4da01869db1a5",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/PluginParamForm-CQwKsjj4.js",
+      "sha256": "2959bac3cf09166ddc6ca7b3a7e20f38dbbcaf746228f478abeccdfcc18ecab1",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/SchemaForm-Xc79xsaS.js",
+      "sha256": "102cbad66c579bc19b2f90c6076953a941270ffdefde8956f34f3babba1f70a3",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/stellar-form-json-JZMf33Rj.js",
+      "sha256": "9a8129909d3d0341bc8748a81a9357a4f72f20684a1972053c4cf544213f8b5f",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/stellar-form-fields-_EgFlOlx.js",
+      "sha256": "743fd9141581dde20bd295c01d0481ce9c6f79079d97c80e83422fb6a30cbd46",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/EditorToolbar-DaOdKMAi.js",
+      "sha256": "232b4ec2317706920ab8c19237228dde81b25376f8f1f0af3d55507a33566d7b",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/StellarContentConfig-B7ONxtRs.js",
+      "sha256": "90f50a9bd668fcffe8fb86ef782ea49a5c6bf7f5c4094e969de8241c14636870",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/RichTextEditor-BaEoZuWS.js",
+      "sha256": "c93edab1ee5f4338f3c5cbac1a885c164f0ee2a35e3c7c47578727de40685e6e",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/index-DwUTODq1.js",
+      "sha256": "24bb17d9a92177a8dbf3c8ec433dc9c92d49625771e96749bebae8a065454db7",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/index-DwUTODq1.js",
+      "sha256": "24bb17d9a92177a8dbf3c8ec433dc9c92d49625771e96749bebae8a065454db7",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/index-BihGOG2u.css",
+      "sha256": "47087bbcbf9be955a576068e3f5d35829b70191ea846b573ea766dc479e34def",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/registry-BYJksN3f.css",
+      "sha256": "d1c0d9cf80c93cbe8e91bf53026c330a8b2fa67496ba7408a3ad7b66b203166c",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/DefaultLayout-C-a137it.css",
+      "sha256": "c5b5430103f236ca247719dc0c7d5ea5920d39efbacce84f8b8ff3b5fdde87b4",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/EditorToolbar-B-TFNBcG.css",
+      "sha256": "f2961b84c490e2778fa21009d2e8284b6b4fb3d91d19530ae17b03d952d147d8",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/PostEditor-BGkt1DDz.css",
+      "sha256": "a3a402a5cb98213b72c83e2152338886ae059704c6e1261d3b3a79052b32843f",
+      "served_matches": true
+    },
+    {
+      "path": "/console/assets/RichTextEditor-BHvzqLau.css",
+      "sha256": "d37f758e907acac56c8bdb4d9122b3b48ba4583fb5566279d6b2dfb3c169b144",
+      "served_matches": true
+    }
+  ]
+}

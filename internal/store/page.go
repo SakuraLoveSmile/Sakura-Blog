@@ -85,6 +85,9 @@ type Page struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       string // 软删除时间 RFC3339，空串=未删除
+	StellarVersion  int    `json:"stellar_version"`
+	StellarConfig   string `json:"stellar_config"`
+	BlogExtensions  string `json:"blog_extensions"`
 }
 
 // TableName Entity 接口：pages 表。
@@ -94,14 +97,14 @@ func (p *Page) TableName() string { return "pages" }
 func (p *Page) Columns() []string {
 	return []string{"id", "slug", "title", "content_md", "content_html", "status",
 		"banner", "banner_info", "breadcrumb", "author", "published_at",
-		"is_system", "views", "leftbar_widgets", "rightbar_widgets", "created_at", "updated_at", "deleted_at"}
+		"is_system", "views", "leftbar_widgets", "rightbar_widgets", "created_at", "updated_at", "deleted_at", "stellar_version", "stellar_config", "blog_extensions"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (p *Page) Values() []any {
 	return []any{p.Slug, p.Title, p.ContentMD, p.ContentHTML, p.Status,
 		p.Banner, p.BannerInfo, p.Breadcrumb, p.Author, p.PublishedAt,
-		p.IsSystem, p.Views, p.LeftbarWidgets, p.RightbarWidgets, p.CreatedAt, p.UpdatedAt, p.DeletedAt}
+		p.IsSystem, p.Views, p.LeftbarWidgets, p.RightbarWidgets, p.CreatedAt, p.UpdatedAt, p.DeletedAt, p.StellarVersion, p.StellarConfig, p.BlogExtensions}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -111,7 +114,7 @@ func (p *Page) SetID(id int64) { p.ID = id }
 func (p *Page) ScanRow(row rowScanner) error {
 	return row.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status,
 		&p.Banner, &p.BannerInfo, &p.Breadcrumb, &p.Author, &p.PublishedAt,
-		&p.IsSystem, &p.Views, &p.LeftbarWidgets, &p.RightbarWidgets, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt)
+		&p.IsSystem, &p.Views, &p.LeftbarWidgets, &p.RightbarWidgets, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions)
 }
 
 // ParseLeftbar 解析 LeftbarWidgets JSON 为 WidgetConfig 列表（向后兼容）。
@@ -259,12 +262,12 @@ func (s *Store) ListPublishedPages() ([]*Page, error) {
 }
 
 // pageListCols 列表查询返回的列（不含大字段 content_md/content_html）
-const pageListCols = "id, slug, title, status, is_system, views, leftbar_widgets, rightbar_widgets, created_at, updated_at, deleted_at"
+const pageListCols = "id, slug, title, status, is_system, views, leftbar_widgets, rightbar_widgets, created_at, updated_at, deleted_at, stellar_version, stellar_config, blog_extensions"
 
 // scanPageList 按 pageListCols 顺序扫描页面列表记录
 func scanPageList(row rowScanner, p *Page) error {
 	return row.Scan(&p.ID, &p.Slug, &p.Title, &p.Status, &p.IsSystem, &p.Views,
-		&p.LeftbarWidgets, &p.RightbarWidgets, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt)
+		&p.LeftbarWidgets, &p.RightbarWidgets, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions)
 }
 
 // ListPages 列出全部未删除页面（按更新时间倒序）。
@@ -392,6 +395,12 @@ func (s *Store) getPageBySlug(slug string, publishedOnly bool) (*Page, error) {
 
 // CreatePage 新建页面，返回新记录 id。slug 冲突时返回错误。
 func (s *Store) CreatePage(p *Page) (int64, error) {
+	if p == nil {
+		return 0, fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "pages/"+p.Slug, "page", false); err != nil {
+		return 0, err
+	}
 	if p.Status == "" {
 		p.Status = StatusDraft
 	}
@@ -410,14 +419,20 @@ func (s *Store) CreatePage(p *Page) (int64, error) {
 
 // UpdatePage 按 slug 更新页面字段，刷新 updated_at。
 func (s *Store) UpdatePage(slug string, p *Page) error {
+	if p == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "pages/"+p.Slug, "page", false); err != nil {
+		return err
+	}
 	p.UpdatedAt = time.Now().UTC()
 	res, err := s.db.Exec(`UPDATE pages SET slug=?, title=?, content_md=?, content_html=?, status=?,
 		banner=?, banner_info=?, breadcrumb=?, author=?, published_at=?,
-		is_system=?, views=?, leftbar_widgets=?, rightbar_widgets=?, updated_at=?
-		WHERE slug=?`,
+		is_system=?, views=?, leftbar_widgets=?, rightbar_widgets=?, updated_at=?, stellar_version=?, stellar_config=?, blog_extensions=?
+		WHERE slug=? AND (stellar_version = 0 OR stellar_version = ?)`,
 		p.Slug, p.Title, p.ContentMD, p.ContentHTML, p.Status,
 		p.Banner, p.BannerInfo, p.Breadcrumb, p.Author, p.PublishedAt,
-		p.IsSystem, p.Views, p.LeftbarWidgets, p.RightbarWidgets, p.UpdatedAt, slug)
+		p.IsSystem, p.Views, p.LeftbarWidgets, p.RightbarWidgets, p.UpdatedAt, p.StellarVersion, p.StellarConfig, p.BlogExtensions, slug, p.StellarVersion)
 	if err != nil {
 		return fmt.Errorf("update page %s: %w", slug, err)
 	}

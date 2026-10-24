@@ -1,0 +1,12 @@
+{
+  "scope": "main-agent independent read-only check of second failed stage; not a complete rehearsal pass",
+  "non_migration_tables_verified": 41,
+  "all_expected_settings_equal": true,
+  "canonical_db_records_equal": 30,
+  "approved_body_hashes_equal": 7,
+  "query_only": true,
+  "quick_check": "ok",
+  "foreign_key_violations": 0,
+  "no_source_db_opened": true,
+  "ssr_failure": "empty site URL"
+}

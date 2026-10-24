@@ -12,6 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/config"
+	"blog/internal/content"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -22,9 +24,21 @@ func newWikiTestEnv(t *testing.T) (*gin.Engine, *store.Store) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
+	if err := st.EnsureSettingsTable(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{}); err != nil {
+		t.Fatal(err)
+	}
 	r := gin.New()
 	posts := post.NewService(filepath.Join(t.TempDir(), "posts"))
-	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: posts, Site: sitePtr(&tmpl.Site{})}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: posts, RenderStellarMarkdown: func(input content.StellarBodyInput) (string, error) {
+		loaded, err := config.LoadStellarV2(st)
+		if err != nil {
+			return "", err
+		}
+		return posts.RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: loaded.Theme, Page: input.Page, Language: content.ResolveStellarLanguage(input.Page, loaded.Blog), BlogExtensions: true})
+	}, Site: sitePtr(&tmpl.Site{})}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	return r, st
@@ -42,6 +56,16 @@ func wikiReq(r *gin.Engine, method, path, body string) *httptest.ResponseRecorde
 // mkWikiParent 直接建库插入文档，返回 ID。
 func mkWikiParent(t *testing.T, st *store.Store, projectID, slug string, parent int64) int64 {
 	t.Helper()
+	project, err := st.GetWikiProject(projectID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if project == nil {
+		project = &store.WikiProject{ID: projectID, Name: projectID, Visible: true, StellarVersion: 2, StellarConfig: "{}", BlogExtensions: "{}"}
+		if err := st.CreateWikiProject(project); err != nil {
+			t.Fatal(err)
+		}
+	}
 	d := &store.WikiDoc{
 		ProjectID:   projectID,
 		Slug:        slug,
@@ -66,30 +90,71 @@ func TestWikidocCreateParentValidation(t *testing.T) {
 
 	// parent = 合法父文档 → 201
 	w := wikiReq(r, http.MethodPost, "/api/v1/wiki/stellar/docs",
-		`{"slug":"b","title":"B","order":0,"parent":`+strconv.FormatInt(aID, 10)+`,"content_md":"","status":"draft"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"b","title":"B","order":0,"parent":`+strconv.FormatInt(aID, 10)+`,"content_md":"","status":"draft"}`)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("valid parent should create, got %d: %s", w.Code, w.Body.String())
 	}
 
 	// parent = 不存在的 ID → 400
 	w = wikiReq(r, http.MethodPost, "/api/v1/wiki/stellar/docs",
-		`{"slug":"c","title":"C","order":0,"parent":99999,"content_md":"","status":"draft"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"c","title":"C","order":0,"parent":99999,"content_md":"","status":"draft"}`)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("nonexistent parent should be 400, got %d", w.Code)
 	}
 
 	// parent = 其它项目的文档 ID → 400
 	w = wikiReq(r, http.MethodPost, "/api/v1/wiki/stellar/docs",
-		`{"slug":"d","title":"D","order":0,"parent":`+strconv.FormatInt(xID, 10)+`,"content_md":"","status":"draft"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"d","title":"D","order":0,"parent":`+strconv.FormatInt(xID, 10)+`,"content_md":"","status":"draft"}`)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("cross-project parent should be 400, got %d", w.Code)
 	}
 
 	// parent = 0（顶级）→ 201
 	w = wikiReq(r, http.MethodPost, "/api/v1/wiki/stellar/docs",
-		`{"slug":"e","title":"E","order":0,"parent":0,"content_md":"","status":"draft"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"e","title":"E","order":0,"parent":0,"content_md":"","status":"draft"}`)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("top-level create should succeed, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestWikidocWritesPublishContentEventOnlyAfterSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	st := newTestStore(t)
+	if err := st.EnsureSettingsTable(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{}); err != nil {
+		t.Fatal(err)
+	}
+	events := content.NewEvents()
+	count := 0
+	sub := events.Subscribe(func(e content.Event) {
+		if e.Kind != content.ContentChanged {
+			t.Fatalf("unexpected event %s", e.Kind)
+		}
+		count++
+	})
+	defer sub.Close()
+	r := gin.New()
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: post.NewService(""), RenderStellarMarkdown: func(input content.StellarBodyInput) (string, error) {
+		loaded, err := config.LoadStellarV2(st)
+		if err != nil {
+			return "", err
+		}
+		return post.NewService("").RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: loaded.Theme, Page: input.Page, Language: content.ResolveStellarLanguage(input.Page, loaded.Blog), BlogExtensions: true})
+	}, Site: sitePtr(&tmpl.Site{}), Events: events}}); err != nil {
+		t.Fatal(err)
+	}
+	mkWikiParent(t, st, "stellar", "parent", 0)
+	body := `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"child","title":"Child","content_md":"![image](/uploads/a.png)","status":"published"}`
+	if w := wikiReq(r, http.MethodPost, "/api/v1/wiki/stellar/docs", body); w.Code != http.StatusCreated || count != 1 {
+		t.Fatalf("create status=%d count=%d %s", w.Code, count, w.Body.String())
+	}
+	if w := wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/child", body); w.Code != http.StatusOK || count != 2 {
+		t.Fatalf("update status=%d count=%d %s", w.Code, count, w.Body.String())
+	}
+	if w := wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/child", `{"stellar_version":0}`); w.Code < 400 || count != 2 {
+		t.Fatalf("failed write published event: status=%d count=%d", w.Code, count)
 	}
 }
 
@@ -102,35 +167,35 @@ func TestWikidocUpdateParentValidation(t *testing.T) {
 
 	// 父文档改为自身 → 400
 	w := wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/a1",
-		`{"slug":"a1","title":"A1","order":0,"parent":`+strconv.FormatInt(a1ID, 10)+`,"content_md":"","status":"published"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"a1","title":"A1","order":0,"parent":`+strconv.FormatInt(a1ID, 10)+`,"content_md":"","status":"published"}`)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("self parent should be 400, got %d: %s", w.Code, w.Body.String())
 	}
 
 	// 父文档为后代（a1x）→ 400（循环引用）
 	w = wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/a1",
-		`{"slug":"a1","title":"A1","order":0,"parent":`+strconv.FormatInt(a1xID, 10)+`,"content_md":"","status":"published"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"a1","title":"A1","order":0,"parent":`+strconv.FormatInt(a1xID, 10)+`,"content_md":"","status":"published"}`)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("descendant parent should be 400, got %d: %s", w.Code, w.Body.String())
 	}
 
 	// 父文档不存在 → 400
 	w = wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/a1",
-		`{"slug":"a1","title":"A1","order":0,"parent":99999,"content_md":"","status":"published"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"a1","title":"A1","order":0,"parent":99999,"content_md":"","status":"published"}`)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("nonexistent parent should be 400, got %d", w.Code)
 	}
 
 	// 合法：父文档改为 a（保持原层级）→ 200
 	w = wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/a1",
-		`{"slug":"a1","title":"A1","order":0,"parent":`+strconv.FormatInt(aID, 10)+`,"content_md":"","status":"published"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"a1","title":"A1","order":0,"parent":`+strconv.FormatInt(aID, 10)+`,"content_md":"","status":"published"}`)
 	if w.Code != http.StatusOK {
 		t.Fatalf("valid parent should update, got %d: %s", w.Code, w.Body.String())
 	}
 
 	// 合法：父文档置 0 升为顶级 → 200
 	w = wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/a1",
-		`{"slug":"a1","title":"A1","order":0,"parent":0,"content_md":"","status":"published"}`)
+		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"a1","title":"A1","order":0,"parent":0,"content_md":"","status":"published"}`)
 	if w.Code != http.StatusOK {
 		t.Fatalf("promote to top should update, got %d: %s", w.Code, w.Body.String())
 	}

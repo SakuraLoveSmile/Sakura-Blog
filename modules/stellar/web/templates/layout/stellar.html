@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="{{.Stellar.Language}}"{{if ne .Stellar.ColorScheme "auto"}} data-theme="{{.Stellar.ColorScheme}}"{{end}}>
+{{template "partial/stellar/head" .}}
+<body data-page-type="{{.Stellar.PageType}}" data-page-layout="{{.Stellar.Layout}}"{{if .Stellar.ArticleStyle}} data-article-style="{{.Stellar.ArticleStyle}}"{{end}}{{if .Stellar.Indent}} data-text-indent{{end}}>
+{{.Stellar.BodyBegin}}
+{{if sf_truth (sf_get .Stellar.Theme "appearance.backgrounds.page.image")}}<div class="site-background"><div class="site-background__blur"></div></div>{{end}}
+<div data-stellar-runtime-region id="site-cover" class="site-cover">{{sf_hero .}}</div>
+<div class="site-shell" id="start" data-regions="{{.Stellar.RegionNames}}">
+  {{with sf_get .Stellar "RegionBodies.topbar"}}<header data-stellar-runtime-region id="topbar-region" class="site-region site-region--topbar ui-surface" data-region="topbar"><div class="site-region__viewport">{{.}}</div></header>{{end}}
+  <div class="site-workspace">
+    {{with sf_get .Stellar "RegionBodies.leftbar"}}<aside data-stellar-runtime-region id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="Leftbar"><div class="site-region__surface ui-surface"><div class="site-region__decoration" aria-hidden="true"></div><div class="site-region__viewport">{{.}}</div></div></aside>{{end}}
+    <main data-stellar-runtime-region class="site-main" id="main">
+      {{if and .Stellar.MobileBrand (not (sf_get .Stellar "RegionBodies.topbar"))}}{{sf_brand . "main" .Stellar.MobileBrandModel}}{{end}}
+      {{template "partial/stellar/content" .}}
+      {{sf_footer .}}
+    </main>
+    {{with sf_get .Stellar "RegionBodies.rightbar"}}<aside data-stellar-runtime-region id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="Rightbar"><div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport">{{.}}</div></div></aside>{{end}}
+  </div>
+  <button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="Close navigation" tabindex="-1"></button>
+  <div data-stellar-runtime-region class="site-dock" role="group" aria-label="Layout panels">
+    <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="Open rightbar" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">{{sf_icon "default:rightbar"}}</button>
+    <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="Open leftbar" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">{{sf_icon "default:leftbar"}}</button>
+  </div>
+  {{if .Stellar.SearchEnabled}}{{template "partial/stellar/search_dialog" .}}{{end}}
+</div>
+<div class="site-scripts">{{template "partial/stellar/scripts" .}}</div>
+</body></html>

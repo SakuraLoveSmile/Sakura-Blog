@@ -522,8 +522,8 @@
 - **服务启动时间**：`2026/09/14 23:25:42`
 - **服务启动日志**：
   ```
-  console SPA loaded from /Users/sakurasep/Documents/Code/Project/Personal Project/Blog-r4-final/.tmp/e2e-server.JQD2wY/modules/console/web/dist (dev)
-  user center SPA loaded from /Users/sakurasep/Documents/Code/Project/Personal Project/Blog-r4-final/.tmp/e2e-server.JQD2wY/modules/console/web/dist-uc (dev)
+  console SPA loaded from <isolated-e2e-root>/modules/console/web/dist (dev)
+  user center SPA loaded from <isolated-e2e-root>/modules/console/web/dist-uc (dev)
   ```
 - **文档实际引用（服务返回的入口 HTML `dist/index.html`）**：
   - 入口脚本：`/console/assets/index-xoZIK908.js`（`make build` 产物为 `/console/assets/index-Mr6rN0V7.js`）

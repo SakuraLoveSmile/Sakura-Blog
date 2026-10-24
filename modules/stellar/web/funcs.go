@@ -32,7 +32,7 @@ var wikiTagColors = map[string]string{
 // FuncMap 对齐 Stellar EJS 用到的 helper。
 // Go html/template 对返回值做 HTML 转义，SVG/icon/partial 需返回 template.HTML 跳过转义。
 func FuncMap(reg *settings.IconRegistry) template.FuncMap {
-	return template.FuncMap{
+	functions := template.FuncMap{
 		// asset_ver: 资源内容哈希版本后缀（启动侧 SetAssetVersioner 注入；未注入返回空串）。
 		"asset_ver": AssetVersion,
 		// markdown: 渲染 Markdown 片段（页脚自定义文案等），渲染器由 SetMarkdownRender 注入；
@@ -248,6 +248,10 @@ func FuncMap(reg *settings.IconRegistry) template.FuncMap {
 			return err == nil && ok
 		},
 	}
+	for name, fn := range StellarTemplateFunctions(reg) {
+		functions[name] = fn
+	}
+	return functions
 }
 
 // markdownRender 由上层注入的 Markdown 渲染器（main.go 用 post.Service 装配）。

@@ -1,0 +1,190 @@
+{
+  "kind": "browser-acceptance-case-sheet",
+  "state": "browser_ui_not_run",
+  "reason": "The CUA browser inventory was empty and creating an isolated iab tab returned Browser is not available. No other UI automation was used.",
+  "target": {
+    "url": "http://127.0.0.1:8114",
+    "isolatedRoot": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-plugins-root",
+    "binaryCommit": "7ca5a989",
+    "adminUsername": "admin",
+    "fixturePassword": "stellar-fixture-admin"
+  },
+  "readOnlyChecks": {
+    "http": {
+      "/": 200,
+      "/post/t5-plugins-c": 200,
+      "/post/t5-plugins-d": 200,
+      "/post/context-validation": 404
+    },
+    "postFixture": {
+      "slug": "t5-plugins-c",
+      "stellarConfig": {
+        "article": { "style": "tech" },
+        "collection": { "id": "port-journal", "profile": "topic" },
+        "render": { "diagrams": "mermaid", "math": "mathjax" },
+        "title": "T5 插件 C"
+      },
+      "markdownMarkers": [
+        "T5_MATHJAX_INLINE_MARKER",
+        "T5_MATHJAX_DISPLAY_MARKER",
+        "T5_MERMAID_START",
+        "T5_MERMAID_FINISH"
+      ]
+    },
+    "homepageMarkup": [
+      "#pin-slider",
+      "[data-text-adaptive]",
+      ".slide-up"
+    ],
+    "currentPluginsPageManifest": [
+      "pin-slider",
+      "lightbox",
+      "reveal",
+      "mathjax",
+      "adaptive-text",
+      "swiper"
+    ],
+    "note": "These are direct HTTP/source observations only; no UI save/reopen or browser runtime result is claimed."
+  },
+  "strictConfigPaths": {
+    "pageMath": "stellar_config.render.math",
+    "themeCardHover": "theme.features.card_hover.spotlight|tilt",
+    "themeReveal": "theme.features.reveal.enabled|duration|interval|distance|blur",
+    "themeLightbox": "theme.features.lightbox.enabled|js|css|selector",
+    "themeSwiperAssets": "theme.features.swiper.js|css",
+    "noEnabledField": [
+      "theme.features.pin_slider",
+      "theme.features.adaptive_text.enabled",
+      "theme.features.swiper.enabled"
+    ]
+  },
+  "cases": [
+    {
+      "id": "katex-page-on",
+      "consoleAction": "Open Posts > t5-plugins-c, expand Stellar 2 原文配置, preserve the complete existing stellar_config JSON, and change only render.math to katex. Save the post, reopen it, and confirm the full configuration still contains render.math=katex before opening /post/t5-plugins-c.",
+      "stellarConfig": {
+        "article": { "style": "tech" },
+        "collection": { "id": "port-journal", "profile": "topic" },
+        "render": { "diagrams": "mermaid", "math": "katex" },
+        "title": "T5 插件 C"
+      },
+      "assertions": [
+        "Reopened editor still shows render.math=katex.",
+        "Public inline and display formulas render as KaTeX DOM.",
+        "The public page includes /assets/css/main-katex.css and the configured KaTeX stylesheet.",
+        "The page manifest has no mathjax extension for this page."
+      ]
+    },
+    {
+      "id": "katex-page-off",
+      "consoleAction": "On the same post, keep the site's theme-level math provider disabled, change only stellar_config.render.math to false in Stellar 2 原文配置, then save, reopen, and reload /post/t5-plugins-c.",
+      "stellarConfig": {
+        "article": { "style": "tech" },
+        "collection": { "id": "port-journal", "profile": "topic" },
+        "render": { "diagrams": "mermaid", "math": false },
+        "title": "T5 插件 C"
+      },
+      "assertions": [
+        "Reopened editor still shows render.math=false.",
+        "KaTeX DOM and KaTeX page stylesheet are absent.",
+        "With the theme-level math provider disabled, the original formula source remains visible or safely unrendered."
+      ]
+    },
+    {
+      "id": "card-hover-on-off",
+      "consoleAction": "In Settings > Stellar 2, first GET and retain the complete settings document. Merge the shown theme patch into theme.features.card_hover, preserving version, all other theme fields, and blog_extensions; run Validate, PUT the full document, GET it again, and inspect the homepage. Repeat with the off patch.",
+      "themePatchOn": {
+        "features": { "card_hover": { "spotlight": true, "tilt": true } }
+      },
+      "themePatchOff": {
+        "features": { "card_hover": { "spotlight": false, "tilt": false } }
+      },
+      "assertionsOn": [
+        "Reopened settings retain both true values.",
+        "Manifest card-hover config has spotlight=true and tilt=true.",
+        "Homepage cards load the card-hover runtime and corresponding optional CSS; pointer movement adds ready/active state and tilt variables."
+      ],
+      "assertionsOff": [
+        "Reopened settings retain both false values.",
+        "Manifest has no card-hover extension and optional card-hover CSS is absent.",
+        "Card markup may retain card-hover classes, but no runtime active state or inline tilt variables are added."
+      ]
+    },
+    {
+      "id": "reveal-on-off",
+      "consoleAction": "In Settings > Stellar 2, GET and retain the complete settings document. Merge the shown theme.features.reveal patch while preserving all other fields; run Validate, PUT the full document, GET it again, and reload the homepage for each state.",
+      "themePatchOn": {
+        "features": { "reveal": { "enabled": true, "duration": 800, "interval": 200, "distance": 8, "blur": 4 } }
+      },
+      "themePatchOff": {
+        "features": { "reveal": { "enabled": false, "duration": 800, "interval": 200, "distance": 8, "blur": 4 } }
+      },
+      "assertionsOn": [
+        "Reopened settings retain enabled=true and numeric parameters.",
+        "Manifest has a reveal extension scoped to .slide-up with the configured values.",
+        "With reduced motion disabled and IntersectionObserver available, offscreen slide-up content is initially hidden and restored/animated when it enters view."
+      ],
+      "assertionsOff": [
+        "Reopened settings retain enabled=false.",
+        "Manifest has no reveal extension; slide-up content stays visible without the reveal mount."
+      ]
+    },
+    {
+      "id": "lightbox-on-off-failure",
+      "consoleAction": "Use a post containing a real image with the [data-fancybox] carrier. For each state, GET the complete Settings > Stellar 2 document, merge the shown theme.features.lightbox patch, Validate, PUT the full document, and GET again. For failure, keep it enabled and set js/css to same-origin missing paths on the isolated server.",
+      "themePatchOn": {
+        "features": { "lightbox": { "enabled": true } }
+      },
+      "themePatchOff": {
+        "features": { "lightbox": { "enabled": false } }
+      },
+      "themePatchFailure": {
+        "features": { "lightbox": { "enabled": true, "js": "/assets/js/t4-missing-lightbox.js", "css": "/assets/css/t4-missing-lightbox.css" } }
+      },
+      "assertions": [
+        "Enabled: the reopened setting is true, manifest contains lightbox, and clicking the image opens Fancybox.",
+        "Disabled: the reopened setting is false, manifest omits lightbox, and clicking does not open a lightbox.",
+        "Failure: both configured same-origin assets return 404. A document listener for stellar:extension-error receives detail.id=lightbox and detail.phase=mount, and the browser console reports the failure; ordinary links remain usable."
+      ]
+    },
+    {
+      "id": "swiper-carrier-and-assets",
+      "consoleAction": "Open a post body with the official {% swiper %} shortcode and at least two local images. Save it, reopen the post, and confirm the body is retained. To verify no-carrier behavior, remove only the shortcode, save/reopen, and reload. For resource failure, restore the shortcode and use the full Settings > Stellar 2 document flow to set features.swiper.js/css to same-origin missing paths.",
+      "themePatchValidAssets": {
+        "features": { "swiper": { "js": "https://unpkg.com/swiper@10.3/swiper-bundle.min.js", "css": "https://unpkg.com/swiper@10.3/swiper-bundle.min.css" } }
+      },
+      "themePatchFailure": {
+        "features": { "swiper": { "js": "/assets/js/t4-missing-swiper.js", "css": "/assets/css/t4-missing-swiper.css" } }
+      },
+      "schemaBoundary": "Strict V2 has no features.swiper.enabled field. The extension is in the manifest unconditionally and mounts only when #swiper-api exists; absence of the shortcode is the no-carrier case, not a persisted settings toggle.",
+      "assertions": [
+        "With the shortcode carrier and valid assets, #swiper-api becomes initialized and navigation/pagination respond.",
+        "Without the shortcode carrier, no Swiper instance is created even though the generic manifest entry remains.",
+        "With same-origin 404 assets, a document listener for stellar:extension-error receives detail.id=swiper and detail.phase=mount, and the browser console reports the failure; ordinary links still navigate."
+      ]
+    },
+    {
+      "id": "pin-slider-and-adaptive-text-carriers",
+      "consoleAction": "Open the existing homepage, which currently contains #pin-slider and [data-text-adaptive]. Confirm runtime behavior and then navigate away/back to verify lifecycle cleanup and remount.",
+      "schemaBoundary": "Strict V2 defines no pin-slider enable switch and no adaptive-text enabled switch. Pin slider mounts only when .pin-slider exists. Adaptive text always registers and mounts only for [data-text-adaptive] carriers.",
+      "assertions": [
+        "Pin slider changes active slide through its navigation/dots and preserves its configured interval behavior.",
+        "Adaptive text loads its registered assets and applies computed text treatment to the existing homepage carrier.",
+        "After navigation, removed page nodes have no retained plugin-owned elements, observers, or listeners; returning remounts against current DOM."
+      ]
+    }
+  ],
+  "captureRequirements": {
+    "failureObserver": "Before loading each failure case, attach document.addEventListener('stellar:extension-error', event => record(event.detail)); verify the expected extension id and mount phase. The runtime also emits a console.error. There is no Console error panel for these browser runtime failures.",
+    "screenshots": [
+      "after-t4-plugin-settings-on.png",
+      "after-t4-plugin-settings-off.png",
+      "after-t4-plugin-failure.png"
+    ],
+    "evidenceFiles": [
+      "resume-t4-plugin-parameters-cases.json",
+      "resume-t4-plugin-parameters-browser.json"
+    ],
+    "browserResultsMustBeRecordedAs": "not_run until a real isolated browser tab is available"
+  }
+}

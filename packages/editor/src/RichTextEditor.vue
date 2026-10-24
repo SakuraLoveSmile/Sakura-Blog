@@ -35,6 +35,7 @@ import {
 const props = defineProps<{
   modelValue: string;
   storageKey?: string;
+  followStorageKey?: boolean;
   /** Host extensions (for example the app-owned StellarTag node) cross the package boundary here. */
   extensions?: unknown[];
   attachmentPicker?: Component;
@@ -44,6 +45,7 @@ const tiptapTestHookEnabled = import.meta.env.DEV || import.meta.env.VITE_E2E ==
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "save"): void;
+  (e: "pending-change", pending: boolean): void;
 }>();
 
 const uploadError = ref("");
@@ -89,7 +91,7 @@ function syncActive() {
 // 本地草稿保护（与 MarkdownEditor 共用同一 storageKey 草稿，双模式切换不冲突）
 // baseline 传入编辑器规范化基线，避免 round-trip 幻影草稿误弹条幅
 const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, checkDraft } = useLocalDraft({
-  storageKey: props.storageKey,
+  storageKey: props.followStorageKey ? () => props.storageKey : props.storageKey,
   getValue: () => props.modelValue,
   setValue: (v) => emit("update:modelValue", v),
   baseline: () => baseline,
@@ -104,16 +106,20 @@ let lastMarkdown = props.modelValue;
 // 合并为 200ms 防抖；Ctrl+S（save）前 flush 保证保存包含最后输入。
 let serializeTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleSerialize() {
+  emit("pending-change", true);
   if (serializeTimer) clearTimeout(serializeTimer);
   serializeTimer = setTimeout(flushSerialize, 200);
 }
 function flushSerialize() {
+  if (!serializeTimer) return;
   if (serializeTimer) {
     clearTimeout(serializeTimer);
     serializeTimer = null;
   }
+  emit("pending-change", false);
   const ed = editor.value;
   if (!ed) return;
+  baselineReady = true;
   const md = ed.storage.markdown.getMarkdown() as string;
   // 与基线相同说明只是加载时规范化回流（非用户编辑），不回写、不落草稿，避免幻影草稿
   if (md === baseline && md === lastMarkdown) return;
@@ -121,6 +127,11 @@ function flushSerialize() {
   emit("update:modelValue", md);
   // 真实用户编辑：防抖落草稿（watch 中的 scheduleDraft 仅处理外部变更）
   scheduleDraft();
+}
+
+async function flushPendingChanges() {
+  flushSerialize();
+  await nextTick();
 }
 
 const editor = useEditor({
@@ -173,6 +184,7 @@ const editor = useEditor({
   onCreate: ({ editor }) => {
     // 记录规范化基线（解析->序列化后的值），供草稿判定与 no-op 拦截
     baseline = editor.storage.markdown.getMarkdown() as string;
+    baselineReady = !!props.modelValue;
     lastMarkdown = baseline;
     syncActive();
     refreshSearchMatches();
@@ -200,6 +212,9 @@ watch(
     // v === lastMarkdown 说明是 onUpdate 自己 emit 的回流，跳过 setContent 防循环；
     // scheduleDraft 已在 onUpdate 中调用，此处不再重复，避免 round-trip 回流落幻影草稿
     if (v === lastMarkdown) return;
+    if (serializeTimer) clearTimeout(serializeTimer);
+    serializeTimer = null;
+    emit("pending-change", false);
     lastMarkdown = v;
     editor.value?.commands.setContent(v, false);
     if (!baselineReady) {
@@ -282,6 +297,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 onBeforeUnmount(() => {
+  if (serializeTimer) clearTimeout(serializeTimer);
   if (tiptapTestHookEnabled) {
     delete (window as Window & { __consoleTiptapEditor?: unknown }).__consoleTiptapEditor;
   }
@@ -407,6 +423,7 @@ function scrollToHeading(index: number) {
 }
 
 defineExpose({
+  flushPendingChanges,
   applyFormat,
   insertMarkdown,
   scrollToHeading,

@@ -1,0 +1,61 @@
+{
+  "method": "temporarily append slash to existing local link; native click hits real Gin 301; no response injection",
+  "before": {
+    "result": {
+      "type": "object",
+      "value": {
+        "href": "http://127.0.0.1:8103/post/t5-plugins-d/",
+        "timeOrigin": 1791910226490.6
+      }
+    }
+  },
+  "after": {
+    "result": {
+      "type": "object",
+      "value": {
+        "canonical": "http://127.0.0.1:8103/post/t5-plugins-d",
+        "h1": "T5 插件 D",
+        "loading": false,
+        "timeOrigin": 1791910227078.6,
+        "title": "T5 插件 D - Stellar 2.0 验收站",
+        "url": "http://127.0.0.1:8103/post/t5-plugins-d"
+      }
+    }
+  },
+  "trace": [
+    {
+      "method": "Network.requestWillBeSent",
+      "url": "http://127.0.0.1:8103/post/t5-plugins-d/",
+      "type": "Fetch"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "url": "http://127.0.0.1:8103/post/t5-plugins-d",
+      "type": "Fetch",
+      "redirectStatus": 301
+    },
+    {
+      "method": "Network.responseReceived",
+      "url": "http://127.0.0.1:8103/post/t5-plugins-d",
+      "type": "Fetch",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "url": "http://127.0.0.1:8103/post/t5-plugins-d/",
+      "type": "Document"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "url": "http://127.0.0.1:8103/post/t5-plugins-d",
+      "type": "Document",
+      "redirectStatus": 301
+    },
+    {
+      "method": "Network.responseReceived",
+      "url": "http://127.0.0.1:8103/post/t5-plugins-d",
+      "type": "Document",
+      "status": 200
+    }
+  ]
+}

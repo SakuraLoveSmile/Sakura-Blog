@@ -1,0 +1,12 @@
+{
+  "base": "b7ffc1aedda43243d431785f5f7b608ab48fd807",
+  "mode": "go:embed; no -dev",
+  "runtimeRoot": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog/.tmp/stellar-settings-icon-20261024-root",
+  "binary": {
+    "sha256": "0d371eabe3da9ba2368356c08808f14e6158e95bce74e7e3fd8db67fbe6a71f9"
+  },
+  "sources": {
+    "modules/stellar/web/templates/partial/stellar/scripts.html": "0fbb2c9fb148723ab2d431fa81a0358805617e93e57de9fd7fee1fa1f4230c0b",
+    "modules/stellar/web/assets/js/profile.js": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d"
+  }
+}

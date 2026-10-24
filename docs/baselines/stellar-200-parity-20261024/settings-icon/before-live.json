@@ -1,0 +1,11 @@
+{
+  "bodyBackground": "rgb(34, 32, 27)",
+  "svgPresent": false,
+  "theme": null,
+  "url": "https://blog.xn--fhqths51enha.cn/",
+  "viewport": {
+    "height": 778,
+    "width": 1168
+  },
+  "widget": "<a aria-label=\"设置\" class=\"settings-widget ui-collection__item ui-interactive card-hover card-hover--spotlight\" data-profile-fallback-avatar=\"https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg\" data-profile-identity-enabled=\"false\" data-profile-provider=\"\" data-settings-label=\"设置\" data-settings-placement=\"leftbar\" href=\"/settings\" title=\"设置\"><span class=\"settings-widget__avatar\" aria-hidden=\"true\"><span class=\"ui-icon\"></span></span><span class=\"settings-widget__name ui-collection__title\">设置</span></a>"
+}

@@ -1,0 +1,17 @@
+{
+  "method": "fresh full navigation then native TOC click; no manual measure or injected observer",
+  "proof": {
+    "result": {
+      "type": "object",
+      "value": {
+        "height": "850px",
+        "opaque": true,
+        "sandbox": "allow-scripts",
+        "src": "http://127.0.0.1:8103/stellar/embed/gist?gist=octocat%2F9257657#stellar-gist-token=875c3296b800b5f2289857cca06df9bf",
+        "timeOrigin": 1791908803505.8,
+        "top": 103.1875,
+        "url": "http://127.0.0.1:8103/post/t5-lifecycle-a#-gist"
+      }
+    }
+  }
+}

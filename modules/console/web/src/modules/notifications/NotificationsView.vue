@@ -1,13 +1,28 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onBeforeUnmount, watch } from "vue";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
-import { notificationApi, type NotificationItem } from "@/api";
+import { notificationApi as consoleNotificationApi, ucNotificationApi, type NotificationItem } from "@/api";
 import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/api/query-client";
+import { useUCAuthStore } from "@/uc/stores/auth";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, VEmpty, VLoading, VPagination, Toast } from "@/components/ui";
 
+const props = defineProps<{ userCenter?: boolean }>();
+const notificationApi = props.userCenter ? ucNotificationApi : consoleNotificationApi;
+const ucAuth = props.userCenter ? useUCAuthStore() : null;
+let mutationController = new AbortController();
+function cancelMutations() {
+  mutationController.abort();
+  mutationController = new AbortController();
+}
+onBeforeUnmount(() => mutationController.abort());
+if (ucAuth) watch(() => ucAuth.user?.id, cancelMutations);
 const queryClient = useQueryClient();
+const notificationsKey = (params?: Record<string, unknown>) =>
+  props.userCenter
+    ? ["uc-notifications", ucAuth!.user?.id, ...(params ? [params] : [])]
+    : queryKeys.notifications(params);
 
 const page = ref(1);
 const size = ref(20);
@@ -20,8 +35,8 @@ const {
   isFetching,
   refetch,
 } = useQuery({
-  queryKey: computed(() => queryKeys.notifications(queryParams.value)),
-  queryFn: () => notificationApi.list(queryParams.value).then(({ data }) => data),
+  queryKey: computed(() => notificationsKey(queryParams.value)),
+  queryFn: ({ signal }) => notificationApi.list(queryParams.value, signal).then(({ data }) => data),
 });
 
 const items = computed<NotificationItem[]>(() => queryData.value?.items || []);
@@ -112,12 +127,17 @@ const groupedNotifications = computed<NotifGroup[]>(() => {
 
 /** 失效通知列表缓存（列表与未读数共用 key 前缀） */
 function invalidate() {
-  queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
+  queryClient.invalidateQueries({ queryKey: notificationsKey() });
 }
 
 /** 标记单条已读：成功后失效缓存，列表自动重排（未读优先） */
 const readMutation = useMutation({
-  mutationFn: (id: number) => notificationApi.markRead(id),
+  mutationFn: async (id: number) => {
+    const signal = mutationController.signal;
+    const result = await notificationApi.markRead(id, signal);
+    signal.throwIfAborted();
+    return result;
+  },
   onSuccess: () => {
     invalidate();
   },
@@ -125,7 +145,12 @@ const readMutation = useMutation({
 
 /** 全部已读 */
 const readAllMutation = useMutation({
-  mutationFn: () => notificationApi.markAllRead(),
+  mutationFn: async () => {
+    const signal = mutationController.signal;
+    const result = await notificationApi.markAllRead(signal);
+    signal.throwIfAborted();
+    return result;
+  },
   onSuccess: () => {
     invalidate();
     Toast.success("已全部标记为已读");
@@ -267,7 +292,7 @@ function sourceLabel(type: string): string {
               <article
                 v-for="n in group.items"
                 :key="n.id"
-                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-all duration-150 last:mb-0 hover:-translate-y-px hover:border-border-strong"
+                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-colors duration-150 duration-150 last:mb-0  hover:border-border-strong"
                 :class="{
                   'notif-card--unread': !n.read,
                   'notif-card--read': n.read,
@@ -305,7 +330,7 @@ function sourceLabel(type: string): string {
                   <span
                     v-if="!n.read"
                     class="h-2 w-2 rounded-full bg-primary"
-                    style="box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 60%, transparent)"
+                    
                   />
                   <span v-else class="h-2 w-2 rounded-full bg-transparent" />
                 </div>

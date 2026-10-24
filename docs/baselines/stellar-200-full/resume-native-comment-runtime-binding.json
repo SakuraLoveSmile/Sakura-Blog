@@ -1,0 +1,242 @@
+{
+  "working_tree_changes_present": true,
+  "source_commit": "56bac8cd0ce4c3b712d9e75da6544a8cd1a92be3",
+  "binary_sha256": "95be34279d042298c70ca9005e0a15fc0528e91c29c51410ae409200a4874cd4",
+  "checks": [
+    {
+      "port": 8103,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea"
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "a9f2d09d2bd6ae21096cbc8f05a40a9019e37c592f2f4af661ecddceee44fe41"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    },
+    {
+      "port": 8112,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea"
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "a9f2d09d2bd6ae21096cbc8f05a40a9019e37c592f2f4af661ecddceee44fe41"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    },
+    {
+      "port": 8113,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea"
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "a9f2d09d2bd6ae21096cbc8f05a40a9019e37c592f2f4af661ecddceee44fe41"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    },
+    {
+      "port": 8114,
+      "console_entry_matches": true,
+      "console_assets": [
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea"
+        },
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e"
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be"
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+        }
+      ],
+      "stellar_assets": [
+        {
+          "path": "js/comments.js",
+          "sha256": "a9f2d09d2bd6ae21096cbc8f05a40a9019e37c592f2f4af661ecddceee44fe41"
+        },
+        {
+          "path": "css/comments.css",
+          "sha256": "22c9fb8948a3f53f115267b0a3aea56d26c47d1194d9c1ab4e3d5289f647dd90"
+        },
+        {
+          "path": "js/main.js",
+          "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+        },
+        {
+          "path": "js/runtime/index.js",
+          "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+        },
+        {
+          "path": "js/runtime/extensions/hero-video.js",
+          "sha256": "b784d034c640603f8fd6ae7224dd86d032d6e3fe06f8d366cf5109f2cbc235d0"
+        },
+        {
+          "path": "js/runtime/extensions/hero-parallax.js",
+          "sha256": "be6ed7582fa7abc76afddc15d76d7561f2c617b09e6c0d224fac74271b7085b1"
+        }
+      ],
+      "process_binary_and_fixture_match": true,
+      "database_handles_only_own_fixture": true
+    }
+  ],
+  "librsvg_embedded_bytes_match": true,
+  "librsvg_sha256": "d254aaa66ab23393a76492428b2baa967d6f298ee73e597c8b25585ccd065000",
+  "real_source_database_opened": false
+}

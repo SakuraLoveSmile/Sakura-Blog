@@ -32,7 +32,7 @@ const active = computed(() => route.path);
           <li v-for="s in sub" :key="s.path">
             <button
               type="button"
-              class="seo-nav-btn flex w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-md)] px-3 transition-all"
+              class="seo-nav-btn flex w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-md)] px-3 transition-colors duration-150"
               :class="
                 active === s.path
                   ? 'bg-[#2c2c2e] font-semibold text-foreground shadow-sm'

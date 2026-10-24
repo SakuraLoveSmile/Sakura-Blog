@@ -1,4 +1,5 @@
 import { http } from "../transport";
+import type { RegistrationInviteRequest, RegistrationInviteResponse } from "../generated";
 
 // --- Auth ---
 // Spec 45：username 用户表认证 + TOTP 2FA；username 为空时后端回退旧版 admin 密码认证。
@@ -8,7 +9,8 @@ export const authApi = {
   verify2FA: (token: string, code: string) => http.post("/auth/2fa", { token, code }, { mute: true }),
   logout: () => http.post("/auth/logout", undefined, { mute: true }),
   check: () => http.get("/auth/check", { mute: true }),
-  changePassword: (current: string, newPassword: string) => http.put("/auth/password", { current, new: newPassword }),
+  changePassword: (current: string, newPassword: string, signal?: AbortSignal) =>
+    http.put("/auth/password", { current, new: newPassword }, { signal }),
   // 登录日志（Wave 3a）：分页查询，status 空=全部 / success / fail
   loginLogs: (params: { page?: number; size?: number; status?: string }) => http.get("/auth/login-logs", { params }),
 };
@@ -26,33 +28,38 @@ export interface UserProfile {
   permissions?: string[];
 }
 
-export const profileApi = {
-  get: () => http.get<UserProfile>("/profile", { mute: true }),
-  update: (data: { display_name: string; email: string; avatar: string }) => http.put("/profile", data),
-  // --- 2FA 管理（Spec 45：TOTP 开启/关闭/恢复码） ---
-  setup2FA() {
-    return http.post("/profile/2fa/setup");
-  },
-  confirm2FA(data: { secret: string; code: string; recovery_codes: string[] }) {
-    return http.post("/profile/2fa/confirm", data);
-  },
-  disable2FA(code: string) {
-    return http.post("/profile/2fa/disable", { code });
-  },
-  getRecoveryCodes() {
-    return http.get("/profile/2fa/recovery-codes");
-  },
-  // --- API Token（Wave 3a：Bearer 认证凭证，明文仅生成时展示一次） ---
-  apiTokenStatus() {
-    return http.get<{ has_token: boolean }>("/profile/api-token");
-  },
-  generateApiToken() {
-    return http.post<{ token: string; username: string }>("/profile/api-token");
-  },
-  revokeApiToken() {
-    return http.delete("/profile/api-token");
-  },
-};
+function createProfileApi(prefix: string) {
+  return {
+    get: (signal?: AbortSignal) => http.get<UserProfile>(prefix, { mute: true, signal }),
+    update: (data: { display_name: string; email: string; avatar: string }, signal?: AbortSignal) =>
+      http.put(prefix, data, { signal }),
+    // --- 2FA 管理（Spec 45：TOTP 开启/关闭/恢复码） ---
+    setup2FA(signal?: AbortSignal) {
+      return http.post(`${prefix}/2fa/setup`, undefined, { signal });
+    },
+    confirm2FA(data: { secret: string; code: string; recovery_codes: string[] }, signal?: AbortSignal) {
+      return http.post(`${prefix}/2fa/confirm`, data, { signal });
+    },
+    disable2FA(code: string, signal?: AbortSignal) {
+      return http.post(`${prefix}/2fa/disable`, { code }, { signal });
+    },
+    getRecoveryCodes(signal?: AbortSignal) {
+      return http.get(`${prefix}/2fa/recovery-codes`, { signal });
+    },
+    // --- API Token（Wave 3a：Bearer 认证凭证，明文仅生成时展示一次） ---
+    apiTokenStatus(signal?: AbortSignal) {
+      return http.get<{ has_token: boolean }>(`${prefix}/api-token`, { signal });
+    },
+    generateApiToken(signal?: AbortSignal) {
+      return http.post<{ token: string; username: string }>(`${prefix}/api-token`, undefined, { signal });
+    },
+    revokeApiToken(signal?: AbortSignal) {
+      return http.delete(`${prefix}/api-token`, { signal });
+    },
+  };
+}
+export const profileApi = createProfileApi("/profile");
+export const ucProfileApi = createProfileApi("/uc/profile");
 
 // --- Users（多用户体系，admin-only） ---
 export interface UserItem {
@@ -68,6 +75,8 @@ export interface UserItem {
 }
 
 export const usersApi = {
+  createInvitation: (data: RegistrationInviteRequest) =>
+    http.post<RegistrationInviteResponse>("/users/invitations", data),
   list: (params: { page?: number; size?: number; keyword?: string }) =>
     http.get<{ items: UserItem[]; total: number; page: number; size: number }>("/users", { params }),
   create: (data: {

@@ -59,8 +59,8 @@ const colorPresetMap: Record<string, { text: string; bg: string }> = {
     bg: "color-mix(in srgb, #af52de 12%, transparent)",
   },
   cyan: {
-    text: "#30b0c7",
-    bg: "color-mix(in srgb, #30b0c7 12%, transparent)",
+    text: "#2e8dff",
+    bg: "color-mix(in srgb, #2e8dff 12%, transparent)",
   },
 };
 

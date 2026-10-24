@@ -1,0 +1,48 @@
+{
+  "source_commit": "fe7246d0",
+  "binary_sha256": "2961d1ee90a638979183621a559225fc37383315582015e545818ca0a187ed90",
+  "browser": {
+    "url": "http://127.0.0.1:8103/wiki/video/intro",
+    "initialized": "1",
+    "list": "",
+    "emptyVisible": "flex",
+    "loadingExists": false,
+    "images": [
+      {
+        "display": "inline-block",
+        "margin": "0px 1px",
+        "width": "32px",
+        "height": "32px",
+        "naturalWidth": 64
+      },
+      {
+        "display": "inline-block",
+        "margin": "0px 1px",
+        "width": "32px",
+        "height": "32px",
+        "naturalWidth": 64
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8103/assets/css/comments.css?v=22c9fb89",
+        "duration": 10.400000035762787
+      },
+      {
+        "url": "http://127.0.0.1:8103/assets/js/comments.js?v=5594db30",
+        "duration": 6.600000023841858
+      },
+      {
+        "url": "http://127.0.0.1:8103/api/auth/me",
+        "duration": 2.599999964237213
+      },
+      {
+        "url": "http://127.0.0.1:8103/api/comments?page_key=%2Fwiki%2Fvideo%2Fintro",
+        "duration": 7.699999988079071
+      }
+    ]
+  },
+  "user_tabs_not_reloaded": true,
+  "comment_not_submitted": true,
+  "early_sample": "resume-native-comment-dev-browser-early.json: automatic click before event initialization produced no preview; retained as invalid preview evidence"
+}

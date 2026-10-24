@@ -1,49 +1,42 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useUCAuthStore } from "./stores/auth";
 
 const router = useRouter();
 const auth = useUCAuthStore();
-const form = ref({ username: "", password: "", display_name: "", email: "", captcha_answer: "" });
-const challengeToken = ref("");
-const question = ref("加载中…");
+const form = ref({ username: "", password: "", display_name: "", email: "", invitation_code: "" });
 const error = ref("");
 const loading = ref(false);
-
-async function loadChallenge() {
-  try {
-    const challenge = await auth.challenge();
-    challengeToken.value = challenge.token;
-    question.value = challenge.question;
-    form.value.captcha_answer = "";
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : "验证码加载失败";
-  }
-}
+const registration = new AbortController();
+onBeforeUnmount(() => registration.abort());
 
 async function submit() {
+  if (loading.value) return;
+  if (!form.value.invitation_code.trim()) {
+    error.value = "请填写管理员提供的邀请码";
+    return;
+  }
   error.value = "";
   loading.value = true;
   try {
-    await auth.register({ ...form.value, captcha_token: challengeToken.value });
+    await auth.register({ ...form.value, invitation_code: form.value.invitation_code.trim() }, registration.signal);
+    if (registration.signal.aborted) return;
     await router.replace("/upgrade");
   } catch (err) {
+    if (registration.signal.aborted) return;
     error.value = err instanceof Error ? err.message : "注册失败";
-    await loadChallenge();
   } finally {
-    loading.value = false;
+    if (!registration.signal.aborted) loading.value = false;
   }
 }
-
-onMounted(loadChallenge);
 </script>
 
 <template>
   <div class="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
     <div class="w-full max-w-md">
       <div class="mb-7 text-center">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Join the blog</p>
+        <p class="mb-2 text-xs font-medium text-text-tertiary">注册账户</p>
         <h1 class="text-3xl font-semibold tracking-tight">创建读者账号</h1>
         <p class="mt-2 text-sm text-text-tertiary">注册后可升级为作者，开始管理自己的文章。</p>
       </div>
@@ -62,13 +55,16 @@ onMounted(loadChallenge);
           ><span>密码</span
           ><input v-model="form.password" type="password" required minlength="6" autocomplete="new-password"
         /></label>
-        <div class="mt-4 flex items-end gap-2">
-          <label class="uc-field min-w-0 flex-1"
-            ><span>验证码：{{ question }}</span
-            ><input v-model="form.captcha_answer" inputmode="numeric" required
-          /></label>
-          <button type="button" class="uc-secondary-button mb-0.5 shrink-0" @click="loadChallenge">换一题</button>
-        </div>
+        <label class="uc-field mt-4">
+          <span>邀请码</span>
+          <input
+            v-model="form.invitation_code"
+            required
+            maxlength="128"
+            autocomplete="off"
+            placeholder="由管理员提供，一次性使用"
+          />
+        </label>
         <p
           v-if="error"
           class="mt-3 rounded-xl border border-state-error/30 bg-state-error/10 px-3 py-2 text-sm text-state-error"
@@ -107,7 +103,6 @@ onMounted(loadChallenge);
 }
 .uc-field input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 .uc-primary-button,
 .uc-secondary-button {

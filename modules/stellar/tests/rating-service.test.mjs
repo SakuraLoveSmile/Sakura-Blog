@@ -6,9 +6,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import vm from 'node:vm';
+import { mountBlogService } from './blog-service-fixture.mjs';
 
-const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/services/rating.js');
+const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/blog/services/rating.js');
 const SURFACE = '评分组件';
 
 // classList 桩：Set 语义，覆盖 add/remove/toggle/contains
@@ -55,8 +55,7 @@ function loadRating() {
     addEventListener: noop,
   };
   sandbox.window = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(readFileSync(SRC_PATH, 'utf8'), sandbox, { filename: SRC_PATH });
+  mountBlogService(readFileSync(SRC_PATH, 'utf8'), sandbox, { exports: ['storeRating', 'hasRated', 'getRatedValue', 'updatePreview', 'submitRating'] });
   assert.ok(
     sandbox.storeRating && sandbox.hasRated && sandbox.updatePreview && sandbox.submitRating,
     `[${SURFACE}] rating.js 顶层函数（storeRating/hasRated/updatePreview/submitRating）未暴露，机械校验入口断裂`

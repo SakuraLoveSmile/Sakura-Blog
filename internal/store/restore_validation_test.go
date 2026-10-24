@@ -47,6 +47,43 @@ func TestValidateRestoreFromRejectsNewColumnWithoutLiveMutation(t *testing.T) {
 	}
 }
 
+func TestRestoreRejectsUnknownTablesIncludingIndexLikeNames(t *testing.T) {
+	for _, ddl := range []string{
+		`CREATE TABLE future_business(id INTEGER PRIMARY KEY)`,
+		`CREATE TABLE posts_fts_future_business(id INTEGER PRIMARY KEY)`,
+		`CREATE TABLE rag_chunks_fts_future_business(id INTEGER PRIMARY KEY)`,
+		`CREATE VIRTUAL TABLE future_fts USING fts5(content)`,
+	} {
+		t.Run(ddl, func(t *testing.T) {
+			live := newForeignKeyStore(t)
+			if err := live.Upsert(&Post{Slug: "stable", Title: "before", Status: StatusDraft}); err != nil {
+				t.Fatal(err)
+			}
+			source := filepath.Join(t.TempDir(), "newer.db")
+			if err := live.BackupTo(source); err != nil {
+				t.Fatal(err)
+			}
+			db, err := sql.Open("sqlite", source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := db.Exec(ddl); err != nil {
+				t.Fatal(err)
+			}
+			if err := db.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if err := live.RestoreFrom(source); err == nil || !strings.Contains(err.Error(), "schema is newer") {
+				t.Fatalf("unknown table accepted: %v", err)
+			}
+			p, err := live.GetBySlug("stable")
+			if err != nil || p == nil || p.Title != "before" || p.Status != StatusDraft {
+				t.Fatalf("live content changed: post=%+v err=%v", p, err)
+			}
+		})
+	}
+}
+
 func TestRestoreFromValidatesForeignKeysBeforeChangingLiveDB(t *testing.T) {
 	s := newForeignKeyStore(t)
 	if err := s.EnsureUsersTable(); err != nil {

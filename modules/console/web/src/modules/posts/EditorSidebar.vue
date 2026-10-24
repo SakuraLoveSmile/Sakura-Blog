@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { patchJSONField, readJSONField } from "@/components/editor/stellar-form-json";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
+import PostThemeSettings from "@/components/editor/PostThemeSettings.vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
-import { previewApi, settingsApi, postApi, aiApi, topicApi, type TopicItem } from "@/api";
+import { previewApi, settingsApi, getApiErrorMessage, postApi, aiApi, topicApi, type TopicItem } from "@/api";
 import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
 import { VButton, VSwitch, Toast } from "@/components/ui";
 import { type PluginMeta, type PluginCategory } from "@/modules/plugins/plugin-types";
@@ -11,6 +14,9 @@ import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCa
 // 编辑器右侧辅助面板（对照 Halo）：大纲 / 详情 两个 Tab。
 // 大纲：解析 Markdown 标题可点击跳转；详情：合并原右栏全部设置字段与标签插件参数面板。
 interface PostForm {
+  stellar_version: number;
+  stellar_config: string;
+  blog_extensions: string;
   slug: string;
   title: string;
   excerpt: string;
@@ -43,7 +49,9 @@ interface CategoryNode {
 }
 
 const props = defineProps<{
+  initialTab?: "outline" | "detail";
   form: PostForm;
+  syncError?: string;
   categories: string[];
   categoryTree: CategoryNode[];
   tags: string[];
@@ -58,9 +66,9 @@ const emit = defineEmits<{
   (e: "update:aiSummary", value: string): void;
 }>();
 
-const activeTab = ref<"outline" | "detail">("outline");
+const activeTab = ref<"outline" | "detail">(props.initialTab || "outline");
 
-// ---------- 作者可选项（Spec 38 Wave 5）：authors 为空 map 时不渲染控件 ----------
+// ---------- 严格公开作者目录：为空时不渲染控件 ----------
 interface AuthorOption {
   name: string;
   avatar?: string;
@@ -97,11 +105,11 @@ function normalizeAuthors(raw: unknown): Record<string, AuthorOption> {
 
 async function loadAuthors() {
   try {
-    const { data } = await settingsApi.all();
-    authorOptions.value = normalizeAuthors(data?.authors);
-  } catch {
+    const { data } = await settingsApi.authorCatalog();
+    authorOptions.value = normalizeAuthors(data.authors);
+  } catch (error) {
     authorOptions.value = {};
-    /* 静默：作者列表缺失不阻塞编辑 */
+    Toast.error("加载公开作者目录失败：" + getApiErrorMessage(error));
   }
 }
 
@@ -184,6 +192,16 @@ const topicPickerOpen = ref(false);
 const topicPickerRoot = ref<HTMLElement | null>(null);
 
 const selectedTopic = computed(() => {
+  // 严格归属只派生回显；目录迟到/改名不能修改服务器保存基线。
+  if (props.form.stellar_version === 2) {
+    try {
+      if (readJSONField(props.form.stellar_config, "collection.profile") !== "topic") return null;
+      const slug = readJSONField(props.form.stellar_config, "collection.id");
+      return topicOptions.value.find((topic) => topic.slug === slug) || null;
+    } catch {
+      return null;
+    }
+  }
   const id = Number(props.form.topic_id || 0);
   return id > 0 ? topicOptions.value.find((topic) => topic.id === id) || null : null;
 });
@@ -194,31 +212,10 @@ const filteredTopics = computed(() => {
   return topicOptions.value.filter((topic) => topic.name.toLowerCase().includes(query));
 });
 
-function syncTopicFromLegacy() {
-  if (!topicOptions.value.length) return;
-  const currentID = Number(props.form.topic_id || 0);
-  if (currentID > 0) {
-    const current = topicOptions.value.find((topic) => topic.id === currentID);
-    if (current && props.form.topic !== current.name) props.form.topic = current.name;
-    return;
-  }
-  const legacyName = props.form.topic.trim();
-  if (!legacyName) return;
-  const legacy = topicOptions.value.find((topic) => topic.name === legacyName);
-  if (legacy) {
-    props.form.topic_id = legacy.id;
-    props.form.topic = legacy.name;
-  } else {
-    props.form.topic_id = null;
-    props.form.topic = "";
-  }
-}
-
 async function loadTopics() {
   try {
     const { data } = await topicApi.list();
     topicOptions.value = data.items || [];
-    syncTopicFromLegacy();
   } catch {
     // 专栏是可选元数据，列表失败不阻塞正文编辑。
   }
@@ -230,14 +227,33 @@ function toggleTopicPicker() {
 }
 
 function selectTopic(topic: TopicItem) {
-  props.form.topic_id = topic.id;
-  props.form.topic = topic.name;
+  try {
+    props.form.stellar_config = patchJSONField(props.form.stellar_config, "collection", {
+      profile: "topic",
+      id: topic.slug,
+    });
+  } catch {
+    Toast.error("请先修正 Stellar 配置 JSON");
+    return;
+  }
+  if (props.form.stellar_version !== 2) {
+    props.form.topic_id = topic.id;
+    props.form.topic = topic.name;
+  }
   topicPickerOpen.value = false;
 }
 
 function clearTopic() {
-  props.form.topic_id = null;
-  props.form.topic = "";
+  try {
+    props.form.stellar_config = patchJSONField(props.form.stellar_config, "collection", undefined);
+  } catch {
+    Toast.error("请先修正 Stellar 配置 JSON");
+    return;
+  }
+  if (props.form.stellar_version !== 2) {
+    props.form.topic_id = null;
+    props.form.topic = "";
+  }
   topicPickerOpen.value = false;
 }
 
@@ -247,7 +263,6 @@ function onTopicClickOutside(event: MouseEvent) {
   }
 }
 
-watch(() => [props.form.topic_id, props.form.topic, topicOptions.value.length], syncTopicFromLegacy);
 onMounted(() => {
   loadTopics();
   document.addEventListener("mousedown", onTopicClickOutside);
@@ -365,6 +380,8 @@ const pluginList = computed(() =>
 );
 const selectedPlugin = ref<PluginMeta | null>(null);
 const pluginCode = ref("");
+const pluginValid = ref(true);
+const pluginError = ref("");
 const pluginPreviewHtml = ref("");
 const pluginRendering = ref(false);
 let pluginTimer: ReturnType<typeof setTimeout> | undefined;
@@ -373,12 +390,21 @@ function selectPlugin(p: PluginMeta) {
   selectedPlugin.value = p;
   // 有 form schema：由 PluginParamForm 初始化后立即产出 shortcode；否则回退示例文本
   pluginCode.value = p.form ? "" : p.example;
+  // 无 form 时不会收到 validation 事件，这里复位；有 form 时由初始化的 validation 重新判定
+  pluginValid.value = true;
+  pluginError.value = "";
   schedulePluginPreview(true);
 }
 
 function onPluginCode(code: string) {
   pluginCode.value = code;
   schedulePluginPreview();
+}
+
+// 必填缺失时表单不再产出新 raw：保留上一次有效的 pluginCode，但禁止插入并提示原因
+function onPluginValidation(state: { valid: boolean; error?: string }) {
+  pluginValid.value = state.valid;
+  pluginError.value = state.error || "";
 }
 
 async function refreshPluginPreview() {
@@ -437,7 +463,7 @@ const pluginSrcdoc = computed(() => {
 });
 
 function insertPlugin() {
-  if (!pluginCode.value) return;
+  if (!pluginCode.value || !pluginValid.value) return;
   emit("insert", "\n" + pluginCode.value + "\n");
 }
 
@@ -539,6 +565,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
             ]"
             :key="tab.key"
             type="button"
+            :aria-pressed="activeTab === tab.key"
             :class="[
               'rounded-md py-1.5 text-[13px] transition-colors',
               activeTab === tab.key
@@ -556,7 +583,9 @@ const chipActiveCls = "bg-primary/15 text-primary";
     <!-- 大纲 -->
     <div v-if="activeTab === 'outline'" :class="cardCls">
       <div class="min-h-0 flex-1 overflow-y-auto px-2 py-3">
-        <p v-if="outline.length === 0" class="py-10 text-center text-sm text-text-quaternary">暂无大纲</p>
+        <p v-if="outline.length === 0" class="py-10 text-center text-sm text-text-quaternary">
+          添加正文标题后，可在这里跳转到对应段落
+        </p>
         <ul v-else class="space-y-0.5">
           <li v-for="(item, i) in outline" :key="i">
             <button
@@ -573,8 +602,9 @@ const chipActiveCls = "bg-primary/15 text-primary";
       </div>
     </div>
 
-    <!-- 设置：四张卡片 -->
+    <!-- 设置 -->
     <template v-else>
+      <p v-if="syncError" role="alert" class="px-1 text-xs text-destructive">{{ syncError }}</p>
       <!-- 卡片 1：发布设置 -->
       <div :class="cardCls">
         <div :class="cardHeaderCls">发布设置</div>
@@ -897,8 +927,16 @@ const chipActiveCls = "bg-primary/15 text-primary";
             <label :class="labelCls">封面 URL</label>
             <input v-model="form.cover" :class="fieldCls" />
           </div>
+          <div>
+            <label class="block text-[12.5px] font-medium text-text-secondary">
+              文章横幅图片
+              <input v-model="form.banner" :class="fieldCls + ' mt-1.5'" placeholder="图片 URL，留空使用默认横幅" />
+            </label>
+          </div>
         </div>
       </div>
+
+      <PostThemeSettings v-model:config="form.stellar_config" :version="form.stellar_version" :sync-error="syncError" />
 
       <!-- 卡片 4：高级选项 -->
       <div :class="cardCls">
@@ -1000,6 +1038,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
               :plugin="selectedPlugin"
               :model-value="pluginCode"
               @update:model-value="onPluginCode"
+              @validation="onPluginValidation"
             />
             <div v-else>
               <label :class="labelCls">示例（可编辑）</label>
@@ -1028,11 +1067,24 @@ const chipActiveCls = "bg-primary/15 text-primary";
               </div>
             </div>
 
-            <VButton type="secondary" block :disabled="!pluginCode" @click="insertPlugin">插入到正文</VButton>
+            <p v-if="pluginError" class="text-xs" style="color: var(--color-state-error, #ff453a)">{{ pluginError }}</p>
+            <VButton type="secondary" block :disabled="!pluginCode || !pluginValid" @click="insertPlugin"
+              >插入到正文</VButton
+            >
           </div>
           <p v-else class="text-xs text-text-quaternary">选择插件后可编辑参数并插入正文。</p>
         </div>
       </div>
+      <StellarContentConfig
+        v-model:config="form.stellar_config"
+        v-model:blog="form.blog_extensions"
+        :sync-error="syncError"
+        :version="form.stellar_version"
+        :content="form.content_md"
+        profile="post"
+        summary="配置原文（JSON）"
+        class="min-w-0"
+      />
     </template>
   </div>
 </template>

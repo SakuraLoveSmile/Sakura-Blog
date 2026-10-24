@@ -31,7 +31,15 @@ async function createPost(page: Page, token: string, index: number) {
   const slug = `${token}-${index}`;
   const title = `T1 夹具文章 ${token}-${index}`;
   const response = await page.request.post("/api/v1/posts", {
-    data: { slug, title, content_md: `T1 夹具正文 ${index}`, status: "published" },
+    data: {
+      slug,
+      title,
+      content_md: `T1 夹具正文 ${index}`,
+      status: "published",
+      stellar_version: 2,
+      stellar_config: "{}",
+      blog_extensions: "{}",
+    },
   });
   expect(response.ok(), `夹具文章 ${slug} 必须创建成功（HTTP ${response.status()}）`).toBe(true);
   return { slug, title };
@@ -41,7 +49,15 @@ async function createPage(page: Page, token: string, index: number) {
   const slug = `${token}-${index}`;
   const title = `T1 夹具页面 ${token}-${index}`;
   const response = await page.request.post("/api/v1/pages", {
-    data: { slug, title, content_md: `T1 夹具页面正文 ${index}`, status: "published" },
+    data: {
+      slug,
+      title,
+      content_md: `T1 夹具页面正文 ${index}`,
+      status: "published",
+      stellar_version: 2,
+      stellar_config: "{}",
+      blog_extensions: "{}",
+    },
   });
   expect(response.ok(), `夹具页面 ${slug} 必须创建成功（HTTP ${response.status()}）`).toBe(true);
   return { slug, title };
@@ -381,10 +397,11 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await expect(page.locator("#tabpanel-advanced")).toBeVisible();
     await expect(page.locator("#tab-advanced")).toBeFocused();
 
+    // Stellar 2 是系统设置的首个标签（默认标签），Home 应回到它。
     await page.keyboard.press("Home");
-    await expect(page.locator("#tab-basic")).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#tabpanel-basic")).toBeVisible();
-    await expect(page.locator("#tab-basic")).toBeFocused();
+    await expect(page.locator("#tab-stellar2")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#tabpanel-stellar2")).toBeVisible();
+    await expect(page.locator("#tab-stellar2")).toBeFocused();
   });
 
   test("主操作与危险操作三态对比度 ≥ 4.5:1", async ({ page }) => {
@@ -529,6 +546,8 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
       // 验证 390px 最小高度 88px
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(item.path);
+      await expect(page.getByRole("heading", { name: item.heading, exact: true })).toBeVisible();
+      await expect(page.locator(".stats-card").first()).toBeVisible();
       const mobileHeights = await page.locator(".stats-card").evaluateAll((els) =>
         els.map((el) => el.getBoundingClientRect().height),
       );
@@ -574,9 +593,6 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
       { url: "/console/settings?tab=seo", title: "系统设置", hasBodies: true },
       { url: "/console/settings?tab=search", title: "系统设置", hasBodies: true },
       { url: "/console/settings?tab=advanced", title: "系统设置", hasBodies: true },
-      { url: "/console/appearance?tab=appearance", title: "主题设置", hasBodies: false },
-      { url: "/console/appearance?tab=layout", title: "主题设置", hasBodies: false },
-      { url: "/console/appearance?tab=advanced", title: "主题设置", hasBodies: false },
     ];
 
     for (const tab of settingTabs) {
@@ -675,27 +691,11 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
       }
     }
 
-    // 重点验证控件保留必要边界：警告框、输入框
+    // 重点验证控件保留必要边界：输入框（原高级页警告框随 AdvancedSettings 退役，不再断言）
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/settings?tab=advanced");
-    const warning = page.locator(".settings-warning");
-    await expect(warning).toBeVisible();
-    const warningStyles = await warning.evaluate((el) => {
-      const cs = window.getComputedStyle(el);
-      return {
-        borderWidth: cs.borderWidth,
-        borderStyle: cs.borderStyle,
-        borderRadius: cs.borderRadius,
-        paddingLeft: cs.paddingLeft,
-      };
-    });
-    expect(parseFloat(warningStyles.borderWidth), "警告框必须保留边框边界").toBeGreaterThan(0);
-    expect(warningStyles.borderStyle, "警告框边框样式不可为 none").not.toBe("none");
-    expect(parseFloat(warningStyles.paddingLeft), "警告框必须保留内部边距").toBeGreaterThan(0);
-    expect(parseFloat(warningStyles.borderRadius), "警告框必须保留圆角").toBeGreaterThan(0);
-
     // 输入框保留必要边界
-    const input = page.locator(".apple-input, .code-editor-wrapper").first();
+    const input = page.locator(".canonical-settings-form:visible").getByRole("textbox").first();
     await expect(input).toBeVisible();
     const inputStyles = await input.evaluate((el) => {
       const cs = window.getComputedStyle(el);
@@ -710,9 +710,9 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await page.screenshot({ path: testInfo.outputPath("t1-settings-advanced-390.png") });
 
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/appearance?tab=appearance");
-    await expect(page.locator(".appearance-tabs")).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath("t3-appearance-desktop-1280.png") });
+    await page.goto("/console/settings?tab=basic");
+    await expect(page.locator(".settings-tabs")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("t3-settings-tabs-desktop-1280.png") });
 
     // 768px 概览截图（文章管理）
     await page.setViewportSize({ width: 768, height: 1024 });

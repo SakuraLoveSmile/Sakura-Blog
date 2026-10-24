@@ -607,7 +607,7 @@ async function batchMoveGroup() {
               <div
                 v-for="l in g.items"
                 :key="l.id"
-                class="group relative flex flex-col justify-between rounded-xl border border-border bg-secondary/30 p-4 transition-all hover:-translate-y-px hover:border-border-strong hover:bg-secondary/70 hover:shadow-sm"
+                class="group relative flex flex-col justify-between rounded-xl border border-border bg-secondary/30 p-4 transition-colors duration-150  hover:border-border-strong hover:bg-secondary/70 hover:shadow-sm"
                 :class="{ 'border-primary ring-1 ring-primary': selectedIds.has(l.id) }"
               >
                 <!-- 卡片顶部：选择框 + 头像 + 网站名/Tag + 操作组 -->
@@ -735,7 +735,7 @@ async function batchMoveGroup() {
           <div class="overflow-x-auto">
             <table class="w-full min-w-[760px] text-left">
               <thead>
-                <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                   <th class="w-12 px-4 py-3 text-center">
                     <input
                       v-if="filteredLinks.length > 0"
@@ -924,9 +924,7 @@ async function batchMoveGroup() {
                 :key="preset.value"
                 type="button"
                 class="color-preset-dot"
-                :class="{
-                  active: (editing.color || '').replace(/^#/, '').toLowerCase() === preset.value.toLowerCase(),
-                }"
+                :class="{ active: (editing.color || '').replace(/^#/, '').toLowerCase() === preset.value.toLowerCase(), }"
                 :style="{ background: `#${preset.value}` }"
                 :title="preset.label"
                 @click="editing.color = preset.value"
@@ -1072,7 +1070,7 @@ async function batchMoveGroup() {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {
@@ -1097,7 +1095,6 @@ async function batchMoveGroup() {
 }
 .color-preset-dot.active {
   border-color: #fff;
-  box-shadow: 0 0 0 2px var(--color-primary);
   transform: scale(1.15);
 }
 

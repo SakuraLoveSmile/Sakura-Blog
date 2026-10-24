@@ -1,0 +1,13 @@
+{
+  "entry_sha256": "13dda1a7fda11f9b8db1180a89793562b89afb2d150b2a08f42727f1a6168ccd",
+  "assets": {
+    "/console/assets/index-CLZZptlt.js": "aeca8994b5c6b9ff4d31bdb7382d01d0d7b1d9c81e2e39700bf38d34658bef56",
+    "/console/assets/api-C-H7IBEY.js": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80",
+    "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c",
+    "/console/assets/pinia-CXeiBUD1.js": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888",
+    "/console/assets/preload-helper-l0U7FUPx.js": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+    "/console/assets/index-BihGOG2u.css": "47087bbcbf9be955a576068e3f5d35829b70191ea846b573ea766dc479e34def"
+  },
+  "backup_chunk": "BackupView-m1DaOETt.js",
+  "backup_sha256": "0ce54a0935da456129bed847e66aafb205287ba0e076e5740ce9ffeb14dd4a1c"
+}

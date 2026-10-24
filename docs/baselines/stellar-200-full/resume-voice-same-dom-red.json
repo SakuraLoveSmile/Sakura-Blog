@@ -1,0 +1,19 @@
+{
+  "kind": "real production browser DOM with synthetic persisted lifecycle events and transparent play observer; not native BFCache",
+  "calls": [
+    "wechat",
+    "wechat"
+  ],
+  "media": [
+    {
+      "class": "qq",
+      "paused": true,
+      "time": 0
+    },
+    {
+      "class": "wechat",
+      "paused": false,
+      "time": 0.483016
+    }
+  ]
+}

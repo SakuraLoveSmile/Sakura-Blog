@@ -1,9 +1,9 @@
 {{- /* cover.html: 首页 Hero cover 区，对齐 Stellar wiki_cover.ejs 的 HTML 结构与 class 名。
    渲染条件：site.yml cover.title 非空 且 首页第一页（Layout=index 且无分页或第 1 页）。
-   零配置时（cover.title 为空）不渲染任何内容，l_cover 保持空 div。
+   零配置时（cover.title 为空）不渲染任何内容，site-cover 保持空 div。
 */ -}}
 {{- if and .Site.Cover.Title (eq .Page.Layout "index") (or (not .Paginator) (eq .Paginator.Current 1))}}
-<div class="l_cover">
+<div class="cover-content">
   <article class="cover-wrap md-text">
     <div class="cover-title"><span>{{.Site.Cover.Title}}</span></div>
     {{- if .Site.Cover.Description}}

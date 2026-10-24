@@ -1,0 +1,5740 @@
+{
+  "consumer_capabilities": {
+    "ai_label": true,
+    "author_widget": true,
+    "authors": true,
+    "avatar_background": true,
+    "banner_ratio": true,
+    "category_icons": true,
+    "collection_order": true,
+    "edit_this_page": true,
+    "expire_days": true,
+    "nav_tabs": true,
+    "notebook_license": true,
+    "notebook_share": true,
+    "pages": true,
+    "poster": true,
+    "read_next": true,
+    "rightbar_intro": true,
+    "seo": true,
+    "tag_icons": true,
+    "welcome_linklist": true,
+    "wiki_external_url": true
+  },
+  "source_digest": "d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9",
+  "counts": {
+    "attachment_groups": 0,
+    "attachments": 1,
+    "categories": 6,
+    "comment_boosts": 1,
+    "comment_likes": 1,
+    "comments": 13,
+    "crawler_logs": 0,
+    "feed_articles": 45,
+    "links": 3,
+    "login_logs": 110,
+    "module_states": 1,
+    "moments": 5,
+    "notebooks": 1,
+    "notes": 1,
+    "notifications": 6,
+    "page_views": 725,
+    "pages": 4,
+    "pat_tokens": 0,
+    "perf_requests": 1418,
+    "perf_samples": 74564,
+    "permissions": 19,
+    "post_authors": 0,
+    "post_authors_legacy": 0,
+    "post_categories": 11,
+    "posts": 12,
+    "posts_fts": 18,
+    "posts_fts_config": 1,
+    "posts_fts_content": 18,
+    "posts_fts_data": 32,
+    "posts_fts_docsize": 18,
+    "posts_fts_idx": 30,
+    "rag_chunks": 27,
+    "rag_chunks_fts": 27,
+    "rag_chunks_fts_config": 1,
+    "rag_chunks_fts_content": 27,
+    "rag_chunks_fts_data": 11,
+    "rag_chunks_fts_docsize": 27,
+    "rag_chunks_fts_idx": 9,
+    "rag_meta": 1,
+    "ratings": 0,
+    "revisions": 0,
+    "role_permissions": 13,
+    "roles": 3,
+    "schema_migrations": 1,
+    "seo_push_logs": 0,
+    "settings": 29,
+    "shared_posts": 0,
+    "sqlite_sequence": 21,
+    "topics": 7,
+    "tracked_documents": 2,
+    "user_preferences": 1,
+    "user_roles": 3,
+    "users": 3,
+    "votes": 1,
+    "wiki_project_tags": 5,
+    "wiki_projects": 3,
+    "wikidocs": 2
+  },
+  "settings_mappings": [
+    {
+      "source": "settings.admin",
+      "target": "settings.admin",
+      "behavior": "宿主设置原文保留，无主题转换"
+    },
+    {
+      "source": "settings.dashboard",
+      "target": "settings.dashboard",
+      "behavior": "宿主设置原文保留，无主题转换"
+    },
+    {
+      "source": "settings.page_banner_friends_legacy_migrated",
+      "target": "settings.page_banner_friends_legacy_migrated",
+      "behavior": "宿主设置原文保留，无主题转换"
+    },
+    {
+      "source": "settings.seo_tools",
+      "target": "settings.seo_tools",
+      "behavior": "宿主设置原文保留，无主题转换"
+    },
+    {
+      "source": "settings.wiki_projects_migrated",
+      "target": "settings.wiki_projects_migrated",
+      "behavior": "宿主设置原文保留，无主题转换"
+    },
+    {
+      "source": "settings.site.title",
+      "target": "blog.site.title",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.subtitle",
+      "target": "blog.site.subtitle",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.description",
+      "target": "blog.site.description",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.url",
+      "target": "blog.site.url",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.logo_title",
+      "target": "theme.leftbar.brand.name",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.logo_sub",
+      "target": "theme.leftbar.brand.tagline",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.avatar",
+      "target": "theme.leftbar.brand.image.src",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.avatar_bg",
+      "target": "blog.content.avatar_background",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.favicon_url",
+      "target": "blog.site.favicon_url",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.apple_touch_icon",
+      "target": "blog.site.apple_touch_icon",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.site.sw_cache_version",
+      "target": "blog.site.sw_cache_version",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.menubar.columns",
+      "target": "theme.leftbar.menu_columns",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.rightbar.intro",
+      "target": "blog.content.rightbar_intro",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.rightbar.welcome_linklist",
+      "target": "blog.content.welcome_linklist",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.comments",
+      "target": "blog.native_comments",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.authors",
+      "target": "blog.data.authors",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.friends",
+      "target": "blog.friends",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.pages",
+      "target": "blog.pages",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.nav_tabs",
+      "target": "blog.content.nav_tabs",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.reward",
+      "target": "blog.content.reward",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.ai_label",
+      "target": "blog.content.ai_label",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.category_icon",
+      "target": "blog.content.category_icons",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.tag_icon",
+      "target": "blog.content.tag_icons",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.read_next",
+      "target": "blog.content.read_next",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.expire_days",
+      "target": "blog.content.expire_days",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.banner_ratio",
+      "target": "blog.content.banner_ratio",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.edit_this_page",
+      "target": "blog.content.edit_this_page",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.reading_time",
+      "target": "theme.article.show_reading_time",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.card_tags",
+      "target": "theme.article.listing.show_tags",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.related_posts",
+      "target": "theme.article.related_posts_limit",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.category_color",
+      "target": "theme.article.category_colors",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.plugins.preload.enable",
+      "target": "theme.features.link_prefetch.enabled",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.plugins.heti.enable",
+      "target": "theme.features.heti.enabled",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.plugins.fancybox.selector",
+      "target": "theme.features.lightbox.selector",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.plugins.scrollreveal.enable",
+      "target": "theme.features.reveal.enabled",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.plugins.scrollreveal.duration",
+      "target": "theme.features.reveal.duration",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.plugins.scrollreveal.interval",
+      "target": "theme.features.reveal.interval",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.inject.inject_head",
+      "target": "theme.inject.head_end",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.inject.inject_footer",
+      "target": "theme.inject.body_end",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.base_url",
+      "target": "blog.ai.base_url",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.api_key",
+      "target": "blog.ai.api_key",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.model",
+      "target": "blog.ai.model",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.embedding_model",
+      "target": "blog.ai.embedding_model",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.summary_enabled",
+      "target": "blog.ai.summary.enabled",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.allow_user_api",
+      "target": "blog.ai.summary.allow_user_api",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.qa_enabled",
+      "target": "blog.ai.ask.enabled",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.ai.qa_allow_user_llm",
+      "target": "blog.ai.ask.allow_user_llm",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.notebook.auto_excerpt",
+      "target": "theme.profiles.notebook.listing.excerpt_length",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.notebook.license",
+      "target": "blog.content.notebook.license",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.notebook.share",
+      "target": "blog.content.notebook.share",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.type",
+      "target": "theme.article.style",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.article.pin_style",
+      "target": "theme.article.listing.pinned_layout",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.prefers_theme",
+      "target": "theme.appearance.color_scheme",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.text_align",
+      "target": "theme.appearance.typography.content_align",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.color.theme",
+      "target": "theme.appearance.colors.primary",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.color.accent",
+      "target": "theme.appearance.colors.accent",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.color.link",
+      "target": "theme.appearance.colors.link",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.font_size.root",
+      "target": "theme.appearance.typography.font_size.root",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.font_size.code",
+      "target": "theme.appearance.typography.font_size.inline_code",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.font_size.codeblock",
+      "target": "theme.appearance.typography.font_size.code_block",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.font_family.body",
+      "target": "theme.appearance.typography.font_family.body",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.font_family.code",
+      "target": "theme.appearance.typography.font_family.code",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.border_radius.card-l",
+      "target": "theme.appearance.shape.radius.card_large",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.border_radius.card",
+      "target": "theme.appearance.shape.radius.card",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.border_radius.card-s",
+      "target": "theme.appearance.shape.radius.card_small",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.border_radius.bar",
+      "target": "theme.appearance.shape.radius.bar",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.border_radius.image-l",
+      "target": "theme.appearance.shape.radius.image_large",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.border_radius.image",
+      "target": "theme.appearance.shape.radius.image",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.border_radius.image-s",
+      "target": "theme.appearance.shape.radius.image_small",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.gradient.start",
+      "target": "theme.appearance.gradients.primary_action",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.gradient.searchbar",
+      "target": "theme.appearance.gradients.search_bar",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.leftbar.background_image",
+      "target": "theme.appearance.backgrounds.leftbar.image",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.leftbar.blur_px",
+      "target": "theme.appearance.backgrounds.leftbar.backdrop.radius",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.site.background_image",
+      "target": "theme.appearance.backgrounds.page.image",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.site.blur_px",
+      "target": "theme.appearance.backgrounds.page.backdrop.radius",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.site.blur_sat",
+      "target": "theme.appearance.backgrounds.page.backdrop.saturation",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.site.blur_bg",
+      "target": "theme.appearance.backgrounds.page.backdrop.overlay",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.codeblock.scrollbar",
+      "target": "theme.appearance.code_block.scrollbar_width",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.style.codeblock.highlightjs_theme",
+      "target": "theme.appearance.code_block.highlight_stylesheet",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.button.default_color",
+      "target": "theme.tags.button.default_color",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.checkbox.interactive",
+      "target": "theme.tags.checkbox.interactive",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.tag_plugins.note.border",
+      "target": "theme.tags.note.border",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.tag_plugins.note.default_color",
+      "target": "theme.tags.note.default_color",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.icon.default_color",
+      "target": "theme.tags.icon.default_color",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.mark.default_color",
+      "target": "theme.tags.mark.default_color",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.hashtag.default_color",
+      "target": "theme.tags.hashtag.default_color",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.gallery.size",
+      "target": "theme.tags.gallery.size",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.gallery.ratio",
+      "target": "theme.tags.gallery.aspect_ratio",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.tag_plugins.quot.default",
+      "target": "theme.tags.quot.default",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.tag_plugins.quot.hashtag.prefix",
+      "target": "theme.tags.quot.hashtag.prefix",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.tag_plugins.quot.question.prefix",
+      "target": "theme.tags.quot.question.prefix",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.seo",
+      "target": "blog.seo",
+      "behavior": "仅保留宿主 SEO 默认文案/robots/验证及未映射原字段；不覆盖 site，未知字段继续阻断"
+    },
+    {
+      "source": "settings.services.siteinfo.api",
+      "target": "theme.services.site_info.site_info_api.endpoint",
+      "behavior": "旧缺省占位保留在源快照；候选继承上游默认"
+    },
+    {
+      "source": "settings.menubar.items[0].theme",
+      "target": "theme.leftbar.menu[0].accent",
+      "behavior": "旧菜单 CSS 颜色改名；严格 CSS color 校验"
+    },
+    {
+      "source": "settings.menubar.items[1].theme",
+      "target": "theme.leftbar.menu[1].accent",
+      "behavior": "旧菜单 CSS 颜色改名；严格 CSS color 校验"
+    },
+    {
+      "source": "settings.menubar.items[2].theme",
+      "target": "theme.leftbar.menu[2].accent",
+      "behavior": "旧菜单 CSS 颜色改名；严格 CSS color 校验"
+    },
+    {
+      "source": "settings.menubar.items[3].theme",
+      "target": "theme.leftbar.menu[3].accent",
+      "behavior": "旧菜单 CSS 颜色改名；严格 CSS color 校验"
+    },
+    {
+      "source": "settings.menubar.items",
+      "target": "theme.leftbar.menu",
+      "behavior": "菜单顺序/ID/标题/图标/URL 保留；theme 改名 accent"
+    },
+    {
+      "source": "settings.footer.social",
+      "target": "theme.leftbar.footer.actions",
+      "behavior": "社会链接顺序保留；icon_key 优先，否则原 HTML 图标严格验证"
+    },
+    {
+      "source": "settings.footer.sitemap",
+      "target": "theme.footer.sitemap",
+      "behavior": "链接对象转官方 Markdown 字符串，保留组及顺序"
+    },
+    {
+      "source": "settings.article.auto_excerpt",
+      "target": "theme.article.listing.excerpt_length",
+      "behavior": "旧 0 代表默认；候选省略，继承上游默认，源原值保留"
+    },
+    {
+      "source": "settings.article.cover_ratio",
+      "target": "theme.article.listing.cover_ratio",
+      "behavior": "旧 0 代表默认；候选省略，继承上游默认，源原值保留"
+    },
+    {
+      "source": "settings.article.card_style",
+      "target": "theme.article.listing.card_layout",
+      "behavior": "旧未声明覆盖继承上游默认"
+    },
+    {
+      "source": "settings.article.indent",
+      "target": "theme.article.paragraph_indent",
+      "behavior": "布尔缩进转 always/never"
+    },
+    {
+      "source": "settings.article.tags",
+      "target": "theme.article.footer.show_tags",
+      "behavior": "null 为旧继承；候选省略，原值仍在源快照"
+    },
+    {
+      "source": "settings.article.copyright",
+      "target": "theme.article.footer.license",
+      "behavior": "按旧 enabled 保留关闭/Markdown 许可文字"
+    },
+    {
+      "source": "settings.article.share",
+      "target": "blog.content.share",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.article.share.platforms",
+      "target": "theme.article.footer.share + blog.content.share",
+      "behavior": "wechat 候选转 qrcode；复制链接完整保留为 Blog 扩展"
+    },
+    {
+      "source": "settings.style.font_size.body",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.font_family.codeblock",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.leftbar.background_color_dark",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.border_radius.block",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.border_radius.navbar",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.gradient.angle",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.paginator",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.header_prefix",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.animated_avatar",
+      "target": "source.snapshot",
+      "behavior": "旧空默认占位原值保留；上游没有独立覆盖"
+    },
+    {
+      "source": "settings.style.leftbar.background_opacity",
+      "target": "theme.appearance.backgrounds.leftbar.opacity",
+      "behavior": "旧空值继承默认"
+    },
+    {
+      "source": "settings.plugins.scrollreveal.distance",
+      "target": "theme.features.reveal.distance",
+      "behavior": "旧 px 长度转官方数字 px"
+    },
+    {
+      "source": "settings.plugins.preload.service",
+      "target": "theme.features.link_prefetch",
+      "behavior": "flying_pages 使用官方实现"
+    },
+    {
+      "source": "settings.plugins.pjax",
+      "target": "theme.features.partial_navigation.enabled",
+      "behavior": "开关保留；官方 manifest 导航替代旧 PJAX"
+    },
+    {
+      "source": "settings.data_cache",
+      "target": "source.snapshot",
+      "behavior": "完整旧默认对象与固定 Stellar 2.0.0 runtime 缓存策略完全一致；原值留源快照，候选继承官方等效策略"
+    },
+    {
+      "source": "settings.widgets.library",
+      "target": "blog.data.widgets",
+      "behavior": "原值保留（包含 false/null/空列表）"
+    },
+    {
+      "source": "settings.widgets.pages",
+      "target": "theme.profiles",
+      "behavior": "旧空覆盖；继承官方默认区域"
+    },
+    {
+      "source": "settings.site_tree",
+      "target": "theme.profiles",
+      "behavior": "逐 profile 映射；空列表明确清空，缺省继承"
+    },
+    {
+      "source": "settings.search.service",
+      "target": "theme.search.provider / blog.search.provider",
+      "behavior": "空旧默认转 local；只有 go 显式选择 Go FTS"
+    },
+    {
+      "source": "settings.search.local_search.cache_ttl",
+      "target": "theme.search.local.cache_ttl_seconds",
+      "behavior": "原值保持"
+    },
+    {
+      "source": "settings.search.local_search.content",
+      "target": "theme.search.local.include_content",
+      "behavior": "旧空占位继承官方默认"
+    },
+    {
+      "source": "settings.search.local_search.field",
+      "target": "theme.search.local.scope",
+      "behavior": "旧空占位继承官方默认"
+    },
+    {
+      "source": "settings.search.local_search.path",
+      "target": "source.snapshot",
+      "behavior": "官方索引和加载策略由 runtime policy 管理"
+    },
+    {
+      "source": "settings.search.local_search.lazy_load",
+      "target": "source.snapshot",
+      "behavior": "官方索引和加载策略由 runtime policy 管理"
+    },
+    {
+      "source": "settings.search.local_search.skip_search",
+      "target": "source.snapshot",
+      "behavior": "官方索引和加载策略由 runtime policy 管理"
+    },
+    {
+      "source": "settings.notebook.order_by",
+      "target": "theme.profiles.notebook.listing.sort",
+      "behavior": "旧排序符号转 direction，字段由严格 schema 验证"
+    },
+    {
+      "source": "settings.tag_plugins.emoji",
+      "target": "theme.tags.emoji",
+      "behavior": "所有 source 原值保留；默认 URL 转匹配的具名 source"
+    },
+    {
+      "source": "settings.tag_plugins.quot.hashtag.suffix",
+      "target": "theme.tags.quot.hashtag.suffix",
+      "behavior": "空后缀转官方 null"
+    },
+    {
+      "source": "settings.tag_plugins.quot.question.suffix",
+      "target": "theme.tags.quot.question.suffix",
+      "behavior": "空后缀转官方 null"
+    },
+    {
+      "source": "settings.tag_plugins.copy",
+      "target": "source.snapshot",
+      "behavior": "旧参数在源快照完整保留"
+    },
+    {
+      "source": "settings.tag_plugins.okr",
+      "target": "source.snapshot",
+      "behavior": "旧 OKR 对象与固定 Stellar 2.0.0 边框、五状态颜色和 zh-CN 文案完全一致；原值留源快照，候选继承官方等效及请求 locale 文案"
+    },
+    {
+      "source": "settings.tag_plugins.timeline",
+      "target": "source.snapshot",
+      "behavior": "旧参数在源快照完整保留"
+    },
+    {
+      "source": "settings.tag_plugins.gallery.layout",
+      "target": "source.snapshot",
+      "behavior": "旧参数在源快照完整保留"
+    },
+    {
+      "source": "settings.cover",
+      "target": "source.snapshot",
+      "behavior": "旧首页模板以非空 title 为显示门槛；已知 title/description 对象的 title 为空，无显示差异，原值留源快照且不转 Hero"
+    },
+    {
+      "source": "settings.wiki[0].description",
+      "target": "host.wiki_projects.description",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[0].icon",
+      "target": "host.wiki_projects.icon",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[0].repo",
+      "target": "host.wiki_projects.repo",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[0].sort",
+      "target": "host.wiki_projects.sort",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[0].tags",
+      "target": "host.wiki_project_tags",
+      "behavior": "已存在项目标签一致；原关联与 shelf 顺序不变"
+    },
+    {
+      "source": "settings.wiki[0].title",
+      "target": "host.wiki_projects.title",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[0].url",
+      "target": "host.wiki_projects.url",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[1].description",
+      "target": "host.wiki_projects.description",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[1].icon",
+      "target": "host.wiki_projects.icon",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[1].name",
+      "target": "host.wiki_projects.name",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[1].repo",
+      "target": "host.wiki_projects.repo",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[1].sort",
+      "target": "host.wiki_projects.sort",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[1].tags",
+      "target": "host.wiki_project_tags",
+      "behavior": "已存在项目标签一致；原关联与 shelf 顺序不变"
+    },
+    {
+      "source": "settings.wiki[1].title",
+      "target": "host.wiki_projects.title",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[1].url",
+      "target": "host.wiki_projects.url",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[2].description",
+      "target": "host.wiki_projects.description",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[2].icon",
+      "target": "host.wiki_projects.icon",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[2].name",
+      "target": "host.wiki_projects.name",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[2].repo",
+      "target": "host.wiki_projects.repo",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[2].sort",
+      "target": "host.wiki_projects.sort",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[2].tags",
+      "target": "host.wiki_project_tags",
+      "behavior": "已存在项目标签一致；原关联与 shelf 顺序不变"
+    },
+    {
+      "source": "settings.wiki[2].title",
+      "target": "host.wiki_projects.title",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki[2].url",
+      "target": "host.wiki_projects.url",
+      "behavior": "旧 shelf 与现有集合列一致，值保留在集合候选"
+    },
+    {
+      "source": "settings.wiki",
+      "target": "blog.data.wiki",
+      "behavior": "旧 shelf 顺序转官方项目 ID 字符串数组；冗余定义逐字段核对，冲突不能静默丢弃"
+    },
+    {
+      "source": "settings.article.share.enabled",
+      "target": "blog.content.enabled",
+      "behavior": "旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册"
+    },
+    {
+      "source": "settings.article.reward.enabled",
+      "target": "blog.content.enabled",
+      "behavior": "旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册"
+    },
+    {
+      "source": "settings.site.url",
+      "target": "settings.site.url + blog.site.url",
+      "behavior": "按具名批准地址同步宿主与Blog；旧值完整保留在source archive，不改源快照"
+    }
+  ],
+  "diagnostics": [
+    {
+      "kind": "structure",
+      "severity": "info",
+      "code": "legacy_notebook_schema",
+      "source": "schema",
+      "path": "notebooks/notes",
+      "message": "旧 INTEGER ID、nb_order、content/tags 表与新 TEXT ID、slug/status/content_md/tags_json 不兼容；必须单独审核 schema 转换，不能先假设 EnsureTable 会升级；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "avatar_background",
+      "code": "global_avatar_background_consumer",
+      "source": "settings",
+      "path": "site.avatar_bg",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "rightbar_intro",
+      "code": "global_rightbar_intro_consumer",
+      "source": "settings",
+      "path": "rightbar.intro",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "welcome_linklist",
+      "code": "global_welcome_linklist_consumer",
+      "source": "settings",
+      "path": "rightbar.welcome_linklist",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "pages",
+      "code": "global_pages_consumer",
+      "source": "settings",
+      "path": "pages",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "nav_tabs",
+      "code": "global_nav_tabs_consumer",
+      "source": "settings",
+      "path": "nav_tabs",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "ai_label",
+      "code": "global_ai_label_consumer",
+      "source": "settings",
+      "path": "article.ai_label",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "category_icons",
+      "code": "global_category_icons_consumer",
+      "source": "settings",
+      "path": "article.category_icon",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "tag_icons",
+      "code": "global_tag_icons_consumer",
+      "source": "settings",
+      "path": "article.tag_icon",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "read_next",
+      "code": "global_read_next_consumer",
+      "source": "settings",
+      "path": "article.read_next",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "expire_days",
+      "code": "global_expire_days_consumer",
+      "source": "settings",
+      "path": "article.expire_days",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "banner_ratio",
+      "code": "global_banner_ratio_consumer",
+      "source": "settings",
+      "path": "article.banner_ratio",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "edit_this_page",
+      "code": "global_edit_this_page_consumer",
+      "source": "settings",
+      "path": "article.edit_this_page",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "notebook_license",
+      "code": "global_notebook_license_consumer",
+      "source": "settings",
+      "path": "notebook.license",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "notebook_share",
+      "code": "global_notebook_share_consumer",
+      "source": "settings",
+      "path": "notebook.share",
+      "message": "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "seo",
+      "code": "global_seo_consumer",
+      "source": "settings",
+      "path": "seo",
+      "message": "已批准的宿主 SEO 扩展仅存储不代表已消费；须实测 typed 默认文案、head 与 robots 后显式声明能力",
+      "blocking": false
+    },
+    {
+      "kind": "policy",
+      "severity": "info",
+      "code": "pjax_policy_removed",
+      "source": "settings",
+      "path": "plugins.pjax",
+      "message": "旧存储 selectors/timeout 与官方 manifest 导航没有直接等效字段；不据存储值推断旧 runtime 正在消费，审核后明确接受官方策略；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+      "blocking": false
+    },
+    {
+      "kind": "consumer",
+      "severity": "info",
+      "consumer": "author_widget",
+      "code": "widget_author_removed",
+      "source": "settings",
+      "path": "widgets.library.author",
+      "message": "author widget 没有同等上游布局，完整定义保留在 Blog.data.widgets；需决定独立扩展消费",
+      "blocking": false
+    },
+    {
+      "kind": "policy",
+      "severity": "info",
+      "code": "wiki_shelf_definition_conflict",
+      "source": "settings",
+      "path": "wiki[0].name",
+      "message": "旧 shelf 冗余定义与当前项目表不同或无目标；官方 shelf 仅 ID 数组，需明确集合值来源；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+      "blocking": false
+    },
+    {
+      "kind": "schema",
+      "severity": "info",
+      "code": "invalid_value",
+      "source": "migration.theme",
+      "path": "leftbar.footer.actions[1].url",
+      "message": "safe navigable URL or root-relative path；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+      "blocking": false
+    },
+    {
+      "kind": "schema",
+      "severity": "info",
+      "code": "invalid_value",
+      "source": "migration.theme",
+      "path": "leftbar.footer.actions[2].url",
+      "message": "safe navigable URL or root-relative path；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+      "blocking": false
+    },
+    {
+      "kind": "schema",
+      "severity": "info",
+      "code": "invalid_value",
+      "source": "migration.theme",
+      "path": "leftbar.footer.actions[3].url",
+      "message": "safe navigable URL or root-relative path；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+      "blocking": false
+    },
+    {
+      "kind": "policy",
+      "severity": "info",
+      "code": "site_url_required",
+      "source": "settings",
+      "path": "site.url",
+      "message": "宿主站点地址必须是绝对HTTP(S)地址且不含身份、query或fragment；需明确提供地址，不可由参考站或请求origin推断；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+      "blocking": false
+    }
+  ],
+  "records": [
+    {
+      "source": "wiki_projects/go-blog",
+      "profile": "wiki",
+      "path": "/wiki/go-blog",
+      "source_digest": "a3cdbb49ca83da647e435de8aa2a628b49c194f9ce971785905c15dbcf37f944",
+      "config_digest": "909c1673ee740e364609796065e15346af7048a4dddb5ce4f8942a0a040e1434",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "wiki_projects/go-blog.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/go-blog.available",
+          "target": "host.wiki_projects.available",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.branch",
+          "target": "host.wiki_projects.branch",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.cover",
+          "target": "host.wiki_projects.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.created_at",
+          "target": "host.wiki_projects.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.description",
+          "target": "host.wiki_projects.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.headline",
+          "target": "host.wiki_projects.headline",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.hero_json",
+          "target": "host.wiki_projects.hero_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.icon",
+          "target": "host.wiki_projects.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.id",
+          "target": "host.wiki_projects.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.name",
+          "target": "host.wiki_projects.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.pin",
+          "target": "host.wiki_projects.pin",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.repo",
+          "target": "host.wiki_projects.repo",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.sort",
+          "target": "host.wiki_projects.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.subtitle",
+          "target": "host.wiki_projects.subtitle",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.title",
+          "target": "host.wiki_projects.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.updated_at",
+          "target": "host.wiki_projects.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.url",
+          "target": "host.wiki_projects.url",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.visible",
+          "target": "host.wiki_projects.visible",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/go-blog.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/go-blog.description",
+          "target": "front_matter.description",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/go-blog.icon",
+          "target": "front_matter.icon",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/go-blog.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/go-blog.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "wiki_projects/go-blog.sort",
+          "target": "front_matter.listing.order",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/go-blog.wikidocs.project_id/doc_order/slug",
+          "target": "front_matter.navigation.tree",
+          "behavior": "完整成员与顺序保留，权限仍由宿主状态控制"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "policy",
+          "severity": "info",
+          "code": "wiki_name_title",
+          "source": "wiki_projects/go-blog",
+          "path": "name/title",
+          "message": "旧 name 与 title 同时存在且不同；官方 Collection 只有 name/headline，须审核显示标题与技术名的归属；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+          "blocking": false
+        },
+        {
+          "kind": "policy",
+          "severity": "info",
+          "code": "wiki_homepage",
+          "source": "wiki_projects/go-blog",
+          "path": "route.path/navigation.tree",
+          "message": "旧项目入口重定向至第一篇已发布文档；上游会生成首页/Collection 模型。两个候选都保留成员身份，需审核入口行为；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "wiki_projects/stellar",
+      "profile": "wiki",
+      "path": "/wiki/stellar",
+      "source_digest": "a08a0e67fec3cbfdc5a9471e0f46e75858669a04f754ce564a9250139d58c7b1",
+      "config_digest": "ab7c9efe8c1fc99630b16d38cb3927709c3f9490c29ceb9a5518ebedb6e8de2a",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "wiki_projects/stellar.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/stellar.available",
+          "target": "host.wiki_projects.available",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.branch",
+          "target": "host.wiki_projects.branch",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.cover",
+          "target": "host.wiki_projects.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.created_at",
+          "target": "host.wiki_projects.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.description",
+          "target": "host.wiki_projects.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.headline",
+          "target": "host.wiki_projects.headline",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.hero_json",
+          "target": "host.wiki_projects.hero_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.icon",
+          "target": "host.wiki_projects.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.id",
+          "target": "host.wiki_projects.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.name",
+          "target": "host.wiki_projects.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.pin",
+          "target": "host.wiki_projects.pin",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.repo",
+          "target": "host.wiki_projects.repo",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.sort",
+          "target": "host.wiki_projects.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.subtitle",
+          "target": "host.wiki_projects.subtitle",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.title",
+          "target": "host.wiki_projects.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.updated_at",
+          "target": "host.wiki_projects.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.url",
+          "target": "host.wiki_projects.url",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.visible",
+          "target": "host.wiki_projects.visible",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/stellar.description",
+          "target": "front_matter.description",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/stellar.icon",
+          "target": "front_matter.icon",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/stellar.repo",
+          "target": "front_matter.source.repository",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/stellar.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "wiki_projects/stellar.sort",
+          "target": "front_matter.listing.order",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/stellar.title",
+          "target": "front_matter.name",
+          "behavior": "旧 name 空，显示标题保留为官方 name"
+        },
+        {
+          "source": "wiki_projects/stellar.wikidocs.project_id/doc_order/slug",
+          "target": "front_matter.navigation.tree",
+          "behavior": "完整成员与顺序保留，权限仍由宿主状态控制"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "wiki_projects/frontend",
+      "profile": "wiki",
+      "path": "/wiki/frontend",
+      "source_digest": "aac47a76d4994e3bdd0be0e9fa7faa87b3636e320504840bde14cee56640a6db",
+      "config_digest": "508373429a440d4f72041209d4006d7fb2ddd8a48bd09fbdccf422837929de74",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "wiki_projects/frontend.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/frontend.available",
+          "target": "host.wiki_projects.available",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.branch",
+          "target": "host.wiki_projects.branch",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.cover",
+          "target": "host.wiki_projects.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.created_at",
+          "target": "host.wiki_projects.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.description",
+          "target": "host.wiki_projects.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.headline",
+          "target": "host.wiki_projects.headline",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.hero_json",
+          "target": "host.wiki_projects.hero_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.icon",
+          "target": "host.wiki_projects.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.id",
+          "target": "host.wiki_projects.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.name",
+          "target": "host.wiki_projects.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.pin",
+          "target": "host.wiki_projects.pin",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.repo",
+          "target": "host.wiki_projects.repo",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.sort",
+          "target": "host.wiki_projects.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.subtitle",
+          "target": "host.wiki_projects.subtitle",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.title",
+          "target": "host.wiki_projects.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.updated_at",
+          "target": "host.wiki_projects.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.url",
+          "target": "host.wiki_projects.url",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.visible",
+          "target": "host.wiki_projects.visible",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wiki_projects/frontend.description",
+          "target": "front_matter.description",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/frontend.icon",
+          "target": "front_matter.icon",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/frontend.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "wiki_projects/frontend.sort",
+          "target": "front_matter.listing.order",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wiki_projects/frontend.title",
+          "target": "front_matter.name",
+          "behavior": "旧 name 空，显示标题保留为官方 name"
+        },
+        {
+          "source": "wiki_projects/frontend.wikidocs.project_id/doc_order/slug",
+          "target": "front_matter.navigation.tree",
+          "behavior": "完整成员与顺序保留，权限仍由宿主状态控制"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "topics/1",
+      "profile": "topic",
+      "path": "/topic/stellar-1400",
+      "source_digest": "8ccbd27011967c5e22bd775130314b3ff116cbcd68a618d8e6524cf0bdc95103",
+      "config_digest": "ae0c7074a8c8c13ac8e9502c0b9adef2bdcb2fc3a10266d34e67deefdcca0de0",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "topics/1.cover",
+          "target": "host.topics.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.created_at",
+          "target": "host.topics.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.description",
+          "target": "host.topics.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.icon",
+          "target": "host.topics.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.id",
+          "target": "host.topics.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.name",
+          "target": "host.topics.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.slug",
+          "target": "host.topics.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.sort",
+          "target": "host.topics.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.updated_at",
+          "target": "host.topics.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/1.slug",
+          "target": "collection.id",
+          "behavior": "stellar-1400"
+        },
+        {
+          "source": "topics/1.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/1.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "topics/1.sort",
+          "target": "blog.content.collection_order",
+          "behavior": "旧集合列表排序独立保留，不能错用上游成员排序"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "collection_order",
+          "code": "topic_order_consumer",
+          "source": "topics/1",
+          "path": "sort",
+          "message": "旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "topics/2",
+      "profile": "topic",
+      "path": "/topic/发布流程",
+      "source_digest": "9321d5379961980ce8699f33eb25dee141224045f6de8326be1141b80ee74165",
+      "config_digest": "76d9583839a20608819036297f5e61e48e46fe0164c840f3e4052021346c1ab5",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "topics/2.cover",
+          "target": "host.topics.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.created_at",
+          "target": "host.topics.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.description",
+          "target": "host.topics.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.icon",
+          "target": "host.topics.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.id",
+          "target": "host.topics.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.name",
+          "target": "host.topics.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.slug",
+          "target": "host.topics.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.sort",
+          "target": "host.topics.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.updated_at",
+          "target": "host.topics.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/2.slug",
+          "target": "collection.id",
+          "behavior": "发布流程"
+        },
+        {
+          "source": "topics/2.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/2.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "topics/2.sort",
+          "target": "blog.content.collection_order",
+          "behavior": "旧集合列表排序独立保留，不能错用上游成员排序"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "collection_order",
+          "code": "topic_order_consumer",
+          "source": "topics/2",
+          "path": "sort",
+          "message": "旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "topics/3",
+      "profile": "topic",
+      "path": "/topic/标签插件",
+      "source_digest": "656b1e91b54e7896cd75f763837e3517ffc472e06f0aadcce356a736ad5375ec",
+      "config_digest": "7ac33ba4bd870f0bfed1e122922004c48fd2cc3912b4d572f4831858d97fbe3b",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "topics/3.cover",
+          "target": "host.topics.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.created_at",
+          "target": "host.topics.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.description",
+          "target": "host.topics.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.icon",
+          "target": "host.topics.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.id",
+          "target": "host.topics.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.name",
+          "target": "host.topics.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.slug",
+          "target": "host.topics.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.sort",
+          "target": "host.topics.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.updated_at",
+          "target": "host.topics.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/3.slug",
+          "target": "collection.id",
+          "behavior": "标签插件"
+        },
+        {
+          "source": "topics/3.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/3.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "topics/3.sort",
+          "target": "blog.content.collection_order",
+          "behavior": "旧集合列表排序独立保留，不能错用上游成员排序"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "collection_order",
+          "code": "topic_order_consumer",
+          "source": "topics/3",
+          "path": "sort",
+          "message": "旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "topics/4",
+      "profile": "topic",
+      "path": "/topic/内容组织",
+      "source_digest": "e05e264709b62fbbd58f8f70fd1eebf08486c63411df074a45ff6a615bc30996",
+      "config_digest": "ae9b7bfd39e053d7be3145aa0266f11855efd39814f54555b382e04bfbaca642",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "topics/4.cover",
+          "target": "host.topics.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.created_at",
+          "target": "host.topics.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.description",
+          "target": "host.topics.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.icon",
+          "target": "host.topics.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.id",
+          "target": "host.topics.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.name",
+          "target": "host.topics.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.slug",
+          "target": "host.topics.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.sort",
+          "target": "host.topics.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.updated_at",
+          "target": "host.topics.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/4.slug",
+          "target": "collection.id",
+          "behavior": "内容组织"
+        },
+        {
+          "source": "topics/4.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/4.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "topics/4.sort",
+          "target": "blog.content.collection_order",
+          "behavior": "旧集合列表排序独立保留，不能错用上游成员排序"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "collection_order",
+          "code": "topic_order_consumer",
+          "source": "topics/4",
+          "path": "sort",
+          "message": "旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "topics/5",
+      "profile": "topic",
+      "path": "/topic/stellar-1410",
+      "source_digest": "e1103eca9ea17dcb5e388c6f0f700aecbfd7203d381161f233fa1c99139ad39c",
+      "config_digest": "84d968ed10a81e0bd99060c276f26956501d2ece94c9d03c7e69463d196abe3c",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "topics/5.cover",
+          "target": "host.topics.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.created_at",
+          "target": "host.topics.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.description",
+          "target": "host.topics.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.icon",
+          "target": "host.topics.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.id",
+          "target": "host.topics.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.name",
+          "target": "host.topics.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.slug",
+          "target": "host.topics.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.sort",
+          "target": "host.topics.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.updated_at",
+          "target": "host.topics.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/5.slug",
+          "target": "collection.id",
+          "behavior": "stellar-1410"
+        },
+        {
+          "source": "topics/5.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/5.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "topics/5.sort",
+          "target": "blog.content.collection_order",
+          "behavior": "旧集合列表排序独立保留，不能错用上游成员排序"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "collection_order",
+          "code": "topic_order_consumer",
+          "source": "topics/5",
+          "path": "sort",
+          "message": "旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "topics/6",
+      "profile": "topic",
+      "path": "/topic/stellar-1421",
+      "source_digest": "e06a06e6602efb301d93b6d2b5047e09e4ec077241096fc7aac20d59e1f9e212",
+      "config_digest": "e35367e0476d22dd1c4e98003fc1782c39cbdd2c9ebfbb29a1cca549f86266b3",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "topics/6.cover",
+          "target": "host.topics.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.created_at",
+          "target": "host.topics.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.description",
+          "target": "host.topics.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.icon",
+          "target": "host.topics.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.id",
+          "target": "host.topics.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.name",
+          "target": "host.topics.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.slug",
+          "target": "host.topics.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.sort",
+          "target": "host.topics.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.updated_at",
+          "target": "host.topics.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/6.slug",
+          "target": "collection.id",
+          "behavior": "stellar-1421"
+        },
+        {
+          "source": "topics/6.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/6.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "topics/6.sort",
+          "target": "blog.content.collection_order",
+          "behavior": "旧集合列表排序独立保留，不能错用上游成员排序"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "collection_order",
+          "code": "topic_order_consumer",
+          "source": "topics/6",
+          "path": "sort",
+          "message": "旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "topics/7",
+      "profile": "topic",
+      "path": "/topic/stellar-验收",
+      "source_digest": "4cd8f1bebe904eda6c961851d281f2588f1609a5f4784aa9fd57da72004eec68",
+      "config_digest": "4e6d97c60808b355b2c9dfeda4214771a8516d462708028019b4fb2a8abbfa92",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "topics/7.cover",
+          "target": "host.topics.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.created_at",
+          "target": "host.topics.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.description",
+          "target": "host.topics.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.icon",
+          "target": "host.topics.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.id",
+          "target": "host.topics.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.name",
+          "target": "host.topics.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.slug",
+          "target": "host.topics.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.sort",
+          "target": "host.topics.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.updated_at",
+          "target": "host.topics.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "topics/7.slug",
+          "target": "collection.id",
+          "behavior": "stellar-验收"
+        },
+        {
+          "source": "topics/7.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/7.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "topics/7.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        },
+        {
+          "source": "topics/7.sort",
+          "target": "blog.content.collection_order",
+          "behavior": "旧集合列表排序独立保留，不能错用上游成员排序"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "collection_order",
+          "code": "topic_order_consumer",
+          "source": "topics/7",
+          "path": "sort",
+          "message": "旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "notebooks/2",
+      "profile": "notebook",
+      "path": "/notebooks/2",
+      "source_digest": "cce0e8e4828887887e68de7e15776017a50dc19f2b863ff7b60662678f3290ba",
+      "config_digest": "32242a0d27c53df98096e1cf82414ec96e5f5516238cea01440f2ef85817877e",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "notebooks/2.author_id",
+          "target": "host.notebooks.author_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.blog_extensions",
+          "target": "host.notebooks.blog_extensions",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.cover",
+          "target": "host.notebooks.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.created_at",
+          "target": "host.notebooks.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.description",
+          "target": "host.notebooks.description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.icon",
+          "target": "host.notebooks.icon",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.id",
+          "target": "host.notebooks.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.name",
+          "target": "host.notebooks.name",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.sort",
+          "target": "host.notebooks.sort",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.stellar_config",
+          "target": "host.notebooks.stellar_config",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.stellar_version",
+          "target": "host.notebooks.stellar_version",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.updated_at",
+          "target": "host.notebooks.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notebooks/2.name",
+          "target": "front_matter.name",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "notebooks/2.description",
+          "target": "front_matter.description",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "notebooks/2.id/slug",
+          "target": "front_matter.route.path",
+          "behavior": "保持旧公开集合路径"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/1",
+      "profile": "topic",
+      "path": "/post/140-card-tags",
+      "source_digest": "90b6a7c2fd467de88595ae0cc1f1840d2c0e9d7d2d0372cd81c049a8eb6e814e",
+      "config_digest": "c60c89373b6d76f1dbd1a79a96221382967928b44699d2840a4768c58f6d689a",
+      "markdown_changed": true,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/1.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/1.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/1.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/1.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/1.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/1.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/1.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/1.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/1.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        },
+        {
+          "source": "posts/1.markdown.byte[576]",
+          "target": "blog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        },
+        {
+          "source": "posts/1.markdown.byte[740]",
+          "target": "endblog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/2",
+      "profile": "topic",
+      "path": "/post/140-draft",
+      "source_digest": "3c19496c457f3b8c2e5f9c27043b0917b9dab35f9496016012d5f6879cfa63f3",
+      "config_digest": "b96f5a83d3df89b60c9cd69f682a50d13eb5fb5428d542e0f3c0928880658f4b",
+      "markdown_changed": true,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/2.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/2.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/2.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/2.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/2.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/2.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/2.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/2.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        },
+        {
+          "source": "posts/2.markdown.byte[115]",
+          "target": "blog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        },
+        {
+          "source": "posts/2.markdown.byte[213]",
+          "target": "endblog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/3",
+      "profile": "topic",
+      "path": "/post/140-md-wrapper",
+      "source_digest": "38df19f4ad5847caade6d1bb75c9b66bdd7c2708854b33b8844264a21b142873",
+      "config_digest": "1f077e9a613de2c2d20c3eadae3fd215045fc50ea580c8a1ec7fa48cd6c9f8f1",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/3.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/3.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/3.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/3.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/3.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/3.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/3.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/3.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/4",
+      "profile": "topic",
+      "path": "/post/140-navigation",
+      "source_digest": "456c0c58b3837d6a64081820025a7662d94f5d5240034809775a512090285052",
+      "config_digest": "f70e9b6d6f2fd8fdb7b6b34b91aa168a4fa47b4d3bbab216ab82ee98d1cb29cc",
+      "markdown_changed": true,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/4.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/4.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/4.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/4.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/4.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/4.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/4.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/4.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        },
+        {
+          "source": "posts/4.markdown.byte[470]",
+          "target": "blog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        },
+        {
+          "source": "posts/4.markdown.byte[611]",
+          "target": "endblog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/5",
+      "profile": "topic",
+      "path": "/post/140-reading-time",
+      "source_digest": "55e2eabc1e1c146f8c765bc8da6971a6342378c9483f73fbd98cb00f946f3ca7",
+      "config_digest": "bfdc8a412a16c0f737d0d251b4ecf7e1d5b254e3f973279b57fecd6c51af743a",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/5.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/5.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/5.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/5.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/5.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/5.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/5.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/5.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "posts/5",
+          "path": "poster",
+          "message": "旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "posts/6",
+      "profile": "topic",
+      "path": "/post/140-table-styles",
+      "source_digest": "dcfd518707ad5ab6f2545804ace77dffe31ea7d0659e79e917515c0093afabf9",
+      "config_digest": "f7231acaf21197c8d85a95473e6efd77c5c1133543781ff1df59469900e3e7d4",
+      "markdown_changed": true,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/6.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/6.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/6.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/6.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/6.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/6.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/6.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/6.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        },
+        {
+          "source": "posts/6.markdown.byte[651]",
+          "target": "blog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        },
+        {
+          "source": "posts/6.markdown.byte[803]",
+          "target": "endblog_tip",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/8",
+      "profile": "topic",
+      "path": "/post/141-stellar-141",
+      "source_digest": "1f7d80c8c929fae82c3eaee03d69deeffc96af559abbeec72ddaac7eb1930380",
+      "config_digest": "0e041de5e510aaf5ccbe6a6938a8b8907f7b94beef76707d8f5c12eca12fdd72",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/8.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/8.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/8.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/8.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/8.ai_label",
+          "target": "front_matter.article.ai_label",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/8.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/8.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/8.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/8.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/8.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/9",
+      "profile": "topic",
+      "path": "/post/141-feature-playground",
+      "source_digest": "b0947af3cf5e0145ed75c808cde5255c899442b59b358ddec6cf17ca4e030599",
+      "config_digest": "1e7831d305432c98962911d68ea91d72c7aae247ba65a66b39f1d8d010b46299",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/9.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/9.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/9.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/9.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/9.ai_label",
+          "target": "front_matter.article.ai_label",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/9.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/9.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/9.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/9.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/9.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/10",
+      "profile": "topic",
+      "path": "/post/142-stellar-142",
+      "source_digest": "eb1f33d8273f7a253fe3421daaa053ae7b449c5e71f3e9026639d8c8e8db5aed",
+      "config_digest": "8f945339e5157df469513d9a8e3f3a99a2bfc7c43c6e9c2eea4eaab428b89137",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/10.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/10.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/10.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/10.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/10.ai_label",
+          "target": "front_matter.article.ai_label",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/10.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/10.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/10.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/10.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/10.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "policy",
+          "severity": "info",
+          "code": "banner_cover",
+          "source": "posts/10",
+          "path": "banner/cover",
+          "message": "旧 banner 与 cover 是独立图源，官方 banner.background 是布尔且图源来自 cover；禁止覆盖旧 cover；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "posts/11",
+      "profile": "topic",
+      "path": "/post/stellar-143-acceptance",
+      "source_digest": "4933a09519053b23774f54124adf4d000829f1291134741449f7bfa062f68bc0",
+      "config_digest": "e314d57a3109ab94a873347f7a2894e2f166e585207091adbebe6214bc19e14a",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/11.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/11.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/11.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/11.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/11.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/11.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/11.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/11.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "posts/11",
+          "path": "poster",
+          "message": "旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "posts/12",
+      "profile": "post",
+      "path": "/post/shortcode-可视化编辑测试",
+      "source_digest": "4cef8d87e43bb746ff300a932696b629a2416514fa0ef1b553d3c205e8518567",
+      "config_digest": "39812c816018856aae5ece44baaeaf2934fc9334a1edacad00d58e21a15b1194",
+      "markdown_changed": true,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/12.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/12.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/12.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/12.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/12.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/12.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/12.markdown.byte[674]",
+          "target": "image.fancybox:false",
+          "behavior": "显式保留旧 image 默认禁用放大；避免官方 true 改变点击行为"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "posts/13",
+      "profile": "topic",
+      "path": "/post/stellar-144-acceptance",
+      "source_digest": "54008206c1ca620fa4bb4236bcbbd5d99267a1a8ec289d590c430eb21f127186",
+      "config_digest": "4301d0e974df2993bdd0af3a4d2512b247d918088a702a9f6e86e2184f698b51",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "posts/13.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/13.ai_label",
+          "target": "host.posts.ai_label",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.ai_summary",
+          "target": "host.posts.ai_summary",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.author",
+          "target": "host.posts.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.banner",
+          "target": "host.posts.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.category",
+          "target": "host.posts.category",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.content_html",
+          "target": "host.posts.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.content_md",
+          "target": "host.posts.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.cover",
+          "target": "host.posts.cover",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.created_at",
+          "target": "host.posts.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.deleted_at",
+          "target": "host.posts.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.draft_json",
+          "target": "host.posts.draft_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.excerpt",
+          "target": "host.posts.excerpt",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.id",
+          "target": "host.posts.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.meta_description",
+          "target": "host.posts.meta_description",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.meta_keywords",
+          "target": "host.posts.meta_keywords",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.password",
+          "target": "host.posts.password",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.pinned",
+          "target": "host.posts.pinned",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.poster",
+          "target": "host.posts.poster",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.publish_at",
+          "target": "host.posts.publish_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.references",
+          "target": "host.posts.references",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.slug",
+          "target": "host.posts.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.status",
+          "target": "host.posts.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.tags",
+          "target": "host.posts.tags",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.title",
+          "target": "host.posts.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.topic",
+          "target": "host.posts.topic",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.topic_id",
+          "target": "host.posts.topic_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.updated_at",
+          "target": "host.posts.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.views",
+          "target": "host.posts.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "posts/13.excerpt",
+          "target": "front_matter.excerpt",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/13.cover",
+          "target": "front_matter.cover",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/13.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/13.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "posts/13.pinned",
+          "target": "front_matter.listing.priority",
+          "behavior": "旧布尔 false/true 转 0/1"
+        },
+        {
+          "source": "posts/13.topic_id/topic",
+          "target": "front_matter.collection",
+          "behavior": "迁移预览使用确切旧归属；strict runtime 不猜旧列"
+        },
+        {
+          "source": "posts/13.post_categories/categories",
+          "target": "front_matter.categories",
+          "behavior": "所有完整层级路径与关联 position 顺序保留"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "posts/13",
+          "path": "poster",
+          "message": "旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "pages/1",
+      "profile": "page",
+      "path": "/friends",
+      "source_digest": "cf3e11c6b5415be6dcf70848d54dad35c2456de6fcc1d1db821bf143313b65de",
+      "config_digest": "6b2bfb78e22e80d5ff2cb63fa716dcf4ac5f8b5880782ba8885c613509be63ae",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "pages/1.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/1.author",
+          "target": "host.pages.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.banner",
+          "target": "host.pages.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.banner_info",
+          "target": "host.pages.banner_info",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.breadcrumb",
+          "target": "host.pages.breadcrumb",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.content_html",
+          "target": "host.pages.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.content_md",
+          "target": "host.pages.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.created_at",
+          "target": "host.pages.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.deleted_at",
+          "target": "host.pages.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.id",
+          "target": "host.pages.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.is_system",
+          "target": "host.pages.is_system",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.leftbar_widgets",
+          "target": "host.pages.leftbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.published_at",
+          "target": "host.pages.published_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.rightbar_widgets",
+          "target": "host.pages.rightbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.slug",
+          "target": "host.pages.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.status",
+          "target": "host.pages.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.title",
+          "target": "host.pages.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.updated_at",
+          "target": "host.pages.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.views",
+          "target": "host.pages.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/1.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/1.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "pages/2",
+      "profile": "page",
+      "path": "/notes",
+      "source_digest": "66a242dad1a96182b4edb0833717762288ea6a54dd978fde84c26318a5eb3f8c",
+      "config_digest": "7a50b5ba15a09a0d4cdfc1fe5b46beebb6e054209f03555852e786be245cbf04",
+      "markdown_changed": true,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "pages/2.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/2.author",
+          "target": "host.pages.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.banner",
+          "target": "host.pages.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.banner_info",
+          "target": "host.pages.banner_info",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.breadcrumb",
+          "target": "host.pages.breadcrumb",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.content_html",
+          "target": "host.pages.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.content_md",
+          "target": "host.pages.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.created_at",
+          "target": "host.pages.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.deleted_at",
+          "target": "host.pages.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.id",
+          "target": "host.pages.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.is_system",
+          "target": "host.pages.is_system",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.leftbar_widgets",
+          "target": "host.pages.leftbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.published_at",
+          "target": "host.pages.published_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.rightbar_widgets",
+          "target": "host.pages.rightbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.slug",
+          "target": "host.pages.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.status",
+          "target": "host.pages.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.title",
+          "target": "host.pages.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.updated_at",
+          "target": "host.pages.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.views",
+          "target": "host.pages.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/2.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/2.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/2.markdown.byte[1851]",
+          "target": "blog_moments",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "pages/3",
+      "profile": "page",
+      "path": "/links",
+      "source_digest": "abbeb8c0d60235c4b58cfdc8f437b31f286b85f996cbbc11bcc686647bb2dcdc",
+      "config_digest": "21db8249023fa7cbc9be3836a6453ac7bf0404c263715795fbc752724f720753",
+      "markdown_changed": true,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "pages/3.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/3.author",
+          "target": "host.pages.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.banner",
+          "target": "host.pages.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.banner_info",
+          "target": "host.pages.banner_info",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.breadcrumb",
+          "target": "host.pages.breadcrumb",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.content_html",
+          "target": "host.pages.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.content_md",
+          "target": "host.pages.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.created_at",
+          "target": "host.pages.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.deleted_at",
+          "target": "host.pages.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.id",
+          "target": "host.pages.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.is_system",
+          "target": "host.pages.is_system",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.leftbar_widgets",
+          "target": "host.pages.leftbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.published_at",
+          "target": "host.pages.published_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.rightbar_widgets",
+          "target": "host.pages.rightbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.slug",
+          "target": "host.pages.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.status",
+          "target": "host.pages.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.title",
+          "target": "host.pages.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.updated_at",
+          "target": "host.pages.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.views",
+          "target": "host.pages.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/3.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/3.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/3.markdown.byte[0]",
+          "target": "blog_links",
+          "behavior": "只改批准的 Blog 扩展名字；参数、正文及空白逐字保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "pages/5",
+      "profile": "page",
+      "path": "/140-test-page",
+      "source_digest": "d3244b1bb2f26b6466d39810328f3b0f9f5ace50034728945d8ee62c4fe03ead",
+      "config_digest": "280624f3b71a535f7946b712929ba1537b007bc2265da3f483fc5e3594bcf517",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "pages/5.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/5.author",
+          "target": "host.pages.author",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.banner",
+          "target": "host.pages.banner",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.banner_info",
+          "target": "host.pages.banner_info",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.breadcrumb",
+          "target": "host.pages.breadcrumb",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.content_html",
+          "target": "host.pages.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.content_md",
+          "target": "host.pages.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.created_at",
+          "target": "host.pages.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.deleted_at",
+          "target": "host.pages.deleted_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.id",
+          "target": "host.pages.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.is_system",
+          "target": "host.pages.is_system",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.leftbar_widgets",
+          "target": "host.pages.leftbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.published_at",
+          "target": "host.pages.published_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.rightbar_widgets",
+          "target": "host.pages.rightbar_widgets",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.slug",
+          "target": "host.pages.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.status",
+          "target": "host.pages.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.title",
+          "target": "host.pages.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.updated_at",
+          "target": "host.pages.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.views",
+          "target": "host.pages.views",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "pages/5.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "pages/5.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "wikidocs/1",
+      "profile": "wiki",
+      "path": "/wiki/go-blog/acceptance",
+      "source_digest": "2dc12423cce6e5de05eacd3e3a4856d173ba8e02c33f1e9da94c3870e871c72e",
+      "config_digest": "207ac2497fa4334750a98ffa62674d9dc8455355c17e51e0ab9e980a7e3ebd1c",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "wikidocs/1.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wikidocs/1.content_html",
+          "target": "host.wikidocs.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.content_md",
+          "target": "host.wikidocs.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.created_at",
+          "target": "host.wikidocs.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.doc_order",
+          "target": "host.wikidocs.doc_order",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.id",
+          "target": "host.wikidocs.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.parent",
+          "target": "host.wikidocs.parent",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.project_id",
+          "target": "host.wikidocs.project_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.slug",
+          "target": "host.wikidocs.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.status",
+          "target": "host.wikidocs.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.title",
+          "target": "host.wikidocs.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.updated_at",
+          "target": "host.wikidocs.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/1.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wikidocs/1.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wikidocs/1.project_id",
+          "target": "front_matter.collection",
+          "behavior": "原 Wiki 归属保持，不移动文档"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "wikidocs/2",
+      "profile": "wiki",
+      "path": "/wiki/go-blog/responsive",
+      "source_digest": "1a1050d6ff4c32f4564521e54720f90fba83dd219b1a91658e823875904b97fe",
+      "config_digest": "723ec7499379141d7222366b880131d9fede81a029741876fea9383e2b73a188",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "wikidocs/2.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wikidocs/2.content_html",
+          "target": "host.wikidocs.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.content_md",
+          "target": "host.wikidocs.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.created_at",
+          "target": "host.wikidocs.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.doc_order",
+          "target": "host.wikidocs.doc_order",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.id",
+          "target": "host.wikidocs.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.parent",
+          "target": "host.wikidocs.parent",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.project_id",
+          "target": "host.wikidocs.project_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.slug",
+          "target": "host.wikidocs.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.status",
+          "target": "host.wikidocs.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.title",
+          "target": "host.wikidocs.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.updated_at",
+          "target": "host.wikidocs.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "wikidocs/2.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wikidocs/2.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "wikidocs/2.project_id",
+          "target": "front_matter.collection",
+          "behavior": "原 Wiki 归属保持，不移动文档"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "source": "notes/2",
+      "profile": "notebook",
+      "path": "/notebooks/2/note-2",
+      "source_digest": "d32335f452e5e90f81860e4531f5a8999c14f751e62a85fde11729e7e896e1a8",
+      "config_digest": "c117ac8b9208b9d81b66aaec953250dd233a1efdd6c59ee46219c551bc36f795",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "notes/2.title",
+          "target": "front_matter.title",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "notes/2.author_id",
+          "target": "host.notes.author_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.blog_extensions",
+          "target": "host.notes.blog_extensions",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.content_html",
+          "target": "host.notes.content_html",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.content_md",
+          "target": "host.notes.content_md",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.created_at",
+          "target": "host.notes.created_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.id",
+          "target": "host.notes.id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.notebook_id",
+          "target": "host.notes.notebook_id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.slug",
+          "target": "host.notes.slug",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.status",
+          "target": "host.notes.status",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.stellar_config",
+          "target": "host.notes.stellar_config",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.stellar_version",
+          "target": "host.notes.stellar_version",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.tags_json",
+          "target": "host.notes.tags_json",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.title",
+          "target": "host.notes.title",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.updated_at",
+          "target": "host.notes.updated_at",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "notes/2.created_at",
+          "target": "front_matter.date",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "notes/2.updated_at",
+          "target": "front_matter.updated",
+          "behavior": "公开展示字段原值保留"
+        },
+        {
+          "source": "notes/2.notebook_id",
+          "target": "front_matter.collection",
+          "behavior": "旧数字 ID 的路径文本保持；不换父本"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "structure",
+          "severity": "info",
+          "code": "note_missing_slug_status",
+          "source": "notes/2",
+          "path": "slug/status",
+          "message": "旧笔记无 slug/status/owner，当前没有逐笔记公开路由；迁移须显式决定新公开路径与发布状态，不可假定作者；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "content/posts/stellar-143-acceptance.md",
+      "profile": "topic",
+      "path": "/post/stellar-143-acceptance",
+      "source_digest": "260ee4414f652b8e10656c3968ad8a58895d34252d4486d4a55dd9a454dd255d",
+      "config_digest": "dee29cceffdd2f2456b8182ef91eb434c03ee9e0e663fbb19b8ca53acc2edbf7",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "/content/posts/stellar-143-acceptance.md.id",
+          "target": "host..id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.category",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.date",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.excerpt",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.poster_caption",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.poster_color",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.poster_headline",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.poster_topic",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.status",
+          "target": "blog.status",
+          "behavior": "保留原发布状态，使用已定义的宿主 Markdown 导入契约；不进入上游 schema"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.tags",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.title",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-143-acceptance.md.topic",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-143-acceptance.md",
+          "path": "poster_caption",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-143-acceptance.md",
+          "path": "poster_color",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-143-acceptance.md",
+          "path": "poster_headline",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-143-acceptance.md",
+          "path": "poster_topic",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "structure",
+          "severity": "info",
+          "code": "file_host_fields",
+          "source": "content/posts/stellar-143-acceptance.md",
+          "path": "status",
+          "message": "发布状态保留于 blog.status；须验证宿主导入保存该状态，不得把草稿隐式发布；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "source": "content/posts/stellar-144-acceptance.md",
+      "profile": "topic",
+      "path": "/post/stellar-144-acceptance",
+      "source_digest": "dc2a829ac7483466d6f0165c6be42339765bdb6f73f697ab5c05b79127b4205d",
+      "config_digest": "9be36cce609b6e378471e1b8075e30c3069696cc42c25520ed7674574e992f78",
+      "markdown_changed": false,
+      "preserved": false,
+      "mappings": [
+        {
+          "source": "/content/posts/stellar-144-acceptance.md.id",
+          "target": "host..id",
+          "behavior": "源列保持；候选只新增严格元数据与明确正文转换"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.category",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.date",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.excerpt",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.poster_caption",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.poster_color",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.poster_headline",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.poster_topic",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.status",
+          "target": "blog.status",
+          "behavior": "保留原发布状态，使用已定义的宿主 Markdown 导入契约；不进入上游 schema"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.tags",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.title",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        },
+        {
+          "source": "content/posts/stellar-144-acceptance.md.topic",
+          "target": "candidate.front_matter/blog",
+          "behavior": "每字段候选保留；unknown 原值仍保留并由严格 schema 报错"
+        }
+      ],
+      "diagnostics": [
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-144-acceptance.md",
+          "path": "poster_caption",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-144-acceptance.md",
+          "path": "poster_color",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-144-acceptance.md",
+          "path": "poster_headline",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "consumer",
+          "severity": "info",
+          "consumer": "poster",
+          "code": "poster_consumer",
+          "source": "content/posts/stellar-144-acceptance.md",
+          "path": "poster_topic",
+          "message": "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费",
+          "blocking": false
+        },
+        {
+          "kind": "structure",
+          "severity": "info",
+          "code": "file_host_fields",
+          "source": "content/posts/stellar-144-acceptance.md",
+          "path": "status",
+          "message": "发布状态保留于 blog.status；须验证宿主导入保存该状态，不得把草稿隐式发布；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准",
+          "blocking": false
+        }
+      ]
+    }
+  ],
+  "blocking": 0,
+  "notebook_schema": {
+    "Tables": [
+      {
+        "Table": "notebooks",
+        "Exists": true,
+        "Columns": {
+          "cover": "TEXT",
+          "created_at": "DATETIME",
+          "description": "TEXT",
+          "id": "INTEGER",
+          "name": "TEXT",
+          "nb_order": "INTEGER"
+        },
+        "Issues": [
+          "missing column icon",
+          "missing column sort",
+          "missing column updated_at",
+          "column id has type INTEGER; expected TEXT"
+        ]
+      },
+      {
+        "Table": "notes",
+        "Exists": true,
+        "Columns": {
+          "content": "TEXT",
+          "content_html": "TEXT",
+          "created_at": "DATETIME",
+          "id": "INTEGER",
+          "notebook_id": "INTEGER",
+          "tags": "TEXT",
+          "title": "TEXT",
+          "updated_at": "DATETIME"
+        },
+        "Issues": [
+          "missing column slug",
+          "missing column content_md",
+          "missing column status",
+          "missing column tags_json",
+          "column notebook_id has type INTEGER; expected TEXT"
+        ]
+      }
+    ]
+  }
+}

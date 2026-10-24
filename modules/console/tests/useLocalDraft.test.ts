@@ -95,3 +95,38 @@ test("clearDraft / discardDraft: 清理存储与条幅", () => {
 test("clearTimeout 恢复真实定时器", () => {
   globalThis.setTimeout = realSetTimeout;
 });
+
+test("storageKey getter: 创建后待执行防抖写入新文章命名空间，恢复与清理沿用新key", () => {
+  const pending: Array<() => void> = [];
+  const originalSetTimeout = globalThis.setTimeout;
+  (globalThis as any).setTimeout = (fn: () => void) => {
+    pending.push(fn);
+    return 0;
+  };
+  try {
+    let key = "post:new";
+    let value = "继续输入的正文";
+    const draft = useLocalDraft({
+      storageKey: () => key,
+      getValue: () => value,
+      setValue: (v) => {
+        value = v;
+      },
+    });
+    draft.scheduleDraft();
+    key = "post:created";
+    pending[0]();
+    assert.equal(store.has("draft:post:new"), false);
+    assert.equal(store.get("draft:post:created"), value);
+    value = "服务器正文";
+    draft.checkDraft();
+    assert.equal(draft.draftBanner.value, true);
+    draft.restoreDraft();
+    assert.equal(value, "继续输入的正文");
+    draft.clearDraft();
+    assert.equal(store.has("draft:post:created"), false);
+    assert.equal(draft.draftBanner.value, false);
+  } finally {
+    globalThis.setTimeout = originalSetTimeout;
+  }
+});

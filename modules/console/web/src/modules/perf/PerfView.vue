@@ -307,7 +307,7 @@ function methodBadge(method: string) {
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
+            <div class="stats-icon text-primary bg-primary/10">
               <Icon icon="ri:pie-chart-line" />
             </div>
             <div>
@@ -453,7 +453,7 @@ function methodBadge(method: string) {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -470,7 +470,6 @@ function methodBadge(method: string) {
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {

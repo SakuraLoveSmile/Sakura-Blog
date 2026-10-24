@@ -1,0 +1,67 @@
+{
+  "task": "BLOG20261024-STELLAR",
+  "checkedAt": "2026-10-24T08:31:27.744461+00:00",
+  "environment": "macOS, Node v22.23.2, Go 1.26.10",
+  "gitHead": "dea717b41cc7d0a51e99d03fcf915c3cdad4b0e6",
+  "workingPatch": {
+    "modules/stellar/web/build/stylus/compile.js": "befc0cc991ce772fe1942bf0dc6e6c3a0ec3569b90c68604133fedf74c84153a"
+  },
+  "codeDigest": "25c6e8164ce0c3bfb7c3f08f01bac6391e7ae3341aa87c29bd4931980d1811dd",
+  "runtimeRoot": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog/.tmp/stellar-parity-20261024-root",
+  "url": "http://127.0.0.1:8124",
+  "mode": "embedded, without -dev",
+  "binarySha256": "a963bbbb2d8ec1e2b2855ec1df562e986f63713cb42df8988829e6ccb2c0ae46",
+  "checks": {
+    "devCandidateMakeTest": "passed; HEAD plus compiler fix identified above",
+    "consoleTests": 298,
+    "stellarTests": 220,
+    "failures": 0,
+    "skipped": 0,
+    "devMakeBuild": "passed",
+    "cssAndDriftAfterCompilerFix": "passed; 20 outputs",
+    "browser": "after-browser.json dev-* scenarios; appearance-matrix.json covers unchanged runtime files"
+  },
+  "styles": [
+    {
+      "url": "/assets/css/main-card.css?v=aa6b222e",
+      "sha256": "aa6b222ec57d7981a75e4d40ae7e97246f4897d6d3128d89d8bf1c94e19eed5d",
+      "matchesSource": true
+    },
+    {
+      "url": "/assets/css/highlight.css?v=f38ba7df",
+      "sha256": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8",
+      "matchesSource": true
+    },
+    {
+      "url": "/assets/css/pagination.css?v=fe27f525",
+      "sha256": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5",
+      "matchesSource": true
+    },
+    {
+      "url": "/assets/css/search.css?v=ee7d925c",
+      "sha256": "ee7d925c7c444e2156515a6972c719044933a28ae84bda9e35d11e0794d80069",
+      "matchesSource": true
+    },
+    {
+      "url": "/assets/css/main-appearance-card.css?v=3c0edfe1",
+      "sha256": "3c0edfe14289ad11933cb65a2534d30eb3f1001bcee83a3f1744b447376ca8bf",
+      "matchesSource": true
+    }
+  ],
+  "consoleAssets": [
+    {
+      "url": "/console/assets/index-z6Bj2Hcm.js",
+      "sha256": "0fcdbc87eda5e329ddd82bcca644eb6fa49ed40559267c991a1238dae8399807",
+      "matchesBuild": true
+    },
+    {
+      "url": "/console/assets/index-BihGOG2u.css",
+      "sha256": "47087bbcbf9be955a576068e3f5d35829b70191ea846b573ea766dc479e34def",
+      "matchesBuild": true
+    }
+  ],
+  "limits": [
+    "Console asset match is build evidence; no Console UI change or acceptance claimed",
+    "No remote CI, push, release, deployment or real-data migration"
+  ]
+}

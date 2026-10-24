@@ -15,6 +15,7 @@ import (
 // ImportMissing 扫描 content/posts/*.md，仅导入 DB 中不存在的 slug（任意状态都算存在，
 // 草稿同样跳过），返回实际导入篇数。已存在记录不做任何更新。
 // posts 目录不存在时视为无文件（自动发现是增强路径，不因缺目录阻断启动）。
+// Deprecated: 仅保留历史单测；生产调用 ImportStellar(..., true)。
 func ImportMissing(st *store.Store, posts *post.Service) (int, error) {
 	slugs, err := posts.ListSlugs()
 	if err != nil {

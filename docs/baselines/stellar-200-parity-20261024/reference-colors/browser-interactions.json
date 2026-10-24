@@ -1,0 +1,533 @@
+{
+  "date": "2026-10-24",
+  "service": "http://127.0.0.1:8124",
+  "runtimeCode": "08f9811b78c24e38a65155d622ef5e32fbab0cdb",
+  "method": "Real in-app browser; native viewport capability; prefers-color-scheme media emulation; existing isolated fixture",
+  "checks": [
+    {
+      "scenario": "light-mobile-search",
+      "url": "http://127.0.0.1:8124/",
+      "dialogBackground": "rgb(252, 251, 247)",
+      "filterButtons": [
+        {
+          "right": 378,
+          "text": "×"
+        },
+        {
+          "right": 70.03125,
+          "text": "全部"
+        },
+        {
+          "right": 128.0625,
+          "text": "文章"
+        },
+        {
+          "right": 186.09375,
+          "text": "页面"
+        },
+        {
+          "right": 257.9375,
+          "text": "知识库"
+        },
+        {
+          "right": 315.96875,
+          "text": "笔记"
+        },
+        {
+          "right": 374,
+          "text": "瞬间"
+        }
+      ],
+      "overflow": false,
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "width": 390,
+      "resultContainers": 1
+    },
+    {
+      "scenario": "light-mobile-article",
+      "body": "rgb(250, 247, 240)",
+      "code": [
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "1\n2\n3\n4\n5\n6"
+        },
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "package main\n\nfunc main() {\n    message := \"Stellar 2.0\"\n    println(message)\n}"
+        }
+      ],
+      "height": 844,
+      "links": [
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": ""
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "Stellar 页面核验 44"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Anonymity"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Stellar 2.0.0"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "CC BY-NC-SA 4.0"
+        }
+      ],
+      "overflow": false,
+      "width": 390
+    },
+    {
+      "scenario": "light-desktop-article",
+      "body": "rgb(250, 247, 240)",
+      "code": [
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "1\n2\n3\n4\n5\n6"
+        },
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "package main\n\nfunc main() {\n    message := \"Stellar 2.0\"\n    println(message)\n}"
+        }
+      ],
+      "height": 900,
+      "links": [
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": ""
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "Stellar 页面核验 44"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Anonymity"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Stellar 2.0.0"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "CC BY-NC-SA 4.0"
+        }
+      ],
+      "overflow": false,
+      "width": 1280
+    },
+    {
+      "scenario": "light-desktop-search",
+      "dialogBackground": "rgb(252, 251, 247)",
+      "filterButtons": [
+        {
+          "right": 927,
+          "text": "×"
+        },
+        {
+          "right": 445.828125,
+          "text": "全部"
+        },
+        {
+          "right": 538.6640625,
+          "text": "文章"
+        },
+        {
+          "right": 631.4921875,
+          "text": "页面"
+        },
+        {
+          "right": 737.328125,
+          "text": "知识库"
+        },
+        {
+          "right": 830.1640625,
+          "text": "笔记"
+        },
+        {
+          "right": 923,
+          "text": "瞬间"
+        }
+      ],
+      "overflow": false,
+      "resultLinks": 20,
+      "width": 1280
+    },
+    {
+      "scenario": "dark-desktop-article",
+      "body": "rgb(34, 32, 27)",
+      "code": [
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "1\n2\n3\n4\n5\n6"
+        },
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "package main\n\nfunc main() {\n    message := \"Stellar 2.0\"\n    println(message)\n}"
+        }
+      ],
+      "height": 900,
+      "links": [
+        {
+          "color": "rgba(206, 206, 206, 0.7)",
+          "text": ""
+        },
+        {
+          "color": "rgba(206, 206, 206, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(206, 206, 206, 0.8)",
+          "text": "Stellar 页面核验 44"
+        },
+        {
+          "color": "rgba(206, 206, 206, 0.7)",
+          "text": "Anonymity"
+        },
+        {
+          "color": "rgba(206, 206, 206, 0.7)",
+          "text": "Stellar 2.0.0"
+        },
+        {
+          "color": "rgba(206, 206, 206, 0.7)",
+          "text": "CC BY-NC-SA 4.0"
+        }
+      ],
+      "overflow": false,
+      "width": 1280
+    },
+    {
+      "scenario": "dark-mobile-article",
+      "body": "rgb(34, 32, 27)",
+      "code": [
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "1\n2\n3\n4\n5\n6"
+        },
+        {
+          "background": "rgba(0, 0, 0, 0)",
+          "children": [],
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "package main\n\nfunc main() {\n    message := \"Stellar 2.0\"\n    println(message)\n}"
+        }
+      ],
+      "height": 844,
+      "links": [
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": ""
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "Stellar 页面核验 44"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "Anonymity"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "Stellar 2.0.0"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "CC BY-NC-SA 4.0"
+        }
+      ],
+      "overflow": false,
+      "width": 390
+    },
+    {
+      "scenario": "dark-mobile-search",
+      "dialogBackground": "rgb(39, 37, 32)",
+      "filterButtons": [
+        {
+          "right": 378,
+          "text": "×"
+        },
+        {
+          "right": 70.03125,
+          "text": "全部"
+        },
+        {
+          "right": 128.0625,
+          "text": "文章"
+        },
+        {
+          "right": 186.09375,
+          "text": "页面"
+        },
+        {
+          "right": 257.9375,
+          "text": "知识库"
+        },
+        {
+          "right": 315.96875,
+          "text": "笔记"
+        },
+        {
+          "right": 374,
+          "text": "瞬间"
+        }
+      ],
+      "overflow": false,
+      "resultLinks": 20,
+      "width": 390
+    },
+    {
+      "scenario": "dark-desktop-search",
+      "dialogBackground": "rgb(39, 37, 32)",
+      "filterButtons": [
+        {
+          "right": 922.7471923828124,
+          "text": "×"
+        },
+        {
+          "right": 448.6515197753906,
+          "text": "全部"
+        },
+        {
+          "right": 540.0579223632812,
+          "text": "文章"
+        },
+        {
+          "right": 631.4566040039062,
+          "text": "页面"
+        },
+        {
+          "right": 735.99365234375,
+          "text": "知识库"
+        },
+        {
+          "right": 827.4000244140625,
+          "text": "笔记"
+        },
+        {
+          "right": 918.806396484375,
+          "text": "瞬间"
+        }
+      ],
+      "overflow": false,
+      "resultLinks": 20,
+      "width": 1280
+    },
+    {
+      "scenario": "dark-pagination-320",
+      "container": {
+        "className": "paginator-wrap dis-select slide-up",
+        "tag": "DIV",
+        "text": "1…89101112…23"
+      },
+      "items": [
+        {
+          "bottom": 614.2890625,
+          "className": "extend prev",
+          "href": "/page/9/",
+          "left": 17,
+          "right": 61.5,
+          "text": "",
+          "top": 569.7890625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "page-number",
+          "href": "/",
+          "left": 63.234375,
+          "right": 75.5078125,
+          "text": "1",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "space",
+          "href": null,
+          "left": 77.2421875,
+          "right": 93.03125,
+          "text": "…",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "page-number",
+          "href": "/page/8/",
+          "left": 94.765625,
+          "right": 110.1328125,
+          "text": "8",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "page-number",
+          "href": "/page/9/",
+          "left": 112.8671875,
+          "right": 128.0625,
+          "text": "9",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "page-number current",
+          "href": null,
+          "left": 130.8046875,
+          "right": 155.28125,
+          "text": "10",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "page-number",
+          "href": "/page/11/",
+          "left": 158.015625,
+          "right": 178.5546875,
+          "text": "11",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "page-number",
+          "href": "/page/12/",
+          "left": 181.2890625,
+          "right": 204.0625,
+          "text": "12",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "space",
+          "href": null,
+          "left": 205.796875,
+          "right": 221.5859375,
+          "text": "…",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 602.0390625,
+          "className": "page-number",
+          "href": "/page/23/",
+          "left": 223.3203125,
+          "right": 248.765625,
+          "text": "23",
+          "top": 582.0390625
+        },
+        {
+          "bottom": 614.2890625,
+          "className": "extend next",
+          "href": "/page/11/",
+          "left": 250.5,
+          "right": 295,
+          "text": "",
+          "top": 569.7890625
+        }
+      ],
+      "overflow": false,
+      "width": 320,
+      "nextNavigation": "http://127.0.0.1:8124/page/11"
+    },
+    {
+      "scenario": "light-pagination-320",
+      "body": "rgb(250, 247, 240)",
+      "ellipsisCount": 2,
+      "items": [
+        {
+          "href": "/page/9/",
+          "left": 17,
+          "right": 61.5,
+          "text": ""
+        },
+        {
+          "href": "/",
+          "left": 63.234375,
+          "right": 75.5078125,
+          "text": "1"
+        },
+        {
+          "href": null,
+          "left": 77.2421875,
+          "right": 93.03125,
+          "text": "…"
+        },
+        {
+          "href": "/page/8/",
+          "left": 94.765625,
+          "right": 110.1328125,
+          "text": "8"
+        },
+        {
+          "href": "/page/9/",
+          "left": 112.8671875,
+          "right": 128.0625,
+          "text": "9"
+        },
+        {
+          "href": null,
+          "left": 130.8046875,
+          "right": 155.28125,
+          "text": "10"
+        },
+        {
+          "href": "/page/11/",
+          "left": 158.015625,
+          "right": 178.5546875,
+          "text": "11"
+        },
+        {
+          "href": "/page/12/",
+          "left": 181.2890625,
+          "right": 204.0625,
+          "text": "12"
+        },
+        {
+          "href": null,
+          "left": 205.796875,
+          "right": 221.5859375,
+          "text": "…"
+        },
+        {
+          "href": "/page/23/",
+          "left": 223.3203125,
+          "right": 248.765625,
+          "text": "23"
+        },
+        {
+          "href": "/page/11/",
+          "left": 250.5,
+          "right": 295,
+          "text": ""
+        }
+      ],
+      "overflow": false,
+      "width": 320
+    }
+  ]
+}

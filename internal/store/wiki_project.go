@@ -49,23 +49,26 @@ type WikiHeroAction struct {
 
 // WikiProject is the database representation of a Wiki project.
 type WikiProject struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Title       string    `json:"title"`
-	Headline    string    `json:"headline"`
-	Subtitle    string    `json:"subtitle"`
-	Description string    `json:"description"`
-	Icon        string    `json:"icon"`
-	Cover       string    `json:"cover"`
-	Available   string    `json:"available"`
-	URL         string    `json:"url"`
-	Repo        string    `json:"repo"`
-	Branch      string    `json:"branch"`
-	Sort        int       `json:"sort"`
-	Pin         bool      `json:"pin"`
-	Visible     bool      `json:"visible"`
-	Hero        *WikiHero `json:"hero,omitempty"`
-	Tags        []string  `json:"tags"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	Title          string    `json:"title"`
+	Headline       string    `json:"headline"`
+	Subtitle       string    `json:"subtitle"`
+	Description    string    `json:"description"`
+	Icon           string    `json:"icon"`
+	Cover          string    `json:"cover"`
+	Available      string    `json:"available"`
+	URL            string    `json:"url"`
+	Repo           string    `json:"repo"`
+	Branch         string    `json:"branch"`
+	Sort           int       `json:"sort"`
+	Pin            bool      `json:"pin"`
+	Visible        bool      `json:"visible"`
+	Hero           *WikiHero `json:"hero,omitempty"`
+	Tags           []string  `json:"tags"`
+	StellarVersion int       `json:"stellar_version"`
+	StellarConfig  string    `json:"stellar_config"`
+	BlogExtensions string    `json:"blog_extensions"`
 
 	DocCount          int  `json:"doc_count,omitempty"`
 	PublishedDocCount int  `json:"published_doc_count,omitempty"`
@@ -279,13 +282,13 @@ func normalizeWikiTags(tags []string) []string {
 	return out
 }
 
-const wikiProjectColumns = `id, name, title, headline, subtitle, description, icon, cover, available, url, repo, branch, sort, pin, visible, hero_json, created_at, updated_at`
+const wikiProjectColumns = `id, name, title, headline, subtitle, description, icon, cover, available, url, repo, branch, sort, pin, visible, hero_json, created_at, updated_at, stellar_version, stellar_config, blog_extensions`
 
 func scanWikiProject(row interface{ Scan(...any) error }) (*WikiProject, error) {
 	var p WikiProject
 	var pin, visible int
 	var hero string
-	if err := row.Scan(&p.ID, &p.Name, &p.Title, &p.Headline, &p.Subtitle, &p.Description, &p.Icon, &p.Cover, &p.Available, &p.URL, &p.Repo, &p.Branch, &p.Sort, &pin, &visible, &hero, &p.CreatedAt, &p.UpdatedAt); err != nil {
+	if err := row.Scan(&p.ID, &p.Name, &p.Title, &p.Headline, &p.Subtitle, &p.Description, &p.Icon, &p.Cover, &p.Available, &p.URL, &p.Repo, &p.Branch, &p.Sort, &pin, &visible, &hero, &p.CreatedAt, &p.UpdatedAt, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions); err != nil {
 		return nil, err
 	}
 	p.Pin = pin != 0
@@ -396,6 +399,12 @@ func (s *Store) ListWikiProjectsWithCounts() ([]*WikiProject, error) {
 }
 
 func (s *Store) CreateWikiProject(p *WikiProject) error {
+	if p == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "wiki/"+p.ID, "wiki", true); err != nil {
+		return err
+	}
 	id, err := NormalizeWikiProjectID(p.ID)
 	if err != nil {
 		return err
@@ -406,24 +415,40 @@ func (s *Store) CreateWikiProject(p *WikiProject) error {
 		p.Name = p.ID
 	}
 	now := time.Now().UTC()
-	_, err = s.db.Exec(`INSERT INTO wiki_projects (id, name, title, headline, subtitle, description, icon, cover, available, url, repo, branch, sort, pin, visible, hero_json, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.Name, p.Title, p.Headline, p.Subtitle, p.Description, p.Icon, p.Cover, p.Available, p.URL, p.Repo, p.Branch, p.Sort, boolInt(p.Pin), boolInt(p.Visible), encodeWikiHero(p.Hero), now, now)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`INSERT INTO wiki_projects (id, name, title, headline, subtitle, description, icon, cover, available, url, repo, branch, sort, pin, visible, hero_json, created_at, updated_at, stellar_version, stellar_config, blog_extensions)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.ID, p.Name, p.Title, p.Headline, p.Subtitle, p.Description, p.Icon, p.Cover, p.Available, p.URL, p.Repo, p.Branch, p.Sort, boolInt(p.Pin), boolInt(p.Visible), encodeWikiHero(p.Hero), now, now, p.StellarVersion, p.StellarConfig, p.BlogExtensions)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return ErrWikiProjectConflict
 		}
 		return fmt.Errorf("create wiki project: %w", err)
 	}
-	return s.replaceWikiProjectTags(p.ID, p.Tags)
+	if err := replaceWikiProjectTagsTx(tx, p.ID, p.Tags); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	p.CreatedAt = now
+	p.UpdatedAt = now
+	return nil
 }
 
 func (s *Store) UpdateWikiProject(id string, p *WikiProject) error {
-	if _, err := NormalizeWikiProjectID(id); err != nil {
+	if p == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "wiki/"+id, "wiki", true); err != nil {
 		return err
 	}
-	if p == nil {
-		return ErrWikiProjectInvalid
+	if _, err := NormalizeWikiProjectID(id); err != nil {
+		return err
 	}
 	if p.ID != "" && p.ID != id {
 		return ErrWikiProjectInvalid
@@ -431,8 +456,14 @@ func (s *Store) UpdateWikiProject(id string, p *WikiProject) error {
 	if strings.TrimSpace(p.Name) == "" {
 		p.Name = id
 	}
-	res, err := s.db.Exec(`UPDATE wiki_projects SET name = ?, title = ?, headline = ?, subtitle = ?, description = ?, icon = ?, cover = ?, available = ?, url = ?, repo = ?, branch = ?, sort = ?, pin = ?, visible = ?, hero_json = ?, updated_at = ? WHERE id = ?`,
-		p.Name, p.Title, p.Headline, p.Subtitle, p.Description, p.Icon, p.Cover, p.Available, p.URL, p.Repo, p.Branch, p.Sort, boolInt(p.Pin), boolInt(p.Visible), encodeWikiHero(p.Hero), time.Now().UTC(), id)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC()
+	res, err := tx.Exec(`UPDATE wiki_projects SET name = ?, title = ?, headline = ?, subtitle = ?, description = ?, icon = ?, cover = ?, available = ?, url = ?, repo = ?, branch = ?, sort = ?, pin = ?, visible = ?, hero_json = ?, updated_at = ?, stellar_version = ?, stellar_config = ?, blog_extensions = ? WHERE id = ? AND (stellar_version = 0 OR stellar_version = ?)`,
+		p.Name, p.Title, p.Headline, p.Subtitle, p.Description, p.Icon, p.Cover, p.Available, p.URL, p.Repo, p.Branch, p.Sort, boolInt(p.Pin), boolInt(p.Visible), encodeWikiHero(p.Hero), now, p.StellarVersion, p.StellarConfig, p.BlogExtensions, id, p.StellarVersion)
 	if err != nil {
 		return fmt.Errorf("update wiki project %s: %w", id, err)
 	}
@@ -441,25 +472,26 @@ func (s *Store) UpdateWikiProject(id string, p *WikiProject) error {
 		return ErrWikiProjectNotFound
 	}
 	p.ID = id
-	return s.replaceWikiProjectTags(id, p.Tags)
-}
-
-func (s *Store) replaceWikiProjectTags(id string, tags []string) error {
-	tx, err := s.db.Begin()
-	if err != nil {
+	if err := replaceWikiProjectTagsTx(tx, id, p.Tags); err != nil {
 		return err
 	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	p.UpdatedAt = now
+	return nil
+}
+
+func replaceWikiProjectTagsTx(tx *sql.Tx, id string, tags []string) error {
 	if _, err := tx.Exec(`DELETE FROM wiki_project_tags WHERE project_id = ?`, id); err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 	for i, tag := range normalizeWikiTags(tags) {
 		if _, err := tx.Exec(`INSERT INTO wiki_project_tags (project_id, tag, position) VALUES (?, ?, ?)`, id, tag, i); err != nil {
-			_ = tx.Rollback()
 			return err
 		}
 	}
-	return tx.Commit()
+	return nil
 }
 
 func (s *Store) DeleteWikiProject(id string) error {

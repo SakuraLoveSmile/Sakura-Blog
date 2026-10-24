@@ -29,15 +29,18 @@ var (
 
 // Topic 专栏。
 type Topic struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Slug        string    `json:"slug"`
-	Description string    `json:"description"`
-	Icon        string    `json:"icon"`
-	Cover       string    `json:"cover"`
-	Sort        int       `json:"sort"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID             int64     `json:"id"`
+	Name           string    `json:"name"`
+	Slug           string    `json:"slug"`
+	Description    string    `json:"description"`
+	Icon           string    `json:"icon"`
+	Cover          string    `json:"cover"`
+	Sort           int       `json:"sort"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	StellarVersion int       `json:"stellar_version"`
+	StellarConfig  string    `json:"stellar_config"`
+	BlogExtensions string    `json:"blog_extensions"`
 }
 
 // TableName Entity 接口：topics 表。
@@ -45,12 +48,12 @@ func (t *Topic) TableName() string { return "topics" }
 
 // Columns Entity 接口：全列，首列为 id。
 func (t *Topic) Columns() []string {
-	return []string{"id", "name", "slug", "description", "icon", "cover", "sort", "created_at", "updated_at"}
+	return []string{"id", "name", "slug", "description", "icon", "cover", "sort", "created_at", "updated_at", "stellar_version", "stellar_config", "blog_extensions"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (t *Topic) Values() []any {
-	return []any{t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.CreatedAt, t.UpdatedAt}
+	return []any{t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.CreatedAt, t.UpdatedAt, t.StellarVersion, t.StellarConfig, t.BlogExtensions}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -58,7 +61,7 @@ func (t *Topic) SetID(id int64) { t.ID = id }
 
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (t *Topic) ScanRow(row rowScanner) error {
-	return row.Scan(&t.ID, &t.Name, &t.Slug, &t.Description, &t.Icon, &t.Cover, &t.Sort, &t.CreatedAt, &t.UpdatedAt)
+	return row.Scan(&t.ID, &t.Name, &t.Slug, &t.Description, &t.Icon, &t.Cover, &t.Sort, &t.CreatedAt, &t.UpdatedAt, &t.StellarVersion, &t.StellarConfig, &t.BlogExtensions)
 }
 
 // EnsureTopicsTable 幂等建 topics 表（DDL 对齐 Spec 52：name/slug 双唯一）。
@@ -202,6 +205,12 @@ func (s *Store) GetTopicByName(name string) (*Topic, error) {
 // CreateTopic 新建专栏，LastInsertId 回填 ID，自动设置 created_at/updated_at。
 // name/slug 重复时返回 UNIQUE 约束错误（调用方映射 409）。
 func (s *Store) CreateTopic(t *Topic) error {
+	if t == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(t.StellarVersion, t.StellarConfig, t.BlogExtensions, "topic/"+t.Slug, "topic", true); err != nil {
+		return err
+	}
 	now := time.Now().UTC()
 	if t.CreatedAt.IsZero() {
 		t.CreatedAt = now
@@ -213,6 +222,12 @@ func (s *Store) CreateTopic(t *Topic) error {
 
 // UpdateTopic 按 id 更新专栏字段，自动刷新 updated_at。专栏不存在返回错误。
 func (s *Store) UpdateTopic(t *Topic) error {
+	if t == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(t.StellarVersion, t.StellarConfig, t.BlogExtensions, "topic/"+t.Slug, "topic", true); err != nil {
+		return err
+	}
 	t.UpdatedAt = time.Now().UTC()
 
 	// 专栏名称是文章表中的冗余展示字段，必须与 topics 更新保持原子性。
@@ -222,8 +237,22 @@ func (s *Store) UpdateTopic(t *Topic) error {
 	}
 	defer tx.Rollback()
 
-	result, err := tx.Exec(`UPDATE topics SET name=?, slug=?, description=?, icon=?, cover=?, sort=?, updated_at=? WHERE id=?`,
-		t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.UpdatedAt, t.ID)
+	var oldSlug string
+	if err := tx.QueryRow(`SELECT slug FROM topics WHERE id=?`, t.ID).Scan(&oldSlug); err != nil {
+		return err
+	}
+	if oldSlug != t.Slug {
+		n, err := topicMembershipCount(tx, t.ID, oldSlug)
+		if err != nil {
+			return err
+		}
+		if n > 0 {
+			return ErrTopicInUse
+		}
+	}
+
+	result, err := tx.Exec(`UPDATE topics SET name=?, slug=?, description=?, icon=?, cover=?, sort=?, updated_at=?, stellar_version=?, stellar_config=?, blog_extensions=? WHERE id=? AND (stellar_version = 0 OR stellar_version = ?)`,
+		t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.UpdatedAt, t.StellarVersion, t.StellarConfig, t.BlogExtensions, t.ID, t.StellarVersion)
 	if err != nil {
 		return fmt.Errorf("update topic %d: %w", t.ID, err)
 	}
@@ -242,17 +271,29 @@ func (s *Store) UpdateTopic(t *Topic) error {
 // DeleteTopic 删除专栏。专栏下仍有文章时返回 ErrTopicInUse（删除保护，调用方映射 403）。
 // 专栏不存在不报错。
 func (s *Store) DeleteTopic(id int64) error {
-	n, err := s.CountAllByTopicID(id)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var slug string
+	if err := tx.QueryRow(`SELECT slug FROM topics WHERE id=?`, id).Scan(&slug); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return err
+	}
+	n, err := topicMembershipCount(tx, id, slug)
 	if err != nil {
 		return err
 	}
 	if n > 0 {
 		return ErrTopicInUse
 	}
-	if _, err := s.db.Exec(`DELETE FROM topics WHERE id = ?`, id); err != nil {
+	if _, err := tx.Exec(`DELETE FROM topics WHERE id=?`, id); err != nil {
 		return fmt.Errorf("delete topic %d: %w", id, err)
 	}
-	return nil
+	return tx.Commit()
 }
 
 // CountByTopic 统计各专栏（posts.topic 文本字段）的已发布文章数（空专栏除外），
@@ -285,10 +326,27 @@ func (s *Store) CountByTopicID(topicID int64) (int, error) {
 }
 
 // CountAllByTopicID 统计专栏下全部文章数（含草稿/回收站，Console 列表角标用）。
-func (s *Store) CountAllByTopicID(topicID int64) (int, error) {
+// topicMembershipCount 在同一事务快照中检查存储关联、严格原文及未发布草稿；坏旧 JSON 不参与 JSON 解码。
+func topicMembershipCount(q rowScannerQuery, id int64, slug string) (int, error) {
 	var n int
-	if err := s.db.QueryRow(`SELECT COUNT(*) FROM posts WHERE topic_id = ?`, topicID).Scan(&n); err != nil {
-		return 0, fmt.Errorf("count all posts of topic %d: %w", topicID, err)
+	err := q.QueryRow(`WITH source AS (
+	 SELECT topic_id, stellar_version, CASE WHEN json_valid(stellar_config) THEN stellar_config ELSE '{}' END AS live,
+	 CASE WHEN json_valid(draft_json) THEN draft_json ELSE '{}' END AS draft FROM posts
+	), parsed AS (
+	 SELECT *, CASE WHEN json_valid(json_extract(draft,'$.stellar_config')) THEN json_extract(draft,'$.stellar_config') ELSE '{}' END AS pending FROM source
+	) SELECT COUNT(*) FROM parsed WHERE topic_id=?
+	 OR (stellar_version=2 AND json_extract(live,'$.collection.profile')='topic' AND json_extract(live,'$.collection.id')=?)
+	 OR (json_extract(draft,'$.stellar_version')=2 AND json_extract(pending,'$.collection.profile')='topic' AND json_extract(pending,'$.collection.id')=?)`, id, slug, slug).Scan(&n)
+	return n, err
+}
+
+func (s *Store) CountAllByTopicID(topicID int64) (int, error) {
+	var slug string
+	if err := s.db.QueryRow(`SELECT slug FROM topics WHERE id=?`, topicID).Scan(&slug); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
 	}
-	return n, nil
+	return topicMembershipCount(s.db, topicID, slug)
 }

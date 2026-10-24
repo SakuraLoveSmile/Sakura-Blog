@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/net/html"
 
 	"blog/internal/post"
 	"blog/internal/store"
@@ -16,33 +17,26 @@ import (
 	stellarweb "blog/modules/stellar/web"
 )
 
-// newWikiVerifyServer 最小 webServer：内存库 + embed 模板 + 空站点配置。
+// newWikiVerifyServer 明确迁移过的主题与集合夹具；内容记录各自声明版本。
 func newWikiVerifyServer(t *testing.T) (*webServer, *store.Store) {
 	t.Helper()
 	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	if err := st.EnsureWikidocsTable(); err != nil {
-		t.Fatalf("ensure wikidocs: %v", err)
-	}
+	ensureRouteSchema(t, st)
 	t.Cleanup(func() { st.Close() })
 	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}
 
-	site := &tmpl.Site{
-		Title:   "测试站点",
-		Widgets: tmpl.WidgetsConfig{},
-		// 评论开关：TOC widget footer 的「参与讨论」按钮依赖它（对齐原版 comments.service 判断）
-		Comments: tmpl.CommentsConfig{Enabled: true},
-		Wiki: []tmpl.WikiProject{
-			{ID: "stellar", Name: "stellar", Title: "Stellar 文档", Description: "d", Icon: "i", Tags: []string{"主题"}, URL: "", Sort: 1},
-			// 第二个项目：与 stellar 共享 tag（wiki_related 推荐）+ 配置 repo（ghrepo 卡片）
-			{ID: "go-blog", Name: "go-blog", Title: "Go 博客笔记", Description: "g", Icon: "i2", Tags: []string{"主题", "后端"}, URL: "", Sort: 2, Repo: "user/repo"},
-		},
-	}
+	site := canonicalRouteSite(t, "测试站点", map[string]any{
+		"comments": map[string]any{"provider": "giscus"},
+		"profiles": map[string]any{"wiki": map[string]any{"leftbar": map[string]any{"widgets": []any{"tree", "related", "recent"}}, "rightbar": map[string]any{"widgets": []any{"toc", "ghrepo"}}}},
+	}, map[string]any{"data": map[string]any{"wiki": []any{"stellar", "go-blog"}}})
+	createRouteWikiProject(t, st, "stellar", map[string]any{"name": "Stellar 文档", "description": "d", "tags": []any{"主题"}})
+	createRouteWikiProject(t, st, "go-blog", map[string]any{"name": "Go 博客笔记", "description": "g", "tags": []any{"主题", "后端"}, "source": map[string]any{"repository": "user/repo"}})
 	ws := &webServer{
 		site:         sitePtr(site),
 		st:           st,
@@ -58,19 +52,22 @@ func newWikiVerifyServer(t *testing.T) (*webServer, *store.Store) {
 func TestWikiDocFrontendChain(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "go-blog", Slug: "overview", Title: "Go 概览", ContentMD: "简介", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+		t.Fatal(err)
+	}
 	// 插入三级树 + 草稿
-	intro := &store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentHTML: "<h2 id=\"intro-title\">引言</h2><p>intro body</p>", Status: store.StatusPublished}
+	intro := &store.WikiDoc{StellarVersion: 2, StellarConfig: `{"active_menu":"wiki"}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentMD: "<h2 id=\"intro-title\">引言</h2><p>intro body</p>", Status: store.StatusPublished}
 	if err := st.CreateWikidoc(intro); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "setup", Title: "安装", Order: 2, Parent: 0, ContentHTML: "<p>setup body</p>", Status: store.StatusPublished}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "setup", Title: "安装", Order: 2, Parent: 0, ContentMD: "<p>setup body</p>", Status: store.StatusPublished}); err != nil {
 		t.Fatal(err)
 	}
 	// 子文档（验证 tree 递归层级）
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "install", Title: "安装指南", Order: 1, Parent: intro.ID, ContentHTML: "<p>install body</p>", Status: store.StatusPublished}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "install", Title: "安装指南", Order: 1, Parent: intro.ID, ContentMD: "<p>install body</p>", Status: store.StatusPublished}); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "draft-only", Title: "草稿", Order: 3, Parent: 0, ContentHTML: "<p>hidden</p>", Status: store.StatusDraft}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "draft-only", Title: "草稿", Order: 3, Parent: 0, ContentMD: "<p>hidden</p>", Status: store.StatusDraft}); err != nil {
 		t.Fatal(err)
 	}
 	r := gin.New()
@@ -89,33 +86,33 @@ func TestWikiDocFrontendChain(t *testing.T) {
 	}
 	body := w.Body.String()
 	for _, want := range []string{
-		"layout=\"wiki-doc\"", "Stellar 文档", "引言", "intro body",
-		// doc-tree 结构（对齐原版 widgets/tree.ejs）：分组 header + body a.link + 当前文档高亮
-		"widget-wrapper doc-tree post-list", "toc-text", "class=\"link active\"", "active-icon",
+		`data-page-layout="wiki"`, "Stellar 文档", "引言", "intro body",
+		// 官方 tree 的 collection item 和当前文档高亮。
+		"doc-tree-widget", "toc-text", "is-active", "ui-collection__item",
 		"/wiki/stellar/setup", "/wiki/stellar/install", // 上下篇 + 树链接
-		// 搜索框项目化（Task #4）：data-filter 限定当前项目 + placeholder 显示项目名
-		`data-filter="/wiki/stellar/"`, "在 Stellar 文档 中搜索",
+		// 官方搜索触发器携带当前项目 domain 与名称。
+		`data-search-domain="wiki:stellar"`, "Stellar 文档",
 		// 同 tag 项目推荐（Task #4）：summary collection + "更多：{标签名}" + 推荐项目链接
-		"widget-wrapper wiki-related", `data-layout="list"`, `data-variant="summary"`, "更多：主题", "/wiki/go-blog",
-		// 最近更新（Task #8）：左栏 recent widget 渲染当前项目 wiki 文档
-		"widget-wrapper recent",
+		"related-summary-widget", `data-layout="list"`, `data-variant="summary"`, "更多：主题", "/wiki/go-blog",
+		// 显式 wiki 菜单下，最近更新显示全部可索引 Wiki 集合的文档。
+		"widget-instance--recent",
 		// 右栏 TOC widget：目录 + footer 回到顶部/参与讨论（对齐原版 toc.ejs layoutDiv）
-		"widget-wrapper toc", `class="top" onclick="util.scrollTop()"`,
-		`class="buttom" onclick="util.scrollComment()"`, "参与讨论",
+		`id="data-toc"`, `class="top ui-interactive" onclick="util.scrollTop()"`,
+		`class="buttom ui-interactive" onclick="util.scrollComment()"`, "参与讨论",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("wiki-doc page missing %q", want)
 		}
 	}
-	// 最近更新数据源为当前项目已发布文档（recent widget 之后出现 /wiki/stellar/ 链接）
-	if recentIdx := strings.Index(body, "widget-wrapper recent"); recentIdx < 0 {
+	// 上游 recent.ejs 以 activeMenu=wiki 选择全局文档，而不是仅取当前项目。
+	if recentIdx := strings.Index(body, "widget-instance--recent"); recentIdx < 0 {
 		t.Error("wiki-doc page missing recent widget")
-	} else if !strings.Contains(body[recentIdx:], "/wiki/stellar/") {
-		t.Error("recent widget must show current project wiki docs")
+	} else if !strings.Contains(body[recentIdx:], "/wiki/stellar/") || !strings.Contains(body[recentIdx:], "/wiki/go-blog/overview") {
+		t.Error("recent widget must show published docs across indexed Wiki projects")
 	}
-	// 搜索框 data-filter 由 handleWikiDoc 注入（Task #4 A）
-	if !strings.Contains(body, `data-filter="/wiki/stellar/"`) {
-		t.Error("search input missing data-filter for current project")
+	// 搜索触发器的当前集合范围由严格模型提供。
+	if !strings.Contains(body, `data-search-domain="wiki:stellar"`) {
+		t.Error("search trigger missing current project domain")
 	}
 	if strings.Contains(body, "draft-only") {
 		t.Errorf("wiki-doc page must not expose draft docs")
@@ -123,20 +120,17 @@ func TestWikiDocFrontendChain(t *testing.T) {
 	if strings.Contains(body, `widget-wrapper post-card`) || strings.Contains(body, `class="item wiki"`) {
 		t.Errorf("wiki-related widget must not depend on legacy post-card/item markup: %s", body)
 	}
-	// 3) 路由安全：/wiki/tags/主题 仍走标签过滤页（handleWiki，Layout=wiki）
+	// 3) 路由安全：/wiki/tags/主题 仍走上游 index_wiki 标签过滤索引。
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/wiki/tags/%E4%B8%BB%E9%A2%98", nil))
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "layout=\"wiki\"") {
-		t.Fatalf("/wiki/tags/主题 = %d, want 200 wiki list", w.Code)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `data-page-layout="index_wiki"`) || !strings.Contains(w.Body.String(), `data-page-type="index"`) {
+		t.Fatalf("/wiki/tags/主题 = %d, want 200 index_wiki list", w.Code)
 	}
 	// 4) project=tags 文档路由防御 → 404
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/wiki/tags/nonexistent-tag", nil))
-	if w.Code != http.StatusOK {
-		// /wiki/tags/:tag 静态段优先命中 handleWiki，未知 tag 自身 render404
-		if w.Code != http.StatusNotFound {
-			t.Fatalf("/wiki/tags/nonexistent-tag = %d, want 200/404", w.Code)
-		}
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("/wiki/tags/nonexistent-tag = %d, want 404", w.Code)
 	}
 	// 5) 未配置项目 → 404；draft slug → 404
 	for _, p := range []string{"/wiki/unknown-proj", "/wiki/stellar/draft-only"} {
@@ -179,10 +173,8 @@ func TestWikiReadmeFallback(t *testing.T) {
 func TestWikiDocHomepageUsesReadmeAndProjectDescription(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
-	ws.site.Load().Wiki = append(ws.site.Load().Wiki, tmpl.WikiProject{
-		ID: "readme", Title: "README 项目", Description: "项目默认说明", Repo: "owner/repo", Branch: "main",
-	})
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "readme", Slug: "home", Title: "首页", Order: 1, Status: store.StatusPublished}); err != nil {
+	createRouteWikiProject(t, st, "readme", map[string]any{"name": "README 项目", "description": "项目默认说明", "source": map[string]any{"repository": "owner/repo", "branch": "main"}})
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "readme", Slug: "home", Title: "首页", Order: 1, Status: store.StatusPublished}); err != nil {
 		t.Fatal(err)
 	}
 	r := gin.New()
@@ -205,7 +197,10 @@ func TestWikiDocHomepageUsesReadmeAndProjectDescription(t *testing.T) {
 func TestWikiDocGhrepoWidget(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "go-blog", Slug: "gb-intro", Title: "GB 引言", Order: 1, Parent: 0, ContentHTML: "<p>gb body</p>", Status: store.StatusPublished}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "go-blog", Slug: "gb-intro", Title: "GB 引言", Order: 1, Parent: 0, ContentMD: "<p>gb body</p>", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "overview", Title: "Stellar 概览", ContentMD: "简介", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
 		t.Fatal(err)
 	}
 	r := gin.New()
@@ -217,8 +212,8 @@ func TestWikiDocGhrepoWidget(t *testing.T) {
 	}
 	body := w.Body.String()
 	for _, want := range []string{
-		// ghrepo 卡片：repo 参数从 WikiProject.Repo 注入（assembleWidgets case "ghrepo"）
-		"widget-wrapper ghrepo", "/api/gh/widget/repo?repo=user/repo", "user/repo",
+		// ghrepo 卡片使用 canonical source.repository 的官方 GitHub 服务。
+		"ghrepo", `data-api="https://api.github.com/repos/user/repo"`, `href="https://github.com/user/repo"`,
 		// wiki_related 推荐 stellar（共同 tag "主题"）
 		"更多：主题", "/wiki/stellar",
 	} {
@@ -232,10 +227,10 @@ func TestWikiDocGhrepoWidget(t *testing.T) {
 func TestSearchJSONIncludesWikidocs(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentHTML: "<p>intro body</p>", Status: store.StatusPublished}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentMD: "<p>intro body</p>", Status: store.StatusPublished}); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "draft-only", Title: "草稿", Order: 2, Parent: 0, ContentHTML: "<p>hidden</p>", Status: store.StatusDraft}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "draft-only", Title: "草稿", Order: 2, Parent: 0, ContentMD: "<p>hidden</p>", Status: store.StatusDraft}); err != nil {
 		t.Fatal(err)
 	}
 	r := gin.New()
@@ -246,7 +241,7 @@ func TestSearchJSONIncludesWikidocs(t *testing.T) {
 		t.Fatalf("/search.json = %d, want 200", w.Code)
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, `"path":"/wiki/stellar/intro"`) || !strings.Contains(body, "引言") {
+	if !strings.Contains(body, `"path":"/wiki/stellar/intro/"`) || !strings.Contains(body, "引言") {
 		t.Errorf("/search.json missing published wiki doc entry: %s", body)
 	}
 	if strings.Contains(body, "draft-only") {
@@ -255,20 +250,19 @@ func TestSearchJSONIncludesWikidocs(t *testing.T) {
 }
 
 // TestWikiCardHrefSemantics 文库卡片跳转语义（Task #9）：
-// 有已发布本地文档 → href=/wiki/<id>；无文档有 URL → 保持外链；都没有 → 不输出 href。
+// 已发布文档跳官方 homepage；显式列入 shelf 的空集合仍可见，未列入的集合不展示。
 func TestWikiCardHrefSemantics(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
-	// 追加两个项目：ext（无文档，配置外链）、none（无文档且无 URL）
-	ws.site.Load().Wiki = append(ws.site.Load().Wiki,
-		tmpl.WikiProject{ID: "ext", Name: "ext", Title: "外部文档", Description: "d", Icon: "i", Tags: nil, URL: "https://example.com/docs", Sort: 0},
-		tmpl.WikiProject{ID: "none", Name: "none", Title: "空项目", Description: "d", Icon: "i", Tags: nil, URL: "", Sort: -1},
-	)
+	// 追加两个空集合，只有 shelf 上明确列出的集合可见。
+	createRouteWikiProject(t, st, "listed-empty", map[string]any{"name": "陈列空项目"})
+	createRouteWikiProject(t, st, "none", map[string]any{"name": "未陈列空项目"})
+	ws.site.Load().StellarV2.Blog["data"].(map[string]any)["wiki"] = []any{"stellar", "go-blog", "listed-empty"}
 	// stellar 插入已发布文档 → HasDocs；none 仅草稿 → 不算 HasDocs
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentHTML: "<p>body</p>", Status: store.StatusPublished}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentMD: "<p>body</p>", Status: store.StatusPublished}); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "none", Slug: "draft", Title: "草稿", Order: 1, Parent: 0, ContentHTML: "<p>hidden</p>", Status: store.StatusDraft}); err != nil {
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "none", Slug: "draft", Title: "草稿", Order: 1, Parent: 0, ContentMD: "<p>draft-body-do-not-expose</p>", Status: store.StatusDraft}); err != nil {
 		t.Fatal(err)
 	}
 	r := gin.New()
@@ -279,17 +273,112 @@ func TestWikiCardHrefSemantics(t *testing.T) {
 		t.Fatalf("/wiki = %d, want 200", w.Code)
 	}
 	body := w.Body.String()
-	// 有已发布文档 → 跳 /wiki/<id>（handleWikiProject 302 到首篇）
-	if !strings.Contains(body, `class="wiki-card card-hover card-hover--spotlight card-hover--tilt no-cover" href="/wiki/stellar"`) {
-		t.Errorf("card stellar: want href=/wiki/stellar")
+	// 已发布文档使用模型生成的 homepage，而非旧中间跳转页。
+	if !strings.Contains(body, `class="wiki-card no-cover card-hover card-hover--spotlight card-hover--tilt" href="/wiki/stellar/intro"`) {
+		t.Errorf("card stellar: want href=/wiki/stellar/intro")
 	}
-	// 无文档 → 保持外链
-	if !strings.Contains(body, `href="https://example.com/docs"`) {
-		t.Errorf("card ext: want external URL href")
+	if !strings.Contains(body, "陈列空项目") {
+		t.Error("explicitly listed empty collection must be visible")
 	}
-	// 无文档且无 URL（仅草稿）→ 不进入项目卡片列表。
-	if strings.Contains(body, "空项目") || strings.Contains(body, "/wiki/none") {
-		t.Errorf("card none: empty project must not be rendered")
+	if strings.Contains(body, "未陈列空项目") {
+		t.Error("unlisted collection must not be visible")
+	}
+	if strings.Contains(body, "/wiki/none") || strings.Contains(body, "draft-body-do-not-expose") {
+		t.Error("unlisted empty collection or draft body exposed")
+	}
+
+}
+
+func TestWikiCardLinksPreserveCollectionRoutesAndExternalURLs(t *testing.T) {
+	for _, root := range []string{"", "/sub"} {
+		for _, tc := range []struct {
+			name, route, external string
+			published             bool
+		}{
+			{name: "empty"},
+			{name: "custom-empty", route: "/manual/"},
+			{name: "published", route: "/manual/", published: true},
+			{name: "external-empty", external: "https://docs.example.test/guide"},
+			{name: "external-published", published: true, external: "https://docs.example.test/guide"},
+		} {
+			t.Run(root+"/"+tc.name, func(t *testing.T) {
+				ws, st, _, router := stellarRouteFixture(t)
+				site := *ws.site.Load()
+				site.URL = "https://fixture.example" + root
+				ws.site.Store(&site)
+				engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+				if err != nil {
+					t.Fatal(err)
+				}
+				ws.engine = engine
+				project := &store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"Collection link fixture"}`, BlogExtensions: `{}`}
+				if tc.route != "" {
+					project.StellarConfig = `{"name":"Collection link fixture","route":{"path":"` + tc.route + `"}}`
+				}
+				if tc.external != "" {
+					project.BlogExtensions = `{"content":{"wiki_external_url":"` + tc.external + `"}}`
+				}
+				if err := st.CreateWikiProject(project); err != nil {
+					t.Fatal(err)
+				}
+				for _, doc := range []*store.WikiDoc{
+					{ProjectID: "docs", Slug: "private-draft", Title: "PRIVATE_DRAFT_TITLE", ContentMD: "PRIVATE_DRAFT_BODY", Status: store.StatusDraft},
+					{ProjectID: "docs", Slug: "intro", Title: "Introduction", Status: store.StatusPublished},
+				} {
+					if doc.Status == store.StatusPublished && !tc.published {
+						continue
+					}
+					doc.StellarVersion, doc.StellarConfig, doc.BlogExtensions = 2, `{}`, `{}`
+					if err := st.CreateWikidoc(doc); err != nil {
+						t.Fatal(err)
+					}
+				}
+				path := strings.TrimSuffix(tc.route, "/")
+				if path == "" {
+					path = "/wiki/docs"
+				}
+				wantHref := root + path
+				if tc.published {
+					wantHref += "/intro"
+				}
+				if tc.external != "" {
+					wantHref = tc.external
+				}
+				index := stellarRequest(router, root+"/wiki")
+				if index.Code != http.StatusOK || !strings.Contains(index.Body.String(), `class="wiki-card no-cover card-hover card-hover--spotlight card-hover--tilt" href="`+wantHref+`"`) {
+					t.Fatalf("wiki card status=%d, want href=%q", index.Code, wantHref)
+				}
+				entry := stellarRequest(router, root+path)
+				if tc.published {
+					if entry.Code != http.StatusFound || entry.Header().Get("Location") != path+"/intro" {
+						t.Fatalf("published collection entry = %d location=%q", entry.Code, entry.Header().Get("Location"))
+					}
+				} else if entry.Code != http.StatusOK || !strings.Contains(entry.Body.String(), "Collection link fixture") {
+					t.Fatalf("empty collection entry = %d, want 200 collection page", entry.Code)
+				}
+				for _, body := range []string{index.Body.String(), entry.Body.String()} {
+					for _, private := range []string{"private-draft", "PRIVATE_DRAFT_TITLE", "PRIVATE_DRAFT_BODY"} {
+						if strings.Contains(body, private) {
+							t.Fatalf("public collection exposed %q", private)
+						}
+					}
+				}
+				if draft := stellarRequest(router, root+path+"/private-draft"); draft.Code != http.StatusNotFound {
+					t.Fatalf("draft status=%d, want 404", draft.Code)
+				}
+				snap, err := ws.stellarSnapshot(nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !tc.published && stellarString(stellarGet(snap.byCollection["wiki:docs"].model, "route.homepage")) != "" {
+					t.Fatal("empty collection must retain its canonical empty homepage")
+				}
+				stored, err := st.GetWikiProject("docs")
+				if err != nil || stored == nil || stored.StellarConfig != project.StellarConfig || stored.BlogExtensions != project.BlogExtensions {
+					t.Fatalf("public projection changed persisted collection: %v", err)
+				}
+			})
+		}
 	}
 }
 
@@ -299,16 +388,9 @@ func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
 	if err := st.EnsureWikiProjectsTable(); err != nil {
 		t.Fatalf("ensure wiki projects: %v", err)
 	}
-	if err := st.CreateWikiProject(&store.WikiProject{
-		ID: "cover", Name: "cover", Title: "封面项目", Cover: "https://example.com/cover.jpg", Visible: true,
-		Hero: &store.WikiHero{
-			Background: "galaxy", Title: "项目 Hero", Description: "Hero 描述",
-			Preview: &store.WikiHeroPreview{Type: "terminal", Commands: []store.WikiHeroCommand{{Codes: []string{"make dev"}}}},
-		},
-	}); err != nil {
-		t.Fatalf("create project: %v", err)
-	}
-	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "cover", Slug: "intro", Title: "项目引言", Status: store.StatusPublished}); err != nil {
+	createRouteWikiProject(t, st, "cover", map[string]any{"name": "封面项目", "headline": "项目 Hero", "description": "Hero 描述", "cover": "https://example.com/cover.jpg", "hero": map[string]any{"enabled": true, "background": map[string]any{"effect": map[string]any{"type": "galaxy"}}, "preview": map[string]any{"type": "terminal", "commands": []any{map[string]any{"codes": "make dev"}}}}})
+	ws.site.Load().StellarV2.Blog["data"].(map[string]any)["wiki"] = []any{"stellar", "go-blog", "cover"}
+	if err := st.CreateWikidoc(&store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "cover", Slug: "intro", Title: "项目引言", Status: store.StatusPublished}); err != nil {
 		t.Fatalf("create project doc: %v", err)
 	}
 	r := gin.New()
@@ -328,11 +410,44 @@ func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
 	if detail.Code != http.StatusOK {
 		t.Fatalf("wiki detail = %d, want 200", detail.Code)
 	}
-	for _, want := range []string{`class="l_cover wiki wiki-hero"`, `class="wiki-cover-background galaxy"`, `data-text-adaptive="split"`, "项目 Hero", "wiki-cover-terminal", "make dev"} {
+	for _, want := range []string{`class="cover-content wiki wiki-hero"`, `data-hero-effect="galaxy"`, `data-text-adaptive="split"`, "项目 Hero", "wiki-cover-terminal", "make dev"} {
 		if !strings.Contains(detail.Body.String(), want) {
 			t.Errorf("wiki detail missing %q", want)
 		}
 	}
+	// Hero 必须占据工作区之前的 cover slot，不能被正文栏或侧栏挤窄。
+	document, err := html.Parse(strings.NewReader(detail.Body.String()))
+	if err != nil {
+		t.Fatalf("parse wiki document: %v", err)
+	}
+	var hero, cover, shell *html.Node
+	var visit func(*html.Node)
+	visit = func(node *html.Node) {
+		for _, attr := range node.Attr {
+			if attr.Key == "id" && attr.Val == "site-cover" {
+				cover = node
+			}
+			if attr.Key == "id" && attr.Val == "start" {
+				shell = node
+			}
+			if attr.Key == "class" && strings.Contains(" "+attr.Val+" ", " wiki-hero ") {
+				hero = node
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			visit(child)
+		}
+	}
+	visit(document)
+	if hero == nil || cover == nil || shell == nil || hero.Parent != cover || cover.Parent != shell.Parent {
+		t.Fatal("Wiki Hero must be in the standalone cover slot outside the workspace")
+	}
+	for sibling := cover.NextSibling; sibling != nil; sibling = sibling.NextSibling {
+		if sibling == shell {
+			return
+		}
+	}
+	t.Fatal("Wiki cover must precede the shell")
 }
 
 func TestLegacyWikiHeroBackgroundGalaxyFallback(t *testing.T) {

@@ -1,0 +1,189 @@
+{
+  "built_head": "fba9255",
+  "config": {
+    "friends": {
+      "title": "友链默认标题 · 实测",
+      "hero": {
+        "title": "友链默认大标题",
+        "description": "友链默认描述",
+        "background": "/uploads/banner.png"
+      },
+      "show_posts": null,
+      "refresh_interval": 73,
+      "posts_per_link": 4
+    }
+  },
+  "friends": {
+    "banner": "--bg-url:url('/uploads/banner.png')",
+    "h1": "友链默认大标题",
+    "html": "<div class=\"tag-plugin users-posts-wrap\"><div class=\"data-service ds-friends_and_posts\" data-api=\"/uploads/friends-fixture.json\" data-show-posts=\"false\"><div class=\"grid-box\"><div class=\"grid-cell user-post-card\"><div class=\"avatar-box\"><a class=\"card-link\" target=\"_blank\" rel=\"external nofollow noopener noreferrer\" href=\"http://127.0.0.1:8103/about/\"><div class=\"lazy-box\"><img onerror=\"javascript:this.removeAttribute('data-src');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg';\" data-src=\"/uploads/avatar.png\" class=\"lazy entered loaded\" data-ll-status=\"loaded\" src=\"/uploads/avatar.png\"></div><span class=\"title\">本地合成友链</span></a><div class=\"labels\"></div></div><div class=\"post-panel\"><div class=\"desc\">仅用于本地页面组件验收</div><div class=\"posts\"></div></div></div></div></div></div>",
+    "title": "友链默认标题 · 实测 - Stellar 2.0 验收站"
+  },
+  "unrelated": {
+    "body": "\n      \n      主页无关页面 fixture验收管理员29 分钟前更新于：29 分钟前无关页面 fixture本地合成友链仅用于本地页面组件验收未设置 RSS 链接\n\n\n\n\n  \n    原生评论验收\n  \n\n  \n    \n      \n        \n        回复 \n        \n          \n        \n      \n      \n        \n          \n            \n            \n            \n          \n        \n        \n          \n          \n            \n          \n          \n            \n          \n        \n      \n      \n        \n      \n      \n      \n        \n          \n            \n            加载中…\n          \n        \n        \n          Blobcat\n          QQ\n          Tieba\n          Aru\n          Twemoji\n        \n      \n      \n        \n          \n            \n          \n          \n            \n          \n          \n            \n          \n          \n            \n          \n        \n        登录\n      \n\n      \n    \n    \n      \n        0 条评论\n        \n          \n            最新\n            \n          \n          \n            最新\n            最热\n            最早\n            作者\n          \n        \n      \n      \n      \n        🥺\n        尴尬了，写这么辛苦竟没人评论 🥺\n        \n          \n          抢个沙发吧\n        \n      \n    \n  \n\n\n  \n  \n    \n      \n    \n    登录\n    \n      \n        \n          \n        \n        Email\n      \n      \n        \n          \n        \n        跳过验证\n      \n    \n    \n      \n      \n        登录\n      \n      \n        注册账号\n      \n    \n    \n      \n        用户名\n        \n      \n      \n        密码\n        \n      \n      \n        没有账号？立即注册\n        登 录\n      \n    \n    \n      \n        用户名 3-20 个字母、数字、下划线或中划线\n        \n      \n      \n        密码 6-64 个字符\n        \n      \n      \n        昵称（选填）\n        \n      \n      \n        邮箱\n        \n      \n      \n        头像链接（选填）\n        \n      \n      \n        已有账号？去登录\n        注 册\n      \n    \n    \n  \n\n\n\n      本站由 Anonymity 使用 Stellar 2.0.0 主题创建。\n本博客所有文章除特别声明外，均采用 CC BY-NC-SA 4.0 许可协议，转载请注明出处。\n\n    ",
+    "h1": "无关页面 fixture",
+    "title": "无关页面 fixture - Stellar 2.0 验收站"
+  },
+  "false": {
+    "banner": "<div class=\"article banner top\" style=\"--bg-url:url('/uploads/banner.png')\"><img class=\"lazy bg entered loaded\" data-src=\"/uploads/banner.png\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\" width=\"960\" height=\"540\" data-stellar-image-dimensions=\"true\" data-stellar-image-color=\"{&quot;size&quot;:64,&quot;hsla&quot;:[9.9954,36.1702,50.8497,1]}\" data-stellar-image-source=\"/uploads/banner.png\" data-ll-status=\"loaded\" src=\"/uploads/banner.png\"><div class=\"content\" data-text-adaptive=\"split\" style=\"--text-banner: rgb(217,216,216); --text-banner-theme: rgb(231,207,203);\"><div class=\"banner-mask banner-mask-top\" aria-hidden=\"true\"></div><div class=\"banner-mask banner-mask-bottom\" aria-hidden=\"true\"></div><div class=\"top bread-nav footnote\"><div class=\"top-row\"><div class=\"left\" id=\"breadcrumb\"><a class=\"cap breadcrumb\" href=\"/\">主页</a><span class=\"sep\"></span><a class=\"cap breadcrumb\" href=\"/friends\">友链默认标题 · 实测</a></div></div><div class=\"meta-row\"><div class=\"flex-row\" id=\"post-meta\"><a class=\"author\" href=\"/author/admin/\">验收管理员</a><span class=\"sep\"></span><span class=\"text created\"><time datetime=\"2026-10-13T13:35:18Z\">25 分钟前</time></span><span class=\"sep updated\"></span><span class=\"text updated\">更新于：<time datetime=\"2026-10-13T13:35:18Z\">25 分钟前</time></span></div></div></div><div class=\"bottom\"><div class=\"text-area\"><h1 class=\"text title\"><span>友链默认大标题</span></h1><div class=\"text subtitle\">友链默认描述</div></div></div></div></div>",
+    "html": "<div class=\"tag-plugin users-posts-wrap\"><div class=\"data-service ds-friends_and_posts\" data-api=\"/uploads/friends-fixture.json\" data-show-posts=\"false\"><div class=\"grid-box\"><div class=\"grid-cell user-post-card\"><div class=\"avatar-box\"><a class=\"card-link\" target=\"_blank\" rel=\"external nofollow noopener noreferrer\" href=\"http://127.0.0.1:8103/about/\"><div class=\"lazy-box\"><img onerror=\"javascript:this.removeAttribute('data-src');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg';\" data-src=\"/uploads/avatar.png\" class=\"lazy entered loaded\" data-ll-status=\"loaded\" src=\"/uploads/avatar.png\"></div><span class=\"title\">本地合成友链</span></a><div class=\"labels\"></div></div><div class=\"post-panel\"><div class=\"desc\">仅用于本地页面组件验收</div><div class=\"posts\"></div></div></div></div></div></div>"
+  },
+  "null": {
+    "body": "本地合成友链仅用于本地页面组件验收未设置 RSS 链接",
+    "html": "<div class=\"tag-plugin users-posts-wrap\"><div class=\"data-service ds-friends_and_posts\" data-api=\"/uploads/friends-fixture.json\" data-show-posts=\"true\"><div class=\"grid-box\"><div class=\"grid-cell user-post-card\"><div class=\"avatar-box\"><a class=\"card-link\" target=\"_blank\" rel=\"external nofollow noopener noreferrer\" href=\"http://127.0.0.1:8103/about/\"><div class=\"lazy-box\"><img onerror=\"javascript:this.removeAttribute('data-src');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg';\" data-src=\"/uploads/avatar.png\" class=\"lazy entered loaded\" data-ll-status=\"loaded\" src=\"/uploads/avatar.png\"></div><span class=\"title\">本地合成友链</span></a><div class=\"labels\"></div></div><div class=\"post-panel\"><div class=\"desc\">仅用于本地页面组件验收</div><div class=\"posts\"><span class=\"no-post\">未设置 RSS 链接</span></div></div></div></div></div></div>"
+  },
+  "robots": {
+    "transport": "HTTP CLI; browser blocked robots.txt",
+    "expected_extra": "Disallow: /fixture-private/\nCrawl-delay: 4"
+  },
+  "wiki": [
+    {
+      "href": "/wiki/",
+      "text": "所有项目"
+    },
+    {
+      "href": "/wiki/tags/动效",
+      "text": "动效"
+    },
+    {
+      "href": "/wiki/tags/Stellar",
+      "text": "Stellar"
+    },
+    {
+      "href": "https://example.com/fixture-wiki",
+      "text": "动效Stellar四种 Hero 动效：strandsWiki · strands全宽 Hero、终端与复制的本地验收。"
+    },
+    {
+      "href": "/wiki/light-rays/intro",
+      "text": "动效Stellar四种 Hero 动效：light-raysWiki · light-rays全宽 Hero、终端与复制的本地验收。"
+    },
+    {
+      "href": "/wiki/ferrofluid/intro",
+      "text": "动效StellarFerrofluid · 原文与多行命令保存Wiki · Ferrofluid 保存复验全宽 Hero、终端与复制的本地验收。"
+    },
+    {
+      "href": "/wiki/video/intro",
+      "text": "动效Stellar视频 HeroWiki · video全宽 Hero、终端与复制的本地验收。"
+    },
+    {
+      "href": "/about/",
+      "text": "动效Stellar四种 Hero 动效：galaxyWiki · galaxy全宽 Hero、终端与复制的本地验收。"
+    },
+    {
+      "href": "/",
+      "text": "Anonymity"
+    },
+    {
+      "href": "https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0",
+      "text": "Stellar 2.0.0"
+    },
+    {
+      "href": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "text": "CC BY-NC-SA 4.0"
+    }
+  ],
+  "localWiki": {
+    "canonical": "http://127.0.0.1:8103/wiki/galaxy/intro",
+    "h1": "四种 Hero 动效：galaxy",
+    "head": [
+      {
+        "content": "website",
+        "property": "og:type"
+      },
+      {
+        "content": "galaxy · intro",
+        "property": "og:title"
+      },
+      {
+        "content": "Stellar 2.0 验收站",
+        "property": "og:site_name"
+      },
+      {
+        "content": "http://127.0.0.1:8103/wiki/galaxy/intro",
+        "property": "og:url"
+      },
+      {
+        "content": "全局 SEO 描述 · 实测",
+        "property": "og:description"
+      },
+      {
+        "content": "zh_CN",
+        "property": "og:locale"
+      },
+      {
+        "content": "/uploads/avatar.png",
+        "property": "og:image"
+      }
+    ],
+    "url": "http://127.0.0.1:8103/wiki/galaxy/intro"
+  },
+  "explicitSEO": [
+    {
+      "key": "description",
+      "value": "页面显式 SEO 描述 · 实测"
+    },
+    {
+      "key": "og:type",
+      "value": "website"
+    },
+    {
+      "key": "og:title",
+      "value": "关于验收站 · 保存复验"
+    },
+    {
+      "key": "og:site_name",
+      "value": "Stellar 2.0 验收站"
+    },
+    {
+      "key": "og:url",
+      "value": "http://127.0.0.1:8103/about/"
+    },
+    {
+      "key": "og:description",
+      "value": "页面显式 SEO 描述 · 实测"
+    },
+    {
+      "key": "og:locale",
+      "value": "zh_CN"
+    },
+    {
+      "key": "og:image",
+      "value": "/uploads/avatar.png"
+    }
+  ],
+  "fixedExplicitSEO": [
+    {
+      "key": "description",
+      "value": "页面显式 SEO 描述 · 实测"
+    },
+    {
+      "key": "og:type",
+      "value": "website"
+    },
+    {
+      "key": "og:title",
+      "value": "关于验收站 · 保存复验"
+    },
+    {
+      "key": "og:site_name",
+      "value": "Stellar 2.0 验收站"
+    },
+    {
+      "key": "og:url",
+      "value": "http://127.0.0.1:8103/about/"
+    },
+    {
+      "key": "og:description",
+      "value": "页面显式 SEO 描述 · 实测"
+    },
+    {
+      "key": "og:locale",
+      "value": "zh_CN"
+    },
+    {
+      "key": "og:image",
+      "value": "/uploads/cover.png"
+    }
+  ],
+  "fixedBuiltHead": "aa1fa93"
+}

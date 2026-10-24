@@ -1,14 +1,36 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { provide, computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { ucApi, type UCPostPayload } from "@blog/api-client";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
+import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 
 const route = useRoute();
 const router = useRouter();
 const isEdit = computed(() => typeof route.params.slug === "string");
-const form = ref<UCPostPayload>({ title: "", excerpt: "", content_md: "", status: "draft", tags: "" });
+const form = ref<UCPostPayload>({
+  stellar_version: 2,
+  stellar_config: "{}",
+  blog_extensions: "{}",
+  title: "",
+  excerpt: "",
+  content_md: "",
+  status: "draft",
+  tags: "",
+});
+provide(
+  stellarEditorContextKey,
+  computed(() => ({
+    stellar_version: form.value.stellar_version,
+    stellar_config: form.value.stellar_config,
+    blog_extensions: form.value.blog_extensions,
+    title: form.value.title,
+    layout: "post",
+    path: "/post/" + String(route.params.slug || ""),
+  })),
+);
 const loading = ref(false);
 const saving = ref(false);
 const error = ref("");
@@ -20,6 +42,9 @@ async function load() {
     const { data } = await ucApi.posts.get(String(route.params.slug));
     const draft = data.has_draft && data.draft ? data.draft : {};
     form.value = {
+      stellar_version: draft.stellar_version ?? data.stellar_version ?? 0,
+      stellar_config: draft.stellar_config ?? data.stellar_config ?? "{}",
+      blog_extensions: draft.blog_extensions ?? data.blog_extensions ?? "{}",
       title: draft.title ?? data.title,
       excerpt: draft.excerpt ?? data.excerpt,
       content_md: draft.content_md ?? data.content_md,
@@ -62,7 +87,7 @@ onMounted(load);
           <Icon icon="ri:arrow-left-line" />
         </button>
         <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.18em] text-primary">My writing</p>
+          <p class="text-xs font-medium text-text-tertiary">文章编辑</p>
           <h1 class="truncate text-2xl font-semibold tracking-tight">{{ isEdit ? "编辑文章" : "新建文章" }}</h1>
         </div>
       </div>
@@ -97,8 +122,16 @@ onMounted(load);
           placeholder="摘要（可选）"
           maxlength="500"
         />
+        <StellarContentConfig
+          v-model:config="form.stellar_config"
+          v-model:blog="form.blog_extensions"
+          :version="form.stellar_version"
+          profile="post"
+          :content="form.content_md"
+          class="mt-5"
+        />
         <div class="mt-5 min-h-[26rem] overflow-hidden rounded-xl border border-border">
-          <MarkdownEditor v-model="form.content_md" :storage-key="`uc-post:${route.params.slug || 'new'}`" />
+          <MarkdownEditor user-center v-model="form.content_md" :storage-key="`uc-post:${route.params.slug || 'new'}`" />
         </div>
       </section>
       <aside class="h-fit rounded-2xl border border-border bg-card p-4 sm:p-5">
@@ -182,7 +215,6 @@ onMounted(load);
 .uc-excerpt-input:focus,
 .uc-input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 .uc-label {
   display: block;
