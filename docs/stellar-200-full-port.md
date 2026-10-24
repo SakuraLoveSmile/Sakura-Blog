@@ -25,6 +25,16 @@
 - 修正后根 dev 候选（HEAD `dea717b` 加上述可核验构建补丁）实际 `make test` 通过：Console 298/298、Stellar 220/220，0 失败/跳过，Go vet/Staticcheck/Go tests 均通过；根 `make build` 通过。`dev-verification.json` 绑定 8 个运行源文件、构建补丁、二进制和资源摘要，5 份前台样式及 2 份 Console 入口资产的 HTTP 字节与当前产物一致。主 agent 再次实际操作根构建的首页→分类、标签/归档/专栏/第二页轮播、代码→搜索、320px 双省略号分页和口令解锁，均通过。正式合入仍执行 `make merge-check` 的 feature 与合并后 dev 全门禁，最终日志保留在本地归档。
 - 体验入口：`http://127.0.0.1:8124/`（隔离样例），口令样例 `/post/parity-locked` 使用本任务测试口令 `fixture-unlock`。下一步由用户确认本次修复体验；未得到确认前不标已验收。本次范围不代表原 T1–T7 全部能力已验收；真实外部服务、真实数据迁移、生产体验、远端 CI、推送、发布与部署未运行。
 
+### T2/T7 颜色对齐补验（同任务，2026-10-24）
+
+- 用户已选择“与之前上游参照站一致：minimal 暖纸色”。沿用 `BLOG20261024-STELLAR`，本轮状态待体验；本次 worktree 为 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-reference-colors`，分支 `codex/fix/20261024-blog20261024-stellar-reference-colors`，起点 dev `08f9811b`，仍合入本地 dev。
+- 冻结参照为当前 `https://xaoxuu.com/`，版本声明 Stellar 2.0.0。唯一整体参照不变，本次颜色快照为 `docs/baselines/stellar-200-parity-20261024/reference-colors/reference-dark.jpg`；旧的 `before-local-dark.jpg` 是调整前现状。本地与参照使用相同视口及配色环境比较颜色，不要求不同站点内容、菜单配置相同。
+- 本次配置：站点 `appearance.preset=minimal`，`color_scheme=auto`；`colors.primary=hsl(40 96% 55%)`，`colors.accent=#f60`，`colors.link=hsl(166 66% 32%)`。使用现有设置 API 合并保存指定字段，其余字段和配置保持。暖纸背景与卡片沿用 minimal 最终层，不添加新颜色覆盖或修改官方默认值。
+- 写入归属：主 agent 独占现有 8124 隔离样例配置、本文与本次浏览器证据；`review_parity`（Sol/high reviewer）只读核查配置接线与覆盖边界，自行完成，不派生、不改文件或服务。已有字体、圆角、内容和四预设支持继续沿原配置；本次不更换设计系统。
+- 验收实测：设置保存后 GET 重读整份 document 与预期一致，其他设置保持。浅/深色 × 1280/390px 共 4 组，背景、卡片、主题色、强调色和链接色的计算值与参照一致；浅色 body 为 `#faf7f0`，深色为 `#22201b`。同视口下文章和搜索共 8 组、320px 分页 2 组均无横向溢出，实际完成搜索打开/结果/关闭及第 10→11 页操作；两侧省略号完整、next 右边界 295px。记录见本次基线目录的 `configuration.json`、`browser-colors.json`、`browser-interactions.json` 与截图。
+- 运行代码仍为根 `08f9811b78c24e38a65155d622ef5e32fbab0cdb` 的非开发模式二进制，仅现有配置发生变化。本轮 `make test` 实际通过：Console 298/298、Stellar 220/220、0 失败/跳过，部署/来源/模块边界、Go vet、Staticcheck、Go tests 全部通过。文档和证据提交/合入继续执行仓库强制门禁；最终日志与恢复备份留在根 `.tmp/stellar-reference-colors-20261024-archive/`。未新增源码或测试，无需重新构建、编译 CSS 或重复全部四预设矩阵。
+- 体验入口仍为 `http://127.0.0.1:8124/`（隔离样例）。结束时已清除配色模拟并恢复原生视口，确认 auto 实际跟随系统深色，未留下访客配色覆盖。下一步由用户确认当前配色；真实数据、生产、远端 CI、推送、发布与部署未操作，原 T1–T7 清单不因此标为已验收。
+
 ## 目标与已确认选择
 
 完整移植官方 tag `2.0.0`，commit `9d11978a24fe6610e3a7dbab741cf62634539d05` 的能力与实际行为。源码依据为该 commit 的 `_config.yml`、`scripts/`、`layout/`、`source/`、`languages/` 和测试。不得把 Hexo 专属能力标成“不适用”后称为完整移植。
