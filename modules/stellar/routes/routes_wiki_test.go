@@ -56,7 +56,7 @@ func TestWikiDocFrontendChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 插入三级树 + 草稿
-	intro := &store.WikiDoc{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentMD: "<h2 id=\"intro-title\">引言</h2><p>intro body</p>", Status: store.StatusPublished}
+	intro := &store.WikiDoc{StellarVersion: 2, StellarConfig: `{"active_menu":"wiki"}`, BlogExtensions: `{}`, ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentMD: "<h2 id=\"intro-title\">引言</h2><p>intro body</p>", Status: store.StatusPublished}
 	if err := st.CreateWikidoc(intro); err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestWikiDocFrontendChain(t *testing.T) {
 		`data-search-domain="wiki:stellar"`, "Stellar 文档",
 		// 同 tag 项目推荐（Task #4）：summary collection + "更多：{标签名}" + 推荐项目链接
 		"related-summary-widget", `data-layout="list"`, `data-variant="summary"`, "更多：主题", "/wiki/go-blog",
-		// 最近更新（Task #8）：左栏 recent widget 渲染当前项目 wiki 文档
+		// 显式 wiki 菜单下，最近更新显示全部可索引 Wiki 集合的文档。
 		"widget-instance--recent",
 		// 右栏 TOC widget：目录 + footer 回到顶部/参与讨论（对齐原版 toc.ejs layoutDiv）
 		`id="data-toc"`, `class="top ui-interactive" onclick="util.scrollTop()"`,
@@ -104,11 +104,11 @@ func TestWikiDocFrontendChain(t *testing.T) {
 			t.Errorf("wiki-doc page missing %q", want)
 		}
 	}
-	// 最近更新数据源为当前项目已发布文档（recent widget 之后出现 /wiki/stellar/ 链接）
+	// 上游 recent.ejs 以 activeMenu=wiki 选择全局文档，而不是仅取当前项目。
 	if recentIdx := strings.Index(body, "widget-instance--recent"); recentIdx < 0 {
 		t.Error("wiki-doc page missing recent widget")
-	} else if !strings.Contains(body[recentIdx:], "/wiki/stellar/") {
-		t.Error("recent widget must show current project wiki docs")
+	} else if !strings.Contains(body[recentIdx:], "/wiki/stellar/") || !strings.Contains(body[recentIdx:], "/wiki/go-blog/overview") {
+		t.Error("recent widget must show published docs across indexed Wiki projects")
 	}
 	// 搜索触发器的当前集合范围由严格模型提供。
 	if !strings.Contains(body, `data-search-domain="wiki:stellar"`) {

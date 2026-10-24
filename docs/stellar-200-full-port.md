@@ -57,6 +57,22 @@
 - 主 agent 浏览器实际检查首页、刷新、设置页、返回、侧栏折叠/展开、同集合文章链接及浅/深色、390×844 菜单内图标与点击入口；手机展开动画结束后 SVG 完整位于视口内。早期过渡中采样和菜单关闭后的隐藏状态均单独标记，未当作最终可见证据；手机截图工具缩放有局限，只记录 CSS 视口/DOM 与真实交互。桌面截图及全部采样见本次 `settings-icon/` 目录。身份回退与退出未操作真实读者账号，BFCache/完整四预设矩阵未重复验证（本次无样式修改）。
 - 下一步：授权后按项目发布路径将此修复部署线上，再复验真实首页及设置入口。当前线上仍运行原有模板；此前“应用到线上博客”仅授权五项颜色设置，不扩展成二进制发布授权。原完整移植清单仍实现中。
 
+### T2/T3/T4/T5/T7 前台细节系统复核（同任务，2026-10-24）
+
+- 状态：本轮细节修复待体验；原完整移植清单仍实现中，线上尚未部署本批源码。用户反馈仍有很多细节未同步，继续既有完整移植范围。起点 dev `829959d3`，分支 `codex/fix/20261024-blog20261024-stellar-detail-parity`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-detail-parity`，仍合入本地 dev。线上是否已部署、当前源码是否缺功能、站点个性配置差异分别取证；既有五项线上配色授权与未部署源码的边界保持。
+- 唯一视觉参照沿用 `https://xaoxuu.com/` 当前 minimal 暖纸色；本轮截图放 `docs/baselines/stellar-200-parity-20261024/details/`。行为和参数仍以锁定 `2.0.0 / 9d11978a24fe6610e3a7dbab741cf62634539d05` 为准。保留已确认 Go SSR、原生评论、本地扩展、Console、四外观及三配色；不能把作者自己的内容、菜单或字体配置直接算成代码缺陷，也不重新设计全局 token。
+- 实际独立并行核查：`audit_templates`（Sol/high analyst）只读 T2 壳层/区域/品牌/菜单/widget/footer/page-controls；`audit_runtime`（Sol/high analyst）只读 T4 客户端初始化、运行时和媒体交互；`audit_content_details`（Sol/high analyst）只读 T3/T5 post/listing/Wiki/Notebook 内容模板。均不写文件、不访问生产、不启动服务、不派生。主 agent 唯一写入共享路由、模板、任务记录及浏览器证据，负责复现、确定修复范围、实现和最终组合验收；有独立实现模块时再明确独占文件与工作树。
+- 本轮验收说明：先保存当前页面并确认实际运行版本；按上述三条用户路径把有证据的代码缺口列为可观察场景，修复后检查受影响页面、桌面/800/390px、适用浅深色与交互。保留既有 UI，只改与锁定上游不符的分支/配置消费/DOM。按风险复用既有定向检查、真实构建、必要 CSS 核对与强制门禁；没有当前组合态证据的完整清单继续保持实现中。
+- 已确认作者规则：多作者且未指定默认作者时，采用当前保存文档的首位作者。保存已将普通键按 JSON 字典序排列；公开投影遵循 `Object.keys` 的规范整数索引优先规则，不能声称恢复了历史输入顺序。保留显式 string/object 选择，补齐公开对象的 id/path/desc，私有字段不公开；`content.authors → article.author → defaultAuthor.id` 优先级不变。
+- 本轮冻结的可观察修复：[x] 搜索标题、章节与摘要位于同一链接，空摘要不产生无名链接；[x] 搜索初次结果与类型重绘挂载/卸载 hover；[x] Story H3、引用左右装饰与 loading 的五个 CSS 图标变量使用可信 registry；[x] 文章最近更新按 updated 排序；[x] 页面明确 `active_menu: wiki` 时取全部可索引 Wiki 文档并显示集合前缀，Notebook 首页取跨笔记本、笔记页取本集合；[x] 非文章页显式作者覆盖默认作者，带点 ID 精确查找；[x] 页脚使用站点 author；[x] linklist 等价路径正确高亮；[x] 参考链接补增强图标，许可证维持普通 Markdown。相关文章摘要已证实有去标签处理，未改；菜单和字体仍按站点配置。
+- 独占实施：`fix_search_details`（Sol/high worker）在 search 后缀树依次处理搜索 JS/Node 回归、regions widget、content references/日期作者与最小链接增强入口；`fix_icon_css`（Sol/high worker）在 icons 后缀树仅处理 registry CSS helper/head/定向测试。两树不共享分支；补丁逐项检查后由主 agent集成，主 agent独占路由公共数据、recent 选择组合、任务记录和浏览器。`review_details`（Sol/high reviewer）独立只读审查；发现 recent 错用导航/profile fallback 的 P2，已改为只读页面 activeMenu 并复查关闭。
+- 旧 `TestWikiDocFrontendChain` 夹具把未配置菜单等同于当前 Wiki 文档，与上游 `recent.ejs` 的页面显式规则不符。本次仅为 intro 夹具明确 `active_menu: wiki`，保留原断言并加强为同时检查另一个集合的文档；新增“仅主题/导航配置 Wiki，页面省略仍用文章”的对照，未跳过、删除或降低门禁。
+- 实际验证：默认作者/最近更新、搜索、widget、图标、references 各组先复现红灯再修绿；本轮当前组合 `make test` 通过 Console 298/298、Stellar 225/225（0 失败/跳过）及部署/来源/模块边界、Go vet、Staticcheck、全部 Go tests。`make build` 生成真实 Console/UC 与 embed 二进制；源文件摘要、二进制 SHA-256 和 HTTP 字节绑定见本目录 `details/candidate-code.json`、`details/runtime-binding.json`。未修改生成 CSS 或共享主题源。
+- 主 agent实际浏览器核验：1280px 下搜索标题点击到文章、启用 spotlight 后初次/类型切换各恰好一个效果层，鼠标坐标变量随真实指针变化；默认 Alice 与 page/Wiki/Note 指定 Bob、host 页脚、跨两 Wiki/两 Notebook recent 和集合前缀正确。四外观均在 auto 的系统浅/深色下检查受影响图标/链接，再检查 minimal 显式 light/dark 覆盖系统相反配色；800/390px 无横向溢出，390px侧栏设置 SVG 完整在视口、点击进入设置，搜索链接也在视口内。详见 `details/browser-verification.json` 与截图。
+- 当前参照站和本地在相同 1280×900 CSS 视口下，浅色背景均为 `rgb(250,247,240)`、主色均为 `hsla(40deg 96% 55% / 1)`、main 均宽 648px。参照站使用衬线字体，本地保留现有系统字体；不将个人配置差异包装成遗漏。原生截图实际为 1272×716 JPEG，手机使用 DOM几何与实际交互证明，不冒称手机截图完整验收。loading 变量已验证，持续加载动画和真实第三方 SiteInfo 服务未实测。
+- 体验入口：`http://127.0.0.1:8126/post/details-story`，另有 `/details-about`、`/details-a/intro`、`/notebooks`。root 为根目录 `.tmp/stellar-detail-parity-20261024-root/`，仅从旧纯样例 SQLite 只读备份，不含用户数据；config/content/data/uploads/cache/端口独立，服务运行归档二进制且不使用 `-dev`。8124/8125 原样例保留。提交、合入和组合态日志统一保存在根 `.tmp/stellar-detail-parity-20261024-archive/`，本轮资源和补丁先归档，再按规则清理已完成任务树；最终集成结果见其中 `final-integration.json`。
+- 生产边界：本轮未 push、创建 PR/tag/Release 或部署。此前“应用到线上博客”只授权五项配色设置；线上公开程序仍为 `v2.0.0-local.e2f8c664`。实际上线候选是完整当前 dev，会包含前序尚未部署改动，不能称为只发布这一批模板；需沿 AGENTS.md 的明确发布/部署授权与项目流程执行。
+
 ## 目标与已确认选择
 
 完整移植官方 tag `2.0.0`，commit `9d11978a24fe6610e3a7dbab741cf62634539d05` 的能力与实际行为。源码依据为该 commit 的 `_config.yml`、`scripts/`、`layout/`、`source/`、`languages/` 和测试。不得把 Hexo 专属能力标成“不适用”后称为完整移植。

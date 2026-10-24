@@ -408,6 +408,16 @@ func (s *webServer) stellarCollectionIndexView(snap *stellarSnapshot, profile, t
 		return stellarNumber(a["order"]) < stellarNumber(b["order"])
 	})
 	data.Stellar.Input.RuntimeData = stellarCopyObject(data.Stellar.Input.RuntimeData)
+	if profile == "notebook" {
+		recent := []any{}
+		for _, collection := range all {
+			recent = append(recent, stellarArray(collection["recentItems"])...)
+		}
+		sort.SliceStable(recent, func(i, j int) bool {
+			return stellarString(stellarObject(recent[i])["updated"]) > stellarString(stellarObject(recent[j])["updated"])
+		})
+		data.Stellar.Input.RuntimeData["recentItems"] = recent
+	}
 	if profile == "wiki" {
 		data.Stellar.Input.RuntimeData["allWikiItems"] = all
 		data.Stellar.Input.RuntimeData["wikiFilter"] = tag

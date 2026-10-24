@@ -12,7 +12,7 @@
 {{sf_head_meta .}}
 <script data-stellar-script="core">(function(){var fallback={{sf_json (sf_get .Stellar.Theme "leftbar.defaultState")}};try{var value=localStorage.getItem('stellar:v2:leftbar-state');document.documentElement.dataset.leftbarState=value==='collapsed'||value==='expanded'?value:fallback;}catch(error){document.documentElement.dataset.leftbarState=fallback;}})();</script>
 {{range sf_list (sf_get .Stellar.Client "Styles")}}<link{{if sf_truth (sf_get . "PageStyle")}} data-stellar-page-style{{end}} rel="stylesheet" href="{{sf_asset $.Stellar.Root (sf_text (sf_get . "Href"))}}"{{with sf_get . "Integrity"}} integrity="{{.}}" crossorigin="anonymous"{{end}}>{{end}}
-<style data-stellar-page-style>{{sf_loading_css .}}{{.Stellar.CSS}}</style>
+<style data-stellar-page-style>{{sf_icon_css}}{{sf_loading_css .}}{{.Stellar.CSS}}</style>
 {{with .Site.FaviconURL}}<link rel="icon" href="{{.}}">{{end}}{{with .Site.AppleIcon}}<link rel="apple-touch-icon" href="{{.}}">{{end}}
 {{with sf_get .Stellar.Data "headEnd"}}{{sf_html .}}{{end}}
 </head>

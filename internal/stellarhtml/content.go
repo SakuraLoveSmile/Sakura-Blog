@@ -23,7 +23,17 @@ type Context struct {
 // ProcessContent 按 md_table、md_link 顺序执行，先于页面模型投影。
 // 调用者必须先净化不可信的作者 HTML。
 func ProcessContent(content string, ctx Context) (string, error) {
-	if !strings.Contains(content, "<table") && !strings.Contains(content, "<a") {
+	return processContent(content, ctx, true)
+}
+
+// EnhanceMarkdownLinks 仅增强普通 Markdown 链接，不处理表格或图片。
+// 调用者必须先完成 Markdown 渲染和不可信作者 HTML 的净化。
+func EnhanceMarkdownLinks(content string, ctx Context) (string, error) {
+	return processContent(content, ctx, false)
+}
+
+func processContent(content string, ctx Context, tables bool) (string, error) {
+	if !(tables && strings.Contains(content, "<table")) && !strings.Contains(content, "<a") {
 		return content, nil
 	}
 	nodes, err := html.ParseFragment(strings.NewReader(content), &html.Node{Type: html.ElementNode, Data: "div", DataAtom: atom.Div})
@@ -34,7 +44,7 @@ func ProcessContent(content string, ctx Context) (string, error) {
 	for _, n := range nodes {
 		root.AppendChild(n)
 	}
-	if strings.Contains(content, "<table") {
+	if tables && strings.Contains(content, "<table") {
 		walk(root, func(n *html.Node) {
 			if n.Type != html.ElementNode || n.Data != "table" || hasClass(n.Parent, "md-table-scroll") || ancestor(n, func(p *html.Node) bool {
 				return hasClass(p, "highlight") || (hasClass(p, "tag-plugin") && hasClass(p, "table"))

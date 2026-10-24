@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"blog/internal/settings"
+	"blog/internal/stellarhtml"
 	"blog/internal/stellarmodels"
 )
 
@@ -251,7 +252,7 @@ func (r stellarTemplateRenderer) dateInfo(d *StellarRenderData) template.HTML {
 		author := stellarMap(d.Stellar.Data["defaultAuthor"])
 		id := stellarText(stellarFirst(stellarRenderGet(d, "listing.authorId"), stellarGet(d.Stellar.Data, "page.article.author")))
 		if id != "" {
-			if a := stellarMap(stellarGet(d.Stellar.Data, "authors."+id)); len(a) > 0 {
+			if a := stellarMap(stellarMap(d.Stellar.Data["authors"])[id]); len(a) > 0 {
 				author = a
 			}
 		}
@@ -334,12 +335,35 @@ func (r stellarTemplateRenderer) articleTags(d *StellarRenderData, tags any) tem
 	}
 	return template.HTML(`<div class="article-tags` + r.reveal(d) + `">` + b.String() + `</div>`)
 }
+func (r stellarTemplateRenderer) referenceMarkdown(d *StellarRenderData, ref any) template.HTML {
+	body := stellarMarkdown(d, ref)
+	if d.markdownError != nil {
+		return ""
+	}
+	base, err := url.Parse(d.Site.URL)
+	if err != nil {
+		d.markdownError = fmt.Errorf("stellar references site URL: %w", err)
+		return ""
+	}
+	base.Path = strings.TrimRight(base.Path, "/") + "/"
+	base.RawPath, base.RawQuery, base.Fragment = "", "", ""
+	enhanced, err := stellarhtml.EnhanceMarkdownLinks(string(body), stellarhtml.Context{
+		Theme: d.Stellar.Theme, SiteURL: base.String(),
+		Icon: func(key string) string { return string(r.icon(key)) },
+	})
+	if err != nil {
+		d.markdownError = err
+		return ""
+	}
+	return template.HTML(enhanced)
+}
+
 func (r stellarTemplateRenderer) articleFooter(d *StellarRenderData, footer map[string]any) template.HTML {
 	var b strings.Builder
 	if refs := stellarList(footer["references"]); len(refs) > 0 {
 		fmt.Fprintf(&b, `<section id="references"><div class="header"><span>%s</span></div><div class="body"><ul>`, stellarEscape(stellarTranslate(d, "meta.references")))
 		for _, ref := range refs {
-			fmt.Fprintf(&b, `<li class="post-title">%s</li>`, stellarMarkdown(d, ref))
+			fmt.Fprintf(&b, `<li class="post-title">%s</li>`, r.referenceMarkdown(d, ref))
 		}
 		b.WriteString(`</ul></div></section>`)
 	}

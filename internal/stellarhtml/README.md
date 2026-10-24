@@ -6,6 +6,7 @@
 
 1. 调用者完成 Markdown/shortcode 渲染及作者 HTML 净化。
 2. `ProcessContent(content, Context)`：`md_table` 包裹普通表格，再执行 `md_link`。随后构造页面模型，供模板引用。普通链接使用 `Context.Icon("default:link")` 的**内联**结果；不要传延迟占位回调。`Theme` 为严格归一化的 camelCase 主题，链接服务使用 `services.siteInfo[provider].endpoint`。
+   文章页脚的参考资料在 Markdown 渲染后单独调用 `EnhanceMarkdownLinks`，仅复用链接增强；许可证保留普通 Markdown，表格和图片不在此入口处理。
 3. 模板输出整页，统一给托管脚本添加 `data-stellar-script`；本包不修改这些标记。
 4. `ProcessSite(html, Context)`：逐字扫描真实图片标签，执行 lazyload → onerror。保留 script/style/comment 及其他内容原文；`data-src`、`srcset`、`no-lazy` 按上游规则处理，保留作者自定义 onerror。
 5. 调用 `internal/stellarimages` 的 metadata/enrich（同一整页快照），然后调用 clientconfig 的 partial-navigation 后处理/签名，再发布。
