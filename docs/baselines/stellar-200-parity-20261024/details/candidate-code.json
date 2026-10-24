@@ -1,0 +1,24 @@
+{
+  "base": "829959d3b055d8d421b175f791349e9b367856bd",
+  "workspace": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-detail-parity",
+  "binary_sha256": "af9cc4752c7b3259bff8255abcfc35b5922f90a0c77f830e446c7462ed097e66",
+  "source_sha256": {
+    "internal/stellarhtml/content.go": "76e5179e3ad564e44a4ad652ec7bcbda02a6117b280e3ade59c9f1b2b667e856",
+    "internal/stellarhtml/content_links_test.go": "a5686ee0ad48485056fc530663262a8b232b2693c5364bb9b227d5b8f7c41a5c",
+    "modules/stellar/routes/routes_wiki_test.go": "717343b5eb23bfe421ac4c23bbe4e457768ff55533354bb8512277993b955b87",
+    "modules/stellar/routes/stellar_details_test.go": "0e8080a3a33f228e265196403b17674c0c5326a58f2111c0ff43fa97b6c19332",
+    "modules/stellar/routes/stellar_http.go": "6fe37fa85bc91073aa8b543e168e070c9a811a7e38746e19fdba2edcb1625083",
+    "modules/stellar/routes/stellar_runtime.go": "8666834366bc5b79016abc6beee41ae68edebd9eccfec5b4c7081c26beb8d19a",
+    "modules/stellar/tests/stellar-v2-go-search.test.mjs": "b3b815d952e92dfecc3fecd75b6913839220b11a0d36292c48e62165e76757e6",
+    "modules/stellar/web/assets/js/blog/search/local-search.js": "8ba285447df77d60ecb947adb2a6fc3bd3c084f1743400f8dbeea4fddd2c36e5",
+    "modules/stellar/web/stellar_recent_details_test.go": "f6fb7c3967c38b76cd285681cde93eff95f620f8161d0de66ee8a56438e57c22",
+    "modules/stellar/web/stellar_reference_details_test.go": "c5de3d382fb4357472a79a13d592f2080e88b30e440af1b939aa08666968e7a6",
+    "modules/stellar/web/stellar_template_helpers.go": "aa7cf6f81ad99f9471170167c339fba69f7241a260abdda1f9b1e9522255fa9b",
+    "modules/stellar/web/stellar_template_helpers_content.go": "7c66de49a70b93abb297b8a7460ebb7be4a4945ddf6fbabfdc3723eaafa5be0a",
+    "modules/stellar/web/stellar_template_helpers_icon_css.go": "1d3bdde3a26339bf41a0c2c4c7520cc1c8dfec0edb5fc67840ba5ced668f5ae8",
+    "modules/stellar/web/stellar_template_helpers_icon_css_test.go": "e591c1fc9b5fe38a4bff0582df301aa4a3ea6275592a00efcbf561dd7b3d0c94",
+    "modules/stellar/web/stellar_template_helpers_regions.go": "6325daa5efcb845c43f282f0f8a72dcd01832b684cec5151a49f12f84206f3eb",
+    "modules/stellar/web/stellar_widget_details_test.go": "f8b718c80498a8a514baa275bfacf250fd349136d7284185b0459bd283370758",
+    "modules/stellar/web/templates/partial/stellar/head.html": "a487af3db12171c253da3a45a71d5cfc92f7e83420da93a51ab996fcfb21027d"
+  }
+}

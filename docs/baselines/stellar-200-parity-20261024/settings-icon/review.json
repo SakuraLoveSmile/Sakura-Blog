@@ -1,0 +1,12 @@
+{
+  "reviewer": "review_parity; Sol/high; read-only",
+  "result": "no substantive findings",
+  "checks": [
+    "synchronous defines before deferred profile.js",
+    "matches locked upstream client-assets.js",
+    "partial navigation retains global icons",
+    "profile fallback and logout share restored dictionary"
+  ],
+  "independentlyRun": "node --test modules/stellar/tests/profile-icon-contract.test.mjs; 2 passed",
+  "scope": "No service or production access by reviewer"
+}

@@ -22,7 +22,7 @@ class Element extends EventTarget {
  querySelectorAll(selector){const parts=selector.split(' '),found=[];const visit=node=>{for(const child of node.children){if(child.matches(parts.at(-1))&&(parts.length===1||child.parentNode.closest(parts[0])))found.push(child);visit(child);}};visit(this);return found;}
  querySelector(selector){return this.querySelectorAll(selector)[0]||null;}
 }
-function fixture({content=true,ttl=60,scope='all',path='/sub/search.json'}={}) {
+function fixture({content=true,ttl=60,scope='all',path='/sub/search.json',interactiveSpotlight='ui-interactive card-hover card-hover--spotlight'}={}) {
  const document=new Element('document');document.nodeType=9;document.baseURI='https://fixture.test/sub/';document.createElement=tag=>new Element(tag,document);
  const wrappers=[];
  function wrapperFromMarkup(markup) {
@@ -34,14 +34,16 @@ function fixture({content=true,ttl=60,scope='all',path='/sub/search.json'}={}) {
  }
  const main=wrapperFromMarkup(dialog);
  const requests=[],values=new Map(),observers=[];const storage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
- const window={};document.defaultView=window;const sandbox={window,document,ctx:{root:'/sub/',search:{path,local_search:{content,field:scope,lazy_load:true,cache_ttl:ttl}}},URLSearchParams,AbortController,Event,WeakMap,Set,console,localStorage:storage,MutationObserver:class{constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){this.disconnected=true;}},fetch:(url,options)=>new Promise(resolve=>requests.push({url,options,resolve}))};
+ const hover={active:new Set(),mounts:[],unmounts:[]};
+ const stellar={cardHover:{mountAll(root){const links=root.querySelectorAll('a');hover.mounts.push(links);links.forEach(link=>{assert.equal(hover.active.has(link),false,'同一结果不得重复挂载hover');hover.active.add(link);});},unmountAll(root){const links=root.querySelectorAll('a');hover.unmounts.push(links);links.forEach(link=>hover.active.delete(link));}}};
+ const window={stellar};document.defaultView=window;const sandbox={window,document,stellar,ctx:{root:'/sub/',ui:{classes:{interactiveSpotlight}},search:{path,local_search:{content,field:scope,lazy_load:true,cache_ttl:ttl}}},URLSearchParams,AbortController,Event,WeakMap,Set,console,localStorage:storage,MutationObserver:class{constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){this.disconnected=true;}},fetch:(url,options)=>new Promise(resolve=>requests.push({url,options,resolve}))};
  vm.runInNewContext(script,sandbox);
  const provider=window.blogLocalSearch,cache={key:(url,base)=>'search_cache_v6:'+new URL(url,base).href};
  const mount=()=>provider.mount(document,cache);
  const focus=(input=main.input)=>input.dispatchEvent(new Event('focus'));
  const query=(value,input=main.input)=>{input.value=value;input.dispatchEvent(new Event('input'));};
  async function respond(index,json,ok=true){requests[index].resolve({ok,status:ok?200:503,json:async()=>json});await tick();await tick();}
- return {...main,window,document,requests,values,observers,provider,mount,focus,query,respond,wrapperFromMarkup};
+ return {...main,window,document,requests,values,observers,provider,mount,focus,query,respond,wrapperFromMarkup,hover,interactiveSpotlight};
 }
 test('真实strict search_dialog DOM输入会请求Go API，子目录只拼一次，全部profile类型显示',async()=>{
  const f=fixture();assert.equal(f.input.id,'site-search-input');const first=f.mount();assert.equal(f.mount(),first);f.focus();f.query('needle');assert.equal(f.requests.length,1);
@@ -78,4 +80,26 @@ test('partial navigation新增sidebar搜索框可按需接入，卸载也移除�
 test('TTL过期会刷新索引，关闭正文不复用其他搜索策略的存量缓存',async()=>{
  const f=fixture({content:false,ttl:60});f.values.set('search_cache_v6:https://fixture.test/sub/search.json',JSON.stringify({ts:Date.now(),ttl:86400,scope:'all',content:true,data:[{title:'Rocket secret',path:'/cached'}]}));const cleanup=f.mount();f.focus();f.query('Rocket');await f.respond(0,{},false);assert.equal(f.requests.length,2);await f.respond(1,[{title:'Rocket',path:'/current'}]);assert.equal(f.result.querySelector('a').href,'/current?kw=Rocket');cleanup();
  const [key,raw]=f.values.entries().next().value;const entry=JSON.parse(raw);entry.ts=Date.now()-61000;f.values.set(key,JSON.stringify(entry));f.input.value='';const next=f.mount();f.focus();f.query('Rocket');assert.equal(f.requests.length,3);assert.equal(f.requests[2].url,'/sub/search.json');next();assert.equal(f.requests[2].options.signal.aborted,true);
+});
+test('服务端标题与章节摘要共用结果链接，无摘要仍有可点击名称并消费UI类',async()=>{
+ const f=fixture({interactiveSpotlight:'fixture-interactive fixture-spotlight'});const cleanup=f.mount();f.focus();f.query('Needle');
+ await f.respond(0,{items:[{type:'post',title:'<img src=x> Needle',path:'/sub/post/title-only'},{type:'wiki',title:'Guide',path:'/sub/wiki/guide',anchor_id:'section one',anchor_text:'Section one',snippet:'<span class="search-keyword">Needle</span>'}]});
+ const links=f.result.querySelectorAll('a');assert.equal(links.length,2);
+ assert.equal(links[0].querySelector('.search-result-title')?.textContent,'<img src=x> Needle');assert.equal(links[0].textContent,'<img src=x> Needle');assert.equal(links[0].href,'/sub/post/title-only?kw=Needle');
+ assert.equal(links[1].querySelector('.search-result-title')?.textContent,'Guide');assert.equal(links[1].querySelector('.search-result-section')?.textContent,'Section one');assert.equal(links[1].href,'/sub/wiki/guide?kw=Needle#section%20one');
+ assert.ok(links.every(link=>link.className===f.interactiveSpotlight));cleanup();
+});
+test('fallback标题或标签命中无正文时链接仍包含标题并消费同一UI类',async()=>{
+ const f=fixture({content:false,interactiveSpotlight:'fixture-interactive fixture-spotlight'});const cleanup=f.mount();f.focus();f.query('Needle');await f.respond(0,{},false);
+ await f.respond(1,[{title:'Needle title',path:'/sub/post/title-only'},{title:'Tagged guide',tags:['Needle'],path:'/sub/wiki/tagged',content:'正文不参与搜索'}]);
+ const links=f.result.querySelectorAll('a');assert.deepEqual(links.map(link=>link.querySelector('.search-result-title')?.textContent),['Needle title','Tagged guide']);assert.deepEqual(links.map(link=>link.textContent),['Needle title','Tagged guide']);assert.ok(links.every(link=>link.className===f.interactiveSpotlight));assert.equal(f.result.querySelectorAll('.search-result-content').length,0);assert.equal(f.hover.active.size,2);cleanup();
+});
+test('服务端结果与类型切换卸载旧hover，每批新链接只挂载一次，空类型清空交互',async()=>{
+ const f=fixture();const cleanup=f.mount();f.focus();f.query('Needle');await f.respond(0,{items:[{type:'post',title:'Post Needle',path:'/sub/post/a'},{type:'page',title:'Page Needle',path:'/sub/page/a'}]});
+ const initialLinks=f.result.querySelectorAll('a');assert.equal(f.hover.mounts.length,1);assert.equal(f.hover.active.size,2);
+ f.result.querySelectorAll('button').find(button=>button.textContent==='文章').dispatchEvent(new Event('click'));
+ const postLinks=f.result.querySelectorAll('a');assert.equal(postLinks.length,1);assert.equal(f.hover.mounts.length,2);assert.ok(initialLinks.every(link=>!f.hover.active.has(link)));assert.equal(f.hover.active.has(postLinks[0]),true);
+ f.result.querySelectorAll('button').find(button=>button.textContent==='文章').dispatchEvent(new Event('click'));assert.equal(f.hover.mounts.length,2,'再次点击当前类型不重复挂载');
+ f.result.querySelectorAll('button').find(button=>button.textContent==='笔记').dispatchEvent(new Event('click'));assert.equal(f.result.querySelectorAll('a').length,0);assert.equal(f.hover.active.size,0);assert.equal(f.hover.mounts.length,2,'空类型不创建hover');
+ f.result.querySelectorAll('button').find(button=>button.textContent==='全部').dispatchEvent(new Event('click'));assert.equal(f.hover.mounts.length,3);assert.equal(f.hover.active.size,2);f.query('');assert.equal(f.hover.active.size,0);cleanup();
 });

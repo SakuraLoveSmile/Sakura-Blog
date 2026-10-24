@@ -26,7 +26,7 @@ func StellarTemplateFunctions(reg *settings.IconRegistry) template.FuncMap {
 		"sf_first": stellarFirst, "sf_list": stellarList, "sf_dict": stellarDict,
 		"sf_json": stellarJSON, "sf_html": stellarRenderedHTML,
 		"sf_t": stellari18n.Text, "sf_url": stellarURL, "sf_asset": stellarAsset,
-		"sf_icon": r.icon, "sf_collection": r.collection,
+		"sf_icon": r.icon, "sf_icon_css": r.iconCSS, "sf_collection": r.collection,
 		"sf_regions": r.regions, "sf_brand": r.brand,
 		"sf_region_body": func(d *StellarRenderData, region string) (template.HTML, error) {
 			regions, err := r.regions(d)

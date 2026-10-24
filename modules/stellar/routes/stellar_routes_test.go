@@ -146,7 +146,8 @@ func TestStellarCanonicalRouteModelsVisibilityAndComments(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("blog=>%d %s", w.Code, w.Body.String())
 	}
-	if len(capture.last.Stellar.ListItems)+len(capture.last.Stellar.PinnedItems) != 2 {
+	// 置顶同时保留在分页源与全站轮播投影中；首页模板负责去重。
+	if len(capture.last.Stellar.ListItems) != 2 || len(capture.last.Stellar.PinnedItems) != 1 {
 		t.Fatalf("listed count=%d", len(capture.last.Stellar.ListItems))
 	}
 	for _, item := range capture.last.Stellar.ListItems {

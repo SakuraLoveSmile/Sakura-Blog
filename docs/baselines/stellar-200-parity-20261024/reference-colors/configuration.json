@@ -1,0 +1,12 @@
+{
+  "url": "http://127.0.0.1:8124",
+  "preset": "minimal",
+  "color_scheme": "auto",
+  "colors": {
+    "primary": "hsl(40 96% 55%)",
+    "accent": "#f60",
+    "link": "hsl(166 66% 32%)"
+  },
+  "saveReadbackEqual": true,
+  "unrelatedSettingsPreserved": true
+}

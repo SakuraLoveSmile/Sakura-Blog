@@ -1,0 +1,12 @@
+/* 保留上游页码窗口、字体与箭头；窄屏收紧数字间距，避免末页和下一页被裁切。 */
+@media (max-width: 480px) {
+  :root .paginator-wrap .page-number {
+    padding-inline: 4px;
+    margin-inline: 1px;
+  }
+}
+@media (max-width: 360px) {
+  :root .paginator-wrap .page-number {
+    padding-inline: 2px;
+  }
+}

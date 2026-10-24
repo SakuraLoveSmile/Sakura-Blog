@@ -1,0 +1,856 @@
+{
+  "source": {
+    "base": "829959d3b055d8d421b175f791349e9b367856bd",
+    "workspace": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-detail-parity",
+    "binary_sha256": "af9cc4752c7b3259bff8255abcfc35b5922f90a0c77f830e446c7462ed097e66",
+    "source_sha256": {
+      "internal/stellarhtml/content.go": "76e5179e3ad564e44a4ad652ec7bcbda02a6117b280e3ade59c9f1b2b667e856",
+      "internal/stellarhtml/content_links_test.go": "a5686ee0ad48485056fc530663262a8b232b2693c5364bb9b227d5b8f7c41a5c",
+      "modules/stellar/routes/routes_wiki_test.go": "717343b5eb23bfe421ac4c23bbe4e457768ff55533354bb8512277993b955b87",
+      "modules/stellar/routes/stellar_details_test.go": "0e8080a3a33f228e265196403b17674c0c5326a58f2111c0ff43fa97b6c19332",
+      "modules/stellar/routes/stellar_http.go": "6fe37fa85bc91073aa8b543e168e070c9a811a7e38746e19fdba2edcb1625083",
+      "modules/stellar/routes/stellar_runtime.go": "8666834366bc5b79016abc6beee41ae68edebd9eccfec5b4c7081c26beb8d19a",
+      "modules/stellar/tests/stellar-v2-go-search.test.mjs": "b3b815d952e92dfecc3fecd75b6913839220b11a0d36292c48e62165e76757e6",
+      "modules/stellar/web/assets/js/blog/search/local-search.js": "8ba285447df77d60ecb947adb2a6fc3bd3c084f1743400f8dbeea4fddd2c36e5",
+      "modules/stellar/web/stellar_recent_details_test.go": "f6fb7c3967c38b76cd285681cde93eff95f620f8161d0de66ee8a56438e57c22",
+      "modules/stellar/web/stellar_reference_details_test.go": "c5de3d382fb4357472a79a13d592f2080e88b30e440af1b939aa08666968e7a6",
+      "modules/stellar/web/stellar_template_helpers.go": "aa7cf6f81ad99f9471170167c339fba69f7241a260abdda1f9b1e9522255fa9b",
+      "modules/stellar/web/stellar_template_helpers_content.go": "7c66de49a70b93abb297b8a7460ebb7be4a4945ddf6fbabfdc3723eaafa5be0a",
+      "modules/stellar/web/stellar_template_helpers_icon_css.go": "1d3bdde3a26339bf41a0c2c4c7520cc1c8dfec0edb5fc67840ba5ced668f5ae8",
+      "modules/stellar/web/stellar_template_helpers_icon_css_test.go": "e591c1fc9b5fe38a4bff0582df301aa4a3ea6275592a00efcbf561dd7b3d0c94",
+      "modules/stellar/web/stellar_template_helpers_regions.go": "6325daa5efcb845c43f282f0f8a72dcd01832b684cec5151a49f12f84206f3eb",
+      "modules/stellar/web/stellar_widget_details_test.go": "f8b718c80498a8a514baa275bfacf250fd349136d7284185b0459bd283370758",
+      "modules/stellar/web/templates/partial/stellar/head.html": "a487af3db12171c253da3a45a71d5cfc92f7e83420da93a51ab996fcfb21027d"
+    }
+  },
+  "environment": {
+    "url": "http://127.0.0.1:8126",
+    "syntheticOnly": true,
+    "embed": true,
+    "productionChanged": false
+  },
+  "palette": {
+    "reference": {
+      "background": "rgb(250, 247, 240)",
+      "font": "\"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+      "main": {
+        "bottom": 4916.625,
+        "height": 4916.625,
+        "left": 312,
+        "right": 960,
+        "top": 0,
+        "width": 648,
+        "x": 312,
+        "y": 0
+      },
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    "local": {
+      "background": "rgb(250, 247, 240)",
+      "font": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+      "main": {
+        "bottom": 1727.484375,
+        "height": 1727.484375,
+        "left": 312,
+        "right": 960,
+        "top": 0,
+        "width": 648,
+        "x": 312,
+        "y": 0
+      },
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    }
+  },
+  "home": {
+    "author": "Alice 默认作者当前保存文档的首位作者所有文章",
+    "cards": [
+      {
+        "html": "<article class=\"md-text\"><h2 class=\"post-title\">Story 细节核验</h2><div class=\"excerpt\"><p>Story 三级标题\n此页使用纯合成内容检查 Stellar 2.0 的细节。\n\n引用装饰应使用上游的左右引号图标。\n\n搜索和作者\n这篇文章用于搜索标题点击与 hover 核验。\n\n</p></div><div class=\"meta cap\"><span class=\"cap\" id=\"post-meta\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 24 24\"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill=\"currentColor\"><path d=\"M6.94028 2C7.35614 2 7.69326 2.32421 7.69326 2.72414V4.18487C8.36117 4.17241 9.10983 4.17241 9.95219 4.17241H13.9681C14.8104 4.17241 15.5591 4.17241 16.227 4.18487V2.72414C16.227 2.32421 16.5641 2 16.98 2C17.3958 2 17.733 2.32421 17.733 2.72414V4.24894C19.178 4.36022 20.1267 4.63333 20.8236 5.30359C21.5206 5.97385 21.8046 6.88616 21.9203 8.27586L22 9H2.92",
+        "text": "Story 细节核验Story 三级标题\n此页使用纯合成内容检查 Stellar 2.0 的细节。\n\n引用装饰应使用上游的左右引号图标。\n\n搜索和作者\n这篇文章用于搜索标题点击与 hover 核验。\n"
+      },
+      {
+        "html": "<article class=\"md-text\"><h2 class=\"post-title\">Stellar 页面核验 45</h2><div class=\"excerpt\"><p>内容与目录\nStellar 的页面应该保持内容清晰、导航完整。此处用同一份隔离内容检查外观与交互。\n\n\n1\n2\n3\n4\n5\n6\n\n\npackage main\n\nfunc main() {\n    message := &amp;#34;Stellar 2.0...</p></div><div class=\"meta cap\"><span class=\"cap\" id=\"post-meta\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 24 24\"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill=\"currentColor\"><path d=\"M6.94028 2C7.35614 2 7.69326 2.32421 7.69326 2.72414V4.18487C8.36117 4.17241 9.10983 4.17241 9.95219 4.17241H13.9681C14.8104 4.17241 15.5591 4.17241 16.227 4.18487V2.72414C16.227 2.32421 16.5641 2 16.98 2C17.3958 2 17.733 2.32421 17.733 2.72414V4.24894C19.178 4.36022 20.1267 4.63333 20.8236 5.30359C21.5206 5.9",
+        "text": "Stellar 页面核验 45内容与目录\nStellar 的页面应该保持内容清晰、导航完整。此处用同一份隔离内容检查外观与交互。\n\n\n1\n2\n3\n4\n5\n6\n\n\npackage main\n\nfunc "
+      }
+    ],
+    "footer": "由 隔离站点作者 使用 Stellar 2.0.0 创建。\n",
+    "recent": [
+      {
+        "href": "/post/details-old-revised",
+        "text": "很很早发布，最近更新"
+      },
+      {
+        "href": "/post/details-story",
+        "text": "SStory 细节核验"
+      },
+      {
+        "href": "/post/parity-45",
+        "text": "SStellar 页面核验 45"
+      },
+      {
+        "href": "/post/parity-44",
+        "text": "SStellar 页面核验 44"
+      },
+      {
+        "href": "/post/parity-43",
+        "text": "SStellar 页面核验 43"
+      },
+      {
+        "href": "/post/parity-42",
+        "text": "SStellar 页面核验 42"
+      },
+      {
+        "href": "/post/parity-41",
+        "text": "SStellar 页面核验 41"
+      },
+      {
+        "href": "/post/parity-40",
+        "text": "SStellar 页面核验 40"
+      },
+      {
+        "href": "/post/parity-39",
+        "text": "SStellar 页面核验 39"
+      },
+      {
+        "href": "/post/parity-38",
+        "text": "SStellar 页面核验 38"
+      }
+    ],
+    "settingsSVG": {
+      "bottom": 880,
+      "height": 24,
+      "left": 53,
+      "right": 77,
+      "top": 856,
+      "width": 24,
+      "x": 53,
+      "y": 856
+    },
+    "styles": [
+      "/assets/css/main-minimal.css?v=db804e0a",
+      "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+      "/assets/css/highlight.css?v=f38ba7df",
+      "/assets/css/pagination.css?v=fe27f525",
+      "/assets/css/search.css?v=ee7d925c",
+      "/assets/css/main-appearance-minimal.css?v=dfa57057"
+    ],
+    "viewport": {
+      "height": 900,
+      "width": 1280
+    }
+  },
+  "story": {
+    "articleStyle": {
+      "articleStyle": "story",
+      "pageLayout": "post",
+      "pageType": "content",
+      "textIndent": ""
+    },
+    "author": "Alice 默认作者当前保存文档的首位作者所有文章",
+    "heading": {
+      "after": {
+        "color": "color(srgb 0.982 0.694 0.118 / 0.5)",
+        "content": "\"\"",
+        "height": "30px",
+        "mask": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20widt",
+        "maskLength": 765,
+        "width": "30px"
+      },
+      "before": {
+        "color": "color(srgb 0.982 0.694 0.118 / 0.5)",
+        "content": "\"\"",
+        "height": "30px",
+        "mask": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20widt",
+        "maskLength": 755,
+        "width": "30px"
+      }
+    },
+    "images": [
+      {
+        "class": "lazy entered loading",
+        "dataSrc": "/details-image-not-found.png",
+        "src": "/details-image-not-found.png",
+        "wrapper": ""
+      }
+    ],
+    "license": [
+      {
+        "enhanced": false,
+        "title": "许可证保持普通链接"
+      }
+    ],
+    "overflow": false,
+    "quote": {
+      "after": {
+        "color": "color(srgb 0.982 0.694 0.118 / 0.25)",
+        "content": "\"\"",
+        "height": "32px",
+        "mask": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20widt",
+        "maskLength": 891,
+        "width": "32px"
+      },
+      "before": {
+        "color": "color(srgb 0.982 0.694 0.118 / 0.25)",
+        "content": "\"\"",
+        "height": "32px",
+        "mask": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20widt",
+        "maskLength": 884,
+        "width": "32px"
+      }
+    },
+    "references": [
+      {
+        "enhanced": true,
+        "href": "/details-about",
+        "icons": 1,
+        "title": "本地参考页面"
+      },
+      {
+        "enhanced": false,
+        "href": "#story-heading",
+        "icons": 0,
+        "title": "锚点"
+      }
+    ],
+    "variables": [
+      {
+        "length": 755,
+        "name": "--icon-h3-left",
+        "value": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg"
+      },
+      {
+        "length": 765,
+        "name": "--icon-h3-right",
+        "value": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg"
+      },
+      {
+        "length": 884,
+        "name": "--icon-quote-left",
+        "value": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg"
+      },
+      {
+        "length": 891,
+        "name": "--icon-quote-right",
+        "value": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg"
+      },
+      {
+        "length": 1261,
+        "name": "--icon-loading",
+        "value": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg"
+      }
+    ],
+    "viewport": {
+      "height": 900,
+      "width": 1280
+    }
+  },
+  "storyDark": {
+    "background": "rgb(34, 32, 27)",
+    "headingMask": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F",
+    "loading": {
+      "imageClass": "lazy entered loaded",
+      "spinner": "none"
+    },
+    "quoteMask": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F",
+    "scheme": null
+  },
+  "routes": [
+    {
+      "route": "/details-about",
+      "activeLinks": [
+        {
+          "current": "page",
+          "href": "/details-about/",
+          "title": "关于详情"
+        }
+      ],
+      "author": "Bob 页面作者页面显式指定的作者所有文章",
+      "overflow": false,
+      "recent": [
+        {
+          "href": "/post/details-old-revised",
+          "prefix": "",
+          "title": "很早发布，最近更新"
+        },
+        {
+          "href": "/post/details-story",
+          "prefix": "",
+          "title": "Story 细节核验"
+        },
+        {
+          "href": "/post/parity-45",
+          "prefix": "",
+          "title": "Stellar 页面核验 45"
+        },
+        {
+          "href": "/post/parity-44",
+          "prefix": "",
+          "title": "Stellar 页面核验 44"
+        },
+        {
+          "href": "/post/parity-43",
+          "prefix": "",
+          "title": "Stellar 页面核验 43"
+        },
+        {
+          "href": "/post/parity-42",
+          "prefix": "",
+          "title": "Stellar 页面核验 42"
+        },
+        {
+          "href": "/post/parity-41",
+          "prefix": "",
+          "title": "Stellar 页面核验 41"
+        },
+        {
+          "href": "/post/parity-40",
+          "prefix": "",
+          "title": "Stellar 页面核验 40"
+        },
+        {
+          "href": "/post/parity-39",
+          "prefix": "",
+          "title": "Stellar 页面核验 39"
+        },
+        {
+          "href": "/post/parity-38",
+          "prefix": "",
+          "title": "Stellar 页面核验 38"
+        }
+      ],
+      "title": "关于细节核验"
+    },
+    {
+      "route": "/details-a/intro",
+      "activeLinks": [],
+      "author": "Bob 页面作者页面显式指定的作者所有文章",
+      "overflow": false,
+      "recent": [
+        {
+          "href": "/details-b/intro",
+          "prefix": "文档集合 2",
+          "title": "文档 2"
+        },
+        {
+          "href": "/details-a/intro",
+          "prefix": "文档集合 1",
+          "title": "文档 1"
+        }
+      ],
+      "title": "文档 1"
+    },
+    {
+      "route": "/notebooks",
+      "activeLinks": [],
+      "overflow": false,
+      "recent": [
+        {
+          "href": "/notebooks/details-b/entry",
+          "prefix": "笔记本 2",
+          "title": "笔记 2"
+        },
+        {
+          "href": "/notebooks/details-a/entry",
+          "prefix": "笔记本 1",
+          "title": "笔记 1"
+        }
+      ]
+    },
+    {
+      "route": "/notebooks/details-a/entry",
+      "activeLinks": [],
+      "author": "Bob 页面作者页面显式指定的作者所有文章",
+      "overflow": false,
+      "recent": [
+        {
+          "href": "/notebooks/details-a/entry",
+          "prefix": "",
+          "title": "笔记 1"
+        }
+      ],
+      "title": "笔记 1"
+    }
+  ],
+  "search": {
+    "initial": {
+      "links": [
+        {
+          "class": "ui-interactive card-hover card-hover--spotlight",
+          "href": "/post/details-story?kw=Story#story-",
+          "html": "<span class=\"search-result-title\">Story 细节核验</span><span class=\"search-result-section\">Story 三级标题</span><p class=\"search-result-content\">Story 三级标题 此页使用纯合成内容检查 Stellar 2.0 的细节。 引用装饰应使用上游的左右引号图标。 搜索和作者 这篇文章用于搜索标题点击与 hover 核验。</p>",
+          "text": "Story 细节核验Story 三级标题Story 三级标题 此页使用纯合成内容检查 Stellar 2.0 的细节。 引用装饰应使用上游的左右引号图标。 搜索和作者 这篇文章用于搜索标题点击与 hover 核验。"
+        }
+      ],
+      "resultCount": 1
+    },
+    "hover": {
+      "active": true,
+      "mouseX": "50px",
+      "mouseY": "30px",
+      "spotlights": 1,
+      "text": "很早发布，最近更新最近更新排序核验",
+      "titleInside": true
+    },
+    "afterTypeTab": {
+      "rect": {
+        "bottom": 331.1875,
+        "height": 85.59375,
+        "left": 353,
+        "right": 927,
+        "top": 245.59375,
+        "width": 574,
+        "x": 353,
+        "y": 245.59375
+      },
+      "spotlights": 1,
+      "text": "很早发布，最近更新最近更新排序核验",
+      "titleInside": true
+    },
+    "rebound": {
+      "active": true,
+      "mouseX": "90px",
+      "spotlights": 1
+    },
+    "titleClick": {
+      "url": "http://127.0.0.1:8126/post/details-old-revised?kw=%E5%BE%88%E6%97%A9%E5%8F%91%E5%B8%83",
+      "heading": "很早发布，最近更新"
+    }
+  },
+  "appearance": [
+    {
+      "preset": "minimal",
+      "configured": "auto",
+      "media": "light",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-minimal.css?v=db804e0a",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "minimal",
+      "configured": "auto",
+      "media": "dark",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-minimal.css?v=db804e0a",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "card",
+      "configured": "auto",
+      "media": "light",
+      "bodyBackground": "rgb(249, 250, 251)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-card.css?v=aa6b222e",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "card",
+      "configured": "auto",
+      "media": "dark",
+      "bodyBackground": "rgb(28, 31, 33)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-card.css?v=aa6b222e",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "glass",
+      "configured": "auto",
+      "media": "light",
+      "bodyBackground": "rgb(249, 250, 251)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-glass.css?v=36102bda",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "glass",
+      "configured": "auto",
+      "media": "dark",
+      "bodyBackground": "rgb(28, 31, 33)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-glass.css?v=36102bda",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "flat",
+      "configured": "auto",
+      "media": "light",
+      "bodyBackground": "rgb(249, 250, 251)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-flat.css?v=5cc07d11",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "flat",
+      "configured": "auto",
+      "media": "dark",
+      "bodyBackground": "rgb(28, 31, 33)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-flat.css?v=5cc07d11",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "minimal",
+      "configured": "light",
+      "media": "dark",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-minimal.css?v=db804e0a",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "theme": "light",
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    },
+    {
+      "preset": "minimal",
+      "configured": "dark",
+      "media": "light",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-minimal.css?v=db804e0a",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "theme": "dark",
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    }
+  ],
+  "widths": [
+    {
+      "width": 800,
+      "bodyBackground": "rgb(250, 247, 240)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-minimal.css?v=db804e0a",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 844,
+        "width": 800
+      }
+    },
+    {
+      "width": 390,
+      "bodyBackground": "rgb(250, 247, 240)",
+      "headingMasks": [
+        true,
+        true
+      ],
+      "licenseEnhanced": 0,
+      "loadingVariable": true,
+      "overflow": false,
+      "quoteMasks": [
+        true,
+        true
+      ],
+      "references": 1,
+      "settingsSVG": true,
+      "styles": [
+        "/assets/css/main-minimal.css?v=db804e0a",
+        "/assets/css/main-card-hover-spotlight.css?v=9d2247c8",
+        "/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "theme": null,
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    }
+  ],
+  "mobile": {
+    "menu": {
+      "author": "Alice 默认作者当前保存文档的首位作者所有文章",
+      "drawer": {
+        "leftbarState": "expanded"
+      },
+      "overflow": false,
+      "settings": {
+        "href": "/settings",
+        "inside": true,
+        "rect": {
+          "bottom": 760.75,
+          "height": 25.5,
+          "left": 36.25,
+          "right": 61.75,
+          "top": 735.25,
+          "width": 25.5,
+          "x": 36.25,
+          "y": 735.25
+        },
+        "svg": true
+      },
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    "settings": {
+      "overflow": false,
+      "settingsSections": [
+        "缓存",
+        "关于",
+        "站内搜索"
+      ],
+      "title": "设置",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    "search": {
+      "dialog": {
+        "bottom": 844,
+        "height": 844,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      },
+      "link": [
+        {
+          "rect": {
+            "bottom": 274.1796875,
+            "height": 140.9921875,
+            "left": 12,
+            "right": 378,
+            "top": 133.1875,
+            "width": 366,
+            "x": 12,
+            "y": 133.1875
+          },
+          "text": "Story 细节核验Story 三级标题Story 三级标题 此页使用纯合成内容检查 Stellar 2.0 的细节。 引用装饰应使用上游的左右引号图标。 搜索和作者 这篇文章用于搜索标题点击与 hover 核验。 alt:延迟图像",
+          "title": "Story 细节核验"
+        }
+      ],
+      "overflow": false,
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    }
+  },
+  "limits": [
+    "Screenshots are native JPEG 1272x716 despite CSS viewport overrides; 390px evidence is DOM geometry and real interactions, not a mobile screenshot claim.",
+    "Loading icon variable and URI are verified; a prolonged visible loading animation was not exercised.",
+    "SiteInfo endpoint behavior is covered by isolated Go tests, not a live third-party service call.",
+    "Initial synthetic link used an unsupported .html route and returned 404; fixture URL corrected to existing /details-about/ without changing application routing.",
+    "Existing personal font and menu configuration are preserved; matching palette does not imply pixel-identical site content."
+  ]
+}

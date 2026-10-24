@@ -374,6 +374,15 @@ func buildStyles(theme, defaults object, blog BlogConfig, math, preset string, s
 		add(str(rewrite(res["css"])), str(at(theme, "features.math.katex.css_integrity")), true)
 	}
 	add(str(rewrite(normalizeResource(at(theme, "appearance.codeBlock.highlightStylesheet")))), "", false)
+	// 服务端 Markdown 使用 Chroma token；官方 Highlight.js 样式不消费这些类名。
+	add("/assets/css/highlight.css", "", false)
+	add("/assets/css/pagination.css", "", false)
+	if blog.GoSearch || blog.AIAsk {
+		add("/assets/css/search.css", "", false)
+	}
+	if blog.Password {
+		add("/assets/css/post-password.css", "", true)
+	}
 	if blog.NativeComments {
 		add("/assets/css/comments.css", "", false)
 	}

@@ -57,7 +57,11 @@ async function compile({ repositoryDir = REPO_DIR, outputDir = OUT_DIR, config =
       delete gitEnv[key]
     }
     const archive = execFileSync('git', ['archive', upstream.commit, 'source/css'], { cwd: repositoryDir, env: gitEnv })
-    execFileSync('tar', ['-x', '-C', tmpDir], { input: archive })
+    // BSD tar 可能在读到归档终止块后提前关闭 stdin，使 Node 写剩余填充时收到 EPIPE。
+    // 从本次临时文件解包相同归档，保留真实退出码和完整产物检查。
+    const archivePath = path.join(tmpDir, 'upstream.tar')
+    fs.writeFileSync(archivePath, archive)
+    execFileSync('tar', ['-xf', archivePath, '-C', tmpDir])
     const cssDir = path.join(tmpDir, 'source/css')
     const outputs = {}
     for (const preset of PRESETS) {

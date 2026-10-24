@@ -1,0 +1,54 @@
+{
+  "baseCommit": "9651820b3e6b922e643d5354d60b1ab1bfe1477e",
+  "codeDigest": "25c6e8164ce0c3bfb7c3f08f01bac6391e7ae3341aa87c29bd4931980d1811dd",
+  "sourceFiles": {
+    "modules/stellar/routes/stellar_http.go": "b37f726caf8c5b9dbedb6ab6572c3bfc6c3873d8c76c03ed3180acd2e3624659",
+    "modules/stellar/web/stellar_template_helpers_content.go": "051ff26b565880c585b0d1f215196ef738730c89e97a2e4c660e259cb911d368",
+    "modules/stellar/clientconfig/build.go": "b08a686a26b5cf0d0c38e0005f31b45c63d88aa28bf4e5e4fc1e4102eeb1a745",
+    "modules/stellar/clientconfig/types.go": "ebc5d06a9ea00fd5a1517f50f1e6242817daa5e6528490a900722ee692f9004f",
+    "modules/stellar/web/stellar_prepare.go": "3d5b7798772a929878517b1b7c05a5bcbaae296bf1d7be5caf60aa7542ec1e48",
+    "modules/stellar/web/assets/css/search.css": "ee7d925c7c444e2156515a6972c719044933a28ae84bda9e35d11e0794d80069",
+    "modules/stellar/web/assets/css/highlight.css": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8",
+    "modules/stellar/web/assets/css/pagination.css": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5"
+  },
+  "binarySha256": "c7dca47c52cf5f760199c07420e8ebf95a463bf5cef11682cb3a477fa7a149f3",
+  "mode": "embedded, without -dev",
+  "root": ".tmp/stellar-parity-root",
+  "port": 8124,
+  "styles": [
+    {
+      "url": "/assets/css/main-flat.css?v=5cc07d11",
+      "servedSha256": "5cc07d111c1b162a08078fb3c6db99a651e4e8ff5a6d4d48f604016148520325",
+      "sourceSha256": "5cc07d111c1b162a08078fb3c6db99a651e4e8ff5a6d4d48f604016148520325",
+      "match": true
+    },
+    {
+      "url": "/assets/css/highlight.css?v=f38ba7df",
+      "servedSha256": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8",
+      "sourceSha256": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8",
+      "match": true
+    },
+    {
+      "url": "/assets/css/pagination.css?v=fe27f525",
+      "servedSha256": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5",
+      "sourceSha256": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5",
+      "match": true
+    },
+    {
+      "url": "/assets/css/search.css?v=ee7d925c",
+      "servedSha256": "ee7d925c7c444e2156515a6972c719044933a28ae84bda9e35d11e0794d80069",
+      "sourceSha256": "ee7d925c7c444e2156515a6972c719044933a28ae84bda9e35d11e0794d80069",
+      "match": true
+    },
+    {
+      "url": "/assets/css/main-appearance-flat.css?v=e23beb98",
+      "servedSha256": "e23beb98f904d0beb37684ff4959b92f69ed6b641e7cf5856e57ef14a121ef3f",
+      "sourceSha256": "e23beb98f904d0beb37684ff4959b92f69ed6b641e7cf5856e57ef14a121ef3f",
+      "match": true
+    }
+  ],
+  "buildSourceFiles": {
+    "modules/stellar/web/build/stylus/compile.js": "befc0cc991ce772fe1942bf0dc6e6c3a0ec3569b90c68604133fedf74c84153a"
+  },
+  "previewRoot": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog/.tmp/stellar-parity-20261024-root"
+}

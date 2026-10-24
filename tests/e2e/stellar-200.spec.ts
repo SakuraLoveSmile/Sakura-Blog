@@ -23,7 +23,8 @@ const fixture = `<!doctype html><html data-theme="dark"><body>
 <button id="collapse" data-shell-action="toggle-leftbar">折叠</button><button id="dismiss" data-shell-action="dismiss-drawer">关闭</button>
 <dialog id="site-search-dialog"><button id="search-close" data-shell-action="close-search">关闭搜索</button>
 <div class="search-wrapper" id="search-wrapper"><input type="search" id="search-input" class="search-input" data-filter="/wiki/demo/"><div id="search-result" class="search-result"></div></div></dialog></div>
-<script>const ctx = {root:'/',search:{path:'/search.json',local_search:{lazy_load:true,cache_ttl:0}}}; window.canonical = {encoded: btoa(location.hostname), host: location.host, allowedHosts: [location.hostname], param: {}};</script>
+<!-- 与生产 clientconfig 一致，搜索结果使用统一的交互卡片 class。 -->
+<script>const ctx = {root:'/',ui:{classes:{interactive:'ui-interactive',interactiveSpotlight:'ui-interactive card-hover card-hover--spotlight'}},search:{path:'/search.json',local_search:{lazy_load:true,cache_ttl:0}}}; window.canonical = {encoded: btoa(location.hostname), host: location.host, allowedHosts: [location.hostname], param: {}};</script>
 <!-- 与生产 CoreScripts 同序加载 utils.js 与 main.js（head.html 提供 window.canonical），让 legacy 分发与 ESM 运行时同时在位。 -->
 <script src="/assets/js/utils.js"></script>
 <script src="/assets/js/main.js"></script>

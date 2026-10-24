@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"blog/internal/settings"
+	"blog/internal/stellarhtml"
 	"blog/internal/stellarmodels"
 )
 
@@ -251,7 +252,7 @@ func (r stellarTemplateRenderer) dateInfo(d *StellarRenderData) template.HTML {
 		author := stellarMap(d.Stellar.Data["defaultAuthor"])
 		id := stellarText(stellarFirst(stellarRenderGet(d, "listing.authorId"), stellarGet(d.Stellar.Data, "page.article.author")))
 		if id != "" {
-			if a := stellarMap(stellarGet(d.Stellar.Data, "authors."+id)); len(a) > 0 {
+			if a := stellarMap(stellarMap(d.Stellar.Data["authors"])[id]); len(a) > 0 {
 				author = a
 			}
 		}
@@ -334,12 +335,35 @@ func (r stellarTemplateRenderer) articleTags(d *StellarRenderData, tags any) tem
 	}
 	return template.HTML(`<div class="article-tags` + r.reveal(d) + `">` + b.String() + `</div>`)
 }
+func (r stellarTemplateRenderer) referenceMarkdown(d *StellarRenderData, ref any) template.HTML {
+	body := stellarMarkdown(d, ref)
+	if d.markdownError != nil {
+		return ""
+	}
+	base, err := url.Parse(d.Site.URL)
+	if err != nil {
+		d.markdownError = fmt.Errorf("stellar references site URL: %w", err)
+		return ""
+	}
+	base.Path = strings.TrimRight(base.Path, "/") + "/"
+	base.RawPath, base.RawQuery, base.Fragment = "", "", ""
+	enhanced, err := stellarhtml.EnhanceMarkdownLinks(string(body), stellarhtml.Context{
+		Theme: d.Stellar.Theme, SiteURL: base.String(),
+		Icon: func(key string) string { return string(r.icon(key)) },
+	})
+	if err != nil {
+		d.markdownError = err
+		return ""
+	}
+	return template.HTML(enhanced)
+}
+
 func (r stellarTemplateRenderer) articleFooter(d *StellarRenderData, footer map[string]any) template.HTML {
 	var b strings.Builder
 	if refs := stellarList(footer["references"]); len(refs) > 0 {
 		fmt.Fprintf(&b, `<section id="references"><div class="header"><span>%s</span></div><div class="body"><ul>`, stellarEscape(stellarTranslate(d, "meta.references")))
 		for _, ref := range refs {
-			fmt.Fprintf(&b, `<li class="post-title">%s</li>`, stellarMarkdown(d, ref))
+			fmt.Fprintf(&b, `<li class="post-title">%s</li>`, r.referenceMarkdown(d, ref))
 		}
 		b.WriteString(`</ul></div></section>`)
 	}
@@ -465,9 +489,14 @@ func (r stellarTemplateRenderer) listingNav(d *StellarRenderData, wiki bool) tem
 	}
 	config := stellarMap(stellarGet(d.Stellar.Theme, "profiles."+profile+".listingNav"))
 	var b strings.Builder
-	if config["enabled"] != true {
-		return ""
+	if !wiki && stellarGet(d.Stellar.Theme, "article.listing.pinnedLayout") != "flat" {
+		b.WriteString(string(r.pinSlider(d, false)))
 	}
+	if config["enabled"] != true {
+		return template.HTML(b.String())
+	}
+	pinned := b.String()
+	b.Reset()
 	link := func(href, title string, active, pretty bool) {
 		href = stellarURL(d.Stellar.Root, href)
 		if parsed, err := url.Parse(href); pretty && err == nil && !parsed.IsAbs() && parsed.Host == "" {
@@ -529,7 +558,7 @@ func (r stellarTemplateRenderer) listingNav(d *StellarRenderData, wiki bool) tem
 			b.WriteString(string(r.blogNavTabs(d)))
 		}
 	}
-	return template.HTML(`<div class="listing-nav"><div class="listing-nav__surface"><div class="listing-nav__viewport"><nav class="` + kind + `">` + b.String() + `</nav></div></div></div>`)
+	return template.HTML(pinned + `<div class="listing-nav"><div class="listing-nav__surface"><div class="listing-nav__viewport"><nav class="` + kind + `">` + b.String() + `</nav></div></div></div>`)
 }
 func (r stellarTemplateRenderer) postIndex(d *StellarRenderData, notebook bool) template.HTML {
 	items := d.Stellar.ListItems
@@ -561,9 +590,6 @@ func (r stellarTemplateRenderer) postIndex(d *StellarRenderData, notebook bool) 
 	}
 	var b strings.Builder
 	if !notebook {
-		if stellarGet(d.Stellar.Theme, "article.listing.pinnedLayout") != "flat" {
-			b.WriteString(string(r.pinSlider(d, false)))
-		}
 		b.WriteString(string(r.listingNav(d, false)))
 	}
 	b.WriteString(`<div class="post-list post">`)
@@ -956,12 +982,21 @@ func (r stellarTemplateRenderer) paginator(d *StellarRenderData) template.HTML {
 	} else {
 		fmt.Fprintf(&b, `<span class="extend prev">%s</span>`, r.icon("default:arrow-left"))
 	}
-	for _, page := range p.Pages {
+	// Hexo paginator 默认保留首尾页及当前页两侧各两页，间隔显示省略号。
+	previous := 0
+	for page := 1; page <= p.Total; page++ {
+		if page != 1 && page != p.Total && (page < p.Current-2 || page > p.Current+2) {
+			continue
+		}
+		if previous != 0 && page-previous > 1 {
+			b.WriteString(`<span class="space">&hellip;</span>`)
+		}
 		if page == p.Current {
 			fmt.Fprintf(&b, `<span class="page-number current">%d</span>`, page)
 		} else {
 			fmt.Fprintf(&b, `<a class="page-number" href="%s">%d</a>`, stellarEscape(href(page)), page)
 		}
+		previous = page
 	}
 	if p.Current < p.Total {
 		fmt.Fprintf(&b, `<a class="extend next" rel="next" href="%s">%s</a>`, stellarEscape(href(p.Current+1)), r.icon("default:arrow-right"))
