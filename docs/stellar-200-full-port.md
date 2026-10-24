@@ -46,6 +46,17 @@
 - 本轮没有业务源码、依赖、镜像或二进制变更，不进行重建/部署或重复全部四预设矩阵。`make test` 本轮实际通过 Console 298/298、Stellar 220/220（0 失败/跳过）及 Go/部署/来源/模块边界检查；文档证据提交与本地合入仍执行强制门禁。配置恢复文件与日志留在根 `.tmp/stellar-live-colors-20261024-archive/`，完整设置不提交。必要恢复时重新读取线上 document，仅恢复这五项原值（原来缺省的字段移除），保留其他最新设置。
 - 下一步由用户体验线上效果；当前不标已验收。仅执行了已授权的线上外观设置保存，未推送、发版、替换二进制或改动文章数据；原 T1–T7 清单不因此标完成。
 
+### T2/T4/T7 左下角设置图标续查（同任务，2026-10-24）
+
+- 状态：本地修复待体验，线上修复实现中（尚未部署）。用户反馈线上左下角设置图标消失；继续使用 `BLOG20261024-STELLAR`，起点 dev `b7ffc1ae`，分支 `codex/fix/20261024-blog20261024-stellar-settings-icon`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-settings-icon`，合入目标为本地 dev。主 agent 独占模板、定向回归、本文与证据；这是单一初始化契约修复，串行实施，独立只读复核由 `review_parity`（Sol/high reviewer）完成，未发现实质问题。
+- 唯一局部视觉参照：`docs/baselines/stellar-200-parity-20261024/settings-icon/reference-upstream-dark.jpg`，来源 `https://xaoxuu.com/`。`before-live-dark.jpg` 与 `before-live.json` 保存当前线上缺失现场。保留既有图标、DOM、minimal 暖纸色和布局；本次只恢复设置入口图标，不重新设计控件。
+- 已确认事实：未登录 HTTP 输出的 `.settings-widget` 含完整 SVG，浏览器执行后 `.ui-icon` 变为空。锁定上游 `scripts/lib/client-assets.js` 会设置 `window.stellarIcons=window.stellarClientData.ctx.icons`；本地已准备同一图标字典，却在 `partial/stellar/scripts.html` 漏接此别名。官方 `profile.js` 挂载/刷新时读取缺失全局并用空内容替换 SVG。颜色配置保存没有修改相关源码。
+- 本地可观察验收项：[x] 首次加载与刷新后齿轮可见；[x] 设置页可打开、返回和同集合换页后图标仍在；[x] 桌面折叠侧栏与手机菜单图标可见；[x] 浅/深配色沿用当前 token；[x] 身份头像失败与退出恢复仍使用正确图标（Node 隔离回归）；[x] 当前构建产物浏览器与定向回归通过。真实线上只读调查，必要的生产二进制部署需另外获得明确授权。
+- 修复仅在同步 defines 脚本中补回上游的图标别名，先于 defer 的 `profile.js`；不修改官方脚本、生成 CSS、图标形状或外观配置。实际模板 + 官方脚本回归先红 0/2、后绿 2/2；本轮 `make build` 与 `make test` 通过，Console 298/298、Stellar 222/222，0 失败/跳过，部署/来源/模块边界、Go vet、Staticcheck、全部 Go tests 通过。普通 commit hook、feature/dev 合并门禁及收尾日志保存在根 `.tmp/stellar-settings-icon-20261024-archive/`，实际结果以对应日志和 `final-integration.json` 为准；不得把本段当作已完成生产部署。
+- 本次隔离服务 `http://127.0.0.1:8125/` 使用现有纯样例 root 的 SQLite 只读快照，config/content/DB/cache 独立，运行归档的真实 embed 二进制（不带 `-dev`）。`candidate-code.json` 绑定源文件与二进制 SHA-256，`runtime-binding.json` 确认首页/设置/文章均输出图标 payload 与正确脚本先后，HTTP profile.js 字节匹配源码且 readyz 正常；没有操作真实数据库或 8124 原样例。
+- 主 agent 浏览器实际检查首页、刷新、设置页、返回、侧栏折叠/展开、同集合文章链接及浅/深色、390×844 菜单内图标与点击入口；手机展开动画结束后 SVG 完整位于视口内。早期过渡中采样和菜单关闭后的隐藏状态均单独标记，未当作最终可见证据；手机截图工具缩放有局限，只记录 CSS 视口/DOM 与真实交互。桌面截图及全部采样见本次 `settings-icon/` 目录。身份回退与退出未操作真实读者账号，BFCache/完整四预设矩阵未重复验证（本次无样式修改）。
+- 下一步：授权后按项目发布路径将此修复部署线上，再复验真实首页及设置入口。当前线上仍运行原有模板；此前“应用到线上博客”仅授权五项颜色设置，不扩展成二进制发布授权。原完整移植清单仍实现中。
+
 ## 目标与已确认选择
 
 完整移植官方 tag `2.0.0`，commit `9d11978a24fe6610e3a7dbab741cf62634539d05` 的能力与实际行为。源码依据为该 commit 的 `_config.yml`、`scripts/`、`layout/`、`source/`、`languages/` 和测试。不得把 Hexo 专属能力标成“不适用”后称为完整移植。
