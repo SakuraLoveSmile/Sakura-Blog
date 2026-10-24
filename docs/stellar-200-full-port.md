@@ -2,6 +2,27 @@
 
 状态：实现中。此文替代此前只覆盖 CSS、骨架与旧功能兼容的升级范围；不将此前测试通过当作本次完整移植通过。
 
+## 2026-10-24 前台差异修复（BLOG20261024-STELLAR）
+
+- 用户目标：调查当前前台与 Stellar 2.0 的差异，修复实际缺口。沿用本文 T2/T3/T4/T5/T7 及已确认的 Go SSR、原生评论、四外观和三配色选择；真实数据、生产和远端操作不在本次修改范围。
+- 状态：实现中。起点 `9651820b3e6b922e643d5354d60b1ab1bfe1477e`，合入目标为根目录 `dev`。任务分支 `codex/fix/20261024-blog20261024-stellar-frontend-parity`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-frontend-parity`。
+- 根目录已有 AGENTS/README/历史验收证据改动及 `.pi/` 原样保留；当前任务树的 AGENTS 是根目录规则的本地副本，不纳入功能提交。共享 resource 是绝对软链接，主题工作树仍为 1.44.0，仅用锁定对象 `9d11978a24fe6610e3a7dbab741cf62634539d05` 作对照，不切换或重置它。
+- 唯一整体视觉参照：`docs/baselines/stellar-200-parity-20261024/reference-upstream-home.png`，复制自本文原先选定的 `stellar-200-full/upstream-home.png`；这是历史上游截图，当前差异的行为/DOM 依据仍为锁定 2.0.0 源码。保留上游 token、字体、布局与四预设；不换肤、不把该站个人配置当默认配置。
+- 运行资源：仅用本任务 `.tmp/stellar-parity-root/` 内的独立 config/content/data/uploads/cache，候选服务端口 8124；不 seed 或迁移用户数据库。浏览器证据写入 `docs/baselines/stellar-200-parity-20261024/`。
+- 实际并行调查：`audit_templates`（Sol/high analyst）只读核查页面 DOM/布局与聚合展示；`audit_runtime`（Sol/high analyst）只读核查运行时/搜索/抽屉/外观接线。均不派生子 agent、不写文件、不启动服务。主 agent 固定视觉差异、实现接入、独占本记录及共享文件，并亲自核验最终页面。
+- 验收：先保存能复现差异的当前页面；逐项修复实际确认的缺口，桌面/中间断点/手机核对受影响路由、导航、内容及布局；覆盖四 appearance × auto/light/dark 与受影响交互；执行适用定向检查、真实构建、必需本地门禁和 dev 组合态验证。未运行与历史证据单列，不以旧截图或子任务自报代替当前结果。
+- 本次确认并修复的差异：
+  1. 置顶轮播以前只出现在首页第一页，分类/标签/归档/专栏索引及后续页缺失；改为列表导航共享全站公开置顶，保留密码文章排除规则，关闭导航时仍独立显示轮播。分页源按日期保留置顶，首页模板去重；平铺首页可显示超过 `per_page` 的全部置顶。
+  2. 分页以前直接输出所有页码，手机下一页被裁切；改用 Hexo 默认的首尾各一页、当前左右各两页和省略号。窄屏只收紧数字间距，并以高于 minimal 尾层的选择器优先级保持生效，不改全局 token 和生成 CSS。
+  3. 新搜索 dialog 没有加载本地搜索补充样式，旧选择器又绑定旧 id；恢复按需加载、改用共享类名，使结果类型按钮横向排列并支持溢出滚动。
+  4. Markdown 实际输出 Chroma，页面却只加载 Highlight.js 主题，导致 token 同色；恢复本地 Chroma 样式，映射锁定上游 token 颜色，限制旧容器规则，保留新版 gutter/padding。
+  5. 本地口令页漏接原有专用样式；按页面加载并标记为 page style，不改密码校验、权限和 API。
+- 当前候选证据绑定 `candidate-code.json` 的 `codeDigest=25c6e8164ce0c3bfb7c3f08f01bac6391e7ae3341aa87c29bd4931980d1811dd`。8 个业务源文件分别记录 SHA-256；最终二进制以非 `-dev` 模式启动，5 份本地样式的 HTTP 字节与源文件一致。Console 真实构建已完成；本次没有改 Console UI。
+- 本次实测：定向 Go routes/web/clientconfig 回归通过；新增置顶/分页用例保存先红后绿；`make build`、`make css`、`make css-drift-check` 通过且生成 CSS 无变化；完整 `make test` 已通过一次，最后提交/合并仍执行仓库强制门禁。无删除、跳过用例或降低检查。原 list+pins 数量预期改为分页源保留 pin、模板去重的实际契约，资源顺序预期增加本次接回的样式。
+- 主 agent 浏览器实测：分类页全站 3 篇轮播、第二页轮播；平铺首页在 `per_page=2` 时 3 篇置顶各出现一次；代码关键词紫色/字符串绿色；搜索类型切换为空页面结果再回到 20 条文章结果、Escape 恢复搜索按钮焦点；错误口令提示与重试后正确解锁正文。四外观 × auto/light/dark × 1280/800/390 共 36 组，加 4 组系统浅色跟随，共 40 组，均无横向溢出。另核对 320px 双省略号中间页；minimal 的 next 右边界为 295（320px）/365（390px），均在容器内。
+- 独立审查：主体未发现实质问题；补查发现 minimal 分页间距被尾层覆盖，修复后再次审查关闭该 P2。浏览器截图与 DOM 数值、外观矩阵保存在本次基线目录。截图工具部分原始输出是 JPEG，已无损解码后转为正确 PNG 格式；桌面最终截图保留原生 JPEG，宽 1272 对应 CSS viewport 1280 的滚动条槽位。
+- 本次范围不代表原 T1–T7 全部能力已验收；真实外部服务、真实数据迁移、生产体验、远端 CI、推送、发布与部署未运行。下一步是本地提交门禁、合入 dev 的组合态检查与本任务 worktree 收尾，随后交用户体验。
+
 ## 目标与已确认选择
 
 完整移植官方 tag `2.0.0`，commit `9d11978a24fe6610e3a7dbab741cf62634539d05` 的能力与实际行为。源码依据为该 commit 的 `_config.yml`、`scripts/`、`layout/`、`source/`、`languages/` 和测试。不得把 Hexo 专属能力标成“不适用”后称为完整移植。

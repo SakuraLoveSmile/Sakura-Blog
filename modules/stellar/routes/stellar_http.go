@@ -82,7 +82,18 @@ func (s *webServer) stellarAggregate(snap *stellarSnapshot, profile, title, path
 	in.Source = path
 	in.Page = stellarmodels.Object{"path": strings.TrimPrefix(path, "/"), "title": title, "layout": layout, "permalink": tmpl.JoinSiteURL(snap.site.URL, path)}
 	in.FrontMatter = stellarmodels.Object{}
-	return &tmpl.ViewData{Site: snap.site, Page: &tmpl.Page{Title: title, Path: path, Layout: layout, Lang: stellarLanguage(in, nil)}, Stellar: &settings.StellarRenderContext{Version: 2, Profile: profile, Input: in, NavigationMembers: map[string]string{}}}
+	data := &tmpl.ViewData{Site: snap.site, Page: &tmpl.Page{Title: title, Path: path, Layout: layout, Lang: stellarLanguage(in, nil)}, Stellar: &settings.StellarRenderContext{Version: 2, Profile: profile, Input: in, NavigationMembers: map[string]string{}}}
+	// 上游列表导航共享全站公开置顶，不随当前分类、标签或页码缩小范围。
+	for _, record := range snap.records {
+		if record.post == nil || record.post.IsPasswordProtected() {
+			continue
+		}
+		listing := stellarObject(record.model.Render["listing"])
+		if listing["listed"] != false && stellarNumber(listing["priority"]) > 0 {
+			data.Stellar.PinnedItems = append(data.Stellar.PinnedItems, record.model)
+		}
+	}
+	return data
 }
 func (s *webServer) serveStellarPost(c *gin.Context, slug string, shared *store.Post) {
 	row := shared
@@ -287,7 +298,7 @@ func (s *webServer) stellarListingView(snap *stellarSnapshot, profile, title, pa
 		}
 	}
 	selected := stellarmodels.SelectListingItems(candidates, tag, tags, func(a, b stellarmodels.Object) bool {
-		if stellarNumber(a["priority"]) != stellarNumber(b["priority"]) {
+		if profile != "home" && profile != "blogIndex" && stellarNumber(a["priority"]) != stellarNumber(b["priority"]) {
 			return stellarNumber(a["priority"]) > stellarNumber(b["priority"])
 		}
 		field := stellarString(sortConfig["field"])
@@ -300,19 +311,7 @@ func (s *webServer) stellarListingView(snap *stellarSnapshot, profile, title, pa
 		}
 		return left > right
 	})
-	if (profile == "home" || profile == "blogIndex") && stellarGet(snap.input.Theme, "article.listing.pinnedLayout") == "carousel" {
-		remaining := []stellarmodels.Object{}
-		for _, item := range selected {
-			if stellarNumber(item["priority"]) > 0 {
-				if page == 1 {
-					data.Stellar.PinnedItems = append(data.Stellar.PinnedItems, byID[stellarString(item["id"])].model)
-				}
-			} else {
-				remaining = append(remaining, item)
-			}
-		}
-		selected = remaining
-	}
+	// 分页使用完整的按日期排序列表；仅首页第一页由模板去除轮播中的重复卡片。
 	pages := stellarmodels.PaginateItems(selected, perPage)
 	if page < 1 || page > len(pages) {
 		return nil, fmt.Errorf("%w: listing page", errStellarNotFound)

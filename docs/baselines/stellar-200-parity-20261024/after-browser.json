@@ -1,0 +1,259 @@
+[
+  {
+    "case": "pagination",
+    "links": [
+      {
+        "href": "/page/9/",
+        "text": ""
+      },
+      {
+        "href": "/",
+        "text": "1"
+      },
+      {
+        "href": "/page/8/",
+        "text": "8"
+      },
+      {
+        "href": "/page/9/",
+        "text": "9"
+      },
+      {
+        "href": "/page/11/",
+        "text": "11"
+      },
+      {
+        "href": "/page/12/",
+        "text": "12"
+      },
+      {
+        "href": "/page/23/",
+        "text": "23"
+      },
+      {
+        "href": "/page/11/",
+        "text": ""
+      }
+    ],
+    "next": {
+      "bottom": 696.59375,
+      "height": 42.5,
+      "left": 340.1484375,
+      "right": 383.6484375,
+      "top": 654.09375,
+      "width": 43.5,
+      "x": 340.1484375,
+      "y": 654.09375
+    },
+    "pageNumbers": 7,
+    "paginator": {
+      "bottom": 696.59375,
+      "height": 42.5,
+      "left": 17,
+      "right": 365,
+      "top": 654.09375,
+      "width": 348,
+      "x": 17,
+      "y": 654.09375
+    },
+    "pins": 1,
+    "width": 390
+  },
+  {
+    "case": "categories",
+    "pins": 1,
+    "slides": [
+      "置顶文章 1",
+      "置顶文章 2",
+      "置顶文章 3"
+    ]
+  },
+  {
+    "case": "code",
+    "prePadding": "0px",
+    "tokens": [
+      {
+        "color": "rgb(137, 89, 168)",
+        "text": "package"
+      },
+      {
+        "color": "rgb(137, 89, 168)",
+        "text": "func"
+      },
+      {
+        "color": "rgb(68, 158, 72)",
+        "text": "\"Stellar 2.0\""
+      }
+    ]
+  },
+  {
+    "bodyWidth": 312,
+    "case": "pagination-320",
+    "next": {
+      "bottom": 706.59375,
+      "height": 42.5,
+      "left": 251.5,
+      "right": 295,
+      "top": 664.09375,
+      "width": 43.5,
+      "x": 251.5,
+      "y": 664.09375
+    },
+    "numbers": 7,
+    "paginator": {
+      "bottom": 706.59375,
+      "height": 42.5,
+      "left": 17,
+      "right": 295,
+      "top": 664.09375,
+      "width": 278,
+      "x": 17,
+      "y": 664.09375
+    },
+    "width": 320
+  },
+  {
+    "case": "pagination-390",
+    "next": {
+      "bottom": 696.59375,
+      "height": 42.5,
+      "left": 321.5,
+      "right": 365,
+      "top": 654.09375,
+      "width": 43.5,
+      "x": 321.5,
+      "y": 654.09375
+    },
+    "paginator": {
+      "bottom": 696.59375,
+      "height": 42.5,
+      "left": 17,
+      "right": 365,
+      "top": 654.09375,
+      "width": 348,
+      "x": 17,
+      "y": 654.09375
+    },
+    "width": 390
+  },
+  {
+    "dialog": {
+      "left": 0,
+      "right": 390,
+      "width": 390
+    },
+    "documentWidth": 390,
+    "scenario": "search-mobile",
+    "tabs": {
+      "clientWidth": 366,
+      "display": "flex",
+      "overflowX": "auto",
+      "scrollWidth": 366,
+      "whiteSpace": "nowrap"
+    },
+    "url": "http://127.0.0.1:8124/page/10",
+    "width": 390
+  },
+  {
+    "buttonBackground": "rgb(28, 208, 253)",
+    "inputRadius": "8px",
+    "pageWidth": 382,
+    "scenario": "password-mobile-locked",
+    "stylesheet": [
+      "http://127.0.0.1:8124/assets/css/post-password.css?v=b4e7136b"
+    ],
+    "width": 390
+  },
+  {
+    "scenario": "password-invalid",
+    "error": "密码错误，请重试",
+    "retryEnabled": true
+  },
+  {
+    "scenario": "password-unlock",
+    "body": true,
+    "heading": "需要口令的文章",
+    "locked": false
+  },
+  {
+    "margin": "4px 1px",
+    "next": {
+      "left": 250.5,
+      "right": 295
+    },
+    "padding": "0px 2px",
+    "paginator": {
+      "left": 17,
+      "right": 295
+    },
+    "scenario": "minimal-pagination-320",
+    "width": 320
+  },
+  {
+    "margin": "4px 1px",
+    "next": {
+      "left": 320.5,
+      "right": 365
+    },
+    "paginator": {
+      "left": 17,
+      "right": 365
+    },
+    "scenario": "minimal-pagination-390",
+    "width": 390
+  },
+  {
+    "dialogOpen": false,
+    "focusAction": null,
+    "focusTag": "BUTTON",
+    "focusText": "搜索K",
+    "scenario": "search-escape-focus"
+  },
+  {
+    "cards": [
+      {
+        "href": "/post/parity-01",
+        "title": "置顶文章 1"
+      },
+      {
+        "href": "/post/parity-02",
+        "title": "置顶文章 2"
+      },
+      {
+        "href": "/post/parity-03",
+        "title": "置顶文章 3"
+      },
+      {
+        "href": "/post/parity-45",
+        "title": "Stellar 页面核验 45"
+      },
+      {
+        "href": "/post/parity-44",
+        "title": "Stellar 页面核验 44"
+      }
+    ],
+    "pageWidth": 1272,
+    "scenario": "flat-pins-above-perpage",
+    "slider": false,
+    "width": 1280
+  },
+  {
+    "scenario": "search-types",
+    "pageTypeEmpty": true,
+    "articleTypeResultCount": 20,
+    "scope": "blog",
+    "basis": "observed via UI type buttons"
+  },
+  {
+    "nextRight": 365,
+    "paginatorRight": 365,
+    "pins": 1,
+    "scenario": "embedded-pagination",
+    "width": 390
+  },
+  {
+    "scenario": "embedded-categories",
+    "pins": 1,
+    "slides": 3
+  }
+]
