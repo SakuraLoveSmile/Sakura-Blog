@@ -2,6 +2,85 @@
 
 状态：实现中。此文替代此前只覆盖 CSS、骨架与旧功能兼容的升级范围；不将此前测试通过当作本次完整移植通过。
 
+## 2026-10-24 前台差异修复（BLOG20261024-STELLAR）
+
+- 用户目标：调查当前前台与 Stellar 2.0 的差异，修复实际缺口。沿用本文 T2/T3/T4/T5/T7 及已确认的 Go SSR、原生评论、四外观和三配色选择；真实数据、生产和远端操作不在本次修改范围。
+- 状态：待体验（本次差异修复；原完整移植清单仍实现中）。起点 `9651820b3e6b922e643d5354d60b1ab1bfe1477e`，合入目标为根目录 `dev`。任务分支 `codex/fix/20261024-blog20261024-stellar-frontend-parity`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-frontend-parity`。
+- 根目录已有 AGENTS/README/历史验收证据改动及 `.pi/` 原样保留；当前任务树的 AGENTS 是根目录规则的本地副本，不纳入功能提交。共享 resource 是绝对软链接，主题工作树仍为 1.44.0，仅用锁定对象 `9d11978a24fe6610e3a7dbab741cf62634539d05` 作对照，不切换或重置它。
+- 唯一整体视觉参照：`docs/baselines/stellar-200-parity-20261024/reference-upstream-home.png`，复制自本文原先选定的 `stellar-200-full/upstream-home.png`；这是历史上游截图，当前差异的行为/DOM 依据仍为锁定 2.0.0 源码。保留上游 token、字体、布局与四预设；不换肤、不把该站个人配置当默认配置。
+- 运行资源：仅用本任务独立 config/content/data/uploads/cache；验收后迁至根工作区 `.tmp/stellar-parity-20261024-root/`，端口 8124，模块软链接指向根 dev；不 seed 或迁移用户数据库。浏览器证据写入 `docs/baselines/stellar-200-parity-20261024/`。临时树仅保留到本地合并门禁通过，补丁和日志归档在根 `.tmp/stellar-parity-20261024-archive/`，不会删除共享 resource 或其他任务树。
+- 实际并行调查：`audit_templates`（Sol/high analyst）只读核查页面 DOM/布局与聚合展示；`audit_runtime`（Sol/high analyst）只读核查运行时/搜索/抽屉/外观接线。均不派生子 agent、不写文件、不启动服务。主 agent 固定视觉差异、实现接入、独占本记录及共享文件，并亲自核验最终页面。
+- 验收：先保存能复现差异的当前页面；逐项修复实际确认的缺口，桌面/中间断点/手机核对受影响路由、导航、内容及布局；覆盖四 appearance × auto/light/dark 与受影响交互；执行适用定向检查、真实构建、必需本地门禁和 dev 组合态验证。未运行与历史证据单列，不以旧截图或子任务自报代替当前结果。
+- 本次确认并修复的差异：
+  1. 置顶轮播以前只出现在首页第一页，分类/标签/归档/专栏索引及后续页缺失；改为列表导航共享全站公开置顶，保留密码文章排除规则，关闭导航时仍独立显示轮播。分页源按日期保留置顶，首页模板去重；平铺首页可显示超过 `per_page` 的全部置顶。
+  2. 分页以前直接输出所有页码，手机下一页被裁切；改用 Hexo 默认的首尾各一页、当前左右各两页和省略号。窄屏只收紧数字间距，并以高于 minimal 尾层的选择器优先级保持生效，不改全局 token 和生成 CSS。
+  3. 新搜索 dialog 没有加载本地搜索补充样式，旧选择器又绑定旧 id；恢复按需加载、改用共享类名，使结果类型按钮横向排列并支持溢出滚动。
+  4. Markdown 实际输出 Chroma，页面却只加载 Highlight.js 主题，导致 token 同色；恢复本地 Chroma 样式，映射锁定上游 token 颜色，限制旧容器规则，保留新版 gutter/padding。
+  5. 本地口令页漏接原有专用样式；按页面加载并标记为 page style，不改密码校验、权限和 API。
+- 当前候选证据绑定 `candidate-code.json` 的 `codeDigest=25c6e8164ce0c3bfb7c3f08f01bac6391e7ae3341aa87c29bd4931980d1811dd`。8 个业务源文件分别记录 SHA-256；最终二进制以非 `-dev` 模式启动，5 份本地样式的 HTTP 字节与源文件一致。Console 真实构建已完成；本次没有改 Console UI。
+- 本次实测：定向 Go routes/web/clientconfig 回归通过；新增置顶/分页用例保存先红后绿；`make build`、`make css`、`make css-drift-check` 通过且生成 CSS 无变化；完整 `make test` 已通过一次，最后提交/合并仍执行仓库强制门禁。无删除、跳过用例或降低检查。原 list+pins 数量预期改为分页源保留 pin、模板去重的实际契约，资源顺序预期增加本次接回的样式。
+- 主 agent 浏览器实测：分类页全站 3 篇轮播、第二页轮播；平铺首页在 `per_page=2` 时 3 篇置顶各出现一次；代码关键词紫色/字符串绿色；搜索类型切换为空页面结果再回到 20 条文章结果、Escape 恢复搜索按钮焦点；错误口令提示与重试后正确解锁正文。四外观 × auto/light/dark × 1280/800/390 共 36 组，加 4 组系统浅色跟随，共 40 组，均无横向溢出。另核对 320px 双省略号中间页；minimal 的 next 右边界为 295（320px）/365（390px），均在容器内。
+- 独立审查：主体未发现实质问题；补查发现 minimal 分页间距被尾层覆盖，修复后再次审查关闭该 P2。浏览器截图与 DOM 数值、外观矩阵保存在本次基线目录。截图工具部分原始输出是 JPEG，已按原像素转换为正确 PNG 格式；桌面最终截图保留原生 JPEG，宽 1272 对应 CSS viewport 1280 的滚动条槽位。
+- 本地组合态曾失败一次：`dea717b` 合入 dev 后，既有 CSS 全量重编回归在 Node → BSD tar 的 stdin 管道出现 `EPIPE`（tar 自身退出 0）。只读诊断用同一合法归档的零填充复现此机制；修正为先将锁定归档写入独占临时文件、再从文件解包，错误继续抛出，finally 清理不变。未忽略 EPIPE、未改上游或降低检查；构建修正的 SHA-256 单列在 `candidate-code.json.buildSourceFiles`。
+- 修正后根 dev 候选（HEAD `dea717b` 加上述可核验构建补丁）实际 `make test` 通过：Console 298/298、Stellar 220/220，0 失败/跳过，Go vet/Staticcheck/Go tests 均通过；根 `make build` 通过。`dev-verification.json` 绑定 8 个运行源文件、构建补丁、二进制和资源摘要，5 份前台样式及 2 份 Console 入口资产的 HTTP 字节与当前产物一致。主 agent 再次实际操作根构建的首页→分类、标签/归档/专栏/第二页轮播、代码→搜索、320px 双省略号分页和口令解锁，均通过。正式合入仍执行 `make merge-check` 的 feature 与合并后 dev 全门禁，最终日志保留在本地归档。
+- 体验入口：`http://127.0.0.1:8124/`（隔离样例），口令样例 `/post/parity-locked` 使用本任务测试口令 `fixture-unlock`。下一步由用户确认本次修复体验；未得到确认前不标已验收。本次范围不代表原 T1–T7 全部能力已验收；真实外部服务、真实数据迁移、生产体验、远端 CI、推送、发布与部署未运行。
+
+### T2/T7 颜色对齐补验（同任务，2026-10-24）
+
+- 用户已选择“与之前上游参照站一致：minimal 暖纸色”。沿用 `BLOG20261024-STELLAR`，本轮状态待体验；本次 worktree 为 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-reference-colors`，分支 `codex/fix/20261024-blog20261024-stellar-reference-colors`，起点 dev `08f9811b`，仍合入本地 dev。
+- 冻结参照为当前 `https://xaoxuu.com/`，版本声明 Stellar 2.0.0。唯一整体参照不变，本次颜色快照为 `docs/baselines/stellar-200-parity-20261024/reference-colors/reference-dark.jpg`；旧的 `before-local-dark.jpg` 是调整前现状。本地与参照使用相同视口及配色环境比较颜色，不要求不同站点内容、菜单配置相同。
+- 本次配置：站点 `appearance.preset=minimal`，`color_scheme=auto`；`colors.primary=hsl(40 96% 55%)`，`colors.accent=#f60`，`colors.link=hsl(166 66% 32%)`。使用现有设置 API 合并保存指定字段，其余字段和配置保持。暖纸背景与卡片沿用 minimal 最终层，不添加新颜色覆盖或修改官方默认值。
+- 写入归属：主 agent 独占现有 8124 隔离样例配置、本文与本次浏览器证据；`review_parity`（Sol/high reviewer）只读核查配置接线与覆盖边界，自行完成，不派生、不改文件或服务。已有字体、圆角、内容和四预设支持继续沿原配置；本次不更换设计系统。
+- 验收实测：设置保存后 GET 重读整份 document 与预期一致，其他设置保持。浅/深色 × 1280/390px 共 4 组，背景、卡片、主题色、强调色和链接色的计算值与参照一致；浅色 body 为 `#faf7f0`，深色为 `#22201b`。同视口下文章和搜索共 8 组、320px 分页 2 组均无横向溢出，实际完成搜索打开/结果/关闭及第 10→11 页操作；两侧省略号完整、next 右边界 295px。记录见本次基线目录的 `configuration.json`、`browser-colors.json`、`browser-interactions.json` 与截图。
+- 运行代码仍为根 `08f9811b78c24e38a65155d622ef5e32fbab0cdb` 的非开发模式二进制，仅现有配置发生变化。本轮 `make test` 实际通过：Console 298/298、Stellar 220/220、0 失败/跳过，部署/来源/模块边界、Go vet、Staticcheck、Go tests 全部通过。文档和证据提交/合入继续执行仓库强制门禁；最终日志与恢复备份留在根 `.tmp/stellar-reference-colors-20261024-archive/`。未新增源码或测试，无需重新构建、编译 CSS 或重复全部四预设矩阵。
+- 体验入口仍为 `http://127.0.0.1:8124/`（隔离样例）。结束时已清除配色模拟并恢复原生视口，确认 auto 实际跟随系统深色，未留下访客配色覆盖。下一步由用户确认当前配色；真实数据、生产、远端 CI、推送、发布与部署未操作，原 T1–T7 清单不因此标为已验收。
+
+### T2/T7 线上颜色差异续查（同任务，2026-10-24）
+
+- 用户反馈颜色仍与 `https://xaoxuu.com/` 不同。本轮状态待体验；上述隔离样例的结果不代表线上博客。实际打开 `https://blog.xn--fhqths51enha.cn/` 后确认线上原来仍使用 card，前轮遗漏了该实际入口的对照。本轮已获明确授权并完成线上配置更新。
+- 同浏览器、同系统深色、同 1280×720px 下，线上 body 为 `rgb(28,31,33)`（`#1c1f21`），参照为 `rgb(34,32,27)`（`#22201b`）；线上主色 `hsla(192deg 98% 55% / 1)`、链接 `hsla(207deg 90% 54% / 1)`，参照分别为金黄 `hsla(40deg 96% 55% / 1)`、绿色 `hsla(166deg 66% 32% / 1)`。线上实际加载 `main-card.css` 和 `main-appearance-card.css`，不是缓存推测。参照站另有衬线字体，字体不作为本轮颜色调整字段。
+- 唯一颜色参照与线上原状分别保存在 `docs/baselines/stellar-200-parity-20261024/live-colors/reference-dark.jpg`、`before-live-dark.jpg`，浅色补充与计算值见同目录。最小目标字段见 `proposed-appearance.json`：minimal、auto 及金黄/橙色/绿色三个颜色。用户明确选择“应用到线上博客”后，使用现有已认证 Console 先读取并备份 document，只合并这五项，校验通过后保存一次，再通过“重新读取”确认整份 JSON 与候选完全相等；其余设置保持，敏感字段的遮罩按现有保存机制保留。
+- 本轮 worktree 为 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-live-colors`，分支 `codex/fix/20261024-blog20261024-stellar-live-colors`，起点 dev `1d40ecc9`，合入目标仍为本地 dev。主 agent 独占本文、证据与后续获准的设置操作；没有源码改动或可独立并行的实施，串行定位即可。
+- 已实测：线上浅/深色 × 桌面 1280px/手机 390px 的 4 组首页，body、背景/卡片/主题/强调/链接及文字 token 均与参照一致；另有文章和搜索 8 组交互检查，搜索“Hexo”均返回 3 个结果，均无页面横向溢出。手机是 390×844 CSS 视口的真实浏览器模拟，截图工具缩放有局限，仅保留可靠桌面截图；计算值和交互测量见 `browser-verification.json`。字体、菜单项自己的 accent、分类色等独立配置未纳入这五项；例如左栏博客图标仍使用原有青色，不能宣称整个站点所有视觉细节与作者站完全相同。
+- 未登录 HTTP 读取也确认线上已加载 `main-minimal.css` 与 `main-appearance-minimal.css`；实际下载的 CSS 字节与本地锁定上游产物相同，`/readyz` 返回 `ok:true`。完整配置重读结果见 `applied-appearance.json`，最终公开截图为 `after-live-dark-desktop.jpg` 与 `after-live-light-desktop.jpg`。结束时清除配色/视口模拟，确认 auto 跟随系统且 `data-theme` 无访客覆盖。
+- 本轮没有业务源码、依赖、镜像或二进制变更，不进行重建/部署或重复全部四预设矩阵。`make test` 本轮实际通过 Console 298/298、Stellar 220/220（0 失败/跳过）及 Go/部署/来源/模块边界检查；文档证据提交与本地合入仍执行强制门禁。配置恢复文件与日志留在根 `.tmp/stellar-live-colors-20261024-archive/`，完整设置不提交。必要恢复时重新读取线上 document，仅恢复这五项原值（原来缺省的字段移除），保留其他最新设置。
+- 下一步由用户体验线上效果；当前不标已验收。仅执行了已授权的线上外观设置保存，未推送、发版、替换二进制或改动文章数据；原 T1–T7 清单不因此标完成。
+
+### T2/T4/T7 左下角设置图标续查（同任务，2026-10-24）
+
+- 状态：本地修复待体验，线上修复实现中（尚未部署）。用户反馈线上左下角设置图标消失；继续使用 `BLOG20261024-STELLAR`，起点 dev `b7ffc1ae`，分支 `codex/fix/20261024-blog20261024-stellar-settings-icon`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-settings-icon`，合入目标为本地 dev。主 agent 独占模板、定向回归、本文与证据；这是单一初始化契约修复，串行实施，独立只读复核由 `review_parity`（Sol/high reviewer）完成，未发现实质问题。
+- 唯一局部视觉参照：`docs/baselines/stellar-200-parity-20261024/settings-icon/reference-upstream-dark.jpg`，来源 `https://xaoxuu.com/`。`before-live-dark.jpg` 与 `before-live.json` 保存当前线上缺失现场。保留既有图标、DOM、minimal 暖纸色和布局；本次只恢复设置入口图标，不重新设计控件。
+- 已确认事实：未登录 HTTP 输出的 `.settings-widget` 含完整 SVG，浏览器执行后 `.ui-icon` 变为空。锁定上游 `scripts/lib/client-assets.js` 会设置 `window.stellarIcons=window.stellarClientData.ctx.icons`；本地已准备同一图标字典，却在 `partial/stellar/scripts.html` 漏接此别名。官方 `profile.js` 挂载/刷新时读取缺失全局并用空内容替换 SVG。颜色配置保存没有修改相关源码。
+- 本地可观察验收项：[x] 首次加载与刷新后齿轮可见；[x] 设置页可打开、返回和同集合换页后图标仍在；[x] 桌面折叠侧栏与手机菜单图标可见；[x] 浅/深配色沿用当前 token；[x] 身份头像失败与退出恢复仍使用正确图标（Node 隔离回归）；[x] 当前构建产物浏览器与定向回归通过。真实线上只读调查，必要的生产二进制部署需另外获得明确授权。
+- 修复仅在同步 defines 脚本中补回上游的图标别名，先于 defer 的 `profile.js`；不修改官方脚本、生成 CSS、图标形状或外观配置。实际模板 + 官方脚本回归先红 0/2、后绿 2/2；本轮 `make build` 与 `make test` 通过，Console 298/298、Stellar 222/222，0 失败/跳过，部署/来源/模块边界、Go vet、Staticcheck、全部 Go tests 通过。普通 commit hook、feature/dev 合并门禁及收尾日志保存在根 `.tmp/stellar-settings-icon-20261024-archive/`，实际结果以对应日志和 `final-integration.json` 为准；不得把本段当作已完成生产部署。
+- 本次隔离服务 `http://127.0.0.1:8125/` 使用现有纯样例 root 的 SQLite 只读快照，config/content/DB/cache 独立，运行归档的真实 embed 二进制（不带 `-dev`）。`candidate-code.json` 绑定源文件与二进制 SHA-256，`runtime-binding.json` 确认首页/设置/文章均输出图标 payload 与正确脚本先后，HTTP profile.js 字节匹配源码且 readyz 正常；没有操作真实数据库或 8124 原样例。
+- 主 agent 浏览器实际检查首页、刷新、设置页、返回、侧栏折叠/展开、同集合文章链接及浅/深色、390×844 菜单内图标与点击入口；手机展开动画结束后 SVG 完整位于视口内。早期过渡中采样和菜单关闭后的隐藏状态均单独标记，未当作最终可见证据；手机截图工具缩放有局限，只记录 CSS 视口/DOM 与真实交互。桌面截图及全部采样见本次 `settings-icon/` 目录。身份回退与退出未操作真实读者账号，BFCache/完整四预设矩阵未重复验证（本次无样式修改）。
+- 下一步：授权后按项目发布路径将此修复部署线上，再复验真实首页及设置入口。当前线上仍运行原有模板；此前“应用到线上博客”仅授权五项颜色设置，不扩展成二进制发布授权。原完整移植清单仍实现中。
+
+### T2/T3/T4/T5/T7 前台细节系统复核（同任务，2026-10-24）
+
+- 状态：本轮细节修复待体验；原完整移植清单仍实现中，线上尚未部署本批源码。用户反馈仍有很多细节未同步，继续既有完整移植范围。起点 dev `829959d3`，分支 `codex/fix/20261024-blog20261024-stellar-detail-parity`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-detail-parity`，仍合入本地 dev。线上是否已部署、当前源码是否缺功能、站点个性配置差异分别取证；既有五项线上配色授权与未部署源码的边界保持。
+- 唯一视觉参照沿用 `https://xaoxuu.com/` 当前 minimal 暖纸色；本轮截图放 `docs/baselines/stellar-200-parity-20261024/details/`。行为和参数仍以锁定 `2.0.0 / 9d11978a24fe6610e3a7dbab741cf62634539d05` 为准。保留已确认 Go SSR、原生评论、本地扩展、Console、四外观及三配色；不能把作者自己的内容、菜单或字体配置直接算成代码缺陷，也不重新设计全局 token。
+- 实际独立并行核查：`audit_templates`（Sol/high analyst）只读 T2 壳层/区域/品牌/菜单/widget/footer/page-controls；`audit_runtime`（Sol/high analyst）只读 T4 客户端初始化、运行时和媒体交互；`audit_content_details`（Sol/high analyst）只读 T3/T5 post/listing/Wiki/Notebook 内容模板。均不写文件、不访问生产、不启动服务、不派生。主 agent 唯一写入共享路由、模板、任务记录及浏览器证据，负责复现、确定修复范围、实现和最终组合验收；有独立实现模块时再明确独占文件与工作树。
+- 本轮验收说明：先保存当前页面并确认实际运行版本；按上述三条用户路径把有证据的代码缺口列为可观察场景，修复后检查受影响页面、桌面/800/390px、适用浅深色与交互。保留既有 UI，只改与锁定上游不符的分支/配置消费/DOM。按风险复用既有定向检查、真实构建、必要 CSS 核对与强制门禁；没有当前组合态证据的完整清单继续保持实现中。
+- 已确认作者规则：多作者且未指定默认作者时，采用当前保存文档的首位作者。保存已将普通键按 JSON 字典序排列；公开投影遵循 `Object.keys` 的规范整数索引优先规则，不能声称恢复了历史输入顺序。保留显式 string/object 选择，补齐公开对象的 id/path/desc，私有字段不公开；`content.authors → article.author → defaultAuthor.id` 优先级不变。
+- 本轮冻结的可观察修复：[x] 搜索标题、章节与摘要位于同一链接，空摘要不产生无名链接；[x] 搜索初次结果与类型重绘挂载/卸载 hover；[x] Story H3、引用左右装饰与 loading 的五个 CSS 图标变量使用可信 registry；[x] 文章最近更新按 updated 排序；[x] 页面明确 `active_menu: wiki` 时取全部可索引 Wiki 文档并显示集合前缀，Notebook 首页取跨笔记本、笔记页取本集合；[x] 非文章页显式作者覆盖默认作者，带点 ID 精确查找；[x] 页脚使用站点 author；[x] linklist 等价路径正确高亮；[x] 参考链接补增强图标，许可证维持普通 Markdown。相关文章摘要已证实有去标签处理，未改；菜单和字体仍按站点配置。
+- 独占实施：`fix_search_details`（Sol/high worker）在 search 后缀树依次处理搜索 JS/Node 回归、regions widget、content references/日期作者与最小链接增强入口；`fix_icon_css`（Sol/high worker）在 icons 后缀树仅处理 registry CSS helper/head/定向测试。两树不共享分支；补丁逐项检查后由主 agent集成，主 agent独占路由公共数据、recent 选择组合、任务记录和浏览器。`review_details`（Sol/high reviewer）独立只读审查；发现 recent 错用导航/profile fallback 的 P2，已改为只读页面 activeMenu 并复查关闭。
+- 旧 `TestWikiDocFrontendChain` 夹具把未配置菜单等同于当前 Wiki 文档，与上游 `recent.ejs` 的页面显式规则不符。本次仅为 intro 夹具明确 `active_menu: wiki`，保留原断言并加强为同时检查另一个集合的文档；新增“仅主题/导航配置 Wiki，页面省略仍用文章”的对照，未跳过、删除或降低门禁。
+- 实际验证：默认作者/最近更新、搜索、widget、图标、references 各组先复现红灯再修绿；本轮当前组合 `make test` 通过 Console 298/298、Stellar 225/225（0 失败/跳过）及部署/来源/模块边界、Go vet、Staticcheck、全部 Go tests。`make build` 生成真实 Console/UC 与 embed 二进制；源文件摘要、二进制 SHA-256 和 HTTP 字节绑定见本目录 `details/candidate-code.json`、`details/runtime-binding.json`。未修改生成 CSS 或共享主题源。
+- 主 agent实际浏览器核验：1280px 下搜索标题点击到文章、启用 spotlight 后初次/类型切换各恰好一个效果层，鼠标坐标变量随真实指针变化；默认 Alice 与 page/Wiki/Note 指定 Bob、host 页脚、跨两 Wiki/两 Notebook recent 和集合前缀正确。四外观均在 auto 的系统浅/深色下检查受影响图标/链接，再检查 minimal 显式 light/dark 覆盖系统相反配色；800/390px 无横向溢出，390px侧栏设置 SVG 完整在视口、点击进入设置，搜索链接也在视口内。详见 `details/browser-verification.json` 与截图。
+- 当前参照站和本地在相同 1280×900 CSS 视口下，浅色背景均为 `rgb(250,247,240)`、主色均为 `hsla(40deg 96% 55% / 1)`、main 均宽 648px。参照站使用衬线字体，本地保留现有系统字体；不将个人配置差异包装成遗漏。原生截图实际为 1272×716 JPEG，手机使用 DOM几何与实际交互证明，不冒称手机截图完整验收。loading 变量已验证，持续加载动画和真实第三方 SiteInfo 服务未实测。
+- 体验入口：`http://127.0.0.1:8126/post/details-story`，另有 `/details-about`、`/details-a/intro`、`/notebooks`。root 为根目录 `.tmp/stellar-detail-parity-20261024-root/`，仅从旧纯样例 SQLite 只读备份，不含用户数据；config/content/data/uploads/cache/端口独立，服务运行归档二进制且不使用 `-dev`。8124/8125 原样例保留。提交、合入和组合态日志统一保存在根 `.tmp/stellar-detail-parity-20261024-archive/`，本轮资源和补丁先归档，再按规则清理已完成任务树；最终集成结果见其中 `final-integration.json`。
+- 生产边界：本轮未 push、创建 PR/tag/Release 或部署。此前“应用到线上博客”只授权五项配色设置；线上公开程序仍为 `v2.0.0-local.e2f8c664`。实际上线候选是完整当前 dev，会包含前序尚未部署改动，不能称为只发布这一批模板；需沿 AGENTS.md 的明确发布/部署授权与项目流程执行。
+
+
+#### 本批正式发布与生产升级（2026-10-24）
+
+- 状态：实现中。用户已明确回复“授权”，覆盖当前完整 dev 候选的推送、dev→main 与 main→release PR/合并、正式 tag/双产物发布、生产部署；不再重复询问这些已授权步骤。原候选 `fb066e91` 包含前序设置图标/视觉及已说明的 Console、依赖和发布检查改动；不导入、发布或迁移真实内容。
+- 远端刷新后 `origin/main=86737cfc` 仅比 `origin/dev=9651820b` 多 PR #17 的合并记录，两者 tree 相同。按发布前置从 origin/main 创建同步树，合入候选 dev，保持程序源码不变并经 `make merge-check` 回到根 dev。分支 `codex/chore/20261024-blog20261024-stellar-release-sync`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-chore-blog20261024-stellar-release-sync`；同属 `BLOG20261024-STELLAR`，不是新业务任务。
+- 拟发布 `v2.0.0`：当前公开最新为 v1.7.4，生产已是 2.0 本地构建。必须等待 dev/main/release 适用 CI、tag 的 Release Build 与 Docker Release 都成功，核对三个二进制资产、SHA256/SBOM和镜像可启动，再替换生产固定镜像版本；先检查当前 Compose/数据/维护日志并保存可恢复备份，升级后核对 readyz、实际版本、SPA资产、公开页面、设置图标/搜索/配色及数据保全。
+- 发布过程日志和回执存根 `.tmp/stellar-release-20261024/`；最终公开结果/截图存 `docs/baselines/stellar-200-parity-20261024/release/`。旧本地构建与浏览器证据继续绑定 fb066e91 的程序源码；新合并提交、远端 CI、双产物、服务器实际版本与用户待体验分别记录，不能用其一代替另一项。
+
 ## 目标与已确认选择
 
 完整移植官方 tag `2.0.0`，commit `9d11978a24fe6610e3a7dbab741cf62634539d05` 的能力与实际行为。源码依据为该 commit 的 `_config.yml`、`scripts/`、`layout/`、`source/`、`languages/` 和测试。不得把 Hexo 专属能力标成“不适用”后称为完整移植。

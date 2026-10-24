@@ -1,0 +1,61 @@
+[
+  {
+    "case": "code",
+    "styles": [
+      "/assets/css/main-card.css?v=aa6b222e",
+      "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+      "/assets/css/main-appearance-card.css?v=3c0edfe1"
+    ],
+    "tokens": [
+      {
+        "color": "rgba(255, 255, 255, 0.8)",
+        "text": "package"
+      },
+      {
+        "color": "rgba(255, 255, 255, 0.8)",
+        "text": "func"
+      },
+      {
+        "color": "rgba(255, 255, 255, 0.8)",
+        "text": "\"Stellar 2.0\""
+      }
+    ]
+  },
+  {
+    "buttonBackground": "rgba(0, 0, 0, 0)",
+    "case": "password",
+    "inputRadius": "0px"
+  },
+  {
+    "bodyWidth": 382,
+    "case": "pagination",
+    "next": {
+      "bottom": 506.59375,
+      "height": 42.5,
+      "left": 806.7265625,
+      "right": 850.2265625,
+      "top": 464.09375,
+      "width": 43.5,
+      "x": 806.7265625,
+      "y": 464.09375
+    },
+    "pageNumbers": 21,
+    "paginator": {
+      "bottom": 506.59375,
+      "height": 42.5,
+      "left": 17,
+      "right": 365,
+      "top": 464.09375,
+      "width": 348,
+      "x": 17,
+      "y": 464.09375
+    },
+    "width": 390
+  },
+  {
+    "case": "search",
+    "display": "block",
+    "resultID": "site-search-result",
+    "tabs": "全部文章页面知识库笔记瞬间"
+  }
+]

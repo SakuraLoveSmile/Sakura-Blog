@@ -123,13 +123,13 @@ func stellarTerms(v any) []string {
 func stellarData(site *tmpl.Site) stellarmodels.Object {
 	authors := stellarmodels.Object{}
 	for id, a := range site.Authors {
-		authors[id] = stellarmodels.Object{"name": a.Name, "url": a.URL, "avatar": a.Avatar, "description": a.Description, "path": strings.Trim(stellarProfilePath(site.StellarV2.Theme, "author"), "/") + "/" + url.PathEscape(id)}
+		authors[id] = stellarmodels.Object{"id": id, "name": a.Name, "url": a.URL, "avatar": a.Avatar, "description": a.Description, "path": strings.Trim(stellarProfilePath(site.StellarV2.Theme, "author"), "/") + "/" + url.PathEscape(id)}
 	}
 	data := stellarObject(site.StellarV2.Blog["data"])
 	for id, raw := range stellarObject(data["authors"]) {
 		a := stellarObject(raw)
-		pub := stellarmodels.Object{}
-		for _, key := range []string{"name", "url", "avatar", "description", "path"} {
+		pub := stellarmodels.Object{"id": id}
+		for _, key := range []string{"name", "url", "avatar", "desc", "description", "path"} {
 			if value, ok := a[key].(string); ok {
 				pub[key] = value
 			}
@@ -139,8 +139,43 @@ func stellarData(site *tmpl.Site) stellarmodels.Object {
 		}
 		authors[id] = pub
 	}
+	var defaultAuthor any
+	if id, ok := data["defaultAuthor"].(string); ok {
+		defaultAuthor = authors[id]
+	} else if configured := stellarObject(data["defaultAuthor"]); len(configured) > 0 {
+		pub := stellarCopyObject(stellarObject(authors[stellarString(configured["id"])]))
+		for _, key := range []string{"id", "name", "url", "avatar", "desc", "description", "path"} {
+			if value, ok := configured[key].(string); ok {
+				pub[key] = value
+			}
+		}
+		defaultAuthor = pub
+	}
+	if defaultAuthor == nil && len(authors) > 0 {
+		// 保存文档的普通键按 JSON 字典序排列；Object.keys 先枚举规范整数索引。
+		ids := make([]string, 0, len(authors))
+		for id := range authors {
+			ids = append(ids, id)
+		}
+		index := func(id string) (uint64, bool) {
+			n, err := strconv.ParseUint(id, 10, 32)
+			return n, err == nil && n < 4294967295 && strconv.FormatUint(n, 10) == id
+		}
+		sort.Slice(ids, func(i, j int) bool {
+			a, ai := index(ids[i])
+			b, bi := index(ids[j])
+			if ai != bi {
+				return ai
+			}
+			if ai {
+				return a < b
+			}
+			return ids[i] < ids[j]
+		})
+		defaultAuthor = authors[ids[0]]
+	}
 	widgets := stellarweb.MergeStellarWidgetCatalog(stellarObject(data["widgets"]))
-	return stellarmodels.Object{"authors": authors, "defaultAuthor": data["defaultAuthor"], "widgets": widgets}
+	return stellarmodels.Object{"authors": authors, "defaultAuthor": defaultAuthor, "authorName": stellarGet(site.StellarV2.Blog, "site.author"), "widgets": widgets}
 }
 func stellarSiteInput(site *tmpl.Site) (stellarmodels.Input, error) {
 	if site == nil || site.StellarV2 == nil || site.StellarV2.Theme == nil {
@@ -952,10 +987,28 @@ func stellarPopulatePublicData(snap *stellarSnapshot) {
 		for _, cat := range stellarTerms(r.model.Item["categories"]) {
 			seenCategories[cat] = true
 		}
-		recent = append(recent, r.model.Render["listing"])
+		if stellarString(r.model.Item["title"]) != "" {
+			item := stellarCopyObject(stellarObject(r.model.Render["listing"]))
+			item["updated"] = r.model.Item["updated"]
+			recent = append(recent, item)
+		}
 	}
 	sort.SliceStable(recent, func(i, j int) bool {
-		return stellarString(stellarObject(recent[i])["date"]) > stellarString(stellarObject(recent[j])["date"])
+		return stellarString(stellarObject(recent[i])["updated"]) > stellarString(stellarObject(recent[j])["updated"])
+	})
+	wikiRecent := []any{}
+	for _, c := range snap.collections {
+		if c.profile != "wiki" || stellarGet(c.model, "visibility.listed") == false {
+			continue
+		}
+		for _, m := range c.members {
+			if stellarGet(m.model.Item, "visibility.listed") != false && stellarString(m.model.Item["title"]) != "" {
+				wikiRecent = append(wikiRecent, stellarmodels.Object{"title": m.model.Item["title"], "href": strings.TrimPrefix(m.path, "/"), "updated": m.model.Item["updated"], "collectionName": stellarGet(c.model, "identity.name")})
+			}
+		}
+	}
+	sort.SliceStable(wikiRecent, func(i, j int) bool {
+		return stellarString(stellarObject(wikiRecent[i])["updated"]) > stellarString(stellarObject(wikiRecent[j])["updated"])
 	})
 	names := []string{}
 	for tag := range counts {
@@ -969,6 +1022,7 @@ func stellarPopulatePublicData(snap *stellarSnapshot) {
 	}
 	data["tags"] = tags
 	data["recentItems"] = recent
+	data["wikiRecentItems"] = wikiRecent
 	data["hasTags"] = len(tags) > 0
 	data["hasCategories"] = len(seenCategories) > 0
 	data["hasTopics"] = hasTopics
@@ -987,19 +1041,6 @@ func stellarPopulatePublicData(snap *stellarSnapshot) {
 			r.input.RuntimeData["recentItems"] = c.index["recentItems"]
 			r.input.RuntimeData["notebookId"] = c.id
 			r.input.RuntimeData["notebookName"] = stellarGet(c.model, "identity.name")
-		} else if r.profile == "wiki" {
-			r.input.RuntimeData = stellarCopyObject(data)
-			c := snap.byCollection["wiki:"+r.collectionID]
-			items := []any{}
-			for _, m := range c.members {
-				if stellarGet(m.model.Item, "visibility.listed") != false {
-					items = append(items, stellarmodels.Object{"title": m.model.Item["title"], "href": strings.TrimPrefix(m.path, "/"), "date": m.model.Item["updated"]})
-				}
-			}
-			sort.SliceStable(items, func(i, j int) bool {
-				return stellarString(stellarObject(items[i])["date"]) > stellarString(stellarObject(items[j])["date"])
-			})
-			r.input.RuntimeData["recentItems"] = items
 		}
 		r.input.RuntimeData["recordBlog"] = stellarRecordBlog(r)
 	}
@@ -1080,7 +1121,7 @@ func stellarRecordAuthors(snap *stellarSnapshot, r *stellarRecord) []tmpl.Author
 	if len(ids) == 0 {
 		id := stellarString(stellarGet(r.config, "article.author"))
 		if id == "" {
-			id = stellarString(snap.input.RuntimeData["defaultAuthor"])
+			id = stellarString(stellarObject(snap.input.RuntimeData["defaultAuthor"])["id"])
 		}
 		if id != "" {
 			ids = []string{id}

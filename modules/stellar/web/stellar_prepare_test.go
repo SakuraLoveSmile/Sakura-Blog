@@ -132,6 +132,30 @@ func TestPrepareStellarStylesScriptsAndPublicGoSearch(t *testing.T) {
 	}
 }
 
+func TestPreparePasswordStylesFollowPageLayout(t *testing.T) {
+	for _, layout := range []string{"post-password", "index", "settings"} {
+		t.Run(layout, func(t *testing.T) {
+			prepared, err := PrepareStellar(prepareFixture(t, layout))
+			if err != nil {
+				t.Fatal(err)
+			}
+			count := 0
+			for _, style := range prepared.Stellar.Client.(clientconfig.Bundle).Styles {
+				if style.Href == "/assets/css/post-password.css" {
+					count++
+				}
+			}
+			want := 0
+			if layout == "post-password" {
+				want = 1
+			}
+			if count != want {
+				t.Fatalf("password style count = %d; want %d", count, want)
+			}
+		})
+	}
+}
+
 func TestGeneratedStellarAssetsContainPublicFallbackAndNamespaces(t *testing.T) {
 	reg, err := settings.LoadIconsEmbed()
 	if err != nil {

@@ -35,6 +35,30 @@ func stellarCollectionGet(d *StellarRenderData, path string) any {
 func stellarPagePath(d *StellarRenderData) string {
 	return stellarText(stellarFirst(stellarItemGet(d, "route.path"), stellarGet(d.Page, "Path")))
 }
+func stellarLocalPath(d *StellarRenderData, value any) (string, bool) {
+	u, err := url.Parse(stellarText(value))
+	if err != nil || u.IsAbs() || u.Host != "" {
+		return "", false
+	}
+	path := u.Path
+	if path == "" {
+		path = d.Stellar.Root
+	} else {
+		// 模型 path 可省略前导斜杠，但仍可能已经含站点 Root。
+		path = "/" + strings.TrimLeft(path, "/")
+		if path != strings.TrimRight(d.Stellar.Root, "/") {
+			path = stellarURL(d.Stellar.Root, path)
+		}
+	}
+	if strings.HasSuffix(path, "/index.html") {
+		path = strings.TrimSuffix(path, "index.html")
+	} else if strings.HasSuffix(path, "/index") {
+		path = strings.TrimSuffix(path, "index")
+	} else {
+		path = strings.TrimSuffix(path, ".html")
+	}
+	return "/" + strings.Trim(path, "/"), true
+}
 func (r stellarTemplateRenderer) reveal(d *StellarRenderData) string {
 	if stellarGet(d.Stellar.Theme, "features.reveal.enabled") == true {
 		return " slide-up"
@@ -278,39 +302,15 @@ func (r stellarTemplateRenderer) menu(d *StellarRenderData, region string, state
 	entries := []any{}
 	// 页面明确导航优先；省略/null 时路径命中覆盖 profile 默认，未命中保留默认。
 	if pageActive == nil {
-		localPath := func(value any) (string, bool) {
-			u, err := url.Parse(stellarText(value))
-			if err != nil || u.IsAbs() || u.Host != "" {
-				return "", false
-			}
-			path := u.Path
-			if path == "" {
-				path = d.Stellar.Root
-			} else {
-				// 模型 path 可省略前导斜杠，但仍可能已经含站点 Root。
-				path = "/" + strings.TrimLeft(path, "/")
-				if path != strings.TrimRight(d.Stellar.Root, "/") {
-					path = stellarURL(d.Stellar.Root, path)
-				}
-			}
-			if strings.HasSuffix(path, "/index.html") {
-				path = strings.TrimSuffix(path, "index.html")
-			} else if strings.HasSuffix(path, "/index") {
-				path = strings.TrimSuffix(path, "index")
-			} else {
-				path = strings.TrimSuffix(path, ".html")
-			}
-			return "/" + strings.Trim(path, "/"), true
-		}
-		pagePath, pageLocal := localPath(stellarPagePath(d))
-		rootPath, _ := localPath(d.Stellar.Root)
+		pagePath, pageLocal := stellarLocalPath(d, stellarPagePath(d))
+		rootPath, _ := stellarLocalPath(d, d.Stellar.Root)
 		best := 0
 		for _, raw := range stellarList(state["menu"]) {
 			item := stellarMap(raw)
 			if item["id"] == nil || item["url"] == nil {
 				continue
 			}
-			path, local := localPath(item["url"])
+			path, local := stellarLocalPath(d, item["url"])
 			if pageLocal && local && (pagePath == path || path != rootPath && strings.HasPrefix(pagePath, path+"/")) && len(path) > best {
 				best = len(path)
 				active = stellarText(item["id"])
@@ -543,9 +543,21 @@ func (r stellarTemplateRenderer) widget(d *StellarRenderData, region, layout str
 	case "recent":
 		entries := []any{}
 		source := stellarFirst(stellarRenderGet(d, "layout.recentItems"), d.Stellar.Data["recentItems"])
+		if d.Stellar.Profile != "notebook" && d.Stellar.Profile != "notebooks" {
+			if stellarGet(d.Stellar.Data, "page.activeMenu") == "wiki" {
+				source = d.Stellar.Data["wikiRecentItems"]
+			}
+		}
 		for _, raw := range stellarList(source) {
 			v := stellarMap(raw)
-			entries = append(entries, map[string]any{"href": stellarFirst(v["href"], v["link"], v["path"]), "title": v["title"], "prefix": v["collectionName"], "indicator": false})
+			if !stellarTruth(v["title"]) {
+				continue
+			}
+			prefix := v["collectionName"]
+			if d.Stellar.Profile == "notebook" {
+				prefix = ""
+			}
+			entries = append(entries, map[string]any{"href": stellarFirst(v["href"], v["link"], v["path"]), "title": v["title"], "prefix": prefix, "indicator": false})
 		}
 		if source == nil {
 			recent := d.Recent
@@ -581,12 +593,14 @@ func (r stellarTemplateRenderer) widget(d *StellarRenderData, region, layout str
 }
 func (r stellarTemplateRenderer) linklist(d *StellarRenderData, item map[string]any) template.HTML {
 	entries := []any{}
+	pagePath, pageLocal := stellarLocalPath(d, stellarPagePath(d))
 	for _, raw := range stellarList(item["items"]) {
 		v := stellarMap(raw)
 		if !stellarTruth(v["title"]) || !stellarTruth(v["url"]) {
 			continue
 		}
-		entries = append(entries, map[string]any{"href": v["url"], "title": v["title"], "icon": v["icon"], "active": stellarURL(d.Stellar.Root, v["url"]) == stellarURL(d.Stellar.Root, stellarPagePath(d)), "showTitle": item["show_title"] != false})
+		path, local := stellarLocalPath(d, v["url"])
+		entries = append(entries, map[string]any{"href": v["url"], "title": v["title"], "icon": v["icon"], "active": pageLocal && local && path == pagePath, "showTitle": item["show_title"] != false})
 	}
 	layout := "list"
 	columns := 1
@@ -719,9 +733,12 @@ func (r stellarTemplateRenderer) related(d *StellarRenderData) template.HTML {
 }
 func (r stellarTemplateRenderer) authorWidget(d *StellarRenderData, item map[string]any, host *settings.WidgetInstance) template.HTML {
 	author := stellarMap(d.Stellar.Data["defaultAuthor"])
-	id := stellarText(stellarRenderGet(d, "listing.authorId"))
+	id := stellarText(stellarGet(d.Stellar.Data, "page.article.author"))
+	if profile := stellarCollectionGet(d, "profile"); profile == "post" || profile == "topic" {
+		id = stellarText(stellarRenderGet(d, "listing.authorId"))
+	}
 	if id != "" {
-		if a := stellarMap(stellarGet(d.Stellar.Data, "authors."+id)); len(a) > 0 {
+		if a := stellarMap(stellarMap(d.Stellar.Data["authors"])[id]); len(a) > 0 {
 			author = a
 		}
 	}

@@ -183,6 +183,52 @@ func TestSummaryStylesDoNotRequireReadingProgress(t *testing.T) {
 	}
 }
 
+func TestHostStylesFollowActiveFeaturesAndKeepAppearanceLast(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		blog             BlogConfig
+		search, password bool
+	}{
+		{name: "stock"},
+		{name: "go search", blog: BlogConfig{GoSearch: true}, search: true},
+		{name: "AI ask", blog: BlogConfig{AIAsk: true}, search: true},
+		{name: "both search features", blog: BlogConfig{GoSearch: true, AIAsk: true}, search: true},
+		{name: "protected post", blog: BlogConfig{Password: true}, password: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bundle, err := Build(Input{Blog: tc.blog})
+			if err != nil {
+				t.Fatal(err)
+			}
+			counts := map[string]int{}
+			for _, style := range bundle.Styles {
+				counts[style.Href]++
+				if style.Href == "/assets/css/post-password.css" && !style.PageStyle {
+					t.Fatal("password style must follow the current page during partial navigation")
+				}
+			}
+			if counts["/assets/css/highlight.css"] != 1 {
+				t.Fatal("Chroma tokens need one local stylesheet for all Markdown pages")
+			}
+			if counts["/assets/css/pagination.css"] != 1 {
+				t.Fatal("pagination must retain its complete navigation at narrow viewports")
+			}
+			for path, enabled := range map[string]bool{"/assets/css/search.css": tc.search, "/assets/css/post-password.css": tc.password} {
+				want := 0
+				if enabled {
+					want = 1
+				}
+				if counts[path] != want {
+					t.Fatalf("%s count = %d; want %d", path, counts[path], want)
+				}
+			}
+			if got := bundle.Styles[len(bundle.Styles)-1].Href; got != "/assets/css/main-appearance-card.css" {
+				t.Fatalf("appearance tail moved before host styles: %s", got)
+			}
+		})
+	}
+}
+
 func TestStylesAndUseNumber(t *testing.T) {
 	d := json.NewDecoder(strings.NewReader(`{"appearance":{"preset":"minimal","color_scheme":"light"},"features":{"card_hover":{"spotlight":true,"tilt":true},"lazy_loading":{"transition":"blur"},"math":{"provider":"katex","katex":{"css":"https://custom.test/katex.css","css_integrity":"sha384-custom"}},"reveal":{"duration":123}},"search":{"provider":"algolia","algolia":{"extra":9007199254740993}}}`))
 	d.UseNumber()
@@ -198,7 +244,7 @@ func TestStylesAndUseNumber(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := []string{"/assets/css/main-minimal.css", "/assets/css/main-card-hover-spotlight.css", "/assets/css/main-card-hover-tilt.css", "/assets/css/main-lazyload-blur.css", "/assets/css/main-katex.css", "https://custom.test/katex.css", "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css", "/assets/css/main-appearance-minimal.css"}
+	expected := []string{"/assets/css/main-minimal.css", "/assets/css/main-card-hover-spotlight.css", "/assets/css/main-card-hover-tilt.css", "/assets/css/main-lazyload-blur.css", "/assets/css/main-katex.css", "https://custom.test/katex.css", "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css", "/assets/css/highlight.css", "/assets/css/pagination.css", "/assets/css/main-appearance-minimal.css"}
 	for i, path := range expected {
 		if bundle.Styles[i].Href != path {
 			t.Fatalf("styles[%d]: %+v", i, bundle.Styles)

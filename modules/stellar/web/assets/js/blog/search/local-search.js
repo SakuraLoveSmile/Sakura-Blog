@@ -194,7 +194,7 @@ var searchFunc = function(path, filter, $wrapper, $input, $resultContent) {
     var lastItems = []; // 最近一次服务端响应条目，tab 切换时客户端过滤（无需重新请求）
 
     // 单条搜索结果 li 构建（服务端/本地共用 DOM 结构）。
-    // 1.41 章节化：文章标题 span 独立于链接上方；链接内可含章节名 span 与摘要 p；
+    // 2.0 结果卡：文章标题、章节名和摘要共用同一个可点击链接；
     // href 统一拼 ?kw=首词（+ #锚点），目标页 highlight.js 高亮并定位。
     function resultItem(item, kw) {
       const li = document.createElement('li');
@@ -202,11 +202,10 @@ var searchFunc = function(path, filter, $wrapper, $input, $resultContent) {
       const titleSpan = document.createElement('span');
       titleSpan.className = 'search-result-title';
       titleSpan.textContent = item.title?.trim() || 'Untitled';
-      li.appendChild(titleSpan);
-
       const a = document.createElement('a');
-      a.className = 'ui-collection__item card-hover card-hover--spotlight';
+      a.className = ctx.ui.classes.interactiveSpotlight;
       a.href = item.path + (kw ? '?kw=' + encodeURIComponent(kw) : '') + (item.anchor_id ? '#' + encodeURIComponent(item.anchor_id) : '');
+      a.appendChild(titleSpan);
 
       if (item.anchor_text) {
         const sectionSpan = document.createElement('span');
@@ -238,6 +237,7 @@ var searchFunc = function(path, filter, $wrapper, $input, $resultContent) {
     }
 
     function renderTabsAndList(items, value, kw) {
+      unmountResultCards($resultContent);
       $resultContent.innerHTML = '';
       if (!items.length) return;
 
@@ -285,6 +285,7 @@ var searchFunc = function(path, filter, $wrapper, $input, $resultContent) {
       }
       if (ul.children.length) {
         $resultContent.appendChild(ul);
+        mountResultCards(ul);
       }
     }
 
@@ -442,17 +443,17 @@ var searchFunc = function(path, filter, $wrapper, $input, $resultContent) {
       }
     }
 
-    // 本地降级路径的单条结果 DOM（对齐上游 1.41 buildResultElement）
+    // 本地降级路径的单条结果 DOM（对齐上游 2.0 buildResultElement）
     function buildLocalResultElement(dataTitle, sectionName, secText, secFirst, pairs, href) {
       const li = document.createElement('li');
 
       const titleSpan = document.createElement('span');
       titleSpan.className = 'search-result-title';
       titleSpan.textContent = dataTitle;
-      li.appendChild(titleSpan);
-
       const a = document.createElement('a');
+      a.className = ctx.ui.classes.interactiveSpotlight;
       a.href = href;
+      a.appendChild(titleSpan);
 
       if (sectionName) {
         const sectionSpan = document.createElement('span');

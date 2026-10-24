@@ -1,0 +1,27 @@
+{
+  "url": "https://blog.xn--fhqths51enha.cn/",
+  "authenticated": false,
+  "status": 200,
+  "preset": "minimal",
+  "assets": [
+    {
+      "url": "/assets/css/main-minimal.css?v=db804e0a",
+      "sha256": "db804e0a7723954b550b58e3de9924f7c6bb54baf11f2e1f0647dc5d3a218cd0",
+      "matchesLocalLockedCSS": true
+    },
+    {
+      "url": "/assets/css/main-katex.css?v=f5eff4b5",
+      "sha256": "f5eff4b5a2ab92e2913384db6f9d611e627dbc45a6a78507875fe09758feed4b",
+      "matchesLocalLockedCSS": true
+    },
+    {
+      "url": "/assets/css/main-appearance-minimal.css?v=dfa57057",
+      "sha256": "dfa57057265f79020279b0fc5cbed69672a20bfc9cbfde4357d5734be42773cc",
+      "matchesLocalLockedCSS": true
+    }
+  ],
+  "readyz": {
+    "ok": true
+  },
+  "binaryChanged": false
+}

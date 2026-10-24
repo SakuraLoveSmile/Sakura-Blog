@@ -14,6 +14,7 @@ type BlogConfig struct {
 	Services                                                                               map[string]ServiceBinding
 	SearchPath                                                                             string
 	SearchTTL                                                                              int
+	Password                                                                               bool
 }
 type ServiceBinding struct {
 	Module   string         `json:"module"`

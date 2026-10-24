@@ -1,0 +1,27 @@
+{
+  "target": "https://blog.xn--fhqths51enha.cn/",
+  "userAuthorization": "应用到线上博客",
+  "method": "Existing authenticated Console, validate then save once, reload complete document",
+  "changedPaths": [
+    "/theme/appearance/preset",
+    "/theme/appearance/color_scheme",
+    "/theme/appearance/colors/primary",
+    "/theme/appearance/colors/accent",
+    "/theme/appearance/colors/link"
+  ],
+  "appearance": {
+    "color_scheme": "auto",
+    "colors": {
+      "accent": "#f60",
+      "link": "hsl(166 66% 32%)",
+      "primary": "hsl(40 96% 55%)"
+    },
+    "preset": "minimal",
+    "shape": {
+      "corner": "superellipse(1.25)"
+    }
+  },
+  "saveReadbackEqual": true,
+  "unrelatedSettingsPreserved": true,
+  "backup": "Private ignored archive; masked sensitive fields preserved"
+}

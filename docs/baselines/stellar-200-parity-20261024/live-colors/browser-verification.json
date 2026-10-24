@@ -1,0 +1,499 @@
+{
+  "date": "2026-10-24",
+  "target": "https://blog.xn--fhqths51enha.cn/",
+  "homepageColorComparisons": [
+    {
+      "scenario": "dark-desktop-home",
+      "local": {
+        "url": "https://blog.xn--fhqths51enha.cn/",
+        "viewport": {
+          "height": 900,
+          "width": 1280
+        },
+        "dataTheme": null,
+        "systemDark": true,
+        "bodyBackground": "rgb(34, 32, 27)",
+        "bodyFont": "16px system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "tokens": {
+          "--accent": "#ff6600",
+          "--background": "hsla(44 12% 12% / 1)",
+          "--card": "hsla(44 10% 14% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 100% / 1)",
+          "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "reference": {
+        "url": "https://xaoxuu.com/",
+        "viewport": {
+          "height": 900,
+          "width": 1280
+        },
+        "dataTheme": null,
+        "systemDark": true,
+        "bodyBackground": "rgb(34, 32, 27)",
+        "bodyFont": "16px \"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+        "tokens": {
+          "--accent": "#f60",
+          "--background": "hsla(44 12% 12% / 1)",
+          "--card": "hsla(44 10% 14% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 100% / 1)",
+          "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "matches": {
+        "body": true,
+        "tokens": {
+          "--accent": true,
+          "--background": true,
+          "--card": true,
+          "--link": true,
+          "--text": true,
+          "--text-p1": true,
+          "--text-p2": true,
+          "--theme": true
+        }
+      },
+      "overflow": false
+    },
+    {
+      "scenario": "light-desktop-home",
+      "local": {
+        "url": "https://blog.xn--fhqths51enha.cn/",
+        "viewport": {
+          "height": 900,
+          "width": 1280
+        },
+        "dataTheme": null,
+        "systemDark": false,
+        "bodyBackground": "rgb(250, 247, 240)",
+        "bodyFont": "16px system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "tokens": {
+          "--accent": "#ff6600",
+          "--background": "hsla(44 50% 96% / 1)",
+          "--card": "hsla(44 50% 98% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 0% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "reference": {
+        "url": "https://xaoxuu.com/",
+        "viewport": {
+          "height": 900,
+          "width": 1280
+        },
+        "dataTheme": null,
+        "systemDark": false,
+        "bodyBackground": "rgb(250, 247, 240)",
+        "bodyFont": "16px \"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+        "tokens": {
+          "--accent": "#f60",
+          "--background": "hsla(44 50% 96% / 1)",
+          "--card": "hsla(44 50% 98% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 0% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "matches": {
+        "body": true,
+        "tokens": {
+          "--accent": true,
+          "--background": true,
+          "--card": true,
+          "--link": true,
+          "--text": true,
+          "--text-p1": true,
+          "--text-p2": true,
+          "--theme": true
+        }
+      },
+      "overflow": false
+    },
+    {
+      "scenario": "light-mobile-home",
+      "local": {
+        "url": "https://blog.xn--fhqths51enha.cn/",
+        "viewport": {
+          "height": 844,
+          "width": 390
+        },
+        "dataTheme": null,
+        "systemDark": false,
+        "bodyBackground": "rgb(250, 247, 240)",
+        "bodyFont": "17px system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "tokens": {
+          "--accent": "#ff6600",
+          "--background": "hsla(44 50% 96% / 1)",
+          "--card": "hsla(44 50% 98% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 0% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "reference": {
+        "url": "https://xaoxuu.com/",
+        "viewport": {
+          "height": 844,
+          "width": 390
+        },
+        "dataTheme": null,
+        "systemDark": false,
+        "bodyBackground": "rgb(250, 247, 240)",
+        "bodyFont": "17px \"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+        "tokens": {
+          "--accent": "#f60",
+          "--background": "hsla(44 50% 96% / 1)",
+          "--card": "hsla(44 50% 98% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 0% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "matches": {
+        "body": true,
+        "tokens": {
+          "--accent": true,
+          "--background": true,
+          "--card": true,
+          "--link": true,
+          "--text": true,
+          "--text-p1": true,
+          "--text-p2": true,
+          "--theme": true
+        }
+      },
+      "overflow": false
+    },
+    {
+      "scenario": "dark-mobile-home",
+      "local": {
+        "url": "https://blog.xn--fhqths51enha.cn/",
+        "viewport": {
+          "height": 844,
+          "width": 390
+        },
+        "dataTheme": null,
+        "systemDark": true,
+        "bodyBackground": "rgb(34, 32, 27)",
+        "bodyFont": "17px system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "tokens": {
+          "--accent": "#ff6600",
+          "--background": "hsla(44 12% 12% / 1)",
+          "--card": "hsla(44 10% 14% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 100% / 1)",
+          "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "reference": {
+        "url": "https://xaoxuu.com/",
+        "viewport": {
+          "height": 844,
+          "width": 390
+        },
+        "dataTheme": null,
+        "systemDark": true,
+        "bodyBackground": "rgb(34, 32, 27)",
+        "bodyFont": "17px \"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+        "tokens": {
+          "--accent": "#f60",
+          "--background": "hsla(44 12% 12% / 1)",
+          "--card": "hsla(44 10% 14% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text": "hsla(210deg 0% 100% / 1)",
+          "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        }
+      },
+      "matches": {
+        "body": true,
+        "tokens": {
+          "--accent": true,
+          "--background": true,
+          "--card": true,
+          "--link": true,
+          "--text": true,
+          "--text-p1": true,
+          "--text-p2": true,
+          "--theme": true
+        }
+      },
+      "overflow": false
+    }
+  ],
+  "interactions": [
+    {
+      "scenario": "dark-mobile-search",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "dialogBackground": "rgb(39, 37, 32)",
+      "dialogOpen": true,
+      "height": 844,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "overflow": false,
+      "resultLinks": 3,
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/",
+      "width": 390
+    },
+    {
+      "scenario": "light-mobile-search",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "dialogBackground": "rgb(252, 251, 247)",
+      "dialogOpen": true,
+      "height": 844,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "overflow": false,
+      "resultLinks": 3,
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/",
+      "width": 390
+    },
+    {
+      "scenario": "light-mobile-article",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "height": 844,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "links": [
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "Git官网"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "CNPM Binaries Mirror (npmmirror.com)"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.5)",
+          "text": "Git-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.5)",
+          "text": "Node.js-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "GitHub: Where the world builds software · Git"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Stellar 主题"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Stellar"
+        }
+      ],
+      "overflow": false,
+      "paragraphColors": [
+        "rgba(5, 56, 97, 0.6)",
+        "rgba(0, 0, 0, 0.8)",
+        "rgba(0, 0, 0, 0.8)",
+        "rgba(0, 0, 0, 0.8)"
+      ],
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA",
+      "width": 390
+    },
+    {
+      "scenario": "dark-mobile-article",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "height": 844,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "links": [
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "Git官网"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "CNPM Binaries Mirror (npmmirror.com)"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.5)",
+          "text": "Git-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.5)",
+          "text": "Node.js-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "GitHub: Where the world builds software · Git"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "Stellar 主题"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "Stellar"
+        }
+      ],
+      "overflow": false,
+      "paragraphColors": [
+        "rgba(163, 209, 245, 0.6)",
+        "rgba(255, 255, 255, 0.8)",
+        "rgba(255, 255, 255, 0.8)",
+        "rgba(255, 255, 255, 0.8)"
+      ],
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA",
+      "width": 390
+    },
+    {
+      "scenario": "dark-desktop-article",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "height": 900,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "links": [
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "Git官网"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "CNPM Binaries Mirror (npmmirror.com)"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.5)",
+          "text": "Git-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.5)",
+          "text": "Node.js-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "text": "GitHub: Where the world builds software · Git"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "Stellar 主题"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.7)",
+          "text": "Stellar"
+        }
+      ],
+      "overflow": false,
+      "paragraphColors": [
+        "rgba(163, 209, 245, 0.6)",
+        "rgba(255, 255, 255, 0.8)",
+        "rgba(255, 255, 255, 0.8)",
+        "rgba(255, 255, 255, 0.8)"
+      ],
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA",
+      "width": 1280
+    },
+    {
+      "scenario": "light-desktop-article",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "height": 900,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "links": [
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "Git官网"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "CNPM Binaries Mirror (npmmirror.com)"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.5)",
+          "text": "Git-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.5)",
+          "text": "Node.js-来自上杉九月的网盘分享"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.8)",
+          "text": "GitHub: Where the world builds software · Git"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "署名-非商业性使用-相同方式共享 4.0 国际"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Stellar 主题"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0.7)",
+          "text": "Stellar"
+        }
+      ],
+      "overflow": false,
+      "paragraphColors": [
+        "rgba(5, 56, 97, 0.6)",
+        "rgba(0, 0, 0, 0.8)",
+        "rgba(0, 0, 0, 0.8)",
+        "rgba(0, 0, 0, 0.8)"
+      ],
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA",
+      "width": 1280
+    },
+    {
+      "scenario": "light-desktop-search",
+      "bodyBackground": "rgb(250, 247, 240)",
+      "dialogBackground": "rgb(252, 251, 247)",
+      "dialogOpen": true,
+      "height": 900,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "overflow": false,
+      "resultLinks": 3,
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA",
+      "width": 1280
+    },
+    {
+      "scenario": "dark-desktop-search",
+      "bodyBackground": "rgb(34, 32, 27)",
+      "dialogBackground": "rgb(39, 37, 32)",
+      "dialogOpen": true,
+      "height": 900,
+      "link": "hsla(166deg 66% 32% / 1)",
+      "overflow": false,
+      "resultLinks": 3,
+      "theme": "hsla(40deg 96% 55% / 1)",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA",
+      "width": 1280
+    }
+  ],
+  "allHomepageColorValuesMatch": true,
+  "allNoOverflow": true,
+  "mobileMethod": "390x844 CSS viewport emulated through CDP; real UI search and navigation, DOM measurements; desktop screenshots only because native mobile screenshot scaling is unreliable."
+}

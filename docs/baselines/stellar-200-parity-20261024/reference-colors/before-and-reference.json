@@ -1,0 +1,52 @@
+{
+  "before": {
+    "body": "rgb(28, 31, 33)",
+    "documentWidth": 1160,
+    "leftbar": "rgb(55, 61, 67)",
+    "scheme": null,
+    "styles": [
+      "/assets/css/main-card.css?v=aa6b222e",
+      "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+      "/assets/css/highlight.css?v=f38ba7df",
+      "/assets/css/pagination.css?v=fe27f525",
+      "/assets/css/search.css?v=ee7d925c",
+      "/assets/css/main-appearance-card.css?v=3c0edfe1"
+    ],
+    "systemDark": true,
+    "tokens": {
+      "--accent": "#ff5724",
+      "--background": "hsla(210deg 8% 12% / 1)",
+      "--card": "hsla(210deg 10% 24% / 1)",
+      "--link": "hsla(207deg 90% 54% / 1)",
+      "--theme": "hsla(192deg 98% 55% / 1)"
+    },
+    "url": "http://127.0.0.1:8124/",
+    "viewport": {
+      "height": 778,
+      "width": 1168
+    }
+  },
+  "reference": {
+    "body": "rgb(34, 32, 27)",
+    "documentWidth": 1272,
+    "leftbar": "rgba(0, 0, 0, 0)",
+    "scheme": null,
+    "styles": [
+      "/css/main.css?v=2.0.0",
+      "/css/stellar-icons.css?v=7c185ad1a9a79674"
+    ],
+    "systemDark": true,
+    "tokens": {
+      "--accent": "#f60",
+      "--background": "hsla(44 12% 12% / 1)",
+      "--card": "hsla(44 10% 14% / 1)",
+      "--link": "hsla(166deg 66% 32% / 1)",
+      "--theme": "hsla(40deg 96% 55% / 1)"
+    },
+    "url": "https://xaoxuu.com/",
+    "viewport": {
+      "height": 900,
+      "width": 1280
+    }
+  }
+}

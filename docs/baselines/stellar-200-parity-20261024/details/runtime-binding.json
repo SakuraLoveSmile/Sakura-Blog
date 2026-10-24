@@ -1,0 +1,64 @@
+{
+  "binary_sha256": "af9cc4752c7b3259bff8255abcfc35b5922f90a0c77f830e446c7462ed097e66",
+  "pages": {
+    "/readyz": {
+      "status": 200,
+      "sha256": "4062edaf750fb8074e7e83e0c9028c94e32468a8b6f1614774328ef045150f93",
+      "icon_css_properties": 0
+    },
+    "/": {
+      "status": 200,
+      "sha256": "e7c83cfe7f3e7ce9fa4a11c9b35997305eeadea74a5d5efbbb9a156774a66c64",
+      "icon_css_properties": 5
+    },
+    "/post/details-story": {
+      "status": 200,
+      "sha256": "5771c6438d2a873dfd36733d506c978d91e8a0b244defba8a0b812820a923780",
+      "icon_css_properties": 5
+    },
+    "/details-about": {
+      "status": 200,
+      "sha256": "861dbf56e47cbec2bc104da3b8a7e606f2441d41a2a44a3a5ebaaf38c53207a3",
+      "icon_css_properties": 5
+    },
+    "/details-a/intro": {
+      "status": 200,
+      "sha256": "131e60a6a2ccfd152abac7910f2fa76b0081effef5e48c44530d10ce350d3e6a",
+      "icon_css_properties": 5
+    },
+    "/notebooks": {
+      "status": 200,
+      "sha256": "13754a87d6f65e7a1f6871a9fa5e1dfd7dadf122fd8d01b05f9c56a0253644f9",
+      "icon_css_properties": 5
+    },
+    "/notebooks/details-a/entry": {
+      "status": 200,
+      "sha256": "04a8c0d000b1180fe537b505169fa7391ba02466312516234faf5080dc274d2a",
+      "icon_css_properties": 5
+    },
+    "/settings": {
+      "status": 200,
+      "sha256": "15602223f68d007732f49bd87f825401d26507d801a309901c85c2008ed64d67",
+      "icon_css_properties": 5
+    }
+  },
+  "assets": {
+    "/assets/js/blog/search/local-search.js": {
+      "sha256": "8ba285447df77d60ecb947adb2a6fc3bd3c084f1743400f8dbeea4fddd2c36e5",
+      "matches_source": true
+    },
+    "/assets/css/main-minimal.css": {
+      "sha256": "db804e0a7723954b550b58e3de9924f7c6bb54baf11f2e1f0647dc5d3a218cd0",
+      "matches_source": true
+    },
+    "/assets/css/main-appearance-minimal.css": {
+      "sha256": "dfa57057265f79020279b0fc5cbed69672a20bfc9cbfde4357d5734be42773cc",
+      "matches_source": true
+    },
+    "/assets/js/profile.js": {
+      "sha256": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d",
+      "matches_source": true
+    }
+  },
+  "synthetic_only": true
+}

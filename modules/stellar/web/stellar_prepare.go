@@ -247,6 +247,7 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 			Reading: prepGet(blog, "reading.enabled") == true, Tagcloud: prepGet(blog, "tagcloud.enabled") == true,
 			Checkbox: prepGet(blog, "checkbox.enabled") == true, Content: p.BlogContent, Gist: true,
 			SearchPath: root + "search.json", SearchTTL: 30,
+			Password: p.Layout == "post-password",
 			Services: map[string]clientconfig.ServiceBinding{"wiki-release": {Module: "/assets/js/blog/services/wiki-release.js", Selector: `[data-blog-service="wiki-release"]`}}},
 	})
 	if err != nil {
