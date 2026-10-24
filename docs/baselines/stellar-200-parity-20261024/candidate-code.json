@@ -46,5 +46,9 @@
       "sourceSha256": "e23beb98f904d0beb37684ff4959b92f69ed6b641e7cf5856e57ef14a121ef3f",
       "match": true
     }
-  ]
+  ],
+  "buildSourceFiles": {
+    "modules/stellar/web/build/stylus/compile.js": "befc0cc991ce772fe1942bf0dc6e6c3a0ec3569b90c68604133fedf74c84153a"
+  },
+  "previewRoot": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog/.tmp/stellar-parity-20261024-root"
 }

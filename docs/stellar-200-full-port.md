@@ -5,10 +5,10 @@
 ## 2026-10-24 前台差异修复（BLOG20261024-STELLAR）
 
 - 用户目标：调查当前前台与 Stellar 2.0 的差异，修复实际缺口。沿用本文 T2/T3/T4/T5/T7 及已确认的 Go SSR、原生评论、四外观和三配色选择；真实数据、生产和远端操作不在本次修改范围。
-- 状态：实现中。起点 `9651820b3e6b922e643d5354d60b1ab1bfe1477e`，合入目标为根目录 `dev`。任务分支 `codex/fix/20261024-blog20261024-stellar-frontend-parity`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-frontend-parity`。
+- 状态：待体验（本次差异修复；原完整移植清单仍实现中）。起点 `9651820b3e6b922e643d5354d60b1ab1bfe1477e`，合入目标为根目录 `dev`。任务分支 `codex/fix/20261024-blog20261024-stellar-frontend-parity`，worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-frontend-parity`。
 - 根目录已有 AGENTS/README/历史验收证据改动及 `.pi/` 原样保留；当前任务树的 AGENTS 是根目录规则的本地副本，不纳入功能提交。共享 resource 是绝对软链接，主题工作树仍为 1.44.0，仅用锁定对象 `9d11978a24fe6610e3a7dbab741cf62634539d05` 作对照，不切换或重置它。
 - 唯一整体视觉参照：`docs/baselines/stellar-200-parity-20261024/reference-upstream-home.png`，复制自本文原先选定的 `stellar-200-full/upstream-home.png`；这是历史上游截图，当前差异的行为/DOM 依据仍为锁定 2.0.0 源码。保留上游 token、字体、布局与四预设；不换肤、不把该站个人配置当默认配置。
-- 运行资源：仅用本任务 `.tmp/stellar-parity-root/` 内的独立 config/content/data/uploads/cache，候选服务端口 8124；不 seed 或迁移用户数据库。浏览器证据写入 `docs/baselines/stellar-200-parity-20261024/`。
+- 运行资源：仅用本任务独立 config/content/data/uploads/cache；验收后迁至根工作区 `.tmp/stellar-parity-20261024-root/`，端口 8124，模块软链接指向根 dev；不 seed 或迁移用户数据库。浏览器证据写入 `docs/baselines/stellar-200-parity-20261024/`。临时树仅保留到本地合并门禁通过，补丁和日志归档在根 `.tmp/stellar-parity-20261024-archive/`，不会删除共享 resource 或其他任务树。
 - 实际并行调查：`audit_templates`（Sol/high analyst）只读核查页面 DOM/布局与聚合展示；`audit_runtime`（Sol/high analyst）只读核查运行时/搜索/抽屉/外观接线。均不派生子 agent、不写文件、不启动服务。主 agent 固定视觉差异、实现接入、独占本记录及共享文件，并亲自核验最终页面。
 - 验收：先保存能复现差异的当前页面；逐项修复实际确认的缺口，桌面/中间断点/手机核对受影响路由、导航、内容及布局；覆盖四 appearance × auto/light/dark 与受影响交互；执行适用定向检查、真实构建、必需本地门禁和 dev 组合态验证。未运行与历史证据单列，不以旧截图或子任务自报代替当前结果。
 - 本次确认并修复的差异：
@@ -20,8 +20,10 @@
 - 当前候选证据绑定 `candidate-code.json` 的 `codeDigest=25c6e8164ce0c3bfb7c3f08f01bac6391e7ae3341aa87c29bd4931980d1811dd`。8 个业务源文件分别记录 SHA-256；最终二进制以非 `-dev` 模式启动，5 份本地样式的 HTTP 字节与源文件一致。Console 真实构建已完成；本次没有改 Console UI。
 - 本次实测：定向 Go routes/web/clientconfig 回归通过；新增置顶/分页用例保存先红后绿；`make build`、`make css`、`make css-drift-check` 通过且生成 CSS 无变化；完整 `make test` 已通过一次，最后提交/合并仍执行仓库强制门禁。无删除、跳过用例或降低检查。原 list+pins 数量预期改为分页源保留 pin、模板去重的实际契约，资源顺序预期增加本次接回的样式。
 - 主 agent 浏览器实测：分类页全站 3 篇轮播、第二页轮播；平铺首页在 `per_page=2` 时 3 篇置顶各出现一次；代码关键词紫色/字符串绿色；搜索类型切换为空页面结果再回到 20 条文章结果、Escape 恢复搜索按钮焦点；错误口令提示与重试后正确解锁正文。四外观 × auto/light/dark × 1280/800/390 共 36 组，加 4 组系统浅色跟随，共 40 组，均无横向溢出。另核对 320px 双省略号中间页；minimal 的 next 右边界为 295（320px）/365（390px），均在容器内。
-- 独立审查：主体未发现实质问题；补查发现 minimal 分页间距被尾层覆盖，修复后再次审查关闭该 P2。浏览器截图与 DOM 数值、外观矩阵保存在本次基线目录。截图工具部分原始输出是 JPEG，已无损解码后转为正确 PNG 格式；桌面最终截图保留原生 JPEG，宽 1272 对应 CSS viewport 1280 的滚动条槽位。
-- 本次范围不代表原 T1–T7 全部能力已验收；真实外部服务、真实数据迁移、生产体验、远端 CI、推送、发布与部署未运行。下一步是本地提交门禁、合入 dev 的组合态检查与本任务 worktree 收尾，随后交用户体验。
+- 独立审查：主体未发现实质问题；补查发现 minimal 分页间距被尾层覆盖，修复后再次审查关闭该 P2。浏览器截图与 DOM 数值、外观矩阵保存在本次基线目录。截图工具部分原始输出是 JPEG，已按原像素转换为正确 PNG 格式；桌面最终截图保留原生 JPEG，宽 1272 对应 CSS viewport 1280 的滚动条槽位。
+- 本地组合态曾失败一次：`dea717b` 合入 dev 后，既有 CSS 全量重编回归在 Node → BSD tar 的 stdin 管道出现 `EPIPE`（tar 自身退出 0）。只读诊断用同一合法归档的零填充复现此机制；修正为先将锁定归档写入独占临时文件、再从文件解包，错误继续抛出，finally 清理不变。未忽略 EPIPE、未改上游或降低检查；构建修正的 SHA-256 单列在 `candidate-code.json.buildSourceFiles`。
+- 修正后根 dev 候选（HEAD `dea717b` 加上述可核验构建补丁）实际 `make test` 通过：Console 298/298、Stellar 220/220，0 失败/跳过，Go vet/Staticcheck/Go tests 均通过；根 `make build` 通过。`dev-verification.json` 绑定 8 个运行源文件、构建补丁、二进制和资源摘要，5 份前台样式及 2 份 Console 入口资产的 HTTP 字节与当前产物一致。主 agent 再次实际操作根构建的首页→分类、标签/归档/专栏/第二页轮播、代码→搜索、320px 双省略号分页和口令解锁，均通过。正式合入仍执行 `make merge-check` 的 feature 与合并后 dev 全门禁，最终日志保留在本地归档。
+- 体验入口：`http://127.0.0.1:8124/`（隔离样例），口令样例 `/post/parity-locked` 使用本任务测试口令 `fixture-unlock`。下一步由用户确认本次修复体验；未得到确认前不标已验收。本次范围不代表原 T1–T7 全部能力已验收；真实外部服务、真实数据迁移、生产体验、远端 CI、推送、发布与部署未运行。
 
 ## 目标与已确认选择
 

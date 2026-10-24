@@ -255,5 +255,100 @@
     "scenario": "embedded-categories",
     "pins": 1,
     "slides": 3
+  },
+  {
+    "cards": [
+      "Stellar 页面核验 45",
+      "Stellar 页面核验 44"
+    ],
+    "documentWidth": 1272,
+    "pins": 1,
+    "scenario": "dev-home",
+    "slides": 3,
+    "styles": [
+      "/assets/css/main-card.css?v=aa6b222e",
+      "/assets/css/highlight.css?v=f38ba7df",
+      "/assets/css/pagination.css?v=fe27f525",
+      "/assets/css/search.css?v=ee7d925c",
+      "/assets/css/main-appearance-card.css?v=3c0edfe1"
+    ],
+    "url": "http://127.0.0.1:8124/",
+    "width": 1280
+  },
+  {
+    "scenario": "dev-listing",
+    "pins": 1,
+    "slides": 3,
+    "url": "http://127.0.0.1:8124/blog/tags/"
+  },
+  {
+    "scenario": "dev-listing",
+    "pins": 1,
+    "slides": 3,
+    "url": "http://127.0.0.1:8124/blog/archives/"
+  },
+  {
+    "scenario": "dev-listing",
+    "pins": 1,
+    "slides": 3,
+    "url": "http://127.0.0.1:8124/topic"
+  },
+  {
+    "scenario": "dev-listing",
+    "pins": 1,
+    "slides": 3,
+    "url": "http://127.0.0.1:8124/page/2"
+  },
+  {
+    "scenario": "dev-code",
+    "background": "rgb(28, 31, 33)",
+    "css": [
+      "/assets/css/main-card.css?v=aa6b222e",
+      "/assets/css/highlight.css?v=f38ba7df",
+      "/assets/css/pagination.css?v=fe27f525",
+      "/assets/css/search.css?v=ee7d925c",
+      "/assets/css/main-appearance-card.css?v=3c0edfe1"
+    ],
+    "documentWidth": 1272,
+    "headings": [
+      "Stellar 页面核验 45",
+      "内容与目录",
+      "第二节"
+    ],
+    "keyword": "rgb(137, 89, 168)",
+    "main": "rgba(0, 0, 0, 0)",
+    "string": "rgb(68, 158, 72)",
+    "theme": null,
+    "url": "http://127.0.0.1:8124/post/parity-45",
+    "viewport": {
+      "height": 900,
+      "width": 1280
+    }
+  },
+  {
+    "scenario": "dev-search",
+    "results": 20,
+    "tabsDisplay": "flex"
+  },
+  {
+    "scenario": "dev-pagination-320",
+    "documentWidth": 312,
+    "ellipses": 2,
+    "nextRight": 295,
+    "numbers": 7,
+    "paginatorRight": 295,
+    "width": 320
+  },
+  {
+    "buttonBackground": "rgb(28, 208, 253)",
+    "radius": "8px",
+    "scenario": "dev-password-locked",
+    "style": "/assets/css/post-password.css?v=b4e7136b"
+  },
+  {
+    "scenario": "dev-password-unlocked",
+    "content": true,
+    "heading": "需要口令的文章",
+    "locked": false
   }
 ]
