@@ -1,0 +1,17 @@
+{
+  "target": "https://blog.xn--fhqths51enha.cn/",
+  "settingsEndpoint": "/api/v1/settings/stellar",
+  "theme": {
+    "appearance": {
+      "preset": "minimal",
+      "color_scheme": "auto",
+      "colors": {
+        "primary": "hsl(40 96% 55%)",
+        "accent": "#f60",
+        "link": "hsl(166 66% 32%)"
+      }
+    }
+  },
+  "applyMethod": "Read and backup current document, deep-merge only listed appearance fields, save, read back and verify; preserve all other settings.",
+  "authorization": "用户已明确授权“应用到线上博客”；已执行，结果见 applied-appearance.json"
+}

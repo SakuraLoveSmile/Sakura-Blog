@@ -35,6 +35,17 @@
 - 运行代码仍为根 `08f9811b78c24e38a65155d622ef5e32fbab0cdb` 的非开发模式二进制，仅现有配置发生变化。本轮 `make test` 实际通过：Console 298/298、Stellar 220/220、0 失败/跳过，部署/来源/模块边界、Go vet、Staticcheck、Go tests 全部通过。文档和证据提交/合入继续执行仓库强制门禁；最终日志与恢复备份留在根 `.tmp/stellar-reference-colors-20261024-archive/`。未新增源码或测试，无需重新构建、编译 CSS 或重复全部四预设矩阵。
 - 体验入口仍为 `http://127.0.0.1:8124/`（隔离样例）。结束时已清除配色模拟并恢复原生视口，确认 auto 实际跟随系统深色，未留下访客配色覆盖。下一步由用户确认当前配色；真实数据、生产、远端 CI、推送、发布与部署未操作，原 T1–T7 清单不因此标为已验收。
 
+### T2/T7 线上颜色差异续查（同任务，2026-10-24）
+
+- 用户反馈颜色仍与 `https://xaoxuu.com/` 不同。本轮状态待体验；上述隔离样例的结果不代表线上博客。实际打开 `https://blog.xn--fhqths51enha.cn/` 后确认线上原来仍使用 card，前轮遗漏了该实际入口的对照。本轮已获明确授权并完成线上配置更新。
+- 同浏览器、同系统深色、同 1280×720px 下，线上 body 为 `rgb(28,31,33)`（`#1c1f21`），参照为 `rgb(34,32,27)`（`#22201b`）；线上主色 `hsla(192deg 98% 55% / 1)`、链接 `hsla(207deg 90% 54% / 1)`，参照分别为金黄 `hsla(40deg 96% 55% / 1)`、绿色 `hsla(166deg 66% 32% / 1)`。线上实际加载 `main-card.css` 和 `main-appearance-card.css`，不是缓存推测。参照站另有衬线字体，字体不作为本轮颜色调整字段。
+- 唯一颜色参照与线上原状分别保存在 `docs/baselines/stellar-200-parity-20261024/live-colors/reference-dark.jpg`、`before-live-dark.jpg`，浅色补充与计算值见同目录。最小目标字段见 `proposed-appearance.json`：minimal、auto 及金黄/橙色/绿色三个颜色。用户明确选择“应用到线上博客”后，使用现有已认证 Console 先读取并备份 document，只合并这五项，校验通过后保存一次，再通过“重新读取”确认整份 JSON 与候选完全相等；其余设置保持，敏感字段的遮罩按现有保存机制保留。
+- 本轮 worktree 为 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261024-fix-blog20261024-stellar-live-colors`，分支 `codex/fix/20261024-blog20261024-stellar-live-colors`，起点 dev `1d40ecc9`，合入目标仍为本地 dev。主 agent 独占本文、证据与后续获准的设置操作；没有源码改动或可独立并行的实施，串行定位即可。
+- 已实测：线上浅/深色 × 桌面 1280px/手机 390px 的 4 组首页，body、背景/卡片/主题/强调/链接及文字 token 均与参照一致；另有文章和搜索 8 组交互检查，搜索“Hexo”均返回 3 个结果，均无页面横向溢出。手机是 390×844 CSS 视口的真实浏览器模拟，截图工具缩放有局限，仅保留可靠桌面截图；计算值和交互测量见 `browser-verification.json`。字体、菜单项自己的 accent、分类色等独立配置未纳入这五项；例如左栏博客图标仍使用原有青色，不能宣称整个站点所有视觉细节与作者站完全相同。
+- 未登录 HTTP 读取也确认线上已加载 `main-minimal.css` 与 `main-appearance-minimal.css`；实际下载的 CSS 字节与本地锁定上游产物相同，`/readyz` 返回 `ok:true`。完整配置重读结果见 `applied-appearance.json`，最终公开截图为 `after-live-dark-desktop.jpg` 与 `after-live-light-desktop.jpg`。结束时清除配色/视口模拟，确认 auto 跟随系统且 `data-theme` 无访客覆盖。
+- 本轮没有业务源码、依赖、镜像或二进制变更，不进行重建/部署或重复全部四预设矩阵。`make test` 本轮实际通过 Console 298/298、Stellar 220/220（0 失败/跳过）及 Go/部署/来源/模块边界检查；文档证据提交与本地合入仍执行强制门禁。配置恢复文件与日志留在根 `.tmp/stellar-live-colors-20261024-archive/`，完整设置不提交。必要恢复时重新读取线上 document，仅恢复这五项原值（原来缺省的字段移除），保留其他最新设置。
+- 下一步由用户体验线上效果；当前不标已验收。仅执行了已授权的线上外观设置保存，未推送、发版、替换二进制或改动文章数据；原 T1–T7 清单不因此标完成。
+
 ## 目标与已确认选择
 
 完整移植官方 tag `2.0.0`，commit `9d11978a24fe6610e3a7dbab741cf62634539d05` 的能力与实际行为。源码依据为该 commit 的 `_config.yml`、`scripts/`、`layout/`、`source/`、`languages/` 和测试。不得把 Hexo 专属能力标成“不适用”后称为完整移植。
