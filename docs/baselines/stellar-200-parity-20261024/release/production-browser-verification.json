@@ -1,0 +1,483 @@
+{
+  "checkedAt": "2026-10-24T17:11:48.980Z",
+  "url": "https://blog.xn--fhqths51enha.cn/",
+  "version": "v2.0.0",
+  "comparisons": [
+    {
+      "scheme": "dark",
+      "live": {
+        "background": "rgb(34, 32, 27)",
+        "font": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "overflow": false,
+        "settings": [
+          {
+            "hasSVG": true,
+            "rect": {
+              "h": 32,
+              "w": 192,
+              "x": 48,
+              "y": 672
+            }
+          }
+        ],
+        "systemDark": true,
+        "tokens": {
+          "--accent": "#ff6600",
+          "--background": "hsla(44 12% 12% / 1)",
+          "--card": "hsla(44 10% 14% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        },
+        "url": "https://blog.xn--fhqths51enha.cn/",
+        "viewport": {
+          "height": 720,
+          "width": 1280
+        }
+      },
+      "reference": {
+        "background": "rgb(34, 32, 27)",
+        "font": "\"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+        "overflow": false,
+        "settings": [
+          {
+            "hasSVG": true,
+            "rect": {
+              "h": 32,
+              "w": 192,
+              "x": 48,
+              "y": 672
+            }
+          }
+        ],
+        "systemDark": true,
+        "tokens": {
+          "--accent": "#f60",
+          "--background": "hsla(44 12% 12% / 1)",
+          "--card": "hsla(44 10% 14% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        },
+        "url": "https://xaoxuu.com/",
+        "viewport": {
+          "height": 720,
+          "width": 1280
+        }
+      }
+    },
+    {
+      "scheme": "light",
+      "live": {
+        "background": "rgb(250, 247, 240)",
+        "font": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "overflow": false,
+        "settings": [
+          {
+            "hasSVG": true,
+            "rect": {
+              "h": 32,
+              "w": 192,
+              "x": 48,
+              "y": 672
+            }
+          }
+        ],
+        "systemDark": false,
+        "tokens": {
+          "--accent": "#ff6600",
+          "--background": "hsla(44 50% 96% / 1)",
+          "--card": "hsla(44 50% 98% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        },
+        "url": "https://blog.xn--fhqths51enha.cn/",
+        "viewport": {
+          "height": 720,
+          "width": 1280
+        }
+      },
+      "reference": {
+        "background": "rgb(250, 247, 240)",
+        "font": "\"Iowan Old Style\", \"Palatino Linotype\", \"Noto Serif SC\", \"Songti SC\", \"Courier New\", ui-serif, Georgia, \"Times New Roman\", serif",
+        "overflow": false,
+        "settings": [
+          {
+            "hasSVG": true,
+            "rect": {
+              "h": 32,
+              "w": 192,
+              "x": 48,
+              "y": 672
+            }
+          }
+        ],
+        "systemDark": false,
+        "tokens": {
+          "--accent": "#f60",
+          "--background": "hsla(44 50% 96% / 1)",
+          "--card": "hsla(44 50% 98% / 1)",
+          "--link": "hsla(166deg 66% 32% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--theme": "hsla(40deg 96% 55% / 1)"
+        },
+        "url": "https://xaoxuu.com/",
+        "viewport": {
+          "height": 720,
+          "width": 1280
+        }
+      }
+    }
+  ],
+  "interactions": {
+    "desktopSearch": {
+      "overflow": false,
+      "results": [
+        {
+          "href": "/post/Hexo博客的基本搭建/?kw=Hexo#hexo",
+          "rect": {
+            "h": 111.59375,
+            "w": 574,
+            "x": 353,
+            "y": 183.5
+          },
+          "text": "Hexo博客的基本搭建Hexo博客的基本搭建Hexo博客的基本搭建 ...",
+          "titleInside": false
+        },
+        {
+          "href": "/post/Hexo博客的基本搭建/?kw=Hexo#heading-1",
+          "rect": {
+            "h": 132.59375,
+            "w": 574,
+            "x": 353,
+            "y": 303.09375
+          },
+          "text": "Hexo博客的基本搭建博客本地化部署ry.npm.taobao.org 安装hexo命令行 -g是对全局安装hexo命令行 1 cnpm install hexo-cli -g Hexo博客初始化 选取一个想要安装Hexo的目录，路径中...",
+          "titleInside": false
+        },
+        {
+          "href": "/post/Hexo博客的基本搭建/?kw=Hexo#github",
+          "rect": {
+            "h": 132.59375,
+            "w": 574,
+            "x": 353,
+            "y": 443.6875
+          },
+          "text": "Hexo博客的基本搭建部署到Github(推荐)部署插件 1 cnpm install hexo-deployer-git --save 1 2 3 4 5 6 7 8 9 10 11 12 13 ![](https://xingqiu-tuchu...",
+          "titleInside": false
+        }
+      ]
+    },
+    "searchTitleNavigation": {
+      "articleTitle": "Hexo博客的基本搭建",
+      "codeTokens": [
+        {
+          "class": "lnt",
+          "color": "rgba(0, 0, 0, 0.4)"
+        },
+        {
+          "class": "line",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "cl",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "lnt",
+          "color": "rgba(0, 0, 0, 0.4)"
+        },
+        {
+          "class": "line",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "cl",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "lnt",
+          "color": "rgba(0, 0, 0, 0.4)"
+        },
+        {
+          "class": "line",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "cl",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "lnt",
+          "color": "rgba(0, 0, 0, 0.4)"
+        },
+        {
+          "class": "line",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "cl",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "lnt",
+          "color": "rgba(0, 0, 0, 0.4)"
+        },
+        {
+          "class": "line",
+          "color": "rgba(0, 0, 0, 0.8)"
+        },
+        {
+          "class": "cl",
+          "color": "rgba(0, 0, 0, 0.8)"
+        }
+      ],
+      "iconVariables": {
+        "--icon-h3-left": true,
+        "--icon-h3-right": true,
+        "--icon-loading": true,
+        "--icon-quote-left": true,
+        "--icon-quote-right": true
+      },
+      "title": "Hexo博客的基本搭建 - 上杉九月的博客",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA?kw=Hexo#hexo"
+    },
+    "mobileHomeLight": {
+      "background": "rgb(250, 247, 240)",
+      "font": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+      "overflow": false,
+      "settings": [
+        {
+          "hasSVG": true,
+          "rect": {
+            "h": 32,
+            "w": 216,
+            "x": -272,
+            "y": 732
+          }
+        }
+      ],
+      "systemDark": false,
+      "tokens": {
+        "--accent": "#ff6600",
+        "--background": "hsla(44 50% 96% / 1)",
+        "--card": "hsla(44 50% 98% / 1)",
+        "--link": "hsla(166deg 66% 32% / 1)",
+        "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+        "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+        "--theme": "hsla(40deg 96% 55% / 1)"
+      },
+      "url": "https://blog.xn--fhqths51enha.cn/",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    "mobileDrawer": {
+      "background": "rgb(250, 247, 240)",
+      "font": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+      "overflow": false,
+      "settings": [
+        {
+          "hasSVG": true,
+          "rect": {
+            "h": 32,
+            "w": 216,
+            "x": 32,
+            "y": 732
+          }
+        }
+      ],
+      "systemDark": false,
+      "tokens": {
+        "--accent": "#ff6600",
+        "--background": "hsla(44 50% 96% / 1)",
+        "--card": "hsla(44 50% 98% / 1)",
+        "--link": "hsla(166deg 66% 32% / 1)",
+        "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+        "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+        "--theme": "hsla(40deg 96% 55% / 1)"
+      },
+      "url": "https://blog.xn--fhqths51enha.cn/",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    "mobileSettings": {
+      "overflow": false,
+      "url": "https://blog.xn--fhqths51enha.cn/settings",
+      "version": [
+        "80 KB",
+        "0 B",
+        "80 KB",
+        "Blog v2.0.0",
+        "Stellar 2.0.0"
+      ]
+    },
+    "mobileSettingsDark": {
+      "background": "rgb(34, 32, 27)",
+      "font": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+      "overflow": false,
+      "settings": [
+        {
+          "hasSVG": true,
+          "rect": {
+            "h": 32,
+            "w": 216,
+            "x": -272,
+            "y": 732
+          }
+        }
+      ],
+      "systemDark": true,
+      "tokens": {
+        "--accent": "#ff6600",
+        "--background": "hsla(44 12% 12% / 1)",
+        "--card": "hsla(44 10% 14% / 1)",
+        "--link": "hsla(166deg 66% 32% / 1)",
+        "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+        "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+        "--theme": "hsla(40deg 96% 55% / 1)"
+      },
+      "url": "https://blog.xn--fhqths51enha.cn/settings",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    "mobileSearch": {
+      "overflow": false,
+      "results": [
+        {
+          "href": "/post/Hexo博客的基本搭建/?kw=Hexo#hexo",
+          "rect": {
+            "h": 118.4921875,
+            "w": 366,
+            "x": 12,
+            "y": 60
+          }
+        },
+        {
+          "href": "/about/?kw=Hexo",
+          "rect": {
+            "h": 113.296875,
+            "w": 366,
+            "x": 12,
+            "y": 186.4921875
+          }
+        },
+        {
+          "href": "/post/Hexo博客的基本搭建/?kw=Hexo#heading-1",
+          "rect": {
+            "h": 140.9921875,
+            "w": 366,
+            "x": 12,
+            "y": 307.7890625
+          }
+        },
+        {
+          "href": "/post/Hexo博客的基本搭建/?kw=Hexo#github",
+          "rect": {
+            "h": 140.9921875,
+            "w": 366,
+            "x": 12,
+            "y": 456.78125
+          }
+        }
+      ],
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    "mobileSearchNavigation": {
+      "overflow": false,
+      "title": "Hexo博客的基本搭建 - 上杉九月的博客",
+      "url": "https://blog.xn--fhqths51enha.cn/post/Hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%90%AD%E5%BB%BA?kw=Hexo#hexo"
+    },
+    "mobilePagination": {
+      "navs": [
+        {
+          "class": "menu dis-select",
+          "text": "博客文库笔记友链"
+        },
+        {
+          "class": "post",
+          "text": "近期发布分类标签专栏归档"
+        }
+      ],
+      "overflow": false,
+      "pins": 2,
+      "url": "https://blog.xn--fhqths51enha.cn/page/2",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    "searchTitleMarkup": [
+      {
+        "href": "/post/Hexo博客的基本搭建/?kw=Hexo#hexo",
+        "title": "Hexo博客的基本搭建",
+        "titleInside": true
+      },
+      {
+        "href": "/post/Hexo博客的基本搭建/?kw=Hexo#heading-1",
+        "title": "Hexo博客的基本搭建",
+        "titleInside": true
+      },
+      {
+        "href": "/post/Hexo博客的基本搭建/?kw=Hexo#github",
+        "title": "Hexo博客的基本搭建",
+        "titleInside": true
+      }
+    ]
+  },
+  "restoredState": {
+    "background": "rgb(34, 32, 27)",
+    "font": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+    "overflow": false,
+    "settings": [
+      {
+        "hasSVG": true,
+        "rect": {
+          "h": 32,
+          "w": 192,
+          "x": 48,
+          "y": 672
+        }
+      }
+    ],
+    "systemDark": true,
+    "tokens": {
+      "--accent": "#ff6600",
+      "--background": "hsla(44 12% 12% / 1)",
+      "--card": "hsla(44 10% 14% / 1)",
+      "--link": "hsla(166deg 66% 32% / 1)",
+      "--text-p1": "hsla(210deg 0% 100% / 0.8)",
+      "--text-p2": "hsla(210deg 0% 100% / 0.7)",
+      "--theme": "hsla(40deg 96% 55% / 1)"
+    },
+    "url": "https://blog.xn--fhqths51enha.cn/",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  "console": {
+    "scripts": [
+      "https://blog.xn--fhqths51enha.cn/console/assets/index-z6Bj2Hcm.js"
+    ],
+    "text": "版本概览\n已是最新版本\n当前环境\n运行中\n2.0.0\n\n已部署正式版本\n\nGitHub 最新\nRelease\n2.0.0\n\n发布于 2026-10-25\n\n版本更新日志\n2.0.0\n复制日志\nGitHub 发布页\n二进制发布仓库（公开）。对应源码仓库：https://github.com/SakuraLoveSmile/Sakura-Blog\n\nGitHub Token"
+  },
+  "mobileScreenshots": {
+    "method": "CDP Page.captureScreenshot at 390x844 CSS pixels, scale 1",
+    "nativeScreenshotLimitation": "Native IAB snapshots scaled the viewport to 381x215; those interim images are removed from deliverables."
+  },
+  "initialTitleSelectorProbeNote": "The desktop probe used h1,h2,h3,h4,.title and did not match the actual span.search-result-title. The later searchTitleMarkup probe uses the actual class and verifies it is inside the link."
+}

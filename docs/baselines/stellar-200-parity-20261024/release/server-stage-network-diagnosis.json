@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-24T16:38:07.154Z",
+  "stage_attempt": "/home/ubuntu/blog-release-v2.0.0/stage-20261024T163122-2d05bae4",
+  "production_readyz": 200,
+  "running": true,
+  "listening_line": true,
+  "bootstrap_error": false,
+  "mount_error": false,
+  "published_ports": {
+    "8080/tcp": null
+  },
+  "direct_ip_readyz": 200,
+  "host_loopback_error": "ConnectionRefusedError",
+  "diagnostic_container_cleaned": true,
+  "diagnostic_network_cleaned": true,
+  "raw_logs": "server private directory only"
+}
