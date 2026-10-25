@@ -20,12 +20,17 @@ import "./settings-form.css";
 // Shared defaults retain the existing frontend enhancement safety boundary: card_hover.enable = false; card_hover.max_tilt = 3.
 
 const tabs = [
-  { key: "stellar2", label: "Stellar 2", icon: "ri:settings-3-line", description: "完整主题配置与独立 Blog 扩展" },
   { key: "basic", label: "基本", icon: "ri:global-line", description: "站点身份、标题与品牌资源" },
+  { key: "appearance", label: "外观", icon: "ri:palette-line", description: "配色、字体、背景与圆角" },
+  { key: "navigation", label: "导航", icon: "ri:menu-line", description: "顶栏、侧栏、菜单与页脚" },
+  { key: "layout", label: "页面布局", icon: "ri:layout-line", description: "页面覆盖与侧栏组件" },
   { key: "post", label: "文章", icon: "ri:article-line", description: "文章排版、卡片、版权、分享与打赏" },
   { key: "comments", label: "评论", icon: "ri:chat-3-line", description: "评论开关、审核与邮件通知" },
   { key: "seo", label: "SEO", icon: "ri:search-eye-line", description: "站点来源、社交卡片与搜索引擎设置" },
   { key: "search", label: "搜索", icon: "ri:search-line", description: "搜索服务、索引范围与正文检索" },
+  { key: "plugins", label: "插件", icon: "ri:puzzle-line", description: "标签组件与前台增强" },
+  { key: "services", label: "服务", icon: "ri:cloud-line", description: "外部服务与默认图片" },
+  { key: "community", label: "作者与友链", icon: "ri:team-line", description: "公开作者与友链设置" },
   { key: "feedback", label: "反馈", icon: "ri:feedback-line", description: "Feedback 反馈组件接入与入口外观" },
   { key: "advanced", label: "高级", icon: "ri:code-line", description: "页面代码注入与完整配置入口" },
 ] as const;
@@ -50,27 +55,28 @@ const legacyTabMap: Record<string, { path: string; tab?: string }> = {
   inject: { path: "/settings", tab: "advanced" },
   data_cache: { path: "/settings", tab: "advanced" },
   advanced: { path: "/settings", tab: "advanced" },
-  appearance: { path: "/appearance", tab: "appearance" },
-  theme_yaml: { path: "/appearance", tab: "advanced" },
-  cover: { path: "/appearance", tab: "home" },
-  nav_tabs: { path: "/appearance", tab: "navigation" },
-  widgets: { path: "/appearance", tab: "layout" },
-  plugins: { path: "/appearance", tab: "enhancements" },
-  tag_plugins: { path: "/appearance", tab: "enhancements" },
-  services: { path: "/appearance", tab: "enhancements" },
+  appearance: { path: "/settings", tab: "appearance" },
+  theme_yaml: { path: "/settings", tab: "advanced" },
+  cover: { path: "/settings", tab: "layout" },
+  nav_tabs: { path: "/settings", tab: "navigation" },
+  widgets: { path: "/settings", tab: "layout" },
+  plugins: { path: "/settings", tab: "plugins" },
+  tag_plugins: { path: "/settings", tab: "plugins" },
+  services: { path: "/settings", tab: "services" },
   feedback: { path: "/settings", tab: "feedback" },
-  default: { path: "/appearance", tab: "assets" },
-  menubar: { path: "/menus" },
-  rightbar: { path: "/appearance", tab: "layout" },
-  footer: { path: "/appearance", tab: "layout" },
+  default: { path: "/settings", tab: "services" },
+  menubar: { path: "/settings", tab: "navigation" },
+  rightbar: { path: "/settings", tab: "navigation" },
+  footer: { path: "/settings", tab: "navigation" },
   ai: { path: "/assistant", tab: "settings" },
   security: { path: "/profile" },
-  authors: { path: "/authors" },
+  authors: { path: "/settings", tab: "community" },
 };
 
 const route = useRoute();
 const router = useRouter();
 const active = ref("basic");
+const rawOpen = ref(false);
 const data = ref<Record<string, any>>({});
 const rawText = ref<Record<string, string>>({});
 const loading = ref(true);
@@ -78,18 +84,44 @@ const loadError = ref("");
 const hostSavingKey = ref("");
 const stellar = useStellarSettings();
 const {
-  draft: stellarDraft, saved: stellarSaved, loading: stellarLoading, busy: stellarBusy,
-  loadError: stellarLoadError, dirty: stellarDirty, parseError: stellarParseError,
-  pendingInput, loadRevision,
+  draft: stellarDraft,
+  saved: stellarSaved,
+  loading: stellarLoading,
+  busy: stellarBusy,
+  loadError: stellarLoadError,
+  dirty: stellarDirty,
+  parseError: stellarParseError,
+  pendingInput,
+  loadRevision,
 } = stellar;
 const savingKey = computed(() => hostSavingKey.value || (stellarBusy.value ? "stellar2" : ""));
 const pendingTabs = ref<Record<string, boolean>>({});
-const canonicalTabs = new Set<string>(["post", "comments", "seo", "search", "advanced"]);
+const canonicalTabs = new Set<string>([
+  "appearance",
+  "navigation",
+  "layout",
+  "post",
+  "comments",
+  "seo",
+  "search",
+  "plugins",
+  "services",
+  "community",
+  "advanced",
+]);
 function isCanonicalTab(tab: string): tab is CanonicalSettingsTab {
   return canonicalTabs.has(tab);
 }
-watch(pendingTabs, (tabs) => { pendingInput.value = Object.values(tabs).some(Boolean); }, { deep: true, flush: "sync" });
-watch(loadRevision, () => { pendingTabs.value = {}; });
+watch(
+  pendingTabs,
+  (tabs) => {
+    pendingInput.value = Object.values(tabs).some(Boolean);
+  },
+  { deep: true, flush: "sync" },
+);
+watch(loadRevision, () => {
+  pendingTabs.value = {};
+});
 const savedSnapshot = ref<string>("");
 const savedJsonBaseline = ref<Record<string, string>>({});
 
@@ -110,13 +142,16 @@ const dirtySections = computed<Set<string>>(() => {
 });
 
 const isTabDirty = (tabKey: string) => {
-  if (tabKey === "stellar2") return stellarDirty.value;
+  if (tabKey === "advanced") return stellarDirty.value;
   if (isCanonicalTab(tabKey)) {
     if (pendingTabs.value[tabKey]) return true;
     try {
-      if (canonicalSettingsPaths(tabKey).some((path) =>
-        readJSONFieldRaw(stellarDraft.value, path) !== readJSONFieldRaw(stellarSaved.value, path),
-      )) return true;
+      if (
+        canonicalSettingsPaths(tabKey).some(
+          (path) => readJSONFieldRaw(stellarDraft.value, path) !== readJSONFieldRaw(stellarSaved.value, path),
+        )
+      )
+        return true;
     } catch {
       return stellarDirty.value;
     }
@@ -166,6 +201,12 @@ async function applyRouteQuery() {
     active.value = "basic";
     return;
   }
+  if (queryTab === "stellar2") {
+    rawOpen.value = true;
+    active.value = "advanced";
+    await router.replace({ query: routeQuery("advanced") });
+    return;
+  }
   const legacy = legacyTabMap[queryTab];
   if (legacy && legacy.path !== "/settings") {
     await router.replace({ path: legacy.path, query: legacy.tab ? { tab: legacy.tab } : undefined });
@@ -207,7 +248,7 @@ function updateSectionSnapshot(section: string, savedData: any) {
 
 async function save(section: string, payload?: unknown): Promise<boolean> {
   if (section !== "site" && section !== "feedback") {
-    Toast.error("旧主题分段停止保存，请打开 Stellar 2 配置");
+    Toast.error("旧主题分段停止保存，请使用对应设置分类");
     return false;
   }
   if (savingKey.value) return false;
@@ -250,7 +291,7 @@ function navigateToTab(tab: string) {
 }
 
 watch(active, (tab) => {
-  if (tab === "stellar2") previewOpen.value = false;
+  if (!["basic", "post"].includes(tab)) previewOpen.value = false;
   if (route.query.tab !== tab) void router.push({ query: routeQuery(tab) });
 });
 watch(
@@ -299,7 +340,7 @@ onBeforeRouteLeave((to, from, next) => {
     <VPageHeader title="系统设置">
       <template #icon><Icon icon="ri:settings-3-line" class="text-primary" /></template>
       <template #subtitle>
-        <span>Stellar 2、基本、文章、评论、SEO、搜索、反馈与高级系统配置</span>
+        <span>站点信息、主题外观、页面布局与各项功能配置</span>
         <span v-if="isDirty" class="settings-dirty-badge">（有未保存修改）</span>
       </template>
       <template #actions>
@@ -348,18 +389,12 @@ onBeforeRouteLeave((to, from, next) => {
               class="settings-tab-panel outline-none"
               :hidden="active !== tab.key"
             >
-              <Stellar2Tab
-                v-if="tab.key === 'stellar2'"
-                class="settings-tab-content"
-                :editor="stellar"
-                :saving="savingKey"
-              />
-              <div v-else-if="isCanonicalTab(tab.key)" class="settings-tab-content">
+              <div v-if="isCanonicalTab(tab.key)" class="settings-tab-content">
                 <SeoSettings v-if="tab.key === 'seo'" :data="data" :saving="savingKey" host-only @save="save" />
                 <div class="canonical-settings-status">
                   <StellarSettingsStatus :editor="stellar" :saving="savingKey" />
                   <p v-if="stellarParseError" class="text-sm text-state-error" role="alert">
-                    完整配置暂时无法用于表单编辑：{{ stellarParseError }}。请在 Stellar 2 标签修正后继续。
+                    完整配置暂时无法用于表单编辑：{{ stellarParseError }}。请展开高级中的完整配置修正后继续。
                   </p>
                 </div>
                 <CanonicalSettingsForm
@@ -372,6 +407,15 @@ onBeforeRouteLeave((to, from, next) => {
                   @pending="pendingTabs[tab.key] = $event"
                   @save="saveStellar"
                 />
+                <details
+                  v-if="tab.key === 'advanced'"
+                  class="settings-raw-editor"
+                  :open="rawOpen"
+                  @toggle="rawOpen = ($event.target as HTMLDetailsElement).open"
+                >
+                  <summary>完整配置原文（高级）</summary>
+                  <Stellar2Tab :editor="stellar" :saving="savingKey" />
+                </details>
               </div>
               <template v-else-if="active === tab.key">
                 <BasicSettings v-if="tab.key === 'basic'" :data="data" :saving="savingKey" @save="save" />
@@ -435,6 +479,19 @@ onBeforeRouteLeave((to, from, next) => {
 </template>
 
 <style scoped>
+.settings-raw-editor > summary {
+  cursor: pointer;
+  padding: 24px 28px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+@media (max-width: 767px) {
+  .settings-raw-editor > summary {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
 .settings-view {
   min-height: 100%;
   background: var(--color-background);

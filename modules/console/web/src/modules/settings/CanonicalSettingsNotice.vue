@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { getApiErrorMessage, readStellarSettingsProblem, stellarSettingsApi } from "@/api";
 import { VButton, VCard } from "@/components/ui";
 
-defineProps<{ fields?: string }>();
+const props = withDefaults(defineProps<{ fields?: string; tab?: string }>(), { tab: "advanced" });
 const router = useRouter();
 const state = ref("loading");
 const message = ref("");
@@ -25,10 +25,10 @@ onMounted(() => void load());
   <VCard title="Stellar 2 配置" class="canonical-settings-notice">
     <p v-if="state === 'loading'" role="status">正在检查配置版本…</p>
     <p v-else-if="state === 'migration'">旧配置尚未迁移。请先审阅完整迁移预览，再执行迁移；旧分段现在只用于迁移预览。</p>
-    <p v-else-if="state === 'ready'">此处的旧分段已停止保存。请在 Stellar 2 中编辑完整上游配置与独立 Blog 扩展。</p>
+    <p v-else-if="state === 'ready'">此处的旧分段已停止保存。请在系统设置的对应分类中修改配置。</p>
     <p v-else role="alert">{{ message }}</p>
     <p v-if="fields" class="canonical-fields">{{ fields }}</p>
-    <VButton type="primary" @click="router.push({ path: '/settings', query: { tab: 'stellar2' } })">打开 Stellar 2 配置</VButton>
+    <VButton type="primary" @click="router.push({ path: '/settings', query: { tab: props.tab } })">打开设置</VButton>
     <VButton v-if="state === 'error'" type="secondary" @click="load">重试</VButton>
   </VCard>
 </template>

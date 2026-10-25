@@ -2,6 +2,8 @@
 import { computed, reactive, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { VButton, VSwitch } from "@/components/ui";
+import StructuredSetting from "./StructuredSetting.vue";
+import { themeSettingSchema, themeSettingDefault, type SettingSchema } from "./stellar-theme-schema";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { readJSONField, readJSONFieldRaw } from "@/components/editor/stellar-form-json";
 import {
@@ -24,7 +26,7 @@ const props = withDefaults(
   }>(),
   {
     saveLabel: "保存全部主题设置",
-    saveHelp: "同时保存文章、评论、SEO、搜索和高级中的主题修改",
+    saveHelp: "同时保存所有分类中尚未保存的主题修改；基本与反馈单独保存",
     invalidHelp: "请先修正上方输入问题，再保存主题设置。",
   },
 );
@@ -39,8 +41,12 @@ const errors = reactive<Record<string, string>>({});
 const newKeys = reactive<Record<string, string>>({});
 const newValues = reactive<Record<string, string>>({});
 const hasErrors = computed(() => Object.values(errors).some(Boolean));
+const structuredRevision = reactive<Record<string, number>>({});
+const structuredPending = reactive<Record<string, boolean>>({});
 const hasMapDraft = computed(() => Object.values(newKeys).some(Boolean) || Object.values(newValues).some(Boolean));
-const hasPending = computed(() => hasErrors.value || hasMapDraft.value);
+const hasPending = computed(
+  () => hasErrors.value || hasMapDraft.value || Object.values(structuredPending).some(Boolean),
+);
 watch(hasPending, (value) => emit("pending", value), { immediate: true });
 watch(
   () => props.document,
@@ -69,6 +75,8 @@ function change(item: CanonicalSettingsField, value: unknown, raw?: string) {
   emit("change", item.path, value, raw);
 }
 function reset(item: CanonicalSettingsField) {
+  structuredRevision[item.path] = (structuredRevision[item.path] ?? 0) + 1;
+  delete structuredPending[item.path];
   delete errors[item.path];
   delete drafts[item.path];
   delete newKeys[item.path];
@@ -190,6 +198,38 @@ function updateLicense(item: CanonicalSettingsField, event: Event) {
 function updateLabel(item: CanonicalSettingsField, key: string, value: string) {
   change(item, { ...mapValue(item), [key]: value });
 }
+function structuredSchema(item: CanonicalSettingsField): SettingSchema {
+  if (item.path.startsWith("theme.")) return themeSettingSchema(item.path);
+  if (item.path.endsWith(".show_posts"))
+    return { type: ["boolean", "null"], default: { kind: "literal", value: true } };
+  if (item.path.endsWith(".widgets"))
+    return {
+      type: ["object"],
+      additionalProperties: {
+        type: ["object"],
+        additionalProperties: { type: ["string", "number", "boolean", "null", "object", "array"] },
+      },
+    };
+  if (item.path.endsWith(".hero"))
+    return {
+      type: ["object", "null"],
+      properties: { title: { type: ["string"] }, description: { type: ["string"] }, background: { type: ["string"] } },
+      additionalProperties: { type: ["string", "number", "boolean", "null", "object", "array"] },
+    };
+  return {
+    type: ["object"],
+    additionalProperties: {
+      type: ["object"],
+      properties: {
+        name: { type: ["string"] },
+        avatar: { type: ["string"] },
+        description: { type: ["string"] },
+        url: { type: ["string"] },
+        hidden: { type: ["boolean"] },
+      },
+    },
+  };
+}
 function submit() {
   if (!props.disabled && !props.saving && !hasPending.value) emit("save");
 }
@@ -222,8 +262,20 @@ function submit() {
                 恢复默认
               </button>
             </div>
+            <StructuredSetting
+              v-if="item.kind === 'structured'"
+              :key="structuredRevision[item.path] ?? 0"
+              :schema="structuredSchema(item)"
+              :show-heading="false"
+              :model-value="values[item.path]"
+              :default-value="item.path.startsWith('theme.') ? themeSettingDefault(item.path) : undefined"
+              :label="item.label"
+              :path="item.path"
+              @update:model-value="change(item, $event)"
+              @pending="structuredPending[item.path] = $event"
+            />
             <VSwitch
-              v-if="item.kind === 'switch'"
+              v-else-if="item.kind === 'switch'"
               :id="id(item)"
               :model-value="Boolean(current(item))"
               :aria-label="item.label"

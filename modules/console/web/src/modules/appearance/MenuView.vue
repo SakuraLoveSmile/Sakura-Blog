@@ -7,7 +7,7 @@ import CanonicalSettingsNotice from "@/modules/settings/CanonicalSettingsNotice.
 <template>
   <div class="menu-page">
     <VPageHeader title="菜单"><template #icon><Icon icon="ri:menu-line" class="text-primary" /></template><template #subtitle>上游：theme.menus</template></VPageHeader>
-    <main class="menu-container"><CanonicalSettingsNotice fields="上游：theme.menus" /></main>
+    <main class="menu-container"><CanonicalSettingsNotice tab="navigation" fields="上游：theme.menus" /></main>
   </div>
 </template>
 

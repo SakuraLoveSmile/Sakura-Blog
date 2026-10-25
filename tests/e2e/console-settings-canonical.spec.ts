@@ -17,10 +17,11 @@ async function login(page: Page) {
 }
 
 async function tab(page: Page, label: string) {
-  const keys: Record<string, string> = { "Stellar 2": "stellar2", 基本: "basic", 文章: "post", 评论: "comments", SEO: "seo", 搜索: "search", 反馈: "feedback", 高级: "advanced" };
+  const keys: Record<string, string> = { "Stellar 2": "advanced", 基本: "basic", 文章: "post", 评论: "comments", SEO: "seo", 搜索: "search", 反馈: "feedback", 高级: "advanced" };
   const target = page.locator(`#tab-${keys[label]}`);
   await target.click();
   await expect(target).toHaveAttribute("aria-selected", "true");
+  if (label === "Stellar 2") await page.locator(".settings-raw-editor").evaluate((el) => { (el as HTMLDetailsElement).open = true; });
 }
 
 async function toggle(page: Page, key: string, on: boolean) {
@@ -232,15 +233,18 @@ test("局部 JSON 和新增映射草稿跨标签保留，恢复默认解除保�
     await expect(mapping.getByRole("textbox", { name: "新增分类颜色名称", exact: true })).toHaveValue("");
     await expect(save(page)).toBeEnabled();
     await tab(page, "搜索");
-    const parameters = input(page, "theme.search.algolia");
+    // 完整原文仍可诊断无效输入；Algolia 普通参数现已改为结构化控件。
+    await tab(page, "Stellar 2");
+    const parameters = page.locator("#stellar2-document");
+    const draft = await parameters.inputValue();
     await parameters.fill("{");
-    await expect(save(page)).toBeDisabled();
-    await tab(page, "高级");
-    await expect(save(page)).toBeDisabled();
     await tab(page, "搜索");
-    await expect(parameters).toHaveValue("{");
-    await parameters.fill('{"large":9007199254740993,"optional":null}');
-    await expect(save(page)).toBeEnabled();
+    await expect(activeForm(page)).toHaveCount(0);
+    await tab(page, "Stellar 2");
+    const next = JSON.parse(draft);
+    next.theme.search = { ...(next.theme.search ?? {}), algolia: { large: "REPLACE_LARGE", optional: null } };
+    await parameters.fill(JSON.stringify(next).replace('"REPLACE_LARGE"', '9007199254740993'));
+    await tab(page, "搜索");
     const response = page.waitForResponse((r) => r.url().endsWith(endpoint) && r.request().method() === "PUT");
     await save(page).click();
     expect((await response).ok()).toBeTruthy();
@@ -347,7 +351,7 @@ test("普通设置在六种宽度保持单卡片、正确边距和完整可用�
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       if (width === 390 || width === 1280) {
         await page.locator(".settings-card-tabs").scrollIntoViewIfNeeded();
-        await page.screenshot({ path: path.resolve(`docs/baselines/settings-canonical-forms/after-${key}-${width}.png`) });
+        await page.screenshot({ path: path.resolve(`docs/baselines/stellar-settings/existing-${key}-${width}.png`) });
       }
     }
   }

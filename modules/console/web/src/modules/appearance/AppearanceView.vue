@@ -14,7 +14,7 @@ onMounted(() => {
 <template>
   <div class="appearance-page">
     <VPageHeader title="主题设置"><template #icon><Icon icon="ri:palette-line" class="text-primary" /></template><template #subtitle>Stellar 2 上游主题配置与独立 Blog 扩展</template></VPageHeader>
-    <main class="appearance-container"><CanonicalSettingsNotice fields="上游：theme.appearance、theme.layout、theme.menus、theme.widgets、theme.features" /></main>
+    <main class="appearance-container"><CanonicalSettingsNotice tab="appearance" fields="上游：theme.appearance、theme.layout、theme.menus、theme.widgets、theme.features" /></main>
   </div>
 </template>
 

@@ -198,7 +198,10 @@ test("invalid JSON and section shapes block form patches without replacing the d
   }
   editor.draft.value = original;
   assert.equal(editor.parseError.value, "");
-  assert.throws(() => editor.updateField("theme.comments.giscus.params", null, "{broken"));
+  // 保护层的拒绝现在显示为表单诊断，仍需保留原文。
+  assert.equal(editor.updateField("theme.comments.giscus.params", null, "{broken"), false);
+  assert.equal(editor.showValidation.value, true);
+  assert.match(editor.validationMessage.value, /此项未修改/);
   assert.equal(editor.draft.value, original);
 });
 
@@ -214,4 +217,17 @@ test("validation results for an older request are hidden after editing the share
   assert.equal(editor.showValidation.value, false);
   assert.equal(editor.dirty.value, true);
   assert.equal(editor.saved.value, original);
+});
+
+
+test("开放参数数字数组存在精度歧义时保留原文并显示拒绝原因", async () => {
+  const { editor, api } = fixture();
+  const raw = '{"version":2,"theme":{"search":{"algolia":{"weights":[9007199254740992,9007199254740993]}}},"blog_extensions":{}}';
+  api.get = async () => ({ data: raw });
+  await editor.load();
+  assert.equal(editor.updateField("theme.search.algolia.weights", [9007199254740992, 9007199254740992]), false);
+  assert.equal(editor.draft.value, raw);
+  assert.equal(editor.dirty.value, false);
+  assert.equal(editor.showValidation.value, true);
+  assert.match(editor.validationMessage.value, /此项未修改.*精度歧义/);
 });
