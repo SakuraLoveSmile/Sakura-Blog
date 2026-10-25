@@ -107,11 +107,11 @@ test("settings view tracks dirty state and guards unsaved changes on leave", () 
 test("legacy settings tabs redirect to their new owners", () => {
   const view = read("modules/settings/SettingsView.vue");
   for (const marker of [
-    'appearance: { path: "/appearance", tab: "appearance" }',
-    'menubar: { path: "/menus" }',
+    'appearance: { path: "/settings", tab: "appearance" }',
+    'menubar: { path: "/settings", tab: "navigation" }',
     'ai: { path: "/assistant", tab: "settings" }',
     'security: { path: "/profile" }',
-    'authors: { path: "/authors" }',
+    'authors: { path: "/settings", tab: "community" }',
   ])
     assert.match(view, new RegExp(marker));
 });

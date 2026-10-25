@@ -3,7 +3,7 @@ import CanonicalSettingsNotice from "@/modules/settings/CanonicalSettingsNotice.
 </script>
 
 <template>
-  <div class="friend-settings-page"><CanonicalSettingsNotice fields="友链 RSS 聚合、连通性巡检与截图：blog_extensions.friends。友链条目仍在当前友链列表管理。" /></div>
+  <div class="friend-settings-page"><CanonicalSettingsNotice tab="community" fields="友链 RSS 聚合、连通性巡检与截图：blog_extensions.friends。友链条目仍在当前友链列表管理。" /></div>
 </template>
 
 <style scoped>

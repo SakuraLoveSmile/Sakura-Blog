@@ -126,8 +126,17 @@ export function useStellarSettings(options: StellarSettingsOptions = {}) {
 
   function updateField(path: string, value: unknown, rawValue?: string): boolean {
     if (loading.value || parseError.value) return false;
-    draft.value = patchJSONField(draft.value, path, value, rawValue);
-    return true;
+    try {
+      draft.value = patchJSONField(draft.value, path, value, rawValue);
+      return true;
+    } catch (error) {
+      // 原文保护拒绝有精度歧义的操作时，保留草稿并展示可操作的原因。
+      checkedDraft.value = draft.value;
+      valid.value = false;
+      issues.value = [];
+      validationMessage.value = `此项未修改：${error instanceof Error ? error.message : "无法更新配置，请在高级原文中检查。"}`;
+      return false;
+    }
   }
 
   return {

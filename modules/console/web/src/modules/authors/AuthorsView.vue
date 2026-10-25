@@ -7,7 +7,7 @@ import CanonicalSettingsNotice from "@/modules/settings/CanonicalSettingsNotice.
 <template>
   <div class="authors-page">
     <VPageHeader title="作者"><template #icon><Icon icon="ri:user-star-line" class="text-primary" /></template><template #subtitle>公开作者资料：blog_extensions.data.authors</template></VPageHeader>
-    <main class="authors-container"><CanonicalSettingsNotice fields="公开作者资料：blog_extensions.data.authors" /></main>
+    <main class="authors-container"><CanonicalSettingsNotice tab="community" fields="公开作者资料：blog_extensions.data.authors" /></main>
   </div>
 </template>
 

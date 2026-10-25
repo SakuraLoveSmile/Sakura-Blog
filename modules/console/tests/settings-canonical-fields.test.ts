@@ -87,3 +87,19 @@ test("组合搜索控件尊重 Go 覆盖及显式 null，切换官方服务只�
     assert.equal(readJSONFieldRaw(next, "blog_extensions.search.option"), "9007199254740995");
   }
 });
+
+
+test("Stellar 全部分组可从设置表单定位，新增联合列表项初值满足类型", async () => {
+  const { themeSettingSchema, schemaDefault, settingLabel, settingValueLabel } = await import("../web/src/modules/settings/stellar-theme-schema.ts");
+  const paths = new Set(tabs.flatMap(tab => canonicalSettingsPaths(tab)));
+  for (const key of Object.keys(schema.theme.properties)) {
+    assert.ok([...paths].some(path => path === `theme.${key}` || path.startsWith(`theme.${key}.`)), key);
+  }
+  const item = themeSettingSchema("theme.leftbar.widgets").items!;
+  const value = schemaDefault(item);
+  assert.notEqual(value, null);
+  assert.ok(item.type.includes(typeof value));
+  assert.equal(settingLabel("__proto__"), "__proto__");
+  assert.equal(settingLabel("constructor"), "constructor");
+  assert.equal(settingValueLabel("toString"), "toString");
+});

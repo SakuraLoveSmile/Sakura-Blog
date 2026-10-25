@@ -387,21 +387,21 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
     // 方向键切换选中项并联动 tabpanel
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#tab-post")).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#tabpanel-post")).toBeVisible();
+    await expect(page.locator("#tab-appearance")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#tabpanel-appearance")).toBeVisible();
     await expect(page.locator("#tabpanel-basic")).toBeHidden();
-    await expect(page.locator("#tab-post")).toBeFocused();
+    await expect(page.locator("#tab-appearance")).toBeFocused();
 
     await page.keyboard.press("End");
     await expect(page.locator("#tab-advanced")).toHaveAttribute("aria-selected", "true");
     await expect(page.locator("#tabpanel-advanced")).toBeVisible();
     await expect(page.locator("#tab-advanced")).toBeFocused();
 
-    // Stellar 2 是系统设置的首个标签（默认标签），Home 应回到它。
+    // 基本是系统设置的首个标签（默认标签），Home 应回到它。
     await page.keyboard.press("Home");
-    await expect(page.locator("#tab-stellar2")).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#tabpanel-stellar2")).toBeVisible();
-    await expect(page.locator("#tab-stellar2")).toBeFocused();
+    await expect(page.locator("#tab-basic")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#tabpanel-basic")).toBeVisible();
+    await expect(page.locator("#tab-basic")).toBeFocused();
   });
 
   test("主操作与危险操作三态对比度 ≥ 4.5:1", async ({ page }) => {
