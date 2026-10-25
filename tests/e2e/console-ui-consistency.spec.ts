@@ -847,12 +847,12 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await assertTabRevealContract(page, ".settings-tabs", "基本", "高级");
   });
 
-  test("390px 真实溢出下系统设置 Tabs 由组件自身滚动，Stellar 2 首标签与高级末标签完整可达且纵向位置不变", async ({ page }) => {
+  test("390px 真实溢出下系统设置 Tabs 由组件自身滚动，基本首标签与高级末标签完整可达且纵向位置不变", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/settings?tab=basic");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
-    await assertTabRevealContract(page, ".settings-tabs", "Stellar 2", "高级");
+    await assertTabRevealContract(page, ".settings-tabs", "基本", "高级");
   });
 
   test("query 直接命中末尾标签时初始加载即完成显露，Home/End 切换保持显露与焦点", async ({ page }) => {
@@ -869,8 +869,8 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     // Home/End 切换同样触发显露，且焦点停留在被激活的标签上
     await tabbar.locator("#tab-advanced").focus();
     await page.keyboard.press("Home");
-    await expect(tabbar.locator("#tab-stellar2")).toHaveAttribute("aria-selected", "true");
-    await expect(tabbar.locator("#tab-stellar2")).toBeFocused();
+    await expect(tabbar.locator("#tab-basic")).toHaveAttribute("aria-selected", "true");
+    await expect(tabbar.locator("#tab-basic")).toBeFocused();
     await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
 
     await page.keyboard.press("End");

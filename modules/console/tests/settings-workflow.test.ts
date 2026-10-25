@@ -31,7 +31,7 @@ test("主题设置停止旧主题写入并引导 canonical，保留 Feedback 旧
   assert.match(notice, /stellarSettingsApi\.get\(\)/);
   assert.match(notice, /stellar_migration_required/);
   assert.match(notice, /先审阅完整迁移预览/);
-  assert.match(notice, /tab: 'stellar2'/);
+  assert.match(notice, /tab: props.tab/);
 });
 
 test("ThemeYamlTab correctly exposes loading/saving states, error feedback, and dirty guards", () => {

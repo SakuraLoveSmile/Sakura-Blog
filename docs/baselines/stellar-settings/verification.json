@@ -1,0 +1,167 @@
+{
+  "task": "BLG-20261025-01",
+  "status": "待体验",
+  "base_head": "77206db3c21602e2a59cfc02e8d1959fbfe92440",
+  "branch": "codex/feat/20261025-blg-20261025-01-stellar-settings",
+  "worktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261025-feat-blg-20261025-01-stellar-settings",
+  "source": [
+    {
+      "path": "internal/stellarv2/schema.json",
+      "sha256": "1e66d24a6125fc0555245ba8a56a332cfb896fb4914743f581a5b03edccab9bd"
+    },
+    {
+      "path": "modules/console/tests/settings-canonical-fields.test.ts",
+      "sha256": "82eb3bc3bda2bebbdbf984f3bfbec6d5cdf02d530eecd036ab87c78f77bce37c"
+    },
+    {
+      "path": "modules/console/tests/settings-center.test.ts",
+      "sha256": "db711978d884e02062de86d9f0aadb85a04c0c3890f0b5592ffd4f70712d30d5"
+    },
+    {
+      "path": "modules/console/tests/settings-workflow.test.ts",
+      "sha256": "c828cda713fcfc34aaa2f02fe2d82d72ea0d68159f00845a6a1bc1bb7b51945d"
+    },
+    {
+      "path": "modules/console/tests/stellar-settings-editor.test.ts",
+      "sha256": "5bf5c80ff013a20ead44232b5c5b64987d1452259376ef4be55fcda2d4723f2d"
+    },
+    {
+      "path": "modules/console/web/src/icons/ri-subset.json",
+      "sha256": "47d115b4bb81525637a7b037bb4717e04589c837b8818acb069bfd6c65b7cfbf"
+    },
+    {
+      "path": "modules/console/web/src/modules/appearance/AppearanceView.vue",
+      "sha256": "3f4361f8b160eb85d7b220b9549224db6f8337bcd5f5ee83465ed39f891e17d0"
+    },
+    {
+      "path": "modules/console/web/src/modules/appearance/MenuView.vue",
+      "sha256": "af78083e65310cd72e11d13884c40766808e828f79b45a03efd30f8ebb37339d"
+    },
+    {
+      "path": "modules/console/web/src/modules/authors/AuthorsView.vue",
+      "sha256": "58416797fc1655cff7e601ee5b8a8b896a9a19664998ce7ed2a3f028a9b47e55"
+    },
+    {
+      "path": "modules/console/web/src/modules/friends/FriendSettings.vue",
+      "sha256": "f9d2c28835f254b702288dad2146f49cf09f6a15e2f433762ef4344de4b87745"
+    },
+    {
+      "path": "modules/console/web/src/modules/settings/CanonicalSettingsForm.vue",
+      "sha256": "c48b12350b53412e52b50e283427e5b50b6f0a16a2514a60ccc735bfe15d9fc6"
+    },
+    {
+      "path": "modules/console/web/src/modules/settings/CanonicalSettingsNotice.vue",
+      "sha256": "9a21b8edc9abd379ac43e4913604bf517eedd4db6fd5e71bcd0a235d8692a526"
+    },
+    {
+      "path": "modules/console/web/src/modules/settings/SettingsView.vue",
+      "sha256": "2d516754269a7b43dc8e832710ecba0ef7c3423a3ecc1fd33565c8c7fc9bef72"
+    },
+    {
+      "path": "modules/console/web/src/modules/settings/StructuredSetting.vue",
+      "sha256": "fea59a5f43e36f91a46bcd12387c1e1c970adb87a18ed0a1b1803e56150f4cb3"
+    },
+    {
+      "path": "modules/console/web/src/modules/settings/settings-canonical-fields.ts",
+      "sha256": "955e876358872999c13373b260b235e8e6e812b17e2f594947d89b40827118e8"
+    },
+    {
+      "path": "modules/console/web/src/modules/settings/stellar-theme-schema.ts",
+      "sha256": "dd9a230106da528af63cee7e84be9778ce8a35b43149ed34fde1a1931fa06943"
+    },
+    {
+      "path": "modules/console/web/src/modules/settings/useStellarSettings.ts",
+      "sha256": "3bc745a1909fe57a9139bf903f04e7822b1709c5f748458a3545ff0b987ce35d"
+    },
+    {
+      "path": "tests/e2e/console-mobile-a11y.spec.ts",
+      "sha256": "beac40ae00d50a6f4698b72a1c583c854b83ce82aa0b3f284550fd194affe89b"
+    },
+    {
+      "path": "tests/e2e/console-settings-canonical.spec.ts",
+      "sha256": "499e2579a1ce6de7ff6442dbd9f31ff65d91c0c387ed66766b9bd2ac01967440"
+    },
+    {
+      "path": "tests/e2e/console-ui-consistency.spec.ts",
+      "sha256": "5e4cc9db3aa896b2e6d95e5a9dc9780e363d6c1d696c6bee09a5111e5519ec5f"
+    },
+    {
+      "path": "tests/e2e/stellar-settings-groups.spec.ts",
+      "sha256": "1c26c59ca64674bdfa977979fbd9abedf4c02e1904bd2f3b7974bd4968e4edf5"
+    }
+  ],
+  "validation": {
+    "make_test": {
+      "exit_code": 0,
+      "console_tests": 300,
+      "stellar_tests": 225,
+      "go_vet_staticcheck_go_test": "passed",
+      "log": ".tmp/make-test.log"
+    },
+    "make_build": {
+      "exit_code": 0,
+      "console_and_user_center_and_go_binary": true,
+      "log": ".tmp/build.log"
+    },
+    "playwright": {
+      "exit_code": 0,
+      "passed": 18,
+      "widths": [
+        390,
+        640,
+        641,
+        767,
+        768,
+        1280
+      ],
+      "log": ".tmp/settings-e2e.log"
+    },
+    "independent_review": "reported issues fixed; reviewer rechecked; no outstanding findings",
+    "git_diff_check": "passed"
+  },
+  "preview": {
+    "url": "http://127.0.0.1:8097/console/settings?tab=appearance",
+    "pid": "97655",
+    "readyz": 200,
+    "data_root": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261025-feat-blg-20261025-01-stellar-settings/.tmp/stellar-settings-preview",
+    "log": ".tmp/preview.log",
+    "entry_assets": [
+      {
+        "url": "/console/assets/api-C-H7IBEY.js",
+        "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80",
+        "matches_local_build": true
+      },
+      {
+        "url": "/console/assets/index-B-gQAOW9.js",
+        "sha256": "e5c5707974c591c8e41d90b335c0e798f50c73458129afc6b0da4fc43f3c42ed",
+        "matches_local_build": true
+      },
+      {
+        "url": "/console/assets/index-DPeL_EI_.css",
+        "sha256": "8be5ced2c4465dfb75092b2032d1aabcb65fa5b4e1e59ec0d77f230e143537e1",
+        "matches_local_build": true
+      },
+      {
+        "url": "/console/assets/pinia-CXeiBUD1.js",
+        "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888",
+        "matches_local_build": true
+      },
+      {
+        "url": "/console/assets/preload-helper-l0U7FUPx.js",
+        "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+        "matches_local_build": true
+      },
+      {
+        "url": "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+        "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c",
+        "matches_local_build": true
+      }
+    ],
+    "manual_browser": "Codex in-app browser signed in using local E2E fixture; verified the grouped settings UI; kept open",
+    "screenshot": "preview-current.png"
+  },
+  "limits": [
+    "No commit, merge, push, release or production modification",
+    "External provider connectivity not tested; local save and rendering only"
+  ]
+}

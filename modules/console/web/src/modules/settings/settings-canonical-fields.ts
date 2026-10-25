@@ -1,5 +1,18 @@
-export type CanonicalSettingsTab = "post" | "comments" | "seo" | "search" | "advanced" | "ai";
+export type CanonicalSettingsTab =
+  | "appearance"
+  | "navigation"
+  | "layout"
+  | "plugins"
+  | "services"
+  | "community"
+  | "post"
+  | "comments"
+  | "seo"
+  | "search"
+  | "advanced"
+  | "ai";
 export type CanonicalFieldKind =
+  | "structured"
   | "text"
   | "password"
   | "textarea"
@@ -52,11 +65,110 @@ const list = (path: string, label: string, value: string[] = []) =>
   field(path, label, "list", { default: value, help: "每行一项。" });
 
 export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSettingsGroup[]> = {
+  appearance: [
+    {
+      title: "外观与配色",
+      description: "选择预设、配色与字体；恢复默认会移除当前覆盖。",
+      fields: [field("theme.appearance", "主题外观", "structured")],
+    },
+  ],
+  navigation: [
+    {
+      title: "顶栏",
+      description: "设置顶部品牌标识、菜单与组件。",
+      fields: [field("theme.topbar", "顶栏配置", "structured")],
+    },
+    {
+      title: "左侧栏",
+      description: "管理品牌、搜索、菜单及快捷操作；列表顺序即前台顺序。",
+      fields: [field("theme.leftbar", "左侧栏配置", "structured")],
+    },
+    {
+      title: "右侧栏",
+      description: "设置右侧栏开关与默认组件。",
+      fields: [field("theme.rightbar", "右侧栏配置", "structured")],
+    },
+    {
+      title: "站点页脚",
+      description: "编辑站点地图与页脚内容。",
+      fields: [field("theme.footer", "页脚配置", "structured")],
+    },
+  ],
+  layout: [
+    {
+      title: "各类页面布局",
+      description: "分别覆盖首页、文章、文档、笔记等页面。继承默认不会创建额外覆盖；空列表表示不展示对应项目。",
+      fields: [
+        field("theme.profiles", "页面配置", "structured"),
+        field("blog_extensions.data.widgets", "组件定义", "structured", { help: "为侧栏组件标识配置内容。" }),
+      ],
+    },
+  ],
+  plugins: [
+    {
+      title: "标签插件",
+      description: "设置提示块、表情、引用和图库等内容组件。",
+      fields: [field("theme.tags", "标签插件配置", "structured")],
+    },
+    {
+      title: "前台增强",
+      description: "管理局部导航、图片、动画、数学公式与图表。",
+      fields: [field("theme.features", "增强配置", "structured")],
+    },
+  ],
+  services: [
+    {
+      title: "外部服务",
+      description: "设置头像、站点信息、评分、贡献者与 GitHub 接口。",
+      fields: [field("theme.services", "服务配置", "structured")],
+    },
+    {
+      title: "默认图片",
+      description: "资源缺失时使用的头像、链接卡片和封面。",
+      fields: [field("theme.fallbacks", "默认图片配置", "structured")],
+    },
+  ],
+  community: [
+    {
+      title: "作者",
+      description: "按作者标识管理名称、头像、简介及链接。",
+      fields: [field("blog_extensions.data.authors", "作者列表", "structured")],
+    },
+    {
+      title: "友链更新",
+      description: "设置友链文章聚合、巡检与快照的刷新方式。",
+      fields: [
+        number("blog_extensions.friends.refresh_interval", "更新间隔（分钟）", undefined),
+        number("blog_extensions.friends.posts_per_link", "每个友链的文章数量", undefined),
+        number("blog_extensions.friends.check_interval", "检查间隔（分钟）", undefined, {
+          min: undefined,
+          help: "0 或负数关闭巡检。",
+        }),
+        number("blog_extensions.friends.snapshot_interval", "快照间隔（分钟）", undefined, {
+          min: undefined,
+          help: "0 或负数关闭快照。",
+        }),
+        text("blog_extensions.friends.snapshot_provider", "快照服务"),
+      ],
+    },
+    {
+      title: "友链页面",
+      description: "设置友链页标题与文章展示。",
+      fields: [
+        text("blog_extensions.pages.friends.title", "友链页标题"),
+        field("blog_extensions.pages.friends.hero", "友链页横幅", "structured"),
+        field("blog_extensions.pages.friends.show_posts", "显示友链文章", "structured"),
+        number("blog_extensions.pages.friends.refresh_interval", "页面更新间隔（分钟）", undefined),
+        number("blog_extensions.pages.friends.posts_per_link", "页面每个友链的文章数量", undefined),
+      ],
+    },
+  ],
   post: [
     {
       title: "文章与卡片",
       description: "设置文章的默认排版和文章列表展示。单篇文章可覆盖支持的默认项。",
       fields: [
+        toggle(`${article}.banner.background`, "显示文章横幅背景", true),
         field(`${article}.style`, "文章风格", "select", {
           default: "tech",
           options: [
@@ -162,7 +274,13 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
       fields: [
         field(`${content}.ai_label.default`, "默认创作标记", "select", {
           default: "",
-          options: [["", "无默认标记"], ["manual", "人工创作"], ["reviewed", "AI 辅助审阅"], ["polished", "AI 润色"], ["generated", "AI 生成"]],
+          options: [
+            ["", "无默认标记"],
+            ["manual", "人工创作"],
+            ["reviewed", "AI 辅助审阅"],
+            ["polished", "AI 润色"],
+            ["generated", "AI 生成"],
+          ],
         }),
         ...(
           [
@@ -208,8 +326,8 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
       title: "第三方评论",
       description: "用于 Giscus、Waline、Artalk 等主题评论服务，与原生评论独立。仅编辑需要调整的服务参数。",
       fields: [
-        field("theme.comments", "第三方评论参数", "json", {
-          help: "填写 JSON 对象；服务支持的开放参数、空值和大整数均按原文保留。",
+        field("theme.comments", "第三方评论参数", "structured", {
+          help: "按服务展开配置；未修改的开放参数按原文保留。",
         }),
       ],
     },
@@ -273,8 +391,8 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
       title: "Algolia",
       description: "仅使用 Algolia 时需要配置此对象；切换服务会保留已有参数。",
       fields: [
-        field("theme.search.algolia", "Algolia 参数", "json", {
-          help: "填写 JSON 对象，例如 appId、apiKey、indexName。未编辑的参数按原文保留。",
+        field("theme.search.algolia", "Algolia 参数", "structured", {
+          help: "仅在使用 Algolia 时生效，未修改的开放参数按原文保留。",
         }),
       ],
     },
@@ -297,8 +415,7 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
     },
     {
       title: "其他高级配置",
-      description:
-        "旧版动态数据缓存选项已不再使用。其他主题设置可在「Stellar 2」标签编辑，所有标签共享同一份未保存草稿。",
+      description: "所有主题分类共享同一份未保存草稿。需要导入、修复或检查原文时，可展开下方完整配置。",
       fields: [],
     },
   ],
