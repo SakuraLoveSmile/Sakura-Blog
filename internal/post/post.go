@@ -64,13 +64,15 @@ type FileMeta struct {
 
 // Service 文章服务，从 markdown 目录加载并渲染文章。
 type Service struct {
-	mdDir    string
-	md       goldmark.Markdown
-	inlineMD goldmark.Markdown // 仅行内语法渲染器（供标签插件 body 使用）
-	parser   parser
-	settings *tmpl.Manager
-	iconFunc func(string) string // 渲染内联 SVG（供 quot 等 shortcode 用），由 main.go 用 IconRegistry 装配
-	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
+	mdDir     string
+	md        goldmark.Markdown
+	stellarMD goldmark.Markdown // Stellar 正文：保留宿主锚点并补官方 headerlink。
+	poetryMD  goldmark.Markdown // 仅诗词正文启用软换行；实例配置不在请求间修改。
+	inlineMD  goldmark.Markdown // 仅行内语法渲染器（供标签插件 body 使用）
+	parser    parser
+	settings  *tmpl.Manager
+	iconFunc  func(string) string // 渲染内联 SVG（供 quot 等 shortcode 用），由 main.go 用 IconRegistry 装配
+	ghClient  GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
 	// linksFunc 返回站点友链分组与缺省头像（default.link），供 {% links %} 服务端直出；nil 时渲染空态。
 	linksFunc func() ([]tmpl.LinkGroup, string)
 	// albumsLinksFunc 返回站点友链分组与缺省封面（default.cover），供 albums/posters group 直出；nil 时回退 linksFunc 或空态。
@@ -172,23 +174,26 @@ func (s *Service) SetSettingsManager(m *tmpl.Manager) { s.settings = m }
 // 代码块经 Chroma 服务端高亮（CSS class 模式，class 前缀 chroma，table 行号）。
 func NewService(mdDir string) *Service {
 	return &Service{
-		mdDir: mdDir,
-		md: goldmark.New(
-			goldmark.WithExtensions(
-				// GFM 表格与删除线（编辑器工具栏提供对应语法，渲染侧同步支持）
-				extension.Table,
-				extension.Strikethrough,
-				stellarCodeBlocks{},
-			),
-			goldmark.WithParserOptions(mdparser.WithAutoHeadingID()),
-			goldmark.WithRendererOptions(html.WithUnsafe()),
-		),
+		mdDir:     mdDir,
+		md:        newBlockMarkdown(),
+		stellarMD: newBlockMarkdown(goldmark.WithExtensions(stellarHeadingLinks{})),
+		poetryMD:  newBlockMarkdown(goldmark.WithExtensions(stellarHeadingLinks{}), goldmark.WithRendererOptions(html.WithHardWraps())),
 		// 仅行内语法渲染器：无扩展，仅基础行内语法（粗体、斜体、链接、行内代码、图片）
 		inlineMD: goldmark.New(
 			goldmark.WithRendererOptions(html.WithUnsafe()),
 		),
 		parser: newParser(),
 	}
+}
+
+// 各正文渲染器共享语法与代码块配置，仅在显式入口增加所需行为。
+func newBlockMarkdown(options ...goldmark.Option) goldmark.Markdown {
+	base := []goldmark.Option{
+		goldmark.WithExtensions(extension.Table, extension.Strikethrough, stellarCodeBlocks{}),
+		goldmark.WithParserOptions(mdparser.WithAutoHeadingID()),
+		goldmark.WithRendererOptions(html.WithUnsafe()),
+	}
+	return goldmark.New(append(base, options...)...)
 }
 
 // Render 把 Markdown 正文渲染成 HTML。抽成公共函数，供文件加载与 admin 保存/seed 复用同一 goldmark 实例。

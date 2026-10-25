@@ -23,19 +23,25 @@ func stellarListing(value map[string]any) map[string]any {
 	return value
 }
 func stellarDate(v any, layout string) string {
-	if t, ok := v.(time.Time); ok {
-		if t.IsZero() {
-			return ""
-		}
+	if t, ok := stellarDateTime(v); ok {
 		return t.Format(layout)
+	}
+	if t, ok := v.(time.Time); ok && t.IsZero() {
+		return ""
+	}
+	return stellarText(v)
+}
+func stellarDateTime(v any) (time.Time, bool) {
+	if t, ok := v.(time.Time); ok {
+		return t, !t.IsZero()
 	}
 	s := stellarText(v)
 	for _, format := range []string{time.RFC3339Nano, "2006-01-02 15:04:05", "2006-01-02"} {
 		if t, err := time.Parse(format, s); err == nil {
-			return t.Format(layout)
+			return t, true
 		}
 	}
-	return s
+	return time.Time{}, false
 }
 func stellarDateElement(d *StellarRenderData, v any) string {
 	if !stellarTruth(v) {
@@ -856,7 +862,14 @@ func (r stellarTemplateRenderer) archives(d *StellarRenderData) template.HTML {
 			}
 			grouped[year] = append(grouped[year], item)
 		}
+		// 排序独立分组切片，不能改变共享快照或用宿主导入时间替代公开日期。
+		sort.Sort(sort.Reverse(sort.StringSlice(years)))
 		for _, year := range years {
+			sort.SliceStable(grouped[year], func(i, j int) bool {
+				left, _ := stellarDateTime(grouped[year][i]["date"])
+				right, _ := stellarDateTime(grouped[year][j]["date"])
+				return left.After(right)
+			})
 			fmt.Fprintf(&b, `<article class="%s" id="archive"><div class="archive-header h4">%s</div>`, strings.TrimSpace(r.reveal(d)), stellarEscape(year))
 			for _, item := range grouped[year] {
 				b.WriteString(r.archiveItem(d, item))
