@@ -1,0 +1,45 @@
+{
+  "task": "BLOG20261024-STELLAR",
+  "status": "待体验",
+  "evidence_source": "Observed server remote_ops report and final-verification.public.json through Termius; sanitized fields transcribed from the accompanying screenshots.",
+  "server_checked_at": "2026-10-24T17:12:29.461028+00:00",
+  "version": "v2.0.0",
+  "release_commit": "1b1c88ff61954b376f0074b3ebca7ecd504b374e",
+  "image_ref": "ghcr.io/sakuralovesmile/sakura-blog:2.0.0",
+  "script_sha256": "366d5a32650f6a392a0a8d89d91845d2451345d5c3a60a047f679a3ef9f7d33e",
+  "activation": {
+    "passed": true,
+    "attempt": "/home/ubuntu/blog-release-v2.0.0/activation-20261024T170609-64f52ce9",
+    "backup_directory": "/home/ubuntu/blog-release-v2.0.0/activation-20261024T170609-64f52ce9",
+    "http_checks": 40,
+    "static_assets": 28,
+    "business_tables": 39,
+    "protected_files": 392,
+    "integrity_check": "ok",
+    "restart_count": 0,
+    "startup_error_lines": 0,
+    "rollback_performed": false
+  },
+  "final_readonly_check": {
+    "readyz": 200,
+    "image_matches": true,
+    "restart_count": 0,
+    "business_and_files_preserved": true,
+    "stage_passed": true,
+    "stage_container_and_network_removed": true,
+    "derived_changes": ["page_views", "perf_requests", "perf_samples", "posts_fts_data", "posts_fts_idx"]
+  },
+  "background": {
+    "rag_rebuild_disabled": true,
+    "friends_inspection_disabled": true,
+    "config_changed_paths": ["blog_extensions.ai.embedding_model", "blog_extensions.friends.check_interval"],
+    "only_two_authorized_fields": true,
+    "original_settings_backup": "/home/ubuntu/blog-release-v2.0.0/settings-before-background-choice.private.json",
+    "automatic_restore": false,
+    "existing_rag_error_repaired": false
+  },
+  "database_comparison": {
+    "feed_articles_runtime_value_exclusion": "fetched_at only; schema, all other columns, row count, additions and removals remain checked",
+    "links_and_rag_business_tables_remain_protected": true
+  }
+}

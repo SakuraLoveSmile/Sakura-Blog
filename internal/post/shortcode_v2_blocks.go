@@ -309,7 +309,7 @@ func (r *shortcodeV2Renderer) read(name string, a map[string]string, body string
 			}
 			el += `</div>`
 		}
-		el += `<div class="body">` + v2Compact(r.markdown(body)) + `</div>`
+		el += `<div class="body">` + v2Compact(r.markdownWith(body, r.s.poetryMD)) + `</div>`
 		if footer != "" {
 			el += `<div class="footer">` + footer + `</div>`
 		}

@@ -1,0 +1,234 @@
+{
+  "pr18-fix-ci-final": {
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/18",
+    "head_sha": "a3a7942cc649070c6dbc72539b2cfd3ceb61392f",
+    "base": "main",
+    "check_snapshot": "before normal protected merge",
+    "jobs": [
+      {
+        "name": "go",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906135855"
+      },
+      {
+        "name": "lint",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906135902"
+      },
+      {
+        "name": "security",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906135877"
+      },
+      {
+        "name": "console",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906135679"
+      },
+      {
+        "name": "e2e",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906135964"
+      },
+      {
+        "name": "build",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906135980"
+      },
+      {
+        "name": "image",
+        "conclusion": "SKIPPED",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906136775"
+      },
+      {
+        "name": "release-source",
+        "conclusion": "SKIPPED",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40105469675/job/120906136836"
+      }
+    ],
+    "merge": {
+      "headRefOid": "a3a7942cc649070c6dbc72539b2cfd3ceb61392f",
+      "mergeCommit": {
+        "oid": "c219e3d6b17b08db2faaad4d09c20407bc8f2523"
+      },
+      "mergedAt": "2026-10-24T15:53:42Z",
+      "state": "MERGED",
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/18"
+    }
+  },
+  "pr20-ci-final": {
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/20",
+    "head_sha": "80251a1514a7d557a4dad26692e8b52f05b7737a",
+    "base": "main",
+    "check_snapshot": "before normal protected merge",
+    "jobs": [
+      {
+        "name": "go",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918067156"
+      },
+      {
+        "name": "lint",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918067009"
+      },
+      {
+        "name": "security",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918067167"
+      },
+      {
+        "name": "console",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918067183"
+      },
+      {
+        "name": "e2e",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918067072"
+      },
+      {
+        "name": "build",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918067153"
+      },
+      {
+        "name": "image",
+        "conclusion": "SKIPPED",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918067818"
+      },
+      {
+        "name": "release-source",
+        "conclusion": "SKIPPED",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109497736/job/120918068077"
+      }
+    ],
+    "merge": {
+      "headRefOid": "80251a1514a7d557a4dad26692e8b52f05b7737a",
+      "mergeCommit": {
+        "oid": "5f6b0c71f417e7923a742c2f6bc6cc6aa29ace65"
+      },
+      "mergedAt": "2026-10-24T16:06:00Z",
+      "state": "MERGED",
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/20"
+    }
+  },
+  "pr19-final-ci": {
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/19",
+    "head_sha": "5f6b0c71f417e7923a742c2f6bc6cc6aa29ace65",
+    "base": "release",
+    "check_snapshot": "before normal protected merge",
+    "jobs": [
+      {
+        "name": "go",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508529"
+      },
+      {
+        "name": "lint",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508561"
+      },
+      {
+        "name": "security",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508578"
+      },
+      {
+        "name": "console",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508409"
+      },
+      {
+        "name": "e2e",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508612"
+      },
+      {
+        "name": "build",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508633"
+      },
+      {
+        "name": "image",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508530"
+      },
+      {
+        "name": "release-source",
+        "conclusion": "SUCCESS",
+        "status": "COMPLETED",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40109989735/job/120919508613"
+      }
+    ],
+    "merge": {
+      "headRefOid": "5f6b0c71f417e7923a742c2f6bc6cc6aa29ace65",
+      "mergeCommit": {
+        "oid": "1b1c88ff61954b376f0074b3ebca7ecd504b374e"
+      },
+      "mergedAt": "2026-10-24T16:14:08Z",
+      "state": "MERGED",
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/19"
+    }
+  },
+  "release-build-final": {
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40110680933",
+    "status": "completed",
+    "conclusion": "success",
+    "headSha": "1b1c88ff61954b376f0074b3ebca7ecd504b374e",
+    "headBranch": "v2.0.0",
+    "jobs": [
+      {
+        "name": "build",
+        "conclusion": "success",
+        "status": "completed",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40110680933/job/120921561274"
+      }
+    ]
+  },
+  "docker-release-final": {
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40110681000",
+    "status": "completed",
+    "conclusion": "success",
+    "headSha": "1b1c88ff61954b376f0074b3ebca7ecd504b374e",
+    "headBranch": "v2.0.0",
+    "jobs": [
+      {
+        "name": "image",
+        "conclusion": "success",
+        "status": "completed",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/40110681000/job/120921561685"
+      }
+    ]
+  },
+  "task": "BLOG20261024-STELLAR",
+  "release_commit": "1b1c88ff61954b376f0074b3ebca7ecd504b374e",
+  "e2e": {
+    "final_pr18_chromium_passed": 114,
+    "failed": 0,
+    "source": "run 40105469675 log; not local Chrome"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "release_url": "https://github.com/SakuraLoveSmile/Sakura-Blog-Release/releases/tag/v2.0.0",
+  "version": "v2.0.0",
+  "git_commit": "1b1c88ff61954b376f0074b3ebca7ecd504b374e",
+  "assets": {
+    "blog-linux-amd64": {
+      "bytes": 123900066,
+      "sha256": "bc45b35dcaa46285bd9f645132a9a40ad28f7754eadd93d7d4e91d413d72bb9e"
+    },
+    "blog-linux-amd64.sha256": {
+      "bytes": 83,
+      "sha256": "fb501542ea0ee0e76b2d00110ee7a48cef839bbe81e30c8760d5c99cab86a99a"
+    },
+    "blog-linux-amd64.spdx.json": {
+      "bytes": 92586,
+      "sha256": "ff2c564fefd892b03ba9f1629fef6e8e0855272a86ff7976555d85679c5e4225"
+    }
+  },
+  "checksum_matches": true,
+  "github_asset_digests_match": true,
+  "spdx_version": "SPDX-2.3",
+  "spdx_packages": 60,
+  "binary_vcs_revision_matches": true,
+  "binary_vcs_clean": true,
+  "version_proof": "successful v2.0.0 tag workflow at the same VCS revision; trimpath omits ldflags",
+  "executed_locally": false
+}
