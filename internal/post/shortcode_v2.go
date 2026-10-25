@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/dop251/goja"
+	"github.com/yuin/goldmark"
 	"html"
 	"net/url"
 	"regexp"
@@ -76,6 +77,9 @@ func v2Inline(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(v2Compact(s), "<p>", ""), "</p>", "")
 }
 func (r *shortcodeV2Renderer) markdown(body string) string {
+	return r.markdownWith(body, r.s.stellarMD)
+}
+func (r *shortcodeV2Renderer) markdownWith(body string, md goldmark.Markdown) string {
 	r.depth++
 	defer func() { r.depth-- }()
 	if r.depth > shortcodeV2MaxDepth {
@@ -84,7 +88,7 @@ func (r *shortcodeV2Renderer) markdown(body string) string {
 	}
 	var b strings.Builder
 	prepared, mathReplacements := r.prepareMath(r.expand(body))
-	if err := r.s.md.Convert([]byte(prepared), &b); err != nil {
+	if err := md.Convert([]byte(prepared), &b); err != nil {
 		return html.EscapeString(body)
 	}
 	result := b.String()

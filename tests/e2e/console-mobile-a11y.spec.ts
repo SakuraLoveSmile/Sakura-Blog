@@ -574,28 +574,28 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     }
   });
 
-  test("设置页单卡片层级与边距：390/640/641/767/768/1280px 下无多余嵌套卡片，内层容器透明且无水平溢出，全量断言表单容器与边界保留", async ({ page }, testInfo) => {
-    await login(page);
+  const checkViewports = [
+    { width: 390, height: 844 },
+    { width: 640, height: 900 },
+    { width: 641, height: 900 },
+    { width: 767, height: 900 },
+    { width: 768, height: 1024 },
+    { width: 1280, height: 800 },
+  ];
 
-    const checkViewports = [
-      { width: 390, height: 844 },
-      { width: 640, height: 900 },
-      { width: 641, height: 900 },
-      { width: 767, height: 900 },
-      { width: 768, height: 1024 },
-      { width: 1280, height: 800 },
-    ];
+  const settingTabs = [
+    { url: "/console/settings?tab=basic", title: "系统设置", hasBodies: true },
+    { url: "/console/settings?tab=post", title: "系统设置", hasBodies: true },
+    { url: "/console/settings?tab=comments", title: "系统设置", hasBodies: true },
+    { url: "/console/settings?tab=seo", title: "系统设置", hasBodies: true },
+    { url: "/console/settings?tab=search", title: "系统设置", hasBodies: true },
+    { url: "/console/settings?tab=advanced", title: "系统设置", hasBodies: true },
+  ];
 
-    const settingTabs = [
-      { url: "/console/settings?tab=basic", title: "系统设置", hasBodies: true },
-      { url: "/console/settings?tab=post", title: "系统设置", hasBodies: true },
-      { url: "/console/settings?tab=comments", title: "系统设置", hasBodies: true },
-      { url: "/console/settings?tab=seo", title: "系统设置", hasBodies: true },
-      { url: "/console/settings?tab=search", title: "系统设置", hasBodies: true },
-      { url: "/console/settings?tab=advanced", title: "系统设置", hasBodies: true },
-    ];
-
-    for (const tab of settingTabs) {
+  // 每个设置页保留完整视口矩阵，避免所有页面共用一次测试的 30 秒预算。
+  for (const tab of settingTabs) {
+    test(`设置页单卡片层级与边距：${tab.url} 在 390/640/641/767/768/1280px 下保留全部布局断言`, async ({ page }) => {
+      await login(page);
       for (const vp of checkViewports) {
         await page.setViewportSize(vp);
         await page.goto(tab.url);
@@ -689,7 +689,11 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         );
         expect(overflow, `${tab.url} 在 ${vp.width}px 不得有水平溢出`).toBeLessThanOrEqual(1);
       }
-    }
+    });
+  }
+
+  test("设置页单卡片层级与边距：控件边界与验收截图", async ({ page }, testInfo) => {
+    await login(page);
 
     // 重点验证控件保留必要边界：输入框（原高级页警告框随 AdvancedSettings 退役，不再断言）
     await page.setViewportSize({ width: 390, height: 844 });

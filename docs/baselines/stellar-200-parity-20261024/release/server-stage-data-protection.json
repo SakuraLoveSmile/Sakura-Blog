@@ -1,0 +1,48 @@
+{
+  "task": "BLOG20261024-STELLAR",
+  "status": "实现中",
+  "version": "v2.0.0",
+  "release_commit": "1b1c88ff61954b376f0074b3ebca7ecd504b374e",
+  "operational_script_sha256": "c03cec6a40a1d20d1eb79c41130a0b5a4dd6758dbf2d2f9cb17229163a31308d",
+  "production_switched": false,
+  "production_readyz": 200,
+  "staging": {
+    "attempt": "/home/ubuntu/blog-release-v2.0.0/stage-20261024T164024-085b7cbc",
+    "passed": false,
+    "error": "business table content changed: links, rag_meta",
+    "temporary_container_removed": true,
+    "temporary_network_removed": true,
+    "data_diff_basis": "current production compared read-only with stopped failed stage; not an immutable before/after proof",
+    "links": {
+      "rows": 8,
+      "added": 0,
+      "removed": 0,
+      "changed_columns": {
+        "label": 7,
+        "color": 7,
+        "last_status": 7,
+        "last_checked_at": 8
+      }
+    },
+    "rag_meta": {
+      "rows": 1,
+      "added": 0,
+      "removed": 0,
+      "changed_columns": {
+        "total": 1,
+        "last_error": 1
+      }
+    },
+    "rag_chunks_changed": false
+  },
+  "existing_production_rag": {
+    "status": "error",
+    "total": 15,
+    "done": 0,
+    "chunk_count": 0,
+    "embedding_dims": 0,
+    "has_embedding_model": true,
+    "has_previous_build_time": false
+  },
+  "pending_decision": "Suspend friend-link inspection and RAG auto rebuild before deployment, or explicitly allow existing external background tasks. No live settings changed."
+}

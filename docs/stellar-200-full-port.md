@@ -86,6 +86,21 @@
 - PR #18 修复提交 `a3a7942c` 再次通过提交 hook、feature 和合并后 dev 完整门禁；远端 CI 40105469675 的六项适用作业全部成功，Chromium E2E 为 114 通过、0 失败。已正常合并到 main `c219e3d6`，创建晋级 release 的 PR #19。
 - PR #19 的 `release-source` 通过，但 release 分支现行保护 `strict=true` 且强制管理员遵守，因此其 BEHIND 状态仍需修复。只读核对 release 独有的 5 个提交均为以往 main→release 合并记录，`git diff origin/main...origin/release` 为空；在本任务既有同步 worktree 先快进 main，再合入 release，提交前索引没有程序文件差异。沿 dev→main 的正常 PR 补齐历史，保留原有保护与检查，随后让 PR #19 按新 main 重新验证；不直接更新受保护分支、不使用管理员绕过。
 
+- 发布晋级已完成：PR #20 补齐纯合并历史后，PR #19 全部八项适用 CI 成功；release 合并提交为 `1b1c88ff61954b376f0074b3ebca7ecd504b374e`，signed annotated `v2.0.0` 已推送。Release Build `40110680933` 与 Docker Release `40110681000` 均 success。公开三资产已下载核对大小、GitHub digest、SHA256 及 SPDX-2.3（60 packages）；二进制 VCS revision 对应上述 release 且 clean。公开二进制 SHA256 为 `bc45b35dcaa46285bd9f645132a9a40ad28f7754eadd93d7d4e91d413d72bb9e`，未在 macOS 执行 Linux 产物。证据为 `release/release-ci.json`、`release/public-assets-verification.json`。
+- 服务器隔离预演第一轮失败于就绪探针：internal Docker 网络实际没有建立 `-p` 映射，容器进程正常且私有 IP:8080 返回 readyz 200，宿主 18126 拒绝连接。改为只连接本任务唯一 internal bridge 的私有 IPv4、不发布宿主端口；生产/回退仍为 loopback 8081，全部内容/版本/资源检查保留。脚本 SHA256 `c03cec6a40a1d20d1eb79c41130a0b5a4dd6758dbf2d2f9cb17229163a31308d` 已经独立只读复核，无阻断项；不再要求 trimpath 产物必须含被 Go 省略的 ldflags，存在的 VCS/ldflags 仍严格检查，运行版本另由 HTTP 核对，镜像提交由 OCI 与 tag workflow 绑定。
+- 修正后的预演到达数据保护检查后被阻断：隔离网络导致既有 LinkWatch 启动巡检将 7 条友链自动标为失效；RAG 原本为 error、0 chunks，启动自动重建在外部 Embedding 请求前改写 `total`，失败后改写 `last_error`。只读对比当前线上与失败副本的列级形状见 `release/server-stage-data-protection.json`；它不能代替不可变来源副本的精确前后证明。没有把这两表加入忽略列表，没有清空索引、覆写业务数据或放行预演。
+- 生产仍是 `v2.0.0-local.e2f8c664`，readyz 200，镜像未切换、未停生产；本轮 stage 与诊断容器/network 均已清理。原始配置另以 0600 文件备份在服务器 `/home/ubuntu/blog-release-v2.0.0/settings-before-background-choice.private.json`，不下载或提交。已向用户提出新发现的具体选择：升级前暂时关闭友链巡检与自动 RAG 重建，或保留并允许现有外部后台任务；发布/部署原授权持续有效，只暂停依赖此选择的生产切换。生产浏览器复验、正式完整备份和最终部署回执尚未运行。当前状态实现中；原完整 T1–T7 与用户体验不标已验收。
+
+##### 2026-10-25 生产升级闭合（本批待体验）
+
+- 用户已明确选择“暂时关闭这两项后台任务，先部署前台”。线上仅将 canonical `blog_extensions.friends.check_interval` 设为 `0`、`blog_extensions.ai.embedding_model` 设为空；与停用前完整设置备份逐叶比较，差异恰好为这两项。其余配置、凭据和真实内容保留。当前 RAG 原有 error 状态没有修复，不自动恢复可能计费的重建；友链停止主动巡检，页面展示继续可用。
+- 新版完整隔离 stage 已通过 40 项 HTTP/28 份资源检查，临时容器及 internal 网络已清理。正式激活首次被保护检查阻断后保留现场并恢复旧服务；只读比较停服前 DB 确认 87 条订阅仅 `fetched_at` 改变，正文、链接、已读/收藏/稍后读等其它字段及行集均一致。依据 `UpsertFeedArticle` 正常刷新行为，仅排除此列的值摘要；schema 和其它字段/行增删仍严格检查，未忽略整个订阅表、友链或 RAG 表。脚本 SHA-256 `366d5a32…f9f7d33e` 已经独立实现/审查，保留 16 项隔离 SQLite 检查的历史结论，不冒称本次重新执行。
+- 服务器激活回执为 passed：固定镜像 `ghcr.io/sakuralovesmile/sakura-blog:2.0.0`，OCI revision 对应 `1b1c88ff61954b376f0074b3ebca7ecd504b374e`，运行二进制与 stage SHA-256 相同；HTTP 与 Console 均显示 `v2.0.0`，容器重启 0、启动错误 0、SQLite integrity_check 为 ok。39 张业务表和 392 个保护文件保持，正式完整备份位于 `/home/ubuntu/blog-release-v2.0.0/activation-20261024T170609-64f52ce9/`。其后再次只读复核数据保全及 `/readyz=200` 通过；只有访问/性能采样与派生 FTS 表变化。原始私密前像留在服务器，不放入 Git。
+- 本次主 agent 通过公开域名重新运行 40 项 HTTP 检查，28 份静态资源可访问，17 份前台资源 SHA-256 与 release 提交逐字匹配；Console/UC 的真实 SPA 入口、设置 API 认证边界及公开搜索/订阅 JSON 通过。浏览器强制刷新版本缓存后，Console 当前版本与 GitHub 最新版本都显示 `2.0.0`。详见 `release/public-http-verification.json`、`release/server-production-verification.json` 与服务器/Console 截图。
+- 真实线上 1280px 浅/深色与 `https://xaoxuu.com/` 同视口比较：背景分别 `rgb(250,247,240)`、`rgb(34,32,27)`，主色、链接、强调色、卡片和文字 token 相同（`#ff6600` 与 `#f60` 等价）。左下角设置 SVG 可见；桌面搜索标题位于同一链接且实际点击到文章，五个图标变量齐全。原有 Hexo 文章的代码未声明语言，此页只证明 Chroma 样式加载，不把普通文本 token 同色当高亮成功。
+- 390×844 CSS 视口实际完成侧栏打开→设置入口→版本显示、搜索→结果标题→文章，以及首页→第二页（保留两个置顶轮播），均无横向溢出。设置链接位于 x=32、y=732、216×32，搜索结果在 x=12、宽 366 的视口内。手机截图使用 CDP 原始尺寸，IAB 原生缩小的中间图片已移除；这是浏览器视口验收，不是真机。浏览器临时媒体与视口覆盖已清除，保持系统自动配色，没有写入访客偏好，新增页面控制台 error 为空。证据见 `release/production-browser-verification.json`。
+- 本批程序修复、正式双产物发布和生产升级完成，状态为待体验；原完整 T1–T7 历史外部服务/真实设备等未验证项继续保留，不据此宣称全部已验收。已确认的个人字体、菜单和内容配置继续保留。下一步为用户刷新线上博客体验本批差异修复；后台任务后续恢复需沿用原配置与费用授权边界。
+
 ## 目标与已确认选择
 
 完整移植官方 tag `2.0.0`，commit `9d11978a24fe6610e3a7dbab741cf62634539d05` 的能力与实际行为。源码依据为该 commit 的 `_config.yml`、`scripts/`、`layout/`、`source/`、`languages/` 和测试。不得把 Hexo 专属能力标成“不适用”后称为完整移植。
