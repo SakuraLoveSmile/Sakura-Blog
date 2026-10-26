@@ -56,6 +56,7 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 - `gin.H` 只存在于历史或不可生成的局部响应中；它不能作为新 API 的模式。新增 endpoint 时先确定稳定的请求/响应 struct 与错误语义。
 - 前端 workspace 依赖由根 `pnpm-lock.yaml` 统一锁定。不要在单个 package 目录单独安装依赖或绕过 `pnpm --filter`。
 - 系统设置的主题分类通过 `useStellarSettings` 共用原文草稿与完整文档 API；`StructuredSetting` 直接消费 `internal/stellarv2/schema.json` 的类型、默认值和枚举，只写用户修改的节点。站点与 Feedback 仍用宿主分段接口；旧 `tab=stellar2` 定位高级原文。
+- 设置效果说明由 `settings-category-guide.ts`、`structured-setting-guidance.ts` 和 `settings-field-effects.ts` 提供展示文案，类型/默认值/保存契约仍以原有 schema 与 API 为准。`useSettingsPreview` 使用当前草稿请求只读整页预览，支持选择页面与实际视口宽度；静态 iframe 移除脚本并展开懒加载图片，不代替真实交互或外部服务验证。
 - Console 的局部 UI 变更除了类型/行为测试外，还需要加载真实服务后的浏览器验收；SPA 构建成功不证明后端仍在服务当前入口。
 
 ## 数据、配置与内容生命周期

@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch, useId, onBeforeUnmount } from "vue";
 import { VButton, VSwitch } from "@/components/ui";
+import StructuredSettingChoices from "./StructuredSettingChoices.vue";
+import SettingColorEditor from "./SettingColorEditor.vue";
+import {
+  structuredSettingHelp,
+  structuredSettingChoicesAvailable,
+  isStructuredColor,
+} from "./structured-setting-guidance";
 import {
   openSettingSchema,
   schemaDefault,
@@ -39,6 +46,7 @@ const effectiveDefault = computed(() =>
   props.defaultValue === undefined ? schemaDefault(props.schema) : props.defaultValue,
 );
 const shown = computed(() => (props.modelValue === undefined ? effectiveDefault.value : props.modelValue));
+const guidance = computed(() => structuredSettingHelp(props.path));
 const kind = computed(() =>
   shown.value === null ? "null" : Array.isArray(shown.value) ? "array" : typeof shown.value,
 );
@@ -164,10 +172,25 @@ function updateNumber(event: Event) {
   <div class="structured-setting" :data-structured-path="path">
     <div v-if="showHeading" class="structured-heading">
       <label :for="id">{{ label }}</label>
+      <span class="structured-value-state">{{ modelValue === undefined ? "继承默认" : "已自定义" }}</span>
       <button type="button" class="settings-reset" :aria-label="`${label}恢复默认`" @click="reset">恢复默认</button>
     </div>
+    <p
+      v-if="guidance && (showHeading || (depth === 0 && path !== 'theme.appearance'))"
+      :id="`${id}-help`"
+      class="structured-guidance"
+    >
+      {{ guidance }}
+    </p>
+    <StructuredSettingChoices
+      v-if="schema.values && structuredSettingChoicesAvailable(path)"
+      :path="path"
+      :options="schema.values"
+      :model-value="shown"
+      @update:model-value="change($event)"
+    />
     <select
-      v-if="schema.values"
+      v-else-if="schema.values"
       :id="id"
       class="apple-select"
       :value="schema.values.findIndex((value) => value === shown)"
@@ -199,7 +222,8 @@ function updateNumber(event: Event) {
           :open="depth === 0 && path === 'theme.appearance' && key === 'colors'"
         >
           <summary v-if="isGroup(key)">
-            {{ settingLabel(key) }}
+            <span class="structured-summary-name">{{ settingLabel(key) }}</span>
+            <span class="structured-value-state">{{ modelValue?.[key] === undefined ? "继承默认" : "已自定义" }}</span>
             <button
               type="button"
               class="settings-reset"
@@ -208,6 +232,9 @@ function updateNumber(event: Event) {
             >
               恢复默认
             </button>
+            <span v-if="structuredSettingHelp(`${path}.${key}`)" class="structured-summary-help">{{
+              structuredSettingHelp(`${path}.${key}`)
+            }}</span>
           </summary>
           <StructuredSetting
             :schema="childSchema(key)"
@@ -296,6 +323,13 @@ function updateNumber(event: Event) {
         @input="updateNumber"
       />
       <p v-else-if="kind === 'null'" class="settings-help">当前为空值；保留继承或关闭状态。</p>
+      <SettingColorEditor
+        v-else-if="isStructuredColor(path) && kind === 'string'"
+        :id="id"
+        :model-value="shown"
+        :label="label"
+        @update:model-value="change($event)"
+      />
       <textarea
         v-else-if="String(shown ?? '').includes('\n') || /\.(content|html)$/.test(path)"
         :id="id"
@@ -333,8 +367,39 @@ function updateNumber(event: Event) {
   margin-bottom: 8px;
 }
 .structured-heading label {
+  flex: 1;
   margin: 0;
   color: var(--color-text-secondary);
+}
+.structured-value-state {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-text-tertiary) 10%, transparent);
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+.structured-summary-name + .structured-value-state {
+  margin-left: 8px;
+}
+.structured-guidance,
+.structured-summary-help {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.structured-guidance {
+  margin: 0 0 12px;
+}
+.structured-summary-help {
+  display: block;
+  margin-top: 6px;
+  padding-right: 20px;
 }
 .structured-children {
   display: grid;

@@ -10,11 +10,12 @@ import FeedbackSettings from "./tabs/FeedbackSettings.vue";
 import Stellar2Tab from "./Stellar2Tab.vue";
 import CanonicalSettingsForm from "./CanonicalSettingsForm.vue";
 import StellarSettingsStatus from "./StellarSettingsStatus.vue";
+import SettingsEffectGuide from "./SettingsEffectGuide.vue";
 import { canonicalSettingsPaths, type CanonicalSettingsTab } from "./settings-canonical-fields";
 import { useStellarSettings } from "./useStellarSettings";
 import { readJSONFieldRaw } from "@/components/editor/stellar-form-json";
 import { ALL_SETTINGS_SECTIONS, ensureSettingsDefaults, sortWikiProjects, deepCloneJsonSafe } from "./settings-state";
-import { useSettingsPreview } from "./useSettingsPreview";
+import { settingsPreviewPages, useSettingsPreview } from "./useSettingsPreview";
 import "./settings-form.css";
 
 // Shared defaults retain the existing frontend enhancement safety boundary: card_hover.enable = false; card_hover.max_tilt = 3.
@@ -185,11 +186,40 @@ function takeSnapshot() {
   savedSnapshot.value = JSON.stringify(data.value);
 }
 
-const { previewOpen, previewViewport, previewHtml, previewLoading, previewFocus, refreshPreview } = useSettingsPreview(
-  data,
-  active,
-  stellarDraft,
+const previewBlocked = computed(
+  () =>
+    pendingInput.value || Boolean(stellarParseError.value) || stellarLoading.value || Boolean(stellarLoadError.value),
 );
+const {
+  previewOpen,
+  previewViewport,
+  previewPage,
+  previewHtml,
+  previewLoading,
+  previewError,
+  previewFocus,
+  refreshPreview,
+} = useSettingsPreview(data, active, stellarDraft, previewBlocked);
+const previewBody = ref<HTMLElement | null>(null);
+const previewSize = ref({ width: 800, height: 400 });
+let previewObserver: ResizeObserver | undefined;
+watch(previewBody, (element) => {
+  previewObserver?.disconnect();
+  if (!element) return;
+  previewObserver = new ResizeObserver(([entry]) => {
+    previewSize.value = { width: entry.contentRect.width, height: entry.contentRect.height };
+  });
+  previewObserver.observe(element);
+});
+const previewFrameStyle = computed(() => {
+  const width = previewViewport.value === "mobile" ? 390 : previewViewport.value === "tablet" ? 768 : 1200;
+  const scale = Math.min(1, previewSize.value.width / width);
+  return {
+    width: `${width}px`,
+    height: `${previewSize.value.height / Math.max(scale, 0.1)}px`,
+    transform: `scale(${scale})`,
+  };
+});
 
 function routeQuery(tab: string) {
   return { ...route.query, tab };
@@ -291,7 +321,6 @@ function navigateToTab(tab: string) {
 }
 
 watch(active, (tab) => {
-  if (!["basic", "post"].includes(tab)) previewOpen.value = false;
   if (route.query.tab !== tab) void router.push({ query: routeQuery(tab) });
 });
 watch(
@@ -314,6 +343,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  previewObserver?.disconnect();
   window.removeEventListener("beforeunload", handleBeforeUnload);
 });
 
@@ -389,6 +419,13 @@ onBeforeRouteLeave((to, from, next) => {
               class="settings-tab-panel outline-none"
               :hidden="active !== tab.key"
             >
+              <SettingsEffectGuide
+                v-if="active === tab.key"
+                :tab="tab.key"
+                :preview-available="Boolean(previewFocus)"
+                :dirty="isTabDirty(tab.key)"
+                @preview="previewOpen = true"
+              />
               <div v-if="isCanonicalTab(tab.key)" class="settings-tab-content">
                 <SeoSettings v-if="tab.key === 'seo'" :data="data" :saving="savingKey" host-only @save="save" />
                 <div class="canonical-settings-status">
@@ -436,40 +473,63 @@ onBeforeRouteLeave((to, from, next) => {
           <div class="preview-panel-actions">
             <button
               type="button"
+              :aria-pressed="previewViewport === 'desktop'"
               :class="{ active: previewViewport === 'desktop' }"
               @click="previewViewport = 'desktop'"
             >
               桌面
             </button>
-            <button type="button" :class="{ active: previewViewport === 'tablet' }" @click="previewViewport = 'tablet'">
+            <button
+              type="button"
+              :aria-pressed="previewViewport === 'tablet'"
+              :class="{ active: previewViewport === 'tablet' }"
+              @click="previewViewport = 'tablet'"
+            >
               平板
             </button>
-            <button type="button" :class="{ active: previewViewport === 'mobile' }" @click="previewViewport = 'mobile'">
+            <button
+              type="button"
+              :aria-pressed="previewViewport === 'mobile'"
+              :class="{ active: previewViewport === 'mobile' }"
+              @click="previewViewport = 'mobile'"
+            >
               手机
             </button>
-            <button type="button" title="刷新预览" @click="refreshPreview"><Icon icon="ri:refresh-line" /></button>
-            <button type="button" title="关闭预览" @click="previewOpen = false"><Icon icon="ri:close-line" /></button>
+            <button type="button" aria-label="刷新预览" title="刷新预览" @click="refreshPreview">
+              <Icon icon="ri:refresh-line" />
+            </button>
+            <button type="button" aria-label="关闭预览" title="关闭预览" @click="previewOpen = false">
+              <Icon icon="ri:close-line" />
+            </button>
           </div>
         </div>
-        <div class="preview-panel-body">
+        <div class="preview-context">
+          <select v-model="previewPage" class="apple-select" aria-label="预览页面">
+            <option v-for="page in settingsPreviewPages" :key="page.value" :value="page.value">{{ page.label }}</option>
+          </select>
+          <p>当前草稿 · 尚未保存到前台。静态预览不执行脚本，交互功能请保存后到前台检查；没有对应内容时显示列表页。</p>
+        </div>
+        <div ref="previewBody" class="preview-panel-body" :aria-busy="previewLoading">
           <div v-if="!previewFocus" class="preview-loading">
             <Icon icon="ri:information-line" width="20" height="20" /><span
               >当前设置项没有固定视觉预览，保存后请在前台查看效果。</span
             >
           </div>
-          <div v-else-if="previewLoading" class="preview-loading">
+          <div v-else-if="previewLoading" class="preview-loading" role="status">
             <Icon icon="ri:loader-4-line" class="settings-spin" width="22" height="22" /><span>生成预览中...</span>
+          </div>
+          <div v-else-if="previewError" class="preview-loading preview-error" role="alert">
+            <Icon icon="ri:error-warning-line" width="22" height="22" />
+            <span>{{ previewError }}</span>
+            <VButton size="sm" type="secondary" @click="refreshPreview">重试预览</VButton>
           </div>
           <iframe
             v-else-if="previewHtml"
             :srcdoc="previewHtml"
             title="前台设置预览"
             class="preview-frame"
-            :style="{
-              maxWidth: previewViewport === 'mobile' ? '390px' : previewViewport === 'tablet' ? '768px' : '100%',
-              margin: '0 auto',
-              display: 'block',
-            }"
+            sandbox=""
+            :style="previewFrameStyle"
           />
           <div v-else class="preview-loading">暂无预览</div>
         </div>
@@ -630,13 +690,14 @@ onBeforeRouteLeave((to, from, next) => {
   z-index: 30;
   display: flex;
   flex-direction: column;
-  height: 45vh;
+  height: 56vh;
+  min-height: 320px;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
   background: var(--color-card);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-lg);
 }
 .preview-panel-header {
   display: flex;
@@ -660,7 +721,7 @@ onBeforeRouteLeave((to, from, next) => {
   gap: 4px;
 }
 .preview-panel-actions button {
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 8px;
   border: 0;
   border-radius: var(--radius-md);
@@ -677,10 +738,13 @@ onBeforeRouteLeave((to, from, next) => {
   position: relative;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+  background: var(--color-background);
 }
 .preview-frame {
-  width: 100%;
-  height: 100%;
+  display: block;
+  max-width: none;
+  transform-origin: top left;
   border: 0;
   background: var(--color-background);
 }
@@ -695,6 +759,32 @@ onBeforeRouteLeave((to, from, next) => {
   color: var(--color-text-tertiary);
   font-size: 13px;
   text-align: center;
+  padding: 20px;
+}
+.preview-context {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.preview-context select {
+  width: 180px;
+  min-height: 40px;
+  flex-shrink: 0;
+}
+.preview-context p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.preview-error {
+  color: var(--color-state-error);
+}
+.preview-panel-actions button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 @media (max-width: 640px) {
   .settings-container {
@@ -708,11 +798,19 @@ onBeforeRouteLeave((to, from, next) => {
     padding: 0 16px;
   }
   .preview-panel {
-    height: 55vh;
+    height: 65vh;
   }
   .preview-panel-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .preview-context {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .preview-context select {
+    width: 100%;
   }
 }
 </style>

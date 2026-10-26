@@ -3,6 +3,10 @@ import { computed, reactive, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { VButton, VSwitch } from "@/components/ui";
 import StructuredSetting from "./StructuredSetting.vue";
+import StructuredSettingChoices from "./StructuredSettingChoices.vue";
+import SettingColorEditor from "./SettingColorEditor.vue";
+import { structuredSettingChoicesAvailable } from "./structured-setting-guidance";
+import { settingFieldEffect } from "./settings-field-effects";
 import { themeSettingSchema, themeSettingDefault, type SettingSchema } from "./stellar-theme-schema";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { readJSONField, readJSONFieldRaw } from "@/components/editor/stellar-form-json";
@@ -87,8 +91,26 @@ function reset(item: CanonicalSettingsField) {
 function provider(item: CanonicalSettingsField): string {
   return effectiveSearchProvider(values.value[item.path], values.value["blog_extensions.search.provider"]);
 }
+function dependencyHint(item: CanonicalSettingsField): string | undefined {
+  if (
+    item.path.startsWith("theme.search.local.") &&
+    effectiveSearchProvider(values.value["theme.search.provider"], values.value["blog_extensions.search.provider"]) !==
+      "local"
+  )
+    return "当前搜索服务不使用此项；切换为本地静态索引后生效，仍可提前配置。";
+  if (
+    item.path.startsWith("blog_extensions.content.") &&
+    item.path !== "blog_extensions.content.enabled" &&
+    !values.value["blog_extensions.content.enabled"]
+  )
+    return "文章扩展尚未启用；此项会保留，开启文章扩展后才生效。";
+  return undefined;
+}
 function updateProvider(event: Event) {
-  for (const [path, value] of searchProviderChanges(inputValue(event))) emit("change", path, value);
+  changeProvider(inputValue(event));
+}
+function changeProvider(provider: string) {
+  for (const [path, value] of searchProviderChanges(provider)) emit("change", path, value);
 }
 function selected(item: CanonicalSettingsField): string {
   return item.kind === "provider" ? provider(item) : String(current(item) ?? "");
@@ -244,7 +266,7 @@ function submit() {
   >
     <fieldset :disabled="disabled" class="settings-form-fields">
       <section v-for="group in groups" :key="group.title" class="settings-section">
-        <div class="settings-section-heading">
+        <div v-if="tab !== 'appearance'" class="settings-section-heading">
           <h2>{{ group.title }}</h2>
           <p>{{ group.description }}</p>
         </div>
@@ -262,6 +284,9 @@ function submit() {
                 恢复默认
               </button>
             </div>
+            <p v-if="dependencyHint(item)" class="settings-dependency">
+              <Icon icon="ri:information-line" aria-hidden="true" />{{ dependencyHint(item) }}
+            </p>
             <StructuredSetting
               v-if="item.kind === 'structured'"
               :key="structuredRevision[item.path] ?? 0"
@@ -281,6 +306,13 @@ function submit() {
               :aria-label="item.label"
               :disabled="disabled"
               @update:model-value="change(item, $event)"
+            />
+            <StructuredSettingChoices
+              v-else-if="item.options && structuredSettingChoicesAvailable(item.path)"
+              :path="item.path"
+              :model-value="selected(item)"
+              :options="item.options.map(([value]) => value)"
+              @update:model-value="item.kind === 'provider' ? changeProvider(String($event)) : change(item, $event)"
             />
             <select
               v-else-if="item.kind === 'select' || item.kind === 'provider'"
@@ -388,14 +420,28 @@ function submit() {
               role="group"
               :aria-label="item.label"
             >
-              <div v-for="(value, key) in mapValue(item)" :key="key" class="settings-map-row">
+              <div
+                v-for="(value, key) in mapValue(item)"
+                :key="key"
+                class="settings-map-row"
+                :class="{ 'settings-color-map-row': item.path === 'theme.article.category_colors' }"
+              >
                 <input
                   :value="key"
                   class="apple-input"
                   :aria-label="`${item.label}名称 ${key}`"
                   @change="mapEdit(item, String(key), inputValue($event), value)"
                 />
+                <SettingColorEditor
+                  v-if="item.path === 'theme.article.category_colors'"
+                  :id="`${id(item)}-color-${encodeURIComponent(String(key))}`"
+                  :model-value="String(value ?? '')"
+                  :label="`${item.label}值 ${key}`"
+                  hex-only
+                  @update:model-value="mapEdit(item, String(key), String(key), $event)"
+                />
                 <input
+                  v-else
                   :value="value"
                   class="apple-input"
                   :aria-label="`${item.label}值 ${key}`"
@@ -409,14 +455,26 @@ function submit() {
                   >移除</VButton
                 >
               </div>
-              <div class="settings-map-row">
+              <div
+                class="settings-map-row"
+                :class="{ 'settings-color-map-row': item.path === 'theme.article.category_colors' }"
+              >
                 <input
                   v-model="newKeys[item.path]"
                   class="apple-input"
                   placeholder="名称"
                   :aria-label="`新增${item.label}名称`"
                 />
+                <SettingColorEditor
+                  v-if="item.path === 'theme.article.category_colors'"
+                  :id="`${id(item)}-new-color`"
+                  :model-value="newValues[item.path] ?? ''"
+                  :label="`新增${item.label}值`"
+                  hex-only
+                  @update:model-value="newValues[item.path] = $event"
+                />
                 <input
+                  v-else
                   v-model="newValues[item.path]"
                   class="apple-input"
                   placeholder="值"
@@ -445,13 +503,16 @@ function submit() {
                 />
               </div>
               <template v-if="current(item) !== null">
-                <label
-                  >颜色<input
-                    :value="mapValue(item).color ?? ''"
-                    class="apple-input"
-                    :aria-label="`${item.label}颜色`"
-                    @input="updateLabel(item, 'color', inputValue($event))"
-                /></label>
+                <div class="settings-label-color">
+                  <label :for="`${id(item)}-color`">颜色</label>
+                  <SettingColorEditor
+                    :id="`${id(item)}-color`"
+                    :model-value="String(mapValue(item).color ?? '')"
+                    :label="`${item.label}颜色`"
+                    hex-only
+                    @update:model-value="updateLabel(item, 'color', $event)"
+                  />
+                </div>
                 <label
                   >图标<input
                     :value="mapValue(item).icon ?? ''"
@@ -484,6 +545,15 @@ function submit() {
               :autocomplete="item.kind === 'password' ? 'new-password' : undefined"
               @input="change(item, inputValue($event))"
             />
+            <p
+              v-if="settingFieldEffect(item.path, item.kind === 'provider' ? provider(item) : current(item))"
+              class="settings-field-effect"
+            >
+              <Icon icon="ri:information-line" aria-hidden="true" />
+              <span>{{
+                settingFieldEffect(item.path, item.kind === "provider" ? provider(item) : current(item))
+              }}</span>
+            </p>
             <p v-if="item.help" class="settings-help">{{ item.help }}</p>
             <p v-if="errors[item.path]" :id="`${id(item)}-error`" class="settings-error" role="alert">
               {{ errors[item.path] }}
@@ -583,8 +653,42 @@ function submit() {
 .settings-field-switch .settings-field-heading {
   margin-bottom: 0;
 }
+.settings-field-switch > :deep([role="switch"]) {
+  grid-column: 2;
+  grid-row: 1;
+}
 .settings-field-switch > p {
   grid-column: 1 / -1;
+}
+.settings-field-effect {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.settings-dependency {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.settings-dependency svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.settings-field-switch > .settings-dependency {
+  grid-row: 2;
+}
+.settings-field-effect svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--color-primary);
 }
 .settings-field-heading {
   display: flex;
@@ -648,6 +752,9 @@ function submit() {
   align-items: center;
   gap: 12px;
 }
+.settings-color-map-row {
+  align-items: start;
+}
 .settings-switch {
   display: flex;
   align-items: center;
@@ -656,7 +763,8 @@ function submit() {
   color: var(--color-foreground);
   font-size: 14px;
 }
-.settings-label-options > label {
+.settings-label-options > label,
+.settings-label-color {
   display: grid;
   grid-template-columns: 50px minmax(0, 1fr);
   align-items: center;

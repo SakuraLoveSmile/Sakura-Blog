@@ -18,7 +18,9 @@ async function node(page: Page, key: string) {
 }
 async function text(page: Page, key: string) { return (await node(page, key)).locator(":scope > input:not([type=number]), :scope > textarea"); }
 async function select(page: Page, key: string, label: string) {
-  await (await node(page, key)).locator(":scope > select").first().selectOption({ label });
+  const target = await node(page, key);
+  if (await target.getByRole("radiogroup").count()) await target.getByRole("radio", { name: label, exact: true }).check();
+  else await target.locator(":scope > select").first().selectOption({ label });
 }
 async function put(page: Page, raw: string) {
   const response = await page.request.put(endpoint, { data: raw, headers: { "Content-Type": "application/json" } });
@@ -51,7 +53,7 @@ test("分类共用原文草稿，保存重读后外观与页脚在前台生效",
     expect(JSON.parse(await (await page.request.get(endpoint)).text()).theme).toEqual({});
     for (const preset of ["卡片", "玻璃", "极简", "平面"]) {
       await select(page, "theme.appearance.preset", preset);
-      await expect((await node(page, "theme.appearance.preset")).locator("select")).toHaveValue(String(["卡片", "玻璃", "极简", "平面"].indexOf(preset)));
+      await expect((await node(page, "theme.appearance.preset")).getByRole("radio", { name: preset, exact: true })).toBeChecked();
     }
     await select(page, "theme.appearance.color_scheme", "浅色");
     await tab(page, "navigation");
@@ -65,7 +67,7 @@ test("分类共用原文草稿，保存重读后外观与页脚在前台生效",
     expect(JSON.parse(stored).theme.appearance).toEqual({ preset: "flat", color_scheme: "light" });
     await page.reload();
     await tab(page, "appearance");
-    await expect((await node(page, "theme.appearance.preset")).locator("select")).toHaveValue("3");
+    await expect((await node(page, "theme.appearance.preset")).getByRole("radio", { name: "平面", exact: true })).toBeChecked();
     const html = await (await page.request.get("/")).text();
     expect(html).toContain("分组设置验收页脚");
     expect(html).toMatch(/data-theme="light"/);
