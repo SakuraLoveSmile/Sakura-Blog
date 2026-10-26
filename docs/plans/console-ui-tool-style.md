@@ -5,7 +5,7 @@
 - 本次按管理后台 UI 理解“console 后端”，目前没有发现 Go API 重构的必要性。
 - 基线：`dev e05aec52fe9cb724f063648ce3132b321702047c`。
 - 主工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261026-refactor-blg-20261026-01-console-workspace`。
-- 分支：`codex/refactor/20261026-blg-20261026-01-console-workspace`；预期合入目标 `dev`，本轮无提交、合并、推送及发布授权。
+- 分支：`codex/refactor/20261026-blg-20261026-01-console-workspace`；预期合入目标 `dev`，初次实现阶段未提交；2026-10-26 用户已授权本地收尾，提交、集成和清理由 BLG-20261026-03 统一执行，不含推送或发布。
 - 根目录已有用户文档/生产验收成果，保持原状。本工作树同步当前 AGENTS.md 规则。
 - 浏览器环境：`127.0.0.1:8132`，使用 `scripts/e2e/run-server.sh` 隔离根、配置、DB、内容和上传；与其他任务的 8130/8131 无关。
 
@@ -175,3 +175,7 @@
 - `make build`（Console SPA 与 Go 二进制打包全绿）。
 - `BLOG_E2E_SCREENSHOT_DIR=/tmp/e2e-ss pnpm run e2e`（现有 E2E 测试全部通过）。
 - `make merge-check` 验证并合入 `dev` 分支。
+
+## 2026-10-26 本地收尾
+
+用户已授权本地提交、集成与完成后清理。源码已按所属功能进入 BLG-20261026-03 集成分支，最终组合验证和来源保全见 [branch-closeout.md](branch-closeout.md) 及 `docs/baselines/branch-closeout/verification.json`；合入与清理的实际结果见其链接的 `cleanup.json`。前文“尚未提交”和旧体验端口属于初次交付历史，不代表本轮状态。旧工作树与体验资源在合入验证后由收尾任务归档清理；用户尚未明确确认体验，不标已验收。

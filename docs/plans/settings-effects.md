@@ -4,7 +4,7 @@
 
 目标：让用户在修改设置前知道影响的位置、选项之间的区别，并在保存前查看草稿效果。范围覆盖系统设置 13 个分类，重点是外观、布局、文章和功能开关；沿用现有 Console 视觉体系及保存协议，无数据迁移。
 
-基线：`e05aec52fe9cb724f063648ce3132b321702047c`；分支 `codex/feat/20261025-blg-20261025-02-settings-effects`；工作树 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261025-feat-blg-20261025-02-settings-effects`。集成目标 `dev`，本次尚未授权提交、推送或发布。主树原有文档和验收文件保持。工作树同步主树最新 AGENTS.md，仅作为执行规则，不混入功能提交。
+基线：`e05aec52fe9cb724f063648ce3132b321702047c`；分支 `codex/feat/20261025-blg-20261025-02-settings-effects`；工作树 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261025-feat-blg-20261025-02-settings-effects`。集成目标 `dev`，初次实现阶段未提交；2026-10-26 用户已授权本地收尾，提交、集成和清理由 BLG-20261026-03 统一执行，不含推送或发布。主树原有文档和验收文件保持。工作树同步主树最新 AGENTS.md，仅作为执行规则，不混入功能提交。
 
 唯一视觉参照：`docs/baselines/settings-effects/reference.png`，来自本次基线构建的真实隔离服务，浏览器 1168×778。保留侧栏、页头、标签栏、单卡片层级、现有语义 token 和表单组件。明确差异：分类顶部增加紧凑效果导读；外观预设/配色改为可比较的示意选择卡；嵌套项增加效果说明与继承状态；扩展草稿整页预览入口。示意图明确标注为示意，实际效果以真实前台预览为准。
 
@@ -59,3 +59,7 @@
 - Go 服务已重启到最终构建，体验入口仍为 `http://127.0.0.1:8097/console/settings?tab=appearance`。当前16个源码/测试指纹、运行进程、二进制和HTTP资产对照、检查日志及截图见 `docs/baselines/settings-effects/verification.json`；首轮证据保留为 `verification-before-colors.json`。本轮截图 `after-color-1280.png`、`after-color-390.png`、分类颜色截图以及 `browser-color-editor-default.png`、`browser-color-preview.png` 均在同一基线目录。
 
 当前待体验；本地代码未提交、未合并、未发布。保留本任务工作树和8097进程，不处理主树与其他任务资源。
+
+## 2026-10-26 本地收尾
+
+用户已授权本地提交、集成与完成后清理。源码已按所属功能进入 BLG-20261026-03 集成分支，最终组合验证和来源保全见 [branch-closeout.md](branch-closeout.md) 及 `docs/baselines/branch-closeout/verification.json`；合入与清理的实际结果见其链接的 `cleanup.json`。前文“尚未提交”和旧体验端口属于初次交付历史，不代表本轮状态。旧工作树与体验资源在合入验证后由收尾任务归档清理；用户尚未明确确认体验，不标已验收。

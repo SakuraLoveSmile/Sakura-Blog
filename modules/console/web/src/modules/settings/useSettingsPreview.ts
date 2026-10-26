@@ -58,7 +58,7 @@ export function useSettingsPreview(
         if (attr.name.toLowerCase().startsWith("on")) el.removeAttribute(attr.name);
     }
     // 前台依靠运行时展开懒加载；静态预览直接显示图片，避免横幅和头像留白。
-    for (const image of doc.querySelectorAll("img[data-src]")) {
+    for (const image of doc.querySelectorAll<HTMLImageElement>("img[data-src]")) {
       const source = image.getAttribute("data-src");
       if (!source) continue;
       try {
@@ -67,6 +67,8 @@ export function useSettingsPreview(
         image.setAttribute("src", url.href);
         image.classList.remove("loading");
         image.classList.add("loaded");
+        // 静态预览直接显示最终态，避免 iframe 中的淡入动画把已加载图片留在透明起点。
+        image.style.animation = "none";
         (image.closest(".lazy-box") ?? image.parentElement)?.querySelector(".lazy-icon")?.remove();
       } catch {
         // 无效地址维持原样，交由用户修正配置。
