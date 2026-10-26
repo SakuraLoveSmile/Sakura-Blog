@@ -738,7 +738,7 @@ const smallInputCls =
         <!-- 右侧大纲/详情面板（工具栏按钮控制收起） -->
         <div
           v-show="sidebarOpen"
-          class="w-full shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-80 xl:w-96"
+          class="min-w-0 w-full shrink-0 lg:sticky lg:top-4 lg:w-80 xl:w-96"
         >
           <PageEditorSidebar
             :form="form"
@@ -747,6 +747,7 @@ const smallInputCls =
             :widget-library="WIDGET_LIBRARY"
             :known-widget-fields="KNOWN_WIDGET_FIELDS"
             @jump="onJump"
+            @insert="onInsert"
             @open-sidebar-config="scrollToConfig"
           />
         </div>

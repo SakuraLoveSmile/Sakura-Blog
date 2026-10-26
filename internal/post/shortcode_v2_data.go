@@ -169,7 +169,7 @@ func (r *shortcodeV2Renderer) timeline(raw, body string) string {
 	}
 	var b strings.Builder
 	b.WriteString(`<div class="tag-plugin timeline` + class + `"` + attrs + `>`)
-	for i, p := range v2Pairs(reNodeSplit, body) {
+	for i, p := range r.pairs(reNodeSplit, body) {
 		head := ""
 		if p.header != "" {
 			head = `<span>` + v2Inline(r.markdown(p.header)) + `</span>`

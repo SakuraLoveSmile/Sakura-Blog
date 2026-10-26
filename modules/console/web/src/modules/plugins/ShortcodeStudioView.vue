@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
+import { pluginApi } from "@/api";
 import { VPageHeader, VCard, VEmpty, VLoading } from "@/components/ui";
 import {
   PLUGIN_CATEGORIES,
@@ -12,6 +13,7 @@ import {
 import { CAPABILITY_LABELS, FIXTURE_LABELS } from "./preview/resources";
 import { usePluginPreview } from "./preview/usePluginPreview";
 import PluginParamForm from "./PluginParamForm.vue";
+import { useShortcodeDraft } from "./useShortcodeDraft";
 import { catalogError, catalogStatus, loadPluginCatalog, retryLoadCatalog, runtimePlugins } from "./usePluginCatalog";
 
 // 标签插件 Studio 工作台（从 PluginLibrary.vue 的「插件」Tab 拆分出来）：
@@ -23,9 +25,8 @@ const emptyPreview: PluginPreviewInfo = { capability: "static", services: [], fi
 const search = ref("");
 const activeCategory = ref<PluginCategory | "全部">("全部");
 const selected = ref<PluginMeta | null>(null);
-const example = ref("");
-const formValid = ref(true);
-const formError = ref("");
+const draft = useShortcodeDraft(() => selected.value, async raw => (await pluginApi.parseShortcode(raw)).data);
+const example = draft.raw;
 
 watch(runtimePlugins, (next) => {
   const refreshed = next.find((plugin) => selected.value && plugin.name === selected.value.name);
@@ -33,7 +34,7 @@ watch(runtimePlugins, (next) => {
     selected.value = refreshed;
   } else if (next[0] && !selected.value) {
     selected.value = next[0];
-    example.value = next[0].example;
+    draft.updateSource(next[0].example, true);
   }
 });
 
@@ -62,23 +63,8 @@ function typeBadge(type: PluginMeta["type"]): string {
 
 function selectPlugin(p: PluginMeta) {
   selected.value = p;
-  example.value = p.example;
-  // 无 form 时 PluginParamForm 不挂载、不会发出 validation，这里复位；有 form 时由初始化的 validation 重新判定
-  formValid.value = true;
-  formError.value = "";
-  preview.resetHeight(); // 选中标签先应用推荐高度，再按 iframe 实际内容高度回传调整
-  preview.scheduleRender(example.value, true);
-}
-
-// 结构化参数表单产出 shortcode（Spec 29）：同步驱动示例/预览/复制
-function onFormCode(code: string) {
-  example.value = code;
-}
-
-// 必填缺失时示例保留上一次有效值，但复制入口需禁用并提示原因
-function onFormValidation(state: { valid: boolean; error?: string }) {
-  formValid.value = state.valid;
-  formError.value = state.error || "";
+  draft.updateSource(p.example, true);
+  preview.resetHeight();
 }
 
 // ---------- 实时预览（Spec 63：共享预览运行时） ----------
@@ -98,8 +84,9 @@ const fixtureLabel = computed(() =>
   selectedPreview.value.fixture ? FIXTURE_LABELS[selectedPreview.value.fixture] : "",
 );
 
-watch(example, () => {
-  if (example.value) preview.scheduleRender(example.value);
+watch([example, draft.canApply], ([raw, valid]) => {
+  if (valid) preview.scheduleRender(raw);
+  else preview.clearPreview();
 });
 
 function onPreviewMessage(event: MessageEvent) {
@@ -110,9 +97,8 @@ onMounted(() => {
   void loadPluginCatalog().then((next) => {
     if (next[0] && !selected.value) {
       selected.value = next[0];
-      example.value = next[0].example;
+      draft.updateSource(next[0].example, true);
       preview.resetHeight();
-      preview.scheduleRender(example.value, true);
     }
   });
 });
@@ -126,6 +112,7 @@ const copied = ref<"syntax" | "example" | "name" | "">("");
 let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
 async function copyText(kind: "syntax" | "example" | "name", text: string) {
+  if (kind === "example" && !draft.canApply.value) return;
   try {
     await navigator.clipboard.writeText(text);
   } catch {
@@ -320,19 +307,22 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               </section>
 
               <!-- 3. 结构化参数表单（Spec 29，有 form schema 的插件） -->
-              <section v-if="selected.form" class="studio-section">
+              <section v-if="draft.formPlugin.value" class="studio-section">
                 <div class="studio-section-heading">
                   <h2>可视化配置</h2>
                   <p>调整参数将自动同步拼装 Shortcode 示例与下方渲染效果。</p>
                 </div>
                 <div class="studio-panel studio-form-panel">
                   <PluginParamForm
-                    :plugin="selected"
+                    :plugin="draft.formPlugin.value"
                     :model-value="example"
-                    @update:model-value="onFormCode"
-                    @validation="onFormValidation"
+                    :initial-values="draft.initialValues.value"
+                    :present="draft.present.value"
+                    :variant="draft.variant.value"
+                    @update:model-value="draft.updateForm"
+                    @validation="draft.updateValidation"
                   />
-                  <p v-if="formError" style="color: var(--color-state-error, #ff453a)">{{ formError }}</p>
+                  <p v-if="draft.formError.value" class="text-state-error">{{ draft.formError.value }}</p>
                 </div>
               </section>
 
@@ -351,7 +341,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                     <button
                       type="button"
                       class="studio-copy-action"
-                      :disabled="!formValid"
+                      :disabled="!draft.canApply.value"
                       @click="copyText('example', example)"
                     >
                       <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
@@ -359,11 +349,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                     </button>
                   </div>
                   <textarea
-                    v-model="example"
+                    :value="example"
+                    @input="draft.updateSource(($event.target as HTMLTextAreaElement).value)"
                     spellcheck="false"
                     class="studio-code-editor"
                     placeholder="输入 Shortcode 代码..."
                   ></textarea>
+                  <p v-if="draft.parsing.value" class="px-4 pb-3 text-xs text-text-quaternary">正在同步参数…</p>
+                  <p v-else-if="draft.sourceReason.value" class="px-4 pb-3 text-xs text-text-quaternary">源码编辑：{{ draft.sourceReason.value }}</p>
                 </div>
               </section>
 
@@ -404,6 +397,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                         type="button"
                         title="重新渲染"
                         class="canvas-refresh-btn"
+                        :disabled="!draft.canApply.value"
                         @click="preview.scheduleRender(example, true)"
                       >
                         <Icon
@@ -417,7 +411,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
                   <!-- Iframe Canvas Body -->
                   <div class="studio-canvas-body">
-                    <div v-if="preview.previewError.value" class="canvas-state canvas-error">
+                    <div v-if="preview.rendering.value" class="canvas-state canvas-empty"><p>正在生成预览…</p></div>
+                    <div v-else-if="preview.previewError.value" class="canvas-state canvas-error">
                       <Icon icon="ri:error-warning-line" width="28" height="28" />
                       <p>{{ preview.previewError.value }}</p>
                     </div>
@@ -430,6 +425,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                       ref="previewFrame"
                       :srcdoc="preview.srcdoc.value"
                       class="studio-preview-iframe"
+                      title="标签插件预览"
                       :style="{ height: preview.frameHeight.value + 'px' }"
                       sandbox="allow-scripts"
                     ></iframe>

@@ -1,0 +1,12 @@
+{
+  "name": "dompurify",
+  "version": "3.4.17",
+  "license": "(MPL-2.0 OR Apache-2.0)",
+  "source": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.17.tgz",
+  "integrity": "sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==",
+  "files_sha256": {
+    "purify.min.js": "cd37898f9782adf54820c413191b5691803f0f137c799d6edcfd38523b4c2c31",
+    "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "purpose": "Sanitize rich HTML returned by Stellar tag data services before insertion into the public page DOM."
+}

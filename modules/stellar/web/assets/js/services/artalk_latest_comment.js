@@ -1,5 +1,7 @@
 document.currentScript.stellarMount = function (root, context) {
   const utils = context.serviceUtils;
+  const text = utils.escapeHTML;
+  const url = utils.safeURL;
 
   const els = root.getElementsByClassName('ds-artalk');
       for (var i = 0; i < els.length; i++) {
@@ -13,6 +15,7 @@ document.currentScript.stellarMount = function (root, context) {
         utils.request(el, api, async resp => {
           var data = await resp.json();
           data = data.data || [];
+          const cells = [];
           data.forEach((item, i) => {
             // content_marked 是完整 HTML：保留表情图（atk-emoticon），
             // 其余标签转纯文本并截断，避免大尺寸表情图与段落撑爆侧栏卡片
@@ -41,10 +44,10 @@ document.currentScript.stellarMount = function (root, context) {
               if (seg) {
                 var need = MAX_TEXT - textLen;
                 if (seg.length > need) {
-                  preview += seg.substring(0, need) + '...';
+                  preview += text(seg.substring(0, need)) + '...';
                   break; // 截断后丢弃后续文本与表情
                 }
-                preview += seg + ' ';
+                preview += text(seg) + ' ';
                 textLen += seg.length;
               }
               if (k < emojiTags.length && keptEmoji < MAX_EMOJI) {
@@ -60,16 +63,17 @@ document.currentScript.stellarMount = function (root, context) {
             cell += '<div class="header">';
             cell += '<div class="user-info">';
             // cell += '<img src="https://cravatar.cn/avatar/' + (item.email_encrypted) + '?d=mp&s=240">';
-            cell += '<span>' + item.nick + '</span>';
+            cell += '<span>' + text(item.nick) + '</span>';
             cell += '</div>';
             cell += '<span>' + new Date(item.date).toLocaleString() + '</span>';
             cell += '</div>';
-            cell += '<a class="body" href="' + item.page_url + '#atk-comment-' + item.id + '" target="_blank" rel="external nofollow noopener noreferrer">';
+            cell += '<a class="body" href="' + url(item.page_url, 'href') + '#atk-comment-' + text(item.id) + '" target="_blank" rel="external nofollow noopener noreferrer">';
             cell += preview;
             cell += '</a>';
             cell += '</div>';
-            utils.dom(el).append(cell);
+            cells.push(cell);
           });
+          if (cells.length) utils.dom(el).append(cells.join(''));
         });
       }
 

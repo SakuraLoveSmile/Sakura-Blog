@@ -8,7 +8,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../web/src");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
 test("Stellar 标签编辑器识别动态 links/moments 并刷新预览", () => {
-  const tagSource = read("components/editor/stellar-tag.ts");
+  const tagSource = read("components/editor/stellar-tag-syntax.ts");
   const viewSource = read("components/editor/StellarTagView.vue");
   const singleTagsStart = tagSource.indexOf("const SINGLE_TAGS = [");
   const singleTagsEnd = tagSource.indexOf("];", singleTagsStart);
@@ -21,7 +21,7 @@ test("Stellar 标签编辑器识别动态 links/moments 并刷新预览", () => 
   const pairedEnd = tagSource.indexOf("];", pairedStart);
   assert.match(tagSource.slice(pairedStart, pairedEnd), /"table"/);
   assert.match(tagSource.slice(pairedStart, pairedEnd), /"tip"/);
-  assert.match(tagSource, /SINGLE_TAGS\.join\("\|"\)/);
+  assert.match(read("components/editor/stellar-tag.ts"), /wrapShortcodes\(state\.src\)/);
   assert.match(viewSource, /previewGeneration/);
   assert.match(viewSource, /data\.document/);
   assert.match(viewSource, /event\.source\s*!==\s*iframeRef\.value\?\.contentWindow/);

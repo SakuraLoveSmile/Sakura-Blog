@@ -1,5 +1,7 @@
 document.currentScript.stellarMount = function (root, context) {
   const utils = context.serviceUtils;
+  const escape = utils.escapeHTML;
+  const url = utils.safeURL;
   const els = root.getElementsByClassName('ds-rss');
 
     for (let i = 0; i < els.length; i++) {
@@ -25,8 +27,7 @@ document.currentScript.stellarMount = function (root, context) {
         const doc = parser.parseFromString(text, 'text/xml');
 
         if (doc.querySelector('parsererror')) {
-          console.error('Failed to parse feed XML.');
-          return;
+          throw new Error('Failed to parse feed XML.');
         }
         // Atom Feed
         if (doc.documentElement.nodeName === 'feed' &&
@@ -44,6 +45,7 @@ document.currentScript.stellarMount = function (root, context) {
           handleRSS1(el, doc, content_type, show_title, show_content, limit);
           return;
         }
+        throw new TypeError('Unsupported feed XML root: ' + doc.documentElement.nodeName);
       });
     }
 
@@ -65,7 +67,7 @@ function handleAtom(el, doc, content_type, show_title, show_content, limit) {
 
     let cell = `<div class="timenode" index="${i}">`;
     cell += `<div class="header">`;
-    cell += `<span class="user-info"><strong>${authorName}</strong></span>`;
+    cell += `<span class="user-info"><strong>${escape(authorName)}</strong></span>`;
     
     if (published) {
       const date = new Date(published);
@@ -77,7 +79,7 @@ function handleAtom(el, doc, content_type, show_title, show_content, limit) {
     if (show_title) {
       const titleAttr = show_content ? '' : ' style="border-bottom:none;"' ;
       const linkAttr = show_content ? '' : ' style="padding-bottom:0"' ;
-      cell += `<p class="title"${titleAttr}><a href="${link}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${title}</a></p>`;
+      cell += `<p class="title"${titleAttr}><a href="${url(link, 'href')}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${escape(title)}</a></p>`;
     }
     if (show_content){
       cell += `<div class="content">${content_type === 'summary' ? summary : content}</div>`;
@@ -104,17 +106,17 @@ function handleRSS2(el, doc, content_type, show_title, show_content, limit) {
 
     let cell = `<div class="timenode" index="${i}">`;
     cell += `<div class="header">`;
-    cell += `<span class="user-info"><strong>${authorName}</strong></span>`;
+    cell += `<span class="user-info"><strong>${escape(authorName)}</strong></span>`;
     if (pubDate) {
       const date = new Date(pubDate);
-      cell += `<span>${isNaN(date) ? pubDate : date.toLocaleString()}</span>`;
+      cell += `<span>${escape(isNaN(date) ? pubDate : date.toLocaleString())}</span>`;
     }
     cell += `</div>`;
     cell += `<div class="body">`;
     if (show_title) {
       const titleAttr = show_content ? '' : ' style="border-bottom:none;"' ;
       const linkAttr = show_content ? '' : ' style="padding-bottom:0"' ;
-      cell += `<p class="title"${titleAttr}><a href="${link}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${title}</a></p>`;
+      cell += `<p class="title"${titleAttr}><a href="${url(link, 'href')}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${escape(title)}</a></p>`;
     }
     if (show_content){
       cell += `<div class="content">${content_type === 'summary' ? description : content}</div>`;
@@ -139,17 +141,17 @@ function handleRSS1(el, doc, content_type, show_title, show_content, limit) {
 
     let cell = `<div class="timenode" index="${i}">`;
     cell += `<div class="header">`;
-    cell += `<span class="user-info"><strong>${authorName}</strong></span>`;
+    cell += `<span class="user-info"><strong>${escape(authorName)}</strong></span>`;
     if (pubDate) {
       const date = new Date(pubDate);
-      cell += `<span>${isNaN(date) ? pubDate : date.toLocaleString()}</span>`;
+      cell += `<span>${escape(isNaN(date) ? pubDate : date.toLocaleString())}</span>`;
     }
     cell += `</div>`;
     cell += `<div class="body">`;
     if (show_title) {
       const titleAttr = show_content ? '' : ' style="border-bottom:none;"' ;
       const linkAttr = show_content ? '' : ' style="padding-bottom:0"' ;
-      cell += `<p class="title"${titleAttr}><a href="${link}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${title}</a></p>`;
+      cell += `<p class="title"${titleAttr}><a href="${url(link, 'href')}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${escape(title)}</a></p>`;
     }
     if (show_content){
       cell += `<div class="content">${content_type === 'summary' ? description : content}</div>`;
@@ -174,19 +176,19 @@ function handleJsonFeed(el, data, content_type, show_title, show_content, limit)
     
     let authorName = (item.authors || []).map(a => a.name).filter(Boolean).join(' ') || feedAuthorName;
 
-    let cell = `<div class="timenode" index="${id}">`;
+    let cell = `<div class="timenode" index="${escape(id)}">`;
     cell += `<div class="header">`;
-    cell += `<span class="user-info"><strong>${authorName}</strong></span>`;
+    cell += `<span class="user-info"><strong>${escape(authorName)}</strong></span>`;
     if (pubDate) {
       const date = new Date(pubDate);
-      cell += `<span>${isNaN(date.getTime()) ? pubDate : date.toLocaleString()}</span>`;
+      cell += `<span>${escape(isNaN(date.getTime()) ? pubDate : date.toLocaleString())}</span>`;
     }
     cell += `</div>`;
     cell += `<div class="body">`;
     if (show_title) {
       const titleAttr = show_content ? '' : ' style="border-bottom:none;"' ;
       const linkAttr = show_content ? '' : ' style="padding-bottom:0"' ;
-      cell += `<p class="title"${titleAttr}><a href="${link}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${title}</a></p>`;
+      cell += `<p class="title"${titleAttr}><a href="${url(link, 'href')}"${linkAttr} target="_blank" rel="external nofollow noopener noreferrer">${escape(title)}</a></p>`;
     }
     if (show_content){
       cell += `<div class="content">${content_type === 'summary' ? summary : content}</div>`;

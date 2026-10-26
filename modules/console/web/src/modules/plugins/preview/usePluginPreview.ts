@@ -1,7 +1,5 @@
-// 标签插件预览组合式函数（Spec 63 + Spec 64 暗色单模式）：防抖渲染
-// （component-library Fixture 模式）、请求序列号防旧结果覆盖、推荐高度 +
-// 内容高度回传。暗色固定，无主题切换。
-// PluginLibrary.vue 只负责选择插件/编辑示例/传入预览能力，预览管线全部收敛于此。
+// 标签插件共用完整前台预览文档；component-library Fixture 不写真实投票/评分。
+// 防抖和序列号在排队时立即使旧预览失效，iframe 高度只接收当前文档 token。
 
 import { computed, onBeforeUnmount, ref } from "vue";
 import { previewApi } from "@/api";
@@ -26,8 +24,21 @@ export function usePluginPreview(
   const srcdoc = computed(() => document.value);
   void getOverrides;
 
+  /** 清空或无效参数时立即销毁旧文档，并使在途响应失效。 */
+  function clearPreview(): void {
+    gate.invalidate();
+    previewHtml.value = "";
+    document.value = "";
+    previewToken.value = "";
+    previewError.value = "";
+    rendering.value = false;
+  }
+
   /** 调度一次渲染；immediate=true 立即执行（选中插件/重新渲染按钮）。 */
   function scheduleRender(markdown: string, immediate = false): void {
+    clearPreview();
+    if (!markdown.trim()) return;
+    rendering.value = true;
     const seq = gate.schedule(async () => {
       rendering.value = true;
       previewError.value = "";
@@ -70,6 +81,7 @@ export function usePluginPreview(
     srcdoc,
     scheduleRender,
     resetHeight,
+    clearPreview,
     onMessage,
   };
 }

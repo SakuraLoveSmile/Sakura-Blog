@@ -43,10 +43,15 @@ export class RenderGate {
     return this.seq;
   }
 
-  dispose(): void {
+  invalidate(): void {
+    this.seq++;
     if (this.timer !== undefined) {
       clearTimeout(this.timer);
       this.timer = undefined;
     }
+  }
+
+  dispose(): void {
+    this.invalidate();
   }
 }

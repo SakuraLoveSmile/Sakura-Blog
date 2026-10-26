@@ -125,7 +125,7 @@ func Build(input Input) (Bundle, error) {
 	add("dropdown", "region", "details.dropdown", object{})
 	_, marked := split(obj(at(theme, "services.markdown")), obj(at(defaults, "services.markdown")), "js")
 	add("services", "region", servicesSelector, object{"marked": rewrite(marked["js"])})
-	// Wrapper 只保留本地服务DOM所有权；官方 services.js 本身保持完整原版。
+	// Wrapper 划分本地服务 DOM 所有权；services.js 保持上游结构并补充区域生命周期与动态内容净化。
 	bundle.Manifest.Extensions[len(bundle.Manifest.Extensions)-1].Module = "/assets/js/runtime/extensions/blog-upstream-services.js"
 	if comments.Enabled {
 		add("comments", "region", "#comments", object{"provider": comments.Service, "options": clone(comments.Options), "pageTitle": comments.PageTitle, "assets": clone(comments.Assets)})

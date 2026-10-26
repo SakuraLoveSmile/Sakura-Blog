@@ -1,4 +1,36 @@
 /* global setMdLinkIcon */
+// 只有响应解码和区域渲染都完成后才保留成功状态；失败/取消仍可在新区域重试。
+const renderedServices = new WeakMap();
+
+function serviceText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+
+function serviceURL(value, base, attribute = 'src') {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  if (attribute === 'href' && text.startsWith('#')) return text;
+  try {
+    const url = new URL(text, base);
+    const protocols = attribute === 'href' ? ['http:', 'https:', 'mailto:', 'tel:'] : ['http:', 'https:'];
+    return protocols.includes(url.protocol) ? text : '';
+  } catch { return ''; }
+}
+
+function serviceStyle(value) {
+  const color = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\([\d.,%\s+-]+\)|white|black|transparent|currentcolor)$/i;
+  return String(value).split(';').flatMap(declaration => {
+    const separator = declaration.indexOf(':');
+    if (separator < 0) return [];
+    const name = declaration.slice(0, separator).trim().toLowerCase();
+    const val = declaration.slice(separator + 1).trim();
+    if (['color', 'background', 'background-color', 'border-color'].includes(name) && color.test(val)) return [name + ':' + val];
+    if (name === 'text-align' && /^(left|right|center|justify)$/.test(val)) return [name + ':' + val];
+    if (['padding-bottom', 'border-bottom'].includes(name) && /^(0|none)$/.test(val)) return [name + ':' + val];
+    return [];
+  }).join(';');
+}
+
 export async function mount(root, context) {
   const assets = context.assets;
   const config = context.extension.config;
@@ -71,24 +103,118 @@ export async function mount(root, context) {
   const voiceCleanups = [];
   const baseUtils = window.utils;
   const serviceUtils = Object.create(baseUtils);
-  serviceUtils.request = (element, url, callback, failure, options = {}) => baseUtils.request(element, url, async response => {
+  const base = (root.ownerDocument || document).baseURI;
+  serviceUtils.escapeHTML = serviceText;
+  serviceUtils.resolveURL = (value, attribute) => serviceURL(value, base, attribute);
+  serviceUtils.safeURL = (value, attribute) => serviceText(serviceUtils.resolveURL(value, attribute));
+  serviceUtils.safeColor = value => /^[\da-f]{3,8}$/i.test(String(value)) ? String(value) : '';
+  // 动态卡片的默认图使用区域监听，避免保留不受信任的内联事件属性。
+  root.addEventListener?.('error', event => {
+    const image = event.target;
+    if (context.signal.aborted || image?.tagName !== 'IMG') return;
+    const fallback = serviceURL(image.getAttribute('data-fallback-src'), base);
+    if (!fallback) return;
+    image.removeAttribute('data-fallback-src');
+    image.removeAttribute('data-src');
+    image.src = fallback;
+  }, { capture: true, signal: context.signal });
+  let purify;
+  let sanitizerReady;
+  const ensureSanitizer = () => sanitizerReady ||= assets.script('/assets/vendor/dompurify/purify.min.js').then(() => {
     context.signal.throwIfAborted();
-    const guarded = new Proxy(response, { get(target, key) {
-      if (key === 'json' || key === 'text') return async () => {
-        const data = await target[key]();
-        context.signal.throwIfAborted();
-        return data;
-      };
-      const value = Reflect.get(target, key, target);
-      return typeof value === 'function' ? value.bind(target) : value;
-    } });
-    await callback(guarded);
-  }, failure, { ...options, signal: context.signal }).catch(error => {
-    if (!context.signal.aborted) context.reportError(error);
+    if (typeof window.DOMPurify !== 'function') throw new TypeError('Dynamic content sanitizer is unavailable');
+    purify = window.DOMPurify(window);
+    if (!purify.isSupported || typeof purify.sanitize !== 'function') throw new TypeError('Dynamic content sanitizer is unsupported');
+    purify.addHook('uponSanitizeAttribute', (_node, data) => {
+      const name = data.attrName.toLowerCase();
+      if (name === 'style') {
+        data.attrValue = serviceStyle(data.attrValue);
+        data.keepAttr = !!data.attrValue;
+      } else if (['href', 'src', 'poster', 'xlink:href', 'data-siteinfo-api', 'data-fallback-src'].includes(name)) {
+        const value = serviceURL(data.attrValue, base, name === 'xlink:href' ? 'href' : name);
+        data.attrValue = value;
+        data.keepAttr = !!value;
+      }
+    });
+    purify.addHook('afterSanitizeAttributes', node => {
+      if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+        const rel = new Set((node.getAttribute('rel') || '').split(/\s+/).filter(Boolean));
+        rel.add('noopener'); rel.add('noreferrer');
+        node.setAttribute('rel', [...rel].join(' '));
+      }
+    });
   });
+  serviceUtils.sanitizeHTML = value => {
+    if (!purify) throw new TypeError('Dynamic content sanitizer is not ready');
+    return purify.sanitize(String(value ?? ''), {
+      USE_PROFILES: { html: true, svg: true, svgFilters: true },
+      FORBID_TAGS: ['style', 'form', 'input', 'textarea', 'button', 'select', 'option', 'iframe', 'object', 'embed'],
+      FORBID_ATTR: ['srcdoc', 'srcset'],
+      ALLOW_DATA_ATTR: false,
+      ADD_ATTR: ['target', 'index', 'data-siteinfo-api', 'data-fallback-src'],
+      SANITIZE_NAMED_PROPS: true,
+    });
+  };
+  // 只收窄动态服务的插入边界，不改变公共 utils 或其他扩展的 DOM 语义。
+  const wrapDOM = dom => new Proxy(dom, { get(target, key) {
+    const value = target[key];
+    if (key === 'append') return content => {
+      context.signal.throwIfAborted();
+      value.call(target, typeof content === 'string' ? serviceUtils.sanitizeHTML(content) : content);
+      return wrapDOM(target);
+    };
+    if (key === 'attr') return (name, content) => {
+      if (content !== undefined) {
+        context.signal.throwIfAborted();
+        if (/^(href|src|poster)$/i.test(name)) content = serviceURL(content, base, name.toLowerCase());
+      }
+      const result = value.call(target, name, content);
+      return result === target ? wrapDOM(target) : result;
+    };
+    return typeof value === 'function' ? (...args) => {
+      const result = value.apply(target, args);
+      return result && typeof result.append === 'function' ? wrapDOM(result) : result;
+    } : value;
+  } });
+  serviceUtils.dom = (...args) => wrapDOM(baseUtils.dom(...args));
+  serviceUtils.request = (element, url, callback, failure, options = {}) => {
+    const previous = element && renderedServices.get(element);
+    if (previous?.url === url && (previous.complete || previous.signal === context.signal)) return previous.promise;
+    const state = { url, signal: context.signal, complete: false, promise: null };
+    if (element) {
+      renderedServices.set(element, state);
+      baseUtils.onLoading?.(element);
+    }
+    const requestOptions = { ...options, signal: context.signal, service: options.service || String(element?.className || '').match(/\bds-([\w-]+)\b/)?.[1] };
+    // 全局 adapter 的成功标记早于 callback；本区域自行在完整 callback 后记成功。
+    state.promise = baseUtils.request(null, url, async response => {
+      context.signal.throwIfAborted();
+      const guarded = new Proxy(response, { get(target, key) {
+        if (key === 'json' || key === 'text') return async () => {
+          const data = await target[key]();
+          context.signal.throwIfAborted();
+          return data;
+        };
+        const value = Reflect.get(target, key, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      } });
+      await callback(guarded);
+      context.signal.throwIfAborted();
+      state.complete = true;
+      baseUtils.onLoadSuccess?.(element);
+    }, undefined, requestOptions).catch(error => {
+      if (element && renderedServices.get(element) === state) renderedServices.delete(element);
+      if (!context.signal.aborted) {
+        baseUtils.onLoadFailure?.(element);
+        failure?.(error);
+        context.reportError(error);
+      }
+    });
+    return state.promise;
+  };
   serviceUtils.requestWithoutLoading = (url, options = {}) => baseUtils.requestWithoutLoading(url, { ...options, signal: context.signal });
   function loadService(js) {
-    return assets.script(js).then(script => {
+    return ensureSanitizer().then(() => assets.script(js)).then(script => {
       context.signal.throwIfAborted();
       if (typeof script.stellarMount !== 'function') throw new TypeError(`data-service asset has no regional mount: ${js}`);
       const siteRoot = (context.legacy.ctx.root || '/').replace(/\/?$/, '/');
@@ -284,7 +410,7 @@ export async function mount(root, context) {
   };
   context.onCleanup?.(cleanup);
   try {
-    await Promise.allSettled(loads.map(promise => promise.catch(error => { context.reportError(error); })));
+    await Promise.allSettled(loads.map(promise => promise.catch(error => { if (!context.signal.aborted) context.reportError(error); })));
   } catch (error) {
     cleanup();
     throw error;

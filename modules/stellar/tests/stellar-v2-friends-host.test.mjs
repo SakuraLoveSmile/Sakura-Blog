@@ -15,6 +15,7 @@ async function mount(showPosts, posts) {
   vm.runInNewContext(source, { document, def: { avatar: '/avatar.png' }, window: { wrapLazyloadImages(root) { lazyRoots.push(root); } } });
   const pending = [];
   const serviceUtils = {
+    escapeHTML: value => String(value ?? ''), safeURL: value => String(value ?? ''), safeColor: value => String(value ?? ''),
     request(root, url, callback) {
       requests.push([root, url]);
       pending.push(callback({ async json() { return { content: [{ title: 'Friend', url: '/friend', description: 'Description', labels: [], posts, feed: [] }] }; } }));

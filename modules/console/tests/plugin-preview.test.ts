@@ -313,6 +313,27 @@ test(`${SURFACE} · 门闸 dispose 后不再触发待执行渲染`, () => {
   }
 });
 
+test(`${SURFACE} · 清空和卸载立即使已发出请求失效`, async () => {
+  mock.timers.enable({ apis: ["setTimeout"] });
+  try {
+    for (const action of ["invalidate", "dispose"] as const) {
+      const gate = new RenderGate(500);
+      let resolve!: () => void;
+      let result = "";
+      const seq = gate.schedule(async () => {
+        await new Promise<void>(done => { resolve = done; });
+        if (gate.isCurrent(seq)) result = "过期预览";
+      }, true);
+      mock.timers.tick(0);
+      gate[action]();
+      resolve();
+      await Promise.resolve();
+      assert.equal(result, "", `${action} 后迟到响应必须丢弃`);
+      assert.equal(gate.isCurrent(seq), false);
+    }
+  } finally { mock.timers.reset(); }
+});
+
 // ---------- 预览高度（Spec 64：推荐高度 + 内容高度回传） ----------
 
 test(`${SURFACE} · 推荐高度解析：登记高度直接采用，缺省用默认值，钳制到上下限`, () => {

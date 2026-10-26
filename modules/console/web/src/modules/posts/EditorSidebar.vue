@@ -4,12 +4,9 @@ import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import PostThemeSettings from "@/components/editor/PostThemeSettings.vue";
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
-import { previewApi, settingsApi, getApiErrorMessage, postApi, aiApi, topicApi, type TopicItem } from "@/api";
-import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
-import { VButton, VSwitch, Toast } from "@/components/ui";
-import { type PluginMeta, type PluginCategory } from "@/modules/plugins/plugin-types";
-import { PLUGIN_CATEGORIES } from "@/modules/plugins/plugin-types";
-import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCatalog";
+import { settingsApi, getApiErrorMessage, postApi, aiApi, topicApi, type TopicItem } from "@/api";
+import ShortcodeInsertPanel from "@/modules/plugins/ShortcodeInsertPanel.vue";
+import { VSwitch, Toast } from "@/components/ui";
 
 // 编辑器右侧辅助面板（对照 Halo）：大纲 / 详情 两个 Tab。
 // 大纲：解析 Markdown 标题可点击跳转；详情：合并原右栏全部设置字段与标签插件参数面板。
@@ -180,7 +177,6 @@ function onDocClickAuthorPop(e: MouseEvent) {
 
 onMounted(() => {
   loadAuthors();
-  loadPluginCatalog();
   document.addEventListener("click", onDocClickAuthorPop);
 });
 onBeforeUnmount(() => document.removeEventListener("click", onDocClickAuthorPop));
@@ -370,107 +366,7 @@ function fetchRandomCover() {
   props.form.cover = `https://picsum.photos/seed/${seed}/1200/675`;
 }
 
-// ---------- 标签插件参数面板（自 PostEditor 迁入，Spec 29） ----------
-
-const pluginCat = ref<PluginCategory | "全部">("全部");
-const pluginList = computed(() =>
-  pluginCat.value === "全部"
-    ? runtimePlugins.value
-    : runtimePlugins.value.filter((p) => p.category === pluginCat.value),
-);
-const selectedPlugin = ref<PluginMeta | null>(null);
-const pluginCode = ref("");
-const pluginValid = ref(true);
-const pluginError = ref("");
-const pluginPreviewHtml = ref("");
-const pluginRendering = ref(false);
-let pluginTimer: ReturnType<typeof setTimeout> | undefined;
-
-function selectPlugin(p: PluginMeta) {
-  selectedPlugin.value = p;
-  // 有 form schema：由 PluginParamForm 初始化后立即产出 shortcode；否则回退示例文本
-  pluginCode.value = p.form ? "" : p.example;
-  // 无 form 时不会收到 validation 事件，这里复位；有 form 时由初始化的 validation 重新判定
-  pluginValid.value = true;
-  pluginError.value = "";
-  schedulePluginPreview(true);
-}
-
-function onPluginCode(code: string) {
-  pluginCode.value = code;
-  schedulePluginPreview();
-}
-
-// 必填缺失时表单不再产出新 raw：保留上一次有效的 pluginCode，但禁止插入并提示原因
-function onPluginValidation(state: { valid: boolean; error?: string }) {
-  pluginValid.value = state.valid;
-  pluginError.value = state.error || "";
-}
-
-async function refreshPluginPreview() {
-  if (!pluginCode.value) {
-    pluginPreviewHtml.value = "";
-    return;
-  }
-  pluginRendering.value = true;
-  try {
-    const { data } = await previewApi.render(pluginCode.value);
-    pluginPreviewHtml.value = data.html;
-  } catch {
-    pluginPreviewHtml.value = '<p style="color:var(--color-state-error, #FF453A)">预览渲染失败</p>';
-  } finally {
-    pluginRendering.value = false;
-  }
-}
-
-function schedulePluginPreview(immediate = false) {
-  clearTimeout(pluginTimer);
-  pluginTimer = setTimeout(refreshPluginPreview, immediate ? 0 : 400);
-}
-
-const pluginSrcdoc = computed(() => {
-  return (
-    `<!DOCTYPE html>
-<html data-theme="dark">
-<head>
-<meta charset="utf-8">
-<link rel="stylesheet" href="/assets/css/main.css">
-<link rel="stylesheet" href="/assets/css/tag-plugins.css">
-<link rel="stylesheet" href="/assets/css/highlight.css">
-<style>html,body{margin:0;padding:0;}/* isolated iframe fallback keeps the console card token */body{padding:16px;background:var(--color-card, #1c1c1e);}.md-text{max-width:100%;}</style>
-</head>
-<body><article class="md-text content">${pluginPreviewHtml.value}</article><scr` +
-    "ipt>\n" +
-    "document.querySelectorAll('.tabs .nav-tabs .tab').forEach(function(el) {\n" +
-    " el.addEventListener('click', function(e) {\n" +
-    " e.preventDefault();\n" +
-    " if (el.classList.contains('active')) return;\n" +
-    " Array.prototype.forEach.call(el.parentNode.children, function(t) {\n" +
-    " t.classList.toggle('active', t === el);\n" +
-    " });\n" +
-    " var a = el.querySelector('a');\n" +
-    " if (!a) return;\n" +
-    " var target = document.getElementById(a.getAttribute('href').replace('#', ''));\n" +
-    " if (!target) return;\n" +
-    " Array.prototype.forEach.call(target.parentNode.children, function(t) {\n" +
-    " t.classList.toggle('active', t === target);\n" +
-    " });\n" +
-    " });\n" +
-    "});\n" +
-    "<\/script></body>\n" +
-    "</html>"
-  );
-});
-
-function insertPlugin() {
-  if (!pluginCode.value || !pluginValid.value) return;
-  emit("insert", "\n" + pluginCode.value + "\n");
-}
-
-onBeforeUnmount(() => {
-  clearTimeout(pluginTimer);
-  document.removeEventListener("mousedown", onTopicClickOutside);
-});
+onBeforeUnmount(() => document.removeEventListener("mousedown", onTopicClickOutside));
 
 // ---------- AI 摘要（Spec 53）：textarea 手动编辑 + AI 生成，保存走独立端点 ----------
 const aiSaving = ref(false);
@@ -542,7 +438,6 @@ async function generateAiSummary() {
 
 const fieldCls = "apple-input";
 const textareaCls = "apple-textarea";
-const selectCls = "apple-select";
 const labelCls = "mb-1.5 block text-[12.5px] font-medium text-text-secondary";
 const cardCls = "rounded-[14px] border border-border bg-card";
 const cardHeaderCls = "px-4 pb-3 pt-3.5 text-[11px] font-semibold uppercase tracking-[0.6px] text-text-tertiary";
@@ -1004,75 +899,8 @@ const chipActiveCls = "bg-primary/15 text-primary";
       <!-- 标签插件参数面板（折叠为独立卡片） -->
       <div :class="cardCls">
         <div :class="cardHeaderCls">标签插件</div>
-        <div :class="cardBodyCls + ' space-y-3'">
-          <div class="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              :class="[chipCls, pluginCat === '全部' ? chipActiveCls : chipIdleCls]"
-              @click="pluginCat = '全部'"
-            >
-              全部
-            </button>
-            <button
-              v-for="c in PLUGIN_CATEGORIES"
-              :key="c"
-              type="button"
-              :class="[chipCls, pluginCat === c ? chipActiveCls : chipIdleCls]"
-              @click="pluginCat = c"
-            >
-              {{ c }}
-            </button>
-          </div>
-          <select
-            :value="selectedPlugin?.name"
-            :class="selectCls"
-            @change="selectPlugin(runtimePlugins.find((p) => p.name === ($event.target as HTMLSelectElement).value)!)"
-          >
-            <option :value="undefined" disabled>选择插件…</option>
-            <option v-for="p in pluginList" :key="p.name" :value="p.name">{{ p.title }}</option>
-          </select>
-
-          <div v-if="selectedPlugin" class="space-y-3">
-            <PluginParamForm
-              v-if="selectedPlugin.form"
-              :plugin="selectedPlugin"
-              :model-value="pluginCode"
-              @update:model-value="onPluginCode"
-              @validation="onPluginValidation"
-            />
-            <div v-else>
-              <label :class="labelCls">示例（可编辑）</label>
-              <textarea
-                v-model="pluginCode"
-                rows="4"
-                spellcheck="false"
-                :class="textareaCls + ' resize-y font-mono text-xs leading-relaxed'"
-                @input="schedulePluginPreview()"
-              ></textarea>
-            </div>
-
-            <div>
-              <label :class="labelCls"
-                >预览<span v-if="pluginRendering" class="ml-1 text-text-quaternary">渲染中…</span></label
-              >
-              <div class="overflow-hidden rounded-lg border border-border">
-                <iframe
-                  v-if="pluginPreviewHtml"
-                  :srcdoc="pluginSrcdoc"
-                  class="w-full border-0"
-                  style="min-height: 200px; max-height: 400px; resize: vertical; overflow: auto"
-                  sandbox="allow-same-origin allow-scripts"
-                ></iframe>
-                <p v-else class="px-3 py-4 text-center text-xs text-text-quaternary">填写参数后预览</p>
-              </div>
-            </div>
-
-            <p v-if="pluginError" class="text-xs" style="color: var(--color-state-error, #ff453a)">{{ pluginError }}</p>
-            <VButton type="secondary" block :disabled="!pluginCode || !pluginValid" @click="insertPlugin"
-              >插入到正文</VButton
-            >
-          </div>
-          <p v-else class="text-xs text-text-quaternary">选择插件后可编辑参数并插入正文。</p>
+        <div :class="cardBodyCls">
+          <ShortcodeInsertPanel @insert="emit('insert', $event)" />
         </div>
       </div>
       <StellarContentConfig
