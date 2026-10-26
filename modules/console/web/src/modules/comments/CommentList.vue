@@ -363,91 +363,88 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- 概览数据指标卡（点击直接作为过滤器） -->
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div
-          class="stats-card cursor-pointer transition-colors duration-150 hover:border-primary"
-          :class="{ 'border-primary ring-1 ring-primary': selectedStatus === 'all' }"
+      <!-- 按状态筛选评论 -->
+      <div class="console-summary" role="group" aria-label="评论状态摘要">
+        <button
+          type="button"
+          class="stats-card"
+          :aria-pressed="selectedStatus === 'all'"
+          :class="{ active: selectedStatus === 'all' }"
           @click="
             selectedStatus = 'all';
             page = 1;
           "
         >
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:chat-3-line" />
-          </div>
-          <div>
-            <div class="stats-label">全部评论</div>
-            <div class="stats-value">{{ statusCounts.all }} <span class="stats-sub">条留言</span></div>
-          </div>
-        </div>
+          <span>
+            <span class="stats-label">全部评论</span>
+            <span class="stats-value">{{ statusCounts.all }} <span class="stats-sub">条留言</span></span>
+          </span>
+        </button>
 
-        <div
-          class="stats-card cursor-pointer transition-colors duration-150 hover:border-[#FF9500]"
-          :class="{ 'border-[#FF9500] ring-1 ring-[#FF9500]': selectedStatus === 'pending' }"
+        <button
+          type="button"
+          class="stats-card"
+          :aria-pressed="selectedStatus === 'pending'"
+          :class="{ active: selectedStatus === 'pending' }"
           @click="
             selectedStatus = 'pending';
             page = 1;
           "
         >
-          <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
-            <Icon icon="ri:time-line" />
-          </div>
-          <div>
-            <div class="stats-label">待审核</div>
-            <div class="stats-value text-[#FF9500]">
+          <span>
+            <span class="stats-label">待审核</span>
+            <span class="stats-value text-[#FF9500]">
               {{ statusCounts.pending }} <span class="stats-sub">条需要处理</span>
-            </div>
-          </div>
-        </div>
+            </span>
+          </span>
+        </button>
 
-        <div
-          class="stats-card cursor-pointer transition-colors duration-150 hover:border-[#30D158]"
-          :class="{ 'border-[#30D158] ring-1 ring-[#30D158]': selectedStatus === 'approved' }"
+        <button
+          type="button"
+          class="stats-card"
+          :aria-pressed="selectedStatus === 'approved'"
+          :class="{ active: selectedStatus === 'approved' }"
           @click="
             selectedStatus = 'approved';
             page = 1;
           "
         >
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:checkbox-circle-line" />
-          </div>
-          <div>
-            <div class="stats-label">已批准展示</div>
-            <div class="stats-value text-[#30D158]">
+          <span>
+            <span class="stats-label">已批准展示</span>
+            <span class="stats-value text-[#30D158]">
               {{ statusCounts.approved }} <span class="stats-sub">条正常显示</span>
-            </div>
-          </div>
-        </div>
+            </span>
+          </span>
+        </button>
 
-        <div
-          class="stats-card cursor-pointer transition-colors duration-150 hover:border-[#FF453A]"
-          :class="{ 'border-[#FF453A] ring-1 ring-[#FF453A]': selectedStatus === 'spam' }"
+        <button
+          type="button"
+          class="stats-card"
+          :aria-pressed="selectedStatus === 'spam'"
+          :class="{ active: selectedStatus === 'spam' }"
           @click="
             selectedStatus = 'spam';
             page = 1;
           "
         >
-          <div class="stats-icon text-[#FF453A] bg-[#FF453A]/10">
-            <Icon icon="ri:spam-2-line" />
-          </div>
-          <div>
-            <div class="stats-label">垃圾拦截</div>
-            <div class="stats-value text-[#FF453A]">
+          <span>
+            <span class="stats-label">垃圾拦截</span>
+            <span class="stats-value text-[#FF453A]">
               {{ statusCounts.spam }} <span class="stats-sub">条已拦截</span>
-            </div>
-          </div>
-        </div>
+            </span>
+          </span>
+        </button>
       </div>
 
       <!-- 状态分段栏与批量控制 -->
-      <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
-        <div class="apple-segmented">
+      <div class="console-toolbar">
+        <div class="apple-segmented" role="group" aria-label="评论状态">
           <button
             v-for="st in statusTabs"
             :key="st.key"
             type="button"
             :class="{ active: selectedStatus === st.key }"
+            :aria-pressed="selectedStatus === st.key"
             @click="
               selectedStatus = st.key;
               page = 1;
@@ -769,6 +766,4 @@ onUnmounted(() => {
   object-fit: contain !important;
 }
 
-@media (max-width: 640px) {
-}
 </style>

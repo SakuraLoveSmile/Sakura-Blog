@@ -282,36 +282,27 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 
     <div class="px-4 pb-8 sm:px-5 md:px-8">
       <!-- ===== Stat Cards ===== -->
-      <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <!-- 当前数据摘要 -->
+      <div class="console-summary" role="group" aria-label="概览摘要">
         <ConsoleStatsCard
-          label="总用户数"
+          label="匹配用户"
           :value="stats.total"
           sub="注册账户"
-          icon="ri:team-line"
-          color="primary"
         />
         <ConsoleStatsCard
-          label="系统管理员"
+          label="本页管理员"
           :value="stats.adminCount"
           sub="管理权限"
-          icon="ri:shield-user-line"
-          color="primary"
         />
         <ConsoleStatsCard
-          label="专栏作者"
+          label="本页作者"
           :value="stats.authorCount"
           sub="内容编辑"
-          icon="ri:quill-pen-line"
-          color="purple"
         />
         <ConsoleStatsCard
           label="当前页用户"
           :value="users.length"
           :sub="'共 ' + total + ' 条'"
-          icon="ri:user-star-line"
-          color="success"
-          value-class="text-[#30D158]"
         />
       </div>
 

@@ -454,12 +454,9 @@ onMounted(loadProjects);
       </VEmpty>
 
       <template v-else>
-        <!-- 概览数据指标卡 -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <!-- 当前数据摘要 -->
+        <div class="console-summary" role="group" aria-label="概览摘要">
           <div class="stats-card">
-            <div class="stats-icon text-primary bg-primary/10">
-              <Icon icon="ri:file-list-3-line" />
-            </div>
             <div>
               <div class="stats-label">当前项目文档</div>
               <div class="stats-value">{{ totalDocs }} <span class="stats-sub">篇文档</span></div>
@@ -467,9 +464,6 @@ onMounted(loadProjects);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-              <Icon icon="ri:checkbox-circle-line" />
-            </div>
             <div>
               <div class="stats-label">已公开发布</div>
               <div class="stats-value text-[#30D158]">
@@ -479,9 +473,6 @@ onMounted(loadProjects);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
-              <Icon icon="ri:draft-line" />
-            </div>
             <div>
               <div class="stats-label">草稿状态</div>
               <div class="stats-value text-[#FF9500]">
@@ -491,9 +482,6 @@ onMounted(loadProjects);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-              <Icon icon="ri:calendar-event-line" />
-            </div>
             <div>
               <div class="stats-label">本月更新</div>
               <div class="stats-value">{{ thisMonthUpdates }} <span class="stats-sub">篇更新记录</span></div>
@@ -756,71 +744,4 @@ onMounted(loadProjects);
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  /* highlight removed */
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
-
-@media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
-}
 </style>

@@ -469,12 +469,9 @@ async function batchMoveGroup() {
       <VLoading v-if="isLoading" />
 
       <template v-else>
-        <!-- 概览数据指标卡 -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <!-- 当前数据摘要 -->
+        <div class="console-summary" role="group" aria-label="概览摘要">
           <div class="stats-card">
-            <div class="stats-icon text-primary bg-primary/10">
-              <Icon icon="ri:links-line" />
-            </div>
             <div>
               <div class="stats-label">全部友链</div>
               <div class="stats-value">
@@ -485,9 +482,6 @@ async function batchMoveGroup() {
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-              <Icon icon="ri:checkbox-circle-line" />
-            </div>
             <div>
               <div class="stats-label">访问正常</div>
               <div class="stats-value text-[#30D158]">
@@ -498,9 +492,6 @@ async function batchMoveGroup() {
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#FF453A] bg-[#FF453A]/10">
-              <Icon icon="ri:error-warning-line" />
-            </div>
             <div>
               <div class="stats-label">访问异常</div>
               <div class="stats-value text-[#FF453A]">
@@ -511,9 +502,6 @@ async function batchMoveGroup() {
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
-              <Icon icon="ri:rss-line" />
-            </div>
             <div>
               <div class="stats-label">RSS 订阅</div>
               <div class="stats-value">
@@ -1098,7 +1086,4 @@ async function batchMoveGroup() {
   transform: scale(1.15);
 }
 
-/* 移动端适配 */
-@media (max-width: 640px) {
-}
 </style>

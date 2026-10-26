@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-10-26T04:59:38.994Z",
+  "documentOverflow": false,
+  "heading": "文章管理",
+  "recordCount": 8,
+  "scripts": [
+    "http://127.0.0.1:8132/console/assets/index-C4UwIKMe.js"
+  ],
+  "sidebarWidth": 224,
+  "styles": [
+    "http://127.0.0.1:8132/console/assets/index-D40YALKK.css",
+    "http://127.0.0.1:8132/console/assets/registry-ByUA0WsA.css",
+    "http://127.0.0.1:8132/console/assets/DefaultLayout-z35fnn2N.css",
+    "http://127.0.0.1:8132/console/assets/useDashboardLayout-BExs-U8x.css",
+    "http://127.0.0.1:8132/console/assets/DashboardDesignerView-BOjoRUJR.css",
+    "http://127.0.0.1:8132/console/assets/AttachmentField-D1RH2W8a.css",
+    "http://127.0.0.1:8132/console/assets/useStellarSettings-Dbc3UMLg.css",
+    "http://127.0.0.1:8132/console/assets/SettingsView-DBug-kfL.css",
+    "http://127.0.0.1:8132/console/assets/PostList--driXpSa.css",
+    "http://127.0.0.1:8132/console/assets/EditorToolbar-B-TFNBcG.css",
+    "http://127.0.0.1:8132/console/assets/PostEditor-BGkt1DDz.css",
+    "http://127.0.0.1:8132/console/assets/RichTextEditor-BHvzqLau.css"
+  ],
+  "url": "http://127.0.0.1:8132/console/posts",
+  "viewport": {
+    "height": 778,
+    "width": 1168
+  },
+  "flows": [
+    "dashboard and size modal viewed; cancelled without saving",
+    "settings basic and appearance tabs switched",
+    "posts: all 8 -> drafts 3 -> selected draft editor -> all 8"
+  ]
+}

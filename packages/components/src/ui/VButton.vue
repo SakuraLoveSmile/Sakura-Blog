@@ -92,7 +92,7 @@ function handleClick(e: MouseEvent) {
   outline: 0;
   appearance: none;
   vertical-align: middle;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm, 8px);
   transition: background-color var(--duration-fast, 150ms) var(--ease-standard), border-color var(--duration-fast, 150ms) var(--ease-standard), color var(--duration-fast, 150ms) var(--ease-standard), opacity var(--duration-fast, 150ms) var(--ease-standard), transform var(--duration-fast, 150ms) var(--ease-standard);
   background: transparent;
   white-space: nowrap;
@@ -101,10 +101,6 @@ function handleClick(e: MouseEvent) {
 
 .btn:hover:not(:disabled) {
   opacity: 1;
-}
-
-.btn:active:not(:disabled) {
-  transform: scale(0.97);
 }
 
 .btn:disabled {
@@ -122,7 +118,7 @@ function handleClick(e: MouseEvent) {
   border-color: color-mix(in srgb, #fff 12%, transparent);
   color: var(--color-foreground, #f5f5f7);
   background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 8%, var(--color-card, #1c1c1e));
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 .btn-default:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 16%, var(--color-card, #1c1c1e));
@@ -145,7 +141,6 @@ function handleClick(e: MouseEvent) {
 }
 .btn-primary:active:not(:disabled) {
   background: var(--color-primary-active, #007aff);
-  transform: scale(0.97);
 }
 
 /* 次要按钮：深色半透明胶囊 */
@@ -186,7 +181,6 @@ function handleClick(e: MouseEvent) {
 }
 .btn-danger:active:not(:disabled) {
   background: color-mix(in srgb, var(--color-state-error, #ff453a) 85%, #000);
-  transform: scale(0.97);
 }
 
 .btn-block {
@@ -263,7 +257,6 @@ function handleClick(e: MouseEvent) {
 }
 
 /* 圆角规则放在尺寸规则之后，避免 sm/lg 覆盖胶囊形状 */
-.btn,
 .btn-pill {
   border-radius: 9999px;
 }

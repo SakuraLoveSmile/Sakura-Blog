@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { useAuthStore } from "@/stores/auth";
 import { useModulesStore, type ModuleNav } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
-import { VTag, VButton, Dialog } from "@/components/ui";
+import { VButton, Dialog } from "@/components/ui";
 import FeedbackLauncher from "@/components/FeedbackLauncher.vue";
 import { searchApi, notificationApi, type SearchResultItem } from "@/api";
 import { queryKeys } from "@/api/query-client";
@@ -304,14 +304,14 @@ function closeProfileDropdown() {
 
 <template>
   <div class="flex h-screen bg-background text-foreground" @click="closeProfileDropdown">
-    <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-card；支持收起为仅图标的 w-16） -->
+    <!-- 桌面工作区导航：224px，折叠为 64px。 -->
     <aside
-      :class="sidebarCollapsed ? 'sidebar-collapsed w-16' : 'w-64'"
+      :class="sidebarCollapsed ? 'sidebar-collapsed w-16' : 'w-56'"
       class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto overflow-x-hidden border-r border-border transition-[width] duration-150 md:flex"
       style="background: var(--color-sidebar);"
     >
       <!-- Logo -->
-      <div class="flex justify-center pb-5 pt-5">
+      <div class="flex items-center px-5 py-4" :class="{ 'justify-center px-0': sidebarCollapsed }">
         <a
           href="/"
           target="_blank"
@@ -319,15 +319,15 @@ function closeProfileDropdown() {
           class="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
           <img src="/favicon.svg" alt="Logo" class="h-6 w-6 cursor-pointer select-none" />
-          <span v-if="!sidebarCollapsed" class="text-lg font-bold text-foreground">Console</span>
+          <span v-if="!sidebarCollapsed" class="text-sm font-semibold text-foreground">Console</span>
         </a>
       </div>
 
       <div v-if="canWritePost" class="shrink-0 px-3 pb-3">
         <VButton
-          type="primary"
+          type="default"
           :route="{ path: '/posts/new' }"
-          class="min-h-11 w-full justify-center"
+          class="w-full justify-center"
           :aria-label="sidebarCollapsed ? '开始写作' : undefined"
           :title="sidebarCollapsed ? '开始写作' : undefined"
         >
@@ -349,14 +349,14 @@ function closeProfileDropdown() {
           >
             <span :class="{ 'mr-3': !sidebarCollapsed }"><Icon icon="ri:search-line" /></span>
             <template v-if="!sidebarCollapsed">
-              <span class="flex-1 select-none text-left text-sm font-normal">搜索内容与菜单</span>
+              <span class="flex-1 select-none text-left text-sm font-normal">搜索</span>
               <div class="text-sm">{{ isMac ? "⌘" : "Ctrl" }}+K</div>
             </template>
           </button>
         </div>
 
         <!-- 分组菜单（对齐 VMenu/VMenuItem/VMenuLabel；收起时分组标题改分割线） -->
-        <ul class="menu-list space-y-1 p-3">
+        <ul class="menu-list space-y-0.5 p-3">
           <template v-for="group in navGroups" :key="group">
             <li v-if="group && !sidebarCollapsed" class="menu-label">{{ group }}</li>
             <li v-else-if="group" class="mx-1 my-2 border-t border-border"></li>
@@ -372,7 +372,7 @@ function closeProfileDropdown() {
                 :title="sidebarCollapsed ? item.label : ''"
               >
                 <span class="menu-icon self-center" :class="{ 'mr-3': !sidebarCollapsed }">
-                  <Icon :icon="item.icon" width="20" height="20" />
+                  <Icon :icon="item.icon" width="18" height="18" />
                 </span>
                 <template v-if="!sidebarCollapsed">
                   <span class="menu-title flex-1 self-center">{{ item.label }}</span>
@@ -420,7 +420,7 @@ function closeProfileDropdown() {
           @click="toggleSidebar"
         >
           <span :class="{ 'mr-3': !sidebarCollapsed }">
-            <Icon :icon="sidebarCollapsed ? 'ri:menu-unfold-line' : 'ri:menu-fold-line'" width="20" height="20" />
+            <Icon :icon="sidebarCollapsed ? 'ri:menu-unfold-line' : 'ri:menu-fold-line'" width="18" height="18" />
           </span>
           <span v-if="!sidebarCollapsed" class="select-none text-sm">收起侧边栏</span>
         </button>
@@ -428,7 +428,7 @@ function closeProfileDropdown() {
 
       <!-- 底部用户资料区（对齐 Halo profile 70px；收起时仅头像） -->
       <div class="profile-placeholder">
-        <div class="current-profile" :class="sidebarCollapsed ? 'w-16 justify-center gap-0 !p-0' : 'w-64'">
+        <div class="current-profile" :class="sidebarCollapsed ? 'w-16 justify-center gap-0 !p-0' : 'w-56'">
           <!-- 铃铛通知按钮（Wave 3b）：收起时隐藏，避免 w-16 宽度放不下两个图标 -->
           <div v-if="!sidebarCollapsed" class="relative self-center">
             <button
@@ -452,8 +452,8 @@ function closeProfileDropdown() {
               alt="avatar"
               class="h-9 w-9 rounded-full object-cover"
             />
-            <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15">
-              <Icon icon="ri:user-3-line" class="text-lg text-primary" />
+            <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
+              <Icon icon="ri:user-3-line" class="text-base text-text-secondary" />
             </span>
           </div>
           <!-- 收起时：未读徽标叠在头像右上角，保持通知入口可见 -->
@@ -463,16 +463,9 @@ function closeProfileDropdown() {
           >
             {{ unreadCount > 99 ? "99+" : unreadCount }}
           </div>
-          <div v-if="!sidebarCollapsed" class="profile-name">
-            <div class="flex text-sm font-medium text-foreground">{{ auth.user.display_name || "管理员" }}</div>
-            <div class="flex">
-              <VTag>
-                <template #leftIcon>
-                  <Icon icon="ri:user-settings-line" class="text-xs" />
-                </template>
-                {{ auth.user.username || "超级管理员" }}
-              </VTag>
-            </div>
+          <div v-if="!sidebarCollapsed" class="profile-name min-w-0">
+            <div class="truncate text-sm font-medium text-foreground">{{ auth.user.display_name || "管理员" }}</div>
+            <span class="truncate text-xs text-text-tertiary">{{ auth.user.username }}</span>
           </div>
           <div v-if="!sidebarCollapsed" class="relative self-center">
             <button
@@ -515,19 +508,18 @@ function closeProfileDropdown() {
     <!-- Main content -->
     <main
       class="content w-full min-w-0 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
-      :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'"
+      :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-56'"
     >
       <router-view />
       <!-- Feedback 反馈入口（feedback.display: console|both 时挂载 <feedback-widget>） -->
       <FeedbackLauncher />
-      <!-- 页脚（对齐 Halo：Powered by ...） -->
+      <!-- 保留网站入口与滚动末端安全空间。 -->
       <footer
         v-if="showFooter"
         class="border-t border-border px-4 py-3 text-center text-xs text-text-quaternary text-text-tertiary"
       >
-        Powered by
         <a href="/" target="_blank" class="font-medium text-text-tertiary transition-colors hover:text-primary"
-          >Stellar Blog</a
+          >访问网站</a
         >
       </footer>
     </main>
@@ -620,7 +612,7 @@ function closeProfileDropdown() {
                       @click="closeMoreMenu"
                     >
                       <span class="menu-icon mr-3 self-center">
-                        <Icon :icon="item.icon" width="20" height="20" />
+                        <Icon :icon="item.icon" width="18" height="18" />
                       </span>
                       <span class="menu-title flex-1 self-center">{{ item.label }}</span>
                       <span
@@ -839,8 +831,8 @@ function closeProfileDropdown() {
 <style scoped>
 /* 对齐 Halo VMenuLabel */
 .menu-label {
-  padding: 0.5rem;
-  font-size: 0.75rem;
+  padding: 14px 8px 6px;
+  font-size: 12px;
   color: var(--color-text-quaternary);
   user-select: none;
 }
@@ -853,11 +845,12 @@ function closeProfileDropdown() {
 
 .menu-item-title {
   transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
-  font-size: 0.9rem;
+  font-size: 13px;
   display: flex;
   user-select: none;
   position: relative;
-  padding: 0.5rem;
+  min-height: 36px;
+  padding: 6px 8px;
   font-weight: 400;
   border-radius: 8px;
   color: var(--color-text-secondary);
@@ -866,7 +859,7 @@ function closeProfileDropdown() {
 
 .menu-item-title:hover,
 .menu-item-title.active {
-  background: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: var(--color-sidebar-accent);
   color: var(--color-foreground);
   font-weight: 500;
 }
@@ -877,25 +870,10 @@ function closeProfileDropdown() {
   outline-offset: 2px;
 }
 
-/* 激活项左侧竖条（Apple 蓝） */
-.menu-item-title.active::after {
-  position: absolute;
-  top: calc(50% - 13px);
-  left: -8px;
-  width: 3px;
-  height: 26px;
-  content: "";
-  background: var(--color-primary);
-  border-radius: 6px;
-}
-
-/* 侧边栏收起模式：隐藏左侧竖条，改用居中胶囊微光高光 */
-.sidebar-collapsed .menu-item-title.active::after {
-  display: none;
-}
+/* 折叠导航与展开导航使用同一中性选中状态。 */
 .sidebar-collapsed .menu-item-title.active {
-  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
-  color: var(--color-primary);
+  background: var(--color-sidebar-accent);
+  color: var(--color-foreground);
 }
 
 /* 缩进子菜单项 */
@@ -913,23 +891,23 @@ function closeProfileDropdown() {
 }
 .menu-subitem:hover,
 .menu-subitem.active {
-  background: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: var(--color-sidebar-accent);
   color: var(--color-foreground);
   font-weight: 500;
 }
 
 /* 底部用户资料区 */
 .profile-placeholder {
-  height: 70px;
+  height: 64px;
 }
 
 .current-profile {
-  height: 70px;
+  height: 64px;
   position: fixed;
   left: 0;
   bottom: 0;
   display: flex;
-  gap: 0.75rem;
+  gap: 8px;
   background: var(--color-sidebar);
   /* solid background without blur */
   padding: 0.75rem;

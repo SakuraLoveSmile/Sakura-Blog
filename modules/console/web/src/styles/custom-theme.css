@@ -4,16 +4,15 @@
 .page-enter-active,
 .page-leave-active {
   transition:
-    opacity var(--duration-normal) var(--ease-standard),
-    transform var(--duration-normal) var(--ease-standard);
+    opacity var(--duration-fast) var(--ease-standard);
 }
 .page-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+
 }
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+
 }
 
 /* 通用淡入 */
@@ -57,10 +56,7 @@
 
 /* ===== 微交互 ===== */
 
-/* 按钮点击反馈 */
-button:active:not(:disabled) {
-  transform: scale(0.97);
-}
+/* 操作反馈由各控件的状态颜色承担，避免整页按钮缩放。 */
 
 
 

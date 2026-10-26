@@ -214,12 +214,9 @@ onMounted(load);
       </template>
 
       <template v-else>
-        <!-- 概览数据指标卡 -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <!-- 当前数据摘要 -->
+        <div class="console-summary" role="group" aria-label="概览摘要">
           <div class="stats-card">
-            <div class="stats-icon text-primary bg-primary/10">
-              <Icon icon="ri:book-shelf-line" />
-            </div>
             <div>
               <div class="stats-label">全部专栏</div>
               <div class="stats-value">
@@ -230,9 +227,6 @@ onMounted(load);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-              <Icon icon="ri:article-line" />
-            </div>
             <div>
               <div class="stats-label">归属文章</div>
               <div class="stats-value">
@@ -243,9 +237,6 @@ onMounted(load);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-primary bg-primary/10">
-              <Icon icon="ri:image-line" />
-            </div>
             <div>
               <div class="stats-label">海报封面</div>
               <div class="stats-value">
@@ -256,11 +247,8 @@ onMounted(load);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-              <Icon icon="ri:fire-line" />
-            </div>
             <div>
-              <div class="stats-label">最高热度</div>
+              <div class="stats-label">文章最多的专栏</div>
               <div class="stats-value truncate max-w-[140px]" :title="stats.maxName">
                 {{ stats.maxName }}
                 <span class="stats-sub">{{ stats.maxCount }} 篇收录</span>
@@ -322,7 +310,7 @@ onMounted(load);
           <div
             v-for="topic in filteredTopics"
             :key="topic.id"
-            class="topic-hero-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-150 hover:border-border-strong hover:shadow-lg"
+            class="topic-hero-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-150 hover:border-border-strong"
           >
             <!-- 卡片海报封面区 -->
             <div class="relative aspect-video w-full overflow-hidden bg-secondary">
@@ -525,58 +513,6 @@ onMounted(load);
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  /* highlight removed */
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
 
 /* 排序按钮 */
 .apple-sort-btn {
@@ -625,19 +561,4 @@ onMounted(load);
   border-color: var(--color-border);
 }
 
-/* 移动端适配 */
-@media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
-}
 </style>

@@ -77,7 +77,7 @@ test.describe("Console UI 一致性测试", () => {
 
     // 用夹具 token 过滤，保证页面上的卡片全部来自本轮夹具，末项归属不再依赖全局排序
     await page.getByPlaceholder("搜索文章标题或 Slug...").fill(token);
-    await expect(page.locator(".post-card")).toHaveCount(fixtures.length);
+    await expect(page.locator(".post-record")).toHaveCount(fixtures.length);
 
     const bottomNav = page.locator('nav[aria-label="移动端底部导航"]');
     await expect(bottomNav).toBeVisible();
@@ -105,7 +105,7 @@ test.describe("Console UI 一致性测试", () => {
       .toBeGreaterThanOrEqual(expectedBottom - 1);
 
     // 末项 = DOM 中最后一张真实卡片；由卡片呈现的标题映射回夹具 slug，不做序号猜测
-    const lastCard = page.locator(".post-card").last();
+    const lastCard = page.locator(".post-record").last();
     await expect(lastCard).toBeVisible();
     const label = await lastCard.locator('label[aria-label^="选择文章"]').getAttribute("aria-label");
     const mapped = fixtures.find((item) => (label ?? "").includes(item.title));
@@ -352,7 +352,7 @@ test.describe("Console UI 一致性测试", () => {
     await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
   });
 
-  test("主按钮采用胶囊圆角、黑字高对比、无外发光", async ({ page }) => {
+  test("主按钮采用工具型小圆角、黑字高对比、无外发光", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/posts");
@@ -378,9 +378,9 @@ test.describe("Console UI 一致性测试", () => {
     expect(styles.boxShadow).toBe("none");
     // 高度为标准 36px
     expect(styles.height).toBe("36px");
-    // 胶囊圆角（大于等于 18px）
+    // 本轮确定工作控件使用 8px 圆角，显式 pill 仍可使用胶囊。
     const radiusNum = parseFloat(styles.borderRadius);
-    expect(radiusNum).toBeGreaterThanOrEqual(18);
+    expect(radiusNum).toBe(8);
   });
 
   test("分段 Tabs 与按钮支持键盘聚焦并具有清晰焦点环", async ({ page }) => {
@@ -474,7 +474,7 @@ test.describe("Console UI 一致性测试", () => {
     }
 
     // 卡片独立操作图标按钮 >= 44x44px
-    const postAction = page.locator(".post-card-action").first();
+    const postAction = page.locator(".post-record .action-icon-btn").first();
     if (await postAction.count() > 0) {
       const actionBox = await postAction.boundingBox();
       expect(actionBox).not.toBeNull();
@@ -524,35 +524,28 @@ test.describe("Console UI 一致性测试", () => {
     await expect(dirtyBadge).toHaveCount(0);
   });
 
-  test("列表概览卡片统一样式且符合最小高度规范（桌面 80px / 手机 88px）", async ({ page }) => {
+  test("列表摘要保持四项事实、紧凑且无额外卡片层级", async ({ page }) => {
     await login(page);
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/posts");
-    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
-
-    const statsCards = page.locator(".stats-card");
-    await expect(statsCards.first()).toBeVisible();
-    const count = await statsCards.count();
-    expect(count).toBeGreaterThan(0);
-
-    for (let i = 0; i < count; i++) {
-      const card = statsCards.nth(i);
-      const minHeight = await card.evaluate((el) => window.getComputedStyle(el).minHeight);
-      expect(minHeight).toBe("80px");
-      const box = await card.boundingBox();
-      expect(box).not.toBeNull();
-      expect(box!.height).toBeGreaterThanOrEqual(80);
-    }
-
-    // 切换至手机视口 (390px)
-    await page.setViewportSize({ width: 390, height: 844 });
-    for (let i = 0; i < count; i++) {
-      const card = statsCards.nth(i);
-      const minHeight = await card.evaluate((el) => window.getComputedStyle(el).minHeight);
-      expect(minHeight).toBe("88px");
-      const box = await card.boundingBox();
-      expect(box).not.toBeNull();
-      expect(box!.height).toBeGreaterThanOrEqual(88);
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/console/posts");
+      const summary = page.locator(".console-summary");
+      await expect(summary).toBeVisible();
+      const items = summary.locator(".stats-card");
+      await expect(items).toHaveCount(4);
+      for (const item of await items.all()) {
+        await expect(item).toBeVisible();
+        const box = await item.boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.height).toBeGreaterThanOrEqual(28);
+        expect(box!.height).toBeLessThanOrEqual(88);
+        const styles = await item.evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return { shadow: cs.boxShadow, radius: cs.borderRadius, background: cs.backgroundColor };
+        });
+        expect(styles).toEqual({ shadow: "none", radius: "0px", background: "rgba(0, 0, 0, 0)" });
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
   });
 
@@ -600,7 +593,8 @@ test.describe("Console UI 一致性测试", () => {
     await expect(userCards).toHaveCount(4);
     const userFirstBox = await userCards.first().boundingBox();
     expect(userFirstBox).not.toBeNull();
-    expect(userFirstBox!.height).toBeGreaterThanOrEqual(80);
+    expect(userFirstBox!.height).toBeGreaterThanOrEqual(28);
+    expect(userFirstBox!.height).toBeLessThanOrEqual(88);
 
     // 备份管理
     await page.goto("/console/backup");
@@ -609,7 +603,8 @@ test.describe("Console UI 一致性测试", () => {
     await expect(backupCards).toHaveCount(4);
     const backupFirstBox = await backupCards.first().boundingBox();
     expect(backupFirstBox).not.toBeNull();
-    expect(backupFirstBox!.height).toBeGreaterThanOrEqual(80);
+    expect(backupFirstBox!.height).toBeGreaterThanOrEqual(28);
+    expect(backupFirstBox!.height).toBeLessThanOrEqual(88);
   });
 
   test("设置页具有合法 tabpanel 容器与 aria-labelledby 联动，非活动 panel 保持 hidden", async ({ page }) => {
@@ -802,14 +797,14 @@ const LIST_EMPTY_CASES: Array<{
     heading: "文章管理",
     search: "搜索文章标题或 Slug...",
     emptyTitle: "未找到匹配的文章",
-    tableToggle: "表格视图",
+    tableToggle: "列表视图",
   },
   {
     path: "/console/pages",
     heading: "独立页面",
     search: "搜索页面标题或 Slug...",
     emptyTitle: "未找到匹配的页面",
-    tableToggle: "表格视图",
+    tableToggle: "列表视图",
   },
   {
     path: "/console/attachments",
@@ -964,6 +959,7 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await page.goto("/console/posts");
     await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
 
+    await page.getByRole("button", { name: "海报卡片视图", exact: true }).click();
     const card = page.locator(".post-card").filter({ hasText: title }).first();
     await expect(card).toBeVisible();
     await card.locator('label[aria-label^="选择文章"]').click();
@@ -982,7 +978,7 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await expect(page.getByRole("button", { name: "全选本页" })).toBeVisible();
   });
 
-  test("表格模式先选择再筛选为空：表头选择入口与批量浮条一并消失", async ({ page }) => {
+  test("记录列表先选择再筛选为空：选择入口与批量浮条一并消失", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
 
@@ -1003,9 +999,9 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
 
     await page.goto("/console/posts");
     await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
-    await page.locator('button[title="表格视图"]').click();
+    await page.locator('button[title="列表视图"]').click();
 
-    const row = page.locator("tbody tr").filter({ hasText: title }).first();
+    const row = page.locator(".post-record").filter({ hasText: title }).first();
     await expect(row).toBeVisible();
     await row.locator('input[type="checkbox"]').click();
     await expect(page.locator(".v-floating-dock")).toBeVisible();
@@ -1013,11 +1009,11 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     const search = page.getByPlaceholder("搜索文章标题或 Slug...");
     await search.fill("e2e_table_empty_after_select_9f3a");
     await expect(page.getByText("未找到匹配的文章")).toBeVisible();
-    await expect(page.locator('thead input[type="checkbox"]')).toHaveCount(0);
+    await expect(page.locator('.post-record input[type="checkbox"]')).toHaveCount(0);
     await expect(page.locator(".v-floating-dock")).toHaveCount(0);
 
     await search.fill("");
-    await expect(page.locator("tbody tr").filter({ hasText: title }).first()).toBeVisible();
+    await expect(page.locator(".post-record").filter({ hasText: title }).first()).toBeVisible();
     await expect(page.locator(".v-floating-dock")).toHaveCount(0);
   });
 
@@ -1056,4 +1052,39 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await expect(page.locator("tbody tr").filter({ hasText: attachment.filename }).first()).toBeVisible();
     await expect(page.locator(".v-floating-dock")).toHaveCount(0);
   });
+});
+
+// 公共外壳和控件影响所有模块：从真实 manifest 导航逐页验证桌面与手机。
+test("Console 全部主导航在桌面和手机可达且无整页横向溢出", async ({ page }, testInfo) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  const layoutIssues: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await login(page);
+  await ensurePosts(page, 4, `workspace-review-${Date.now()}`);
+  const paths = await page.locator('aside a[href^="/console/"]').evaluateAll((links) =>
+    Array.from(new Set(links.map((link) => new URL((link as HTMLAnchorElement).href).pathname))),
+  );
+  expect(paths.length).toBeGreaterThanOrEqual(25);
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    for (const path of paths) {
+      await page.goto(path);
+      await expect(page).toHaveURL(new RegExp(`${path}$`));
+      await expect(page.locator("main.content h1").first(), path).toBeVisible();
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { message: `${path} 在 ${width}px 不得整页横向溢出` }).toBe(true);
+      const main = page.locator("main.content");
+      const geometry = await main.evaluate((el) => ({ content: el.scrollWidth, viewport: el.clientWidth }));
+      if (geometry.content > geometry.viewport + 1) {
+        layoutIssues.push(`${path} @ ${width}: ${geometry.content}px / ${geometry.viewport}px`);
+        await page.screenshot({ path: testInfo.outputPath(`overflow-${path.split("/").pop()}-${width}.png`) });
+      }
+      if (["posts", "pages", "settings", "dashboard", "comments", "attachments", "wiki", "users"].includes(path.split("/").pop() ?? "")) {
+        await page.screenshot({ path: testInfo.outputPath(`workspace-${path.split("/").pop()}-${width}.png`) });
+      }
+    }
+  }
+  await testInfo.attach("navigation-report", { body: JSON.stringify({ paths, widths: [1280, 390], errors, layoutIssues }, null, 2), contentType: "application/json" });
+  expect(errors, "主导航切换不应产生未捕获错误").toEqual([]);
+  expect(layoutIssues, "各页主工作区不得横向溢出").toEqual([]);
 });

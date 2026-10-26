@@ -363,7 +363,7 @@ onBeforeRouteLeave((to, from, next) => {
               <VTabbar
                 v-model:active-id="active"
                 :items="tabItems"
-                type="segmented"
+                type="default"
                 :auto-reveal="true"
                 class="settings-card-tabbar"
                 @change="navigateToTab"
@@ -517,21 +517,21 @@ onBeforeRouteLeave((to, from, next) => {
   overflow: visible;
 }
 .settings-basic-panel :deep(.card-wrapper) {
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   overflow: visible;
 }
 .settings-basic-panel :deep(.card-header) {
-  padding: 16px 20px;
-  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  padding: 0 16px;
+  background: transparent;
   border-bottom: 1px solid var(--color-border);
-  border-top-left-radius: calc(var(--radius-xl) - 1px);
-  border-top-right-radius: calc(var(--radius-xl) - 1px);
+  border-top-left-radius: calc(var(--radius-md) - 1px);
+  border-top-right-radius: calc(var(--radius-md) - 1px);
 }
 .settings-basic-panel :deep(.card-body) {
   padding: 0;
   overflow: visible;
-  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
-  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-left-radius: calc(var(--radius-md) - 1px);
+  border-bottom-right-radius: calc(var(--radius-md) - 1px);
 }
 .settings-basic-panel :deep(.settings-basic-form),
 .settings-basic-panel :deep(.settings-post-form),
@@ -539,16 +539,16 @@ onBeforeRouteLeave((to, from, next) => {
 .settings-basic-panel :deep(.settings-seo-form),
 .settings-basic-panel :deep(.settings-search-form),
 .settings-basic-panel :deep(.settings-advanced-form) {
-  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
-  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-left-radius: calc(var(--radius-md) - 1px);
+  border-bottom-right-radius: calc(var(--radius-md) - 1px);
 }
 .settings-basic-panel :deep(.settings-basic-actions),
 .settings-basic-panel :deep(.settings-post-actions),
 .settings-basic-panel :deep(.settings-comments-actions),
 .settings-basic-panel :deep(.settings-seo-actions),
 .settings-basic-panel :deep(.settings-search-actions) {
-  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
-  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-left-radius: calc(var(--radius-md) - 1px);
+  border-bottom-right-radius: calc(var(--radius-md) - 1px);
 }
 .settings-dirty-badge {
   display: inline-flex;
@@ -591,6 +591,17 @@ onBeforeRouteLeave((to, from, next) => {
   width: 100%;
   min-width: 0;
   overflow: hidden;
+}
+.settings-card-tabbar :deep(.tabbar-item) {
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.settings-card-tabbar {
+  border-bottom: none;
+}
+.settings-card-tabs :deep(.tabbar-autoreveal) {
+  flex-wrap: nowrap;
 }
 .settings-state {
   display: flex;
