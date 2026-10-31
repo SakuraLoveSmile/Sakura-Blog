@@ -189,7 +189,7 @@ const known = computed(() => props.options.includes(props.modelValue));
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-card);
+  background: transparent;
 }
 .example-sidebar {
   display: flex;
@@ -201,7 +201,7 @@ const known = computed(() => props.options.includes(props.modelValue));
 .example-article i {
   display: block;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   background: var(--color-text-quaternary);
 }
 .example-sidebar i:first-child {
@@ -221,7 +221,7 @@ const known = computed(() => props.options.includes(props.modelValue));
   gap: 4px;
   padding: 6px;
   border: 1px solid var(--color-border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: var(--color-background);
 }
 .example-article i:first-child {

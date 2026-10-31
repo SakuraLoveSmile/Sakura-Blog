@@ -31,26 +31,13 @@ interface CatResp {
   items: CatItem[];
 }
 
-const chartColors = themeColors({
-  chart2: "#2E8DFF",
-  primaryHover: "#66ABFF",
-  chart5: "#BF5AF2",
-  error: "#FF453A",
-  success: "#30D158",
-  warning: "#FF9F0A",
-  chart4: "#5E5CE6",
-  primaryActive: "#007AFF",
+// 图表色必须是功能 token；在 setup 时读取，确保主题变量已就绪且支持运行时主题变化。
+const CHART_KEYS = ["chart-2", "chart-1", "chart-3", "chart-4", "chart-5", "chart-6", "chart-7", "chart-8"] as const;
+const CHART_FALLBACKS = ["#2e8dff", "#30d158", "#ff9f0a", "#5e5ce6", "#bf5af2", "#32ade6", "#ff6482", "#64d2ff"];
+const colors = computed(() => {
+  const resolved = themeColors(Object.fromEntries(CHART_KEYS.map((key, index) => [key, CHART_FALLBACKS[index]])));
+  return CHART_KEYS.map((key) => resolved[key]);
 });
-const COLORS = [
-  chartColors.chart2,
-  chartColors.primaryHover,
-  chartColors.chart5,
-  chartColors.error,
-  chartColors.success,
-  chartColors.warning,
-  chartColors.chart4,
-  chartColors.primaryActive,
-];
 
 const data = ref<CatItem[]>([]);
 const loading = ref(true);
@@ -119,7 +106,7 @@ const arcs = computed(() => {
     return {
       path,
       sourceIndex: i,
-      color: COLORS[i % COLORS.length],
+      color: colors.value[i % colors.value.length],
       pct: Math.round((d.count / total.value) * 100),
       ...d,
     };
@@ -278,26 +265,20 @@ function openCategory(name: string) {
         <div
           v-for="(a, i) in arcs"
           :key="i"
-          class="p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] transition-colors duration-150 cursor-pointer"
-          :class="hoveredIdx === i && 'ring-1 ring-primary/50 border-primary/30'"
+          class="donut-legend-item"
+          :class="hoveredIdx === i && 'hovered'"
           role="button"
           tabindex="0"
           :aria-label="`查看分类：${a.name}`"
-            @mouseenter="hoveredIdx = a.sourceIndex"
+          @mouseenter="hoveredIdx = i"
           @mouseleave="hoveredIdx = null"
           @click="a.name !== '其他分类' && openCategory(a.name)"
           @keydown.enter="a.name !== '其他分类' && openCategory(a.name)"
         >
-          <div class="flex items-center justify-between text-xs mb-1.5">
-            <span class="font-medium text-foreground flex items-center gap-1.5 truncate">
-              <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: a.color }" />
-              <span class="truncate">{{ a.name }}</span>
-            </span>
-            <span class="text-muted-foreground font-semibold tabular-nums flex-shrink-0">{{ a.count }} 篇 · {{ a.pct }}%</span>
-          </div>
-          <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <div class="h-full rounded-full transition-colors duration-150 duration-300" :style="{ width: `${a.pct}%`, backgroundColor: a.color }" />
-          </div>
+          <span class="donut-dot" :style="{ backgroundColor: a.color }" />
+          <span class="donut-name">{{ a.name }}</span>
+          <span class="donut-count tabular-nums">{{ a.count }}</span>
+          <span class="donut-pct tabular-nums">{{ a.pct }}%</span>
         </div>
       </div>
     </div>
@@ -350,7 +331,7 @@ function openCategory(name: string) {
   transition: opacity var(--duration-normal) var(--ease-standard);
   cursor: pointer;
 }
-.donut-center-num { font-size: 22px; font-weight: 700; }
+.donut-center-num { font-size: 20px; font-weight: 600; }
 .donut-center-label { font-size: 11px; }
 
 .donut-legend {
@@ -370,12 +351,12 @@ function openCategory(name: string) {
   border-radius: 6px;
   transition: background var(--duration-fast) var(--ease-standard);
 }
-.donut-legend-item.hovered { background: color-mix(in srgb, #fff 5%, transparent); }
+.donut-legend-item.hovered { background: var(--color-accent); }
 .donut-legend-item:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
-.donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.donut-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .donut-name { color: var(--color-foreground); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .donut-count { color: var(--color-muted-foreground); flex-shrink: 0; }
 .donut-pct { color: var(--color-text-quaternary); font-size: 11px; width: 34px; text-align: right; flex-shrink: 0; }
@@ -392,7 +373,7 @@ function openCategory(name: string) {
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-dot,
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-dot { width: 8px; height: 8px; }
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-pct,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-pct { width: 30px; font-size: 10px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-pct { width: 30px; font-size: 11px; }
 
 /* S: stack vertically, center donut */
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-body {

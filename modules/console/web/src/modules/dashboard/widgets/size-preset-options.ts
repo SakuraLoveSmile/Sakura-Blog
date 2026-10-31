@@ -12,17 +12,18 @@ export interface WidgetPresetOption {
 }
 
 /**
- * 返回当前断点下实际列跨度不重复的快捷预设。
+ * 返回当前断点下实际宽高不重复的快捷预设。
  *
- * 三档名称是语义层级，不保证每个断点都有不同列数；同一列跨度只保留
- * 顺序靠前的代表项，避免两个按钮同时表达同一个可见网格宽度。
+ * 识别与去重必须共用同一套键：只按列宽去重会丢掉同宽不同高的档位，
+ * 导致当前识别出的 preset 不在弹窗里。只有宽高都相同的档位才视为重复。
  */
 export function uniquePresetOptions(type: string, breakpoint: Breakpoint): WidgetSizePreset[] {
-  const seenWidths = new Set<number>();
+  const seen = new Set<string>();
   return WIDGET_SIZE_PRESET_ORDER.filter((preset) => {
-    const span = getGridPresetSize(type, breakpoint, preset).w;
-    if (seenWidths.has(span)) return false;
-    seenWidths.add(span);
+    const size = getGridPresetSize(type, breakpoint, preset);
+    const key = `${size.w}x${size.h}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 }

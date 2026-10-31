@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Icon } from "@iconify/vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useBreakpoint } from "../useBreakpoint";
@@ -132,112 +131,68 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadAction
 </script>
 
 <template>
-  <div class="apple-card h-full flex flex-col justify-between" :class="`quick-card-${sizePreset}`" :data-bp="breakpoint">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">快捷操作</h3>
-      <span class="text-xs text-muted-foreground">{{ displayedActions.length }} 个快捷入口</span>
+  <div class="apple-card quick-actions" :class="`quick-card-${sizePreset}`" :data-bp="breakpoint">
+    <div class="quick-actions-heading">
+      <h3 class="apple-section-title">快捷操作</h3>
+      <span class="text-[12px] text-muted-foreground">{{ displayedActions.length }} 个入口</span>
     </div>
 
-    <!-- Small 尺寸：极紧凑 4 小宫格 -->
-    <div v-if="sizePreset === 'small'" class="grid grid-cols-2 gap-2 flex-1">
+    <div class="quick-action-list">
       <button
         v-for="act in displayedActions"
         :key="act.label"
-        class="quick-action-item flex items-center gap-2 p-2 rounded-xl text-left"
-        :class="{ 'quick-action-featured': act.label === '写文章' }"
+        class="quick-action-item"
         :aria-label="act.desc ? `${act.label}：${act.desc}` : act.label"
         @click="go(act)"
       >
-        <div
-          class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-        >
-          <Icon :icon="act.icon" class="w-3.5 h-3.5" />
-        </div>
-        <span class="text-xs font-medium text-foreground truncate">{{ act.label }}</span>
-      </button>
-    </div>
-
-    <!-- Medium 尺寸：经典 2x2 网格 -->
-    <div v-else-if="sizePreset === 'medium'" class="quick-grid-compact flex-1">
-      <button
-        v-for="act in displayedActions"
-        :key="act.label"
-        class="quick-action-item flex flex-col items-center gap-1.5 p-3 rounded-lg"
-        :class="{ 'quick-action-featured': act.label === '写文章' }"
-        :aria-label="act.desc ? `${act.label}：${act.desc}` : act.label"
-        @click="go(act)"
-      >
-        <div
-          class="quick-icon-compact"
-        >
-          <Icon :icon="act.icon" class="w-5 h-5" />
-        </div>
-        <span class="quick-label-compact">{{ act.label }}</span>
-      </button>
-    </div>
-
-    <!-- Large 尺寸：8 宫格全功能扩展 -->
-    <div v-else class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 flex-1">
-      <button
-        v-for="act in displayedActions"
-        :key="act.label"
-        class="quick-action-item flex flex-col items-center justify-center p-3 rounded-lg text-center"
-        :class="{ 'quick-action-featured': act.label === '写文章' }"
-        :aria-label="act.desc ? `${act.label}：${act.desc}` : act.label"
-        @click="go(act)"
-      >
-        <div
-          class="w-10 h-10 rounded-xl flex items-center justify-center mb-2 "
-        >
-          <Icon :icon="act.icon" class="w-5 h-5" />
-        </div>
-        <span class="text-xs font-semibold text-foreground">{{ act.label }}</span>
-        <span class="text-xs text-muted-foreground mt-0.5">{{ act.desc }}</span>
+        {{ act.label }}
       </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 三种尺寸只改变排版，入口共用中性表面与图标。 */
-.quick-action-item {
-  min-height: 44px;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  font: inherit;
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
+.quick-actions-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
-.quick-action-item:hover {
-  background: var(--color-accent);
-  border-color: var(--color-border-strong);
-}
-
-.quick-action-item.quick-action-featured {
-  color: var(--color-foreground);
-}
-
-.quick-grid-compact {
+.quick-action-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
 }
 
-.quick-icon-compact {
-  width: 28px;
-  height: 28px;
+.quick-action-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  min-height: 40px;
+  padding: 8px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 
-.quick-label-compact {
-  font-size: 12px;
-  font-weight: 500;
+.quick-action-item:hover,
+.quick-action-item:focus-visible {
   color: var(--color-foreground);
-  letter-spacing: -0.1px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .quick-action-item {
+    min-height: 44px;
+  }
 }
 </style>

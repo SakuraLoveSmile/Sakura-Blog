@@ -59,17 +59,17 @@ function addWidget(widget: WidgetDefinition) {
           <button
             v-for="widget in widgets"
             :key="widget.id"
-            class="flex items-center gap-3 p-3 rounded-xl border border-white/10 hover:border-primary/60 hover:bg-white/[0.05] text-left transition-colors duration-150 group"
+            class="flex items-center gap-3 p-3 rounded-md border border-border hover:border-border-strong hover:bg-accent text-left transition-colors duration-150 group"
             @click="addWidget(widget)"
           >
-            <div class="w-10 h-10 rounded-lg bg-white/[0.05] flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+            <div class="w-8 h-8 flex items-center justify-center text-text-tertiary group-hover:text-foreground transition-colors">
               <Icon :icon="widget.icon" class="w-5 h-5" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium text-foreground">{{ widget.label }}</div>
               <div class="text-xs text-muted-foreground mt-0.5">默认大小可在组件设置中切换</div>
             </div>
-              <Icon icon="ri:add-line" class="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <Icon icon="ri:add-line" class="w-5 h-5 text-text-tertiary group-hover:text-foreground transition-colors" />
           </button>
         </div>
       </section>
@@ -77,7 +77,7 @@ function addWidget(widget: WidgetDefinition) {
 
     <template #footer>
       <button
-        class="px-4 py-2 rounded-lg bg-white/[0.05] text-sm text-muted-foreground hover:bg-white/[0.09] hover:text-foreground transition-colors"
+        class="px-4 py-2 rounded-sm border border-border text-sm text-text-secondary hover:bg-accent hover:text-foreground transition-colors"
         @click="close"
       >
         关闭

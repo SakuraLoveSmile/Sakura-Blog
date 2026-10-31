@@ -4,67 +4,72 @@
 @import "./apple-base.css";
 @plugin "tailwindcss-animated";
 
-/* Apple 设计令牌——对齐 .design_library/苹果（Pinguo Apple）colors_and_type.css 的 .dark 语义层。
-   console 恒深色，故直接取 dark 映射值；命名保持 Tailwind v4 @theme 的 --color-* 约定。 */
+/* Console 设计令牌——方向 A「编辑台」。
+   黑底、细线、少色：主色收敛为近白，蓝色只保留给焦点环与功能性图表；
+   语义 token 仍沿用 Tailwind v4 @theme 的 --color-* 约定。 */
 @theme {
-  /* 品牌色（brand-400 / 300 / 500） */
-  --color-primary: #2e8dff;
-  --color-primary-hover: #66abff;
-  --color-primary-active: #007aff;
+  /* 主操作（白底黑字；蓝色不再承担按钮/标题/状态装饰） */
+  --color-primary: #e8e8ec;
+  --color-primary-hover: #ffffff;
+  --color-primary-active: #d6d6dc;
   --color-primary-foreground: #000000;
 
-  /* 背景层级（background 阶：900 底 / 800 卡 / 700 弹层与边框） */
-  --color-background: #000000;
-  --color-foreground: #f5f5f7;
-  --color-card: #1c1c1e;
-  --color-card-foreground: #f5f5f7;
-  --color-popover: #3a3a3c;
-  --color-popover-foreground: #f5f5f7;
-  --color-secondary: #1c1c1e;
-  --color-secondary-700: #3a3a3c;
-  --color-muted: #1c1c1e;
-  --color-muted-foreground: #8e8e93;
-  --color-accent: #3a3a3c;
-  --color-accent-foreground: #f5f5f7;
+  /* 背景层级（底 #0a0a0b / 面板 #121214 / 浮层 #151517） */
+  --color-background: #0a0a0b;
+  --color-foreground: #f4f4f6;
+  --color-card: #121214;
+  --color-card-foreground: #f4f4f6;
+  --color-popover: #151517;
+  --color-popover-foreground: #f4f4f6;
+  --color-secondary: #141416;
+  --color-secondary-700: #242428;
+  --color-muted: #121214;
+  --color-muted-foreground: #8b8b91;
+  --color-accent: #1b1b1e;
+  --color-accent-foreground: #f4f4f6;
 
-  /* 文字层级（text 阶：200/400/500） */
-  --color-text-secondary: #c7c7cc;
-  --color-text-tertiary: #8e8e93;
-  --color-text-quaternary: #7c7c82;
+  /* 文字层级（正文 13，列表标题 14，辅助 12/11） */
+  --color-text-secondary: #b9b9bf;
+  --color-text-tertiary: #7e7e85;
+  --color-text-quaternary: #6a6a71;
 
-  /* 功能色（state-success/error dark 锚点；warning 取 chart-3） */
+  /* 功能色（状态只用 5px 圆点 + 12px 文字，不再铺彩色底） */
   --color-state-success: #30d158;
   --color-state-warning: #ff9f0a;
   --color-state-error: #ff453a;
 
-  /* 边框 / 输入（dark：实色 background-700；border-strong 取 icon-700） */
-  --color-border: #3a3a3c;
-  --color-border-strong: #48484a;
-  --color-input: #3a3a3c;
+  /* 边框 / 输入（常态 #242428，hover/强调 #37373d） */
+  --color-border: #242428;
+  --color-border-strong: #37373d;
+  --color-input: #242428;
   --color-ring: #2e8dff;
 
-  /* 侧边栏（实色 background-800 #1c1c1e） */
-  --color-sidebar: #1c1c1e;
-  --color-sidebar-foreground: #f5f5f7;
-  --color-sidebar-accent: #2c2c2e;
+  /* 侧边栏（与页面同底色，仅用细线与选中底区分） */
+  --color-sidebar: #0a0a0b;
+  --color-sidebar-foreground: #f4f4f6;
+  --color-sidebar-accent: #19191c;
 
-  /* 图表（chart-1..5 dark 值；网格线取 icon-800） */
+  /* 图表（功能色集中保留，调用方必须读取 token） */
   --color-chart-1: #30d158;
   --color-chart-2: #2e8dff;
   --color-chart-3: #ff9f0a;
   --color-chart-4: #5e5ce6;
   --color-chart-5: #bf5af2;
-  --color-chart-grid: #2c2c2e;
+  --color-chart-6: #32ade6;
+  --color-chart-7: #ff6482;
+  --color-chart-8: #64d2ff;
+  --color-chart-grid: #242428;
 
-  /* 圆角（阶梯化数值：sm 8px、md 10px、lg 12px、xl 14px、2xl 16px、full 9999px） */
-  --radius: 10px;
+  /* 圆角：控件 6 / 容器 8 / 浮层 10；胶囊只保留头像、开关、未读角标 */
+  --radius: 8px;
   --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-base: 10px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 14px;
-  --radius-2xl: 16px;
+  --radius-sm: 6px;
+  --radius-base: 6px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --radius-3xl: 10px;
   --radius-full: 9999px;
 
   /* 字体（DM Sans 正文 / JetBrains Mono 数据；系统栈回退） */

@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--color-primary) 85%, transparent);
-  color: #ffffff;
+  color: var(--color-primary-foreground);
   font-size: 14px;
   cursor: pointer;
   opacity: 0;
@@ -406,7 +406,7 @@ onBeforeUnmount(() => {
 .attachment-menu-trigger:hover:not(:disabled),
 .attachment-menu-trigger[aria-expanded="true"] {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-foreground);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
@@ -430,11 +430,19 @@ onBeforeUnmount(() => {
   box-shadow: none;
 }
 
+@media (max-width: 767px) {
+  .attachment-menu-trigger-inline {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .attachment-menu-trigger-inline:hover:not(:disabled),
 .attachment-menu-trigger-inline[aria-expanded="true"] {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-foreground);
 }
 
 .attachment-menu {

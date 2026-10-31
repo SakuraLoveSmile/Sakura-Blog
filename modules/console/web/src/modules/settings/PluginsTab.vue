@@ -50,7 +50,7 @@ const inputCls = "apple-input";
     <!-- 预加载 -->
     <div class="border border-border rounded-xl p-4 space-y-3">
       <label class="flex items-center gap-2 text-sm font-medium text-text-secondary">
-        <input type="checkbox" v-model="data.preload.enable" class="rounded" />
+        <input type="checkbox" v-model="data.preload.enable" class="rounded-sm" />
         页面资源预加载（Flying Pages）
       </label>
       <div class="grid grid-cols-2 gap-4">
@@ -66,7 +66,7 @@ const inputCls = "apple-input";
     <!-- 滚动渐现 -->
     <div class="border border-border rounded-xl p-4 space-y-3">
       <label class="flex items-center gap-2 text-sm font-medium text-text-secondary">
-        <input type="checkbox" v-model="data.scrollreveal.enable" class="rounded" />
+        <input type="checkbox" v-model="data.scrollreveal.enable" class="rounded-sm" />
         滚动渐现动画（ScrollReveal）
       </label>
       <div class="grid grid-cols-3 gap-4">
@@ -92,7 +92,7 @@ const inputCls = "apple-input";
     <!-- 中文排版 -->
     <div class="border border-border rounded-xl p-4 space-y-3">
       <label class="flex items-center gap-2 text-sm font-medium text-text-secondary">
-        <input type="checkbox" v-model="data.heti.enable" class="rounded" />
+        <input type="checkbox" v-model="data.heti.enable" class="rounded-sm" />
         中文排版优化（赫蹏 Heti）
       </label>
     </div>
@@ -100,7 +100,7 @@ const inputCls = "apple-input";
     <!-- 图片灯箱 -->
     <div class="border border-border rounded-xl p-4 space-y-3">
       <label class="flex items-center gap-2 text-sm font-medium text-text-secondary">
-        <input type="checkbox" v-model="data.fancybox.enable" class="rounded" />
+        <input type="checkbox" v-model="data.fancybox.enable" class="rounded-sm" />
         图片灯箱（Fancybox）
       </label>
       <div>
@@ -120,7 +120,7 @@ const inputCls = "apple-input";
     <!-- Swiper -->
     <div class="border border-border rounded-xl p-4 space-y-3">
       <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"
-        ><input type="checkbox" v-model="data.swiper.enable" class="rounded" />轮播图（Swiper）</label
+        ><input type="checkbox" v-model="data.swiper.enable" class="rounded-sm" />轮播图（Swiper）</label
       >
       <div class="grid grid-cols-2 gap-4">
         <div>
@@ -138,13 +138,13 @@ const inputCls = "apple-input";
     <div class="border border-border rounded-xl p-4 space-y-3">
       <div class="grid grid-cols-2 gap-4">
         <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"
-          ><input type="checkbox" v-model="data.katex.enable" class="rounded" />KaTeX 数学公式</label
+          ><input type="checkbox" v-model="data.katex.enable" class="rounded-sm" />KaTeX 数学公式</label
         >
         <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"
-          ><input type="checkbox" v-model="data.mathjax.enable" class="rounded" />MathJax 数学公式</label
+          ><input type="checkbox" v-model="data.mathjax.enable" class="rounded-sm" />MathJax 数学公式</label
         >
         <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"
-          ><input type="checkbox" v-model="data.mermaid.enable" class="rounded" />Mermaid 图表</label
+          ><input type="checkbox" v-model="data.mermaid.enable" class="rounded-sm" />Mermaid 图表</label
         >
         <div>
           <label class="text-xs text-text-tertiary mb-1 block">Mermaid 主题</label
@@ -170,10 +170,10 @@ const inputCls = "apple-input";
           ><input v-model="data.mathjax.js" :class="inputCls" placeholder="https://cdnjs.cloudflare.com/..." />
         </div>
         <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"
-          ><input type="checkbox" v-model="data.mathjax.v3" class="rounded" />MathJax v3</label
+          ><input type="checkbox" v-model="data.mathjax.v3" class="rounded-sm" />MathJax v3</label
         >
         <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"
-          ><input type="checkbox" v-model="data.mermaid.style_optimization" class="rounded" />使用主题 Mermaid
+          ><input type="checkbox" v-model="data.mermaid.style_optimization" class="rounded-sm" />使用主题 Mermaid
           样式</label
         >
       </div>
@@ -182,7 +182,7 @@ const inputCls = "apple-input";
     <!-- 代码复制 -->
     <div class="border border-border rounded-xl p-4 space-y-3">
       <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"
-        ><input type="checkbox" v-model="data.copycode.enable" class="rounded" />代码块复制按钮</label
+        ><input type="checkbox" v-model="data.copycode.enable" class="rounded-sm" />代码块复制按钮</label
       >
       <div class="grid grid-cols-3 gap-4">
         <div>

@@ -256,7 +256,7 @@ function setJsonText(name: string, val: string) {
               <span class="ml-1.5 text-xs text-text-quaternary">{{ widgetLayout(name) }}</span>
               <span
                 v-if="isScheme(name)"
-                class="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-px text-[10px] text-primary align-middle"
+                class="ml-1.5 inline-flex items-center gap-0.5 text-[11px] text-text-tertiary align-middle"
                 ><Icon icon="ri:bookmark-line" />方案</span
               >
             </div>
@@ -331,7 +331,7 @@ function setJsonText(name: string, val: string) {
               <span class="ml-1.5 text-xs text-text-quaternary">{{ widgetLayout(name) }}</span>
               <span
                 v-if="isScheme(name)"
-                class="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-px text-[10px] text-primary align-middle"
+                class="ml-1.5 inline-flex items-center gap-0.5 text-[11px] text-text-tertiary align-middle"
                 ><Icon icon="ri:bookmark-line" />方案</span
               >
             </div>

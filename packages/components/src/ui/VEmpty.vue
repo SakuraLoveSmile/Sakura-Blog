@@ -7,10 +7,10 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex h-full w-full flex-col items-center justify-center py-16">
+  <div class="flex h-full w-full flex-col items-center justify-center px-4 py-12">
     <slot name="image">
       <svg
-        class="mb-4 h-16 w-16"
+        class="mb-3 h-10 w-10 opacity-70"
         fill="none"
         stroke="currentColor"
         stroke-width="1"
@@ -24,8 +24,8 @@ defineProps<{
         />
       </svg>
     </slot>
-    <h3 v-if="title" class="text-sm font-medium text-foreground">{{ title }}</h3>
-    <p v-if="message" class="mt-1 text-xs text-text-tertiary">{{ message }}</p>
+    <h3 v-if="title" class="text-[14px] font-medium text-foreground">{{ title }}</h3>
+    <p v-if="message" class="mt-1 text-[12px] text-text-tertiary">{{ message }}</p>
     <div v-if="$slots.actions" class="mt-4">
       <slot name="actions" />
     </div>

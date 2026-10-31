@@ -89,10 +89,10 @@ const statTypes = [
 const widgetSpecs: Record<string, WidgetSpec> = Object.fromEntries(
   statTypes.map((type) => [type, {
     defaults: {
-      lg: { w: 3, h: 19 }, md: { w: 6, h: 18 }, sm: { w: 3, h: 18 },
-      xs: { w: 2, h: 18 }, xxs: { w: 4, h: 18 },
+      lg: { w: 3, h: 12 }, md: { w: 6, h: 12 }, sm: { w: 3, h: 12 },
+      xs: { w: 2, h: 12 }, xxs: { w: 2, h: 12 },
     },
-    minW: { lg: 2, md: 2, sm: 2, xs: 2, xxs: 4 },
+    minW: { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
     minH: { lg: 10, md: 10, sm: 10, xs: 10, xxs: 10 },
   }]),
 ) as Record<string, WidgetSpec>;
@@ -201,55 +201,51 @@ function defaultWidget(id: string, x: number, y: number, w: number, h: number): 
 }
 
 const defaultLayoutLg: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 3, 19),
-  defaultWidget("stat-published-1", 3, 0, 3, 19),
-  defaultWidget("stat-views-1", 6, 0, 3, 19),
-  defaultWidget("stat-comments-1", 9, 0, 3, 19),
-  defaultWidget("trend-chart-1", 0, 19, 8, 52),
-  defaultWidget("category-donut-1", 8, 19, 4, 34),
-  defaultWidget("quick-actions-1", 8, 53, 4, 35),
-  defaultWidget("recent-posts-1", 0, 88, 6, 36),
-  defaultWidget("recent-comments-1", 6, 88, 6, 36),
-  defaultWidget("stellar-version-1", 0, 124, 4, 25),
+  defaultWidget("stat-posts-1", 0, 0, 3, 12),
+  defaultWidget("stat-published-1", 3, 0, 3, 12),
+  defaultWidget("stat-views-1", 6, 0, 3, 12),
+  defaultWidget("stat-comments-1", 9, 0, 3, 12),
+  defaultWidget("trend-chart-1", 0, 12, 12, 44),
+  defaultWidget("recent-posts-1", 0, 56, 6, 36),
+  defaultWidget("recent-comments-1", 6, 56, 6, 36),
+  defaultWidget("category-donut-1", 0, 92, 6, 32),
+  defaultWidget("stellar-version-1", 6, 92, 6, 25),
 ];
 
 const defaultLayoutMd: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 6, 18),
-  defaultWidget("stat-published-1", 6, 0, 6, 18),
-  defaultWidget("stat-views-1", 0, 18, 6, 18),
-  defaultWidget("stat-comments-1", 6, 18, 6, 18),
-  defaultWidget("trend-chart-1", 0, 36, 12, 44),
-  defaultWidget("category-donut-1", 0, 80, 6, 32),
-  defaultWidget("quick-actions-1", 6, 80, 6, 31),
-  defaultWidget("recent-posts-1", 0, 112, 12, 32),
-  defaultWidget("recent-comments-1", 0, 144, 12, 32),
-  defaultWidget("stellar-version-1", 0, 176, 6, 23),
+  defaultWidget("stat-posts-1", 0, 0, 6, 12),
+  defaultWidget("stat-published-1", 6, 0, 6, 12),
+  defaultWidget("stat-views-1", 0, 12, 6, 12),
+  defaultWidget("stat-comments-1", 6, 12, 6, 12),
+  defaultWidget("trend-chart-1", 0, 24, 12, 44),
+  defaultWidget("recent-posts-1", 0, 68, 12, 32),
+  defaultWidget("recent-comments-1", 0, 100, 12, 32),
+  defaultWidget("category-donut-1", 0, 132, 6, 32),
+  defaultWidget("stellar-version-1", 6, 132, 6, 23),
 ];
 
 const defaultLayoutSm: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 3, 18),
-  defaultWidget("stat-published-1", 3, 0, 3, 18),
-  defaultWidget("stat-views-1", 0, 18, 3, 18),
-  defaultWidget("stat-comments-1", 3, 18, 3, 18),
-  defaultWidget("trend-chart-1", 0, 36, 6, 44),
-  defaultWidget("category-donut-1", 0, 80, 3, 32),
-  defaultWidget("quick-actions-1", 3, 80, 3, 31),
-  defaultWidget("recent-posts-1", 0, 112, 6, 32),
-  defaultWidget("recent-comments-1", 0, 144, 6, 32),
-  defaultWidget("stellar-version-1", 0, 176, 3, 23),
+  defaultWidget("stat-posts-1", 0, 0, 3, 12),
+  defaultWidget("stat-published-1", 3, 0, 3, 12),
+  defaultWidget("stat-views-1", 0, 12, 3, 12),
+  defaultWidget("stat-comments-1", 3, 12, 3, 12),
+  defaultWidget("trend-chart-1", 0, 24, 6, 44),
+  defaultWidget("recent-posts-1", 0, 68, 6, 32),
+  defaultWidget("recent-comments-1", 0, 100, 6, 32),
+  defaultWidget("category-donut-1", 0, 132, 3, 32),
+  defaultWidget("stellar-version-1", 3, 132, 3, 23),
 ];
 
 const defaultLayoutXs: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 2, 18),
-  defaultWidget("stat-published-1", 2, 0, 2, 18),
-  defaultWidget("stat-views-1", 0, 18, 2, 18),
-  defaultWidget("stat-comments-1", 2, 18, 2, 18),
-  defaultWidget("trend-chart-1", 0, 36, 4, 42),
-  defaultWidget("category-donut-1", 0, 78, 4, 29),
-  defaultWidget("quick-actions-1", 0, 107, 4, 20),
-  defaultWidget("recent-posts-1", 0, 127, 4, 27),
-  defaultWidget("recent-comments-1", 0, 154, 4, 27),
-  defaultWidget("stellar-version-1", 0, 181, 4, 22),
+  defaultWidget("stat-posts-1", 0, 0, 2, 12),
+  defaultWidget("stat-published-1", 2, 0, 2, 12),
+  defaultWidget("stat-views-1", 0, 12, 2, 12),
+  defaultWidget("stat-comments-1", 2, 12, 2, 12),
+  defaultWidget("trend-chart-1", 0, 24, 4, 42),
+  defaultWidget("recent-posts-1", 0, 66, 4, 27),
+  defaultWidget("recent-comments-1", 0, 93, 4, 27),
+  defaultWidget("category-donut-1", 0, 120, 4, 29),
+  defaultWidget("stellar-version-1", 0, 149, 4, 22),
 ];
 
 export const defaultMultiLayout: MultiBreakpointLayout = {
@@ -308,16 +304,16 @@ export const WIDGET_PRESET_SPECS: Record<string, WidgetPresetMatrix> = {
       type,
       {
         small: {
-          lg: { w: 2, h: 14 }, md: { w: 3, h: 14 }, sm: { w: 2, h: 14 },
-          xs: { w: 2, h: 14 }, xxs: { w: 4, h: 14 },
+          lg: { w: 2, h: 12 }, md: { w: 3, h: 12 }, sm: { w: 2, h: 12 },
+          xs: { w: 2, h: 12 }, xxs: { w: 2, h: 12 },
         },
         medium: {
-          lg: { w: 3, h: 19 }, md: { w: 6, h: 18 }, sm: { w: 3, h: 18 },
-          xs: { w: 2, h: 18 }, xxs: { w: 4, h: 18 },
+          lg: { w: 3, h: 12 }, md: { w: 6, h: 12 }, sm: { w: 3, h: 12 },
+          xs: { w: 2, h: 12 }, xxs: { w: 4, h: 12 },
         },
         large: {
-          lg: { w: 6, h: 19 }, md: { w: 12, h: 18 }, sm: { w: 6, h: 18 },
-          xs: { w: 4, h: 18 }, xxs: { w: 4, h: 18 },
+          lg: { w: 6, h: 12 }, md: { w: 12, h: 12 }, sm: { w: 6, h: 12 },
+          xs: { w: 4, h: 12 }, xxs: { w: 4, h: 12 },
         },
       },
     ]),
@@ -328,11 +324,11 @@ export const WIDGET_PRESET_SPECS: Record<string, WidgetPresetMatrix> = {
       xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
     },
     medium: {
-      lg: { w: 8, h: 52 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
+      lg: { w: 8, h: 44 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
       xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
     },
     large: {
-      lg: { w: 12, h: 52 }, md: { w: 12, h: 52 }, sm: { w: 6, h: 52 },
+      lg: { w: 12, h: 44 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 52 },
       xs: { w: 4, h: 50 }, xxs: { w: 4, h: 50 },
     },
   },
@@ -360,7 +356,7 @@ export const WIDGET_PRESET_SPECS: Record<string, WidgetPresetMatrix> = {
       xs: { w: 4, h: 29 }, xxs: { w: 4, h: 29 },
     },
     large: {
-      lg: { w: 6, h: 34 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
+      lg: { w: 6, h: 32 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
       xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
     },
   },
@@ -490,29 +486,35 @@ export function getGridPresetSize(type: string, bp: Breakpoint, preset: WidgetSi
   };
 }
 
-/** 将历史布局的任意尺寸映射到最近的三个预设之一。 */
+/**
+ * 将布局尺寸映射到最近的三个语义预设之一。
+ *
+ * 列跨度比行高更影响版面（一次列差通常是数百像素），因此宽度权重更高；
+ * 但高度必须全局参与比较，不能只在同宽预设之间作为平手判据——否则
+ * 12/44 的趋势卡会被 12/52 的“大”档覆盖，紧凑默认布局失去意义。
+ */
 export function getWidgetSizePreset(widget: Pick<DashboardWidget, "w" | "h">, bp: Breakpoint, type: string): WidgetSizePreset {
   let closest = WIDGET_SIZE_PRESET_ORDER[0];
-  let closestWidthDistance = Number.POSITIVE_INFINITY;
-  let closestHeightDistance = Number.POSITIVE_INFINITY;
-  const seenWidths = new Set<number>();
+  let closestDistance = Number.POSITIVE_INFINITY;
   for (const preset of WIDGET_SIZE_PRESET_ORDER) {
     const size = getGridPresetSize(type, bp, preset);
-    // 同一断点下相同列跨度只保留第一个语义代表，避免弹窗和卡片状态重复。
-    if (seenWidths.has(size.w)) continue;
-    seenWidths.add(size.w);
-    const widthDistance = Math.abs(widget.w - size.w);
-    const heightDistance = Math.abs(widget.h - size.h);
-    if (
-      widthDistance < closestWidthDistance
-      || (widthDistance === closestWidthDistance && heightDistance < closestHeightDistance)
-    ) {
+    const distance = Math.abs(widget.w - size.w) * 2 + Math.abs(widget.h - size.h);
+    if (distance < closestDistance) {
       closest = preset;
-      closestWidthDistance = widthDistance;
-      closestHeightDistance = heightDistance;
+      closestDistance = distance;
     }
   }
   return closest;
+}
+
+/** 默认布局或尺寸预设声明过的尺寸；加载时必须原样保留，不能再次归一化。 */
+export function isDeclaredWidgetSize(type: string, bp: Breakpoint, size: Pick<GridSize, "w" | "h">): boolean {
+  const fallback = getDefaultGridSize(type, bp);
+  if (fallback.w === size.w && fallback.h === size.h) return true;
+  return WIDGET_SIZE_PRESET_ORDER.some((preset) => {
+    const candidate = getGridPresetSize(type, bp, preset);
+    return candidate.w === size.w && candidate.h === size.h;
+  });
 }
 
 /** 应用离散尺寸；放不下时把组件移到当前断点的第一个空位。 */
@@ -628,6 +630,20 @@ function normalizeWidget(raw: unknown, bp: Breakpoint, index: number, used: Set<
   return widget;
 }
 
+/** 保持尺寸不变，仅在位置冲突时寻找第一个空位。 */
+function placeWidgetPreservingSize(
+  widget: DashboardWidget,
+  bp: Breakpoint,
+  existing: DashboardWidget[],
+): DashboardWidget {
+  const x = Math.max(0, Math.min(GRID_COLUMNS[bp] - widget.w, widget.x));
+  const y = Math.max(0, Math.min(GRID_MAX_ROWS - widget.h, widget.y));
+  const position = existing.some((item) => overlaps({ ...widget, x, y }, item))
+    ? findFreeGridPosition(existing, { w: widget.w, h: widget.h }, bp)
+    : { x, y };
+  return { ...widget, ...position };
+}
+
 function normalizeBreakpointWidgets(items: unknown, bp: Breakpoint): DashboardWidget[] {
   if (!Array.isArray(items)) return [];
   const result: DashboardWidget[] = [];
@@ -635,7 +651,13 @@ function normalizeBreakpointWidgets(items: unknown, bp: Breakpoint): DashboardWi
   for (const [index, raw] of items.entries()) {
     const item = normalizeWidget(raw, bp, index, used);
     if (!item) continue;
-    // 历史 v9/v10 布局可能保存过任意宽高；加载时统一落到最近的离散档位。
+    if (isDeclaredWidgetSize(item.id, bp, item)) {
+      // 新默认布局与尺寸弹窗产出的紧凑档位必须原样保留；加载时再归一化会把
+      // 3×12 统计卡扩成 3×19、12×44 趋势卡扩成 12×52。
+      result.push(placeWidgetPreservingSize(item, bp, result));
+      continue;
+    }
+    // 历史 v9/v10 布局可能保存过任意宽高；非声明尺寸仍落到最近的离散档位。
     const preset = getWidgetSizePreset(item, bp, item.id);
     result.push(applyGridWidgetSize(item, preset, bp, result));
   }

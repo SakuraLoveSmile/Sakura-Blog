@@ -92,7 +92,7 @@ function doSave() {
           {{ r.name || r.key || "新作者" }}
         </span>
         <label class="flex items-center gap-1.5 text-xs text-text-tertiary">
-          <input type="checkbox" v-model="r.hidden" class="rounded" /> 隐藏
+          <input type="checkbox" v-model="r.hidden" class="rounded-sm" /> 隐藏
         </label>
         <div class="flex items-center gap-1.5 shrink-0">
           <button

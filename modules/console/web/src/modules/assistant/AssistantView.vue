@@ -389,11 +389,6 @@ onBeforeUnmount(() => {
 <template>
   <div class="assistant-page">
     <VPageHeader title="AI 助手">
-      <template #icon>
-        <div class="header-icon-box">
-          <Icon icon="ri:sparkling-2-fill" class="w-5 h-5 text-primary" />
-        </div>
-      </template>
       <template #actions>
         <div v-if="activeTab !== 'settings'" class="flex items-center gap-2">
           <VButton

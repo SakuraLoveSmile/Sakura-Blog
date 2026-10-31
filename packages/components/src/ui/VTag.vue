@@ -54,7 +54,7 @@ const classes = computed(() => [`tag-${props.theme}`, { "tag-rounded": props.rou
 }
 
 .tag-primary {
-  color: var(--color-foreground);
+  color: var(--color-primary-foreground);
   background: var(--color-primary);
   border-color: var(--color-primary);
 }

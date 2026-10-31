@@ -569,9 +569,6 @@ onMounted(load);
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="分类与标签">
-      <template #icon>
-        <Icon icon="ri:price-tag-3-line" class="text-primary" />
-      </template>
       <template #subtitle>管理文章的分类层级与标签系统，配置前台展示的专属配色与图标</template>
       <template #actions>
         <div class="apple-search min-w-[200px] max-w-[280px]">
@@ -671,6 +668,7 @@ onMounted(load);
             <div class="apple-segmented">
               <button
                 type="button"
+                class="segmented-icon-btn"
                 :class="{ active: tagViewMode === 'cloud' }"
                 title="胶囊云视图"
                 @click="tagViewMode = 'cloud'"
@@ -679,6 +677,7 @@ onMounted(load);
               </button>
               <button
                 type="button"
+                class="segmented-icon-btn"
                 :class="{ active: tagViewMode === 'table' }"
                 title="表格列表视图"
                 @click="tagViewMode = 'table'"
@@ -762,7 +761,7 @@ onMounted(load);
                       </span>
                       <span
                         v-if="c.path && c.path !== c.name"
-                        class="hidden rounded bg-secondary/80 px-1.5 py-0.5 font-mono text-[11px] text-text-quaternary sm:inline-block"
+                        class="hidden rounded-sm bg-secondary/80 px-1.5 py-0.5 font-mono text-[11px] text-text-quaternary sm:inline-block"
                       >
                         {{ c.path }}
                       </span>
@@ -774,7 +773,7 @@ onMounted(load);
                 <div class="hidden items-center gap-2 md:flex">
                   <span
                     v-if="catColors[categoryKey(c)]"
-                    class="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-text-secondary shadow-xs"
+                    class="inline-flex items-center gap-1.5 rounded-sm border border-border bg-card px-2.5 py-0.5 text-xs text-text-secondary shadow-xs"
                   >
                     <span class="h-2.5 w-2.5 rounded-full" :style="{ background: catColors[categoryKey(c)] }"></span>
                     {{ catColors[categoryKey(c)] }}
@@ -782,7 +781,7 @@ onMounted(load);
 
                   <span
                     v-if="catIcons[categoryKey(c)]"
-                    class="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-text-secondary shadow-xs"
+                    class="inline-flex items-center gap-1 rounded-sm border border-border bg-card px-2.5 py-0.5 text-xs text-text-secondary shadow-xs"
                   >
                     <Icon icon="ri:shape-line" class="text-text-tertiary" />
                     {{ catIcons[categoryKey(c)] }}
@@ -879,7 +878,7 @@ onMounted(load);
                 v-if="mergeMode"
                 type="checkbox"
                 :checked="selectedTags.has(t.name)"
-                class="h-3.5 w-3.5 rounded border-border-strong text-primary pointer-events-none"
+                class="h-3.5 w-3.5 rounded-sm border-border-strong text-primary pointer-events-none"
               />
 
               <!-- 图标 -->
@@ -938,7 +937,7 @@ onMounted(load);
                       <input
                         type="checkbox"
                         :checked="selectedTags.has(t.name)"
-                        class="h-4 w-4 rounded border-border text-primary"
+                        class="h-4 w-4 rounded-sm border-border text-primary"
                         @change="toggleTagSelect(t.name)"
                       />
                     </td>
@@ -1082,7 +1081,7 @@ onMounted(load);
                 </span>
                 <span
                   v-if="categoryForm.color?.trim()"
-                  class="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] text-text-secondary"
+                  class="inline-flex items-center gap-1 rounded-sm border border-border bg-secondary px-2 py-0.5 text-[11px] text-text-secondary"
                 >
                   <span class="h-2 w-2 rounded-full" :style="{ background: categoryForm.color }"></span>
                   {{ categoryForm.color }}
@@ -1314,7 +1313,7 @@ onMounted(load);
   padding: 0 12px;
   background: var(--color-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
@@ -1324,6 +1323,9 @@ onMounted(load);
 .apple-sort-btn:hover {
   color: var(--color-foreground);
   border-color: var(--color-border-strong);
+}
+@media (max-width: 767px) {
+  .apple-sort-btn { height: 44px; }
 }
 
 /* 移动端适配 */

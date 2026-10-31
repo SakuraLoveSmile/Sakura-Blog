@@ -216,7 +216,7 @@ function handleSubmit() {
 <style scoped>
 .settings-section {
   margin: 0;
-  padding: 28px;
+  padding: 24px 0;
   border-bottom: 1px solid var(--color-border);
 }
 .settings-section:last-child {
@@ -227,7 +227,7 @@ function handleSubmit() {
 }
 .settings-section-heading {
   max-width: 860px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .settings-section-heading h2 {
   display: flex;
@@ -235,18 +235,12 @@ function handleSubmit() {
   gap: 8px;
   margin: 0;
   color: var(--color-foreground);
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .settings-section-heading h2::before {
-  content: "";
-  display: inline-block;
-  width: 3.5px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  flex-shrink: 0;
+  display: none;
 }
 .settings-section-heading p,
 .settings-help {
@@ -279,9 +273,9 @@ function handleSubmit() {
   gap: 6px;
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
-  font-weight: 550;
+  font-weight: 500;
 }
 .feedback-check-badge.is-ok {
   color: var(--color-state-success, #30d158);
@@ -324,7 +318,7 @@ function handleSubmit() {
   height: 128px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg, 12px);
-  background: var(--color-card);
+  background: transparent;
   overflow: hidden;
 }
 .feedback-stage-url {
@@ -332,7 +326,7 @@ function handleSubmit() {
   top: 6px;
   left: 10px;
   color: var(--color-text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.02em;
 }
 .feedback-stage-launcher {
@@ -354,7 +348,7 @@ function handleSubmit() {
 .feedback-stage-launcher.is-tab {
   width: 7px;
   height: 30px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--color-primary);
 }
 .feedback-stage-launcher.is-right {
@@ -365,11 +359,11 @@ function handleSubmit() {
 }
 .feedback-stage-launcher.is-tab.is-right {
   right: 0;
-  border-radius: 3px 0 0 3px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 .feedback-stage-launcher.is-tab.is-left {
   left: 0;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 6px 6px 0;
 }
 .feedback-stage-caption {
   margin: 8px 0 0;
@@ -380,7 +374,8 @@ function handleSubmit() {
 
 @media (max-width: 640px) {
   .settings-section {
-    padding: 24px 16px;
+    /* 横向留白已由 .settings-container 提供，分区不再重复加 16px。 */
+    padding: 24px 0;
   }
   .feedback-launcher-layout {
     flex-direction: column;

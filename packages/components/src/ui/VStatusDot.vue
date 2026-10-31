@@ -27,14 +27,14 @@ const dotColor = computed(() => {
 
 <template>
   <div class="inline-flex items-center gap-1.5">
-    <span class="relative flex h-2 w-2">
+    <span class="relative flex h-[5px] w-[5px]">
       <span
         v-if="animate"
         :style="{ background: dotColor }"
         class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
       ></span>
-      <span :style="{ background: dotColor }" class="relative inline-flex h-2 w-2 rounded-full"></span>
+      <span :style="{ background: dotColor }" class="relative inline-flex h-[5px] w-[5px] rounded-full"></span>
     </span>
-    <span v-if="text" class="text-xs" style="color: var(--color-text-tertiary)">{{ text }}</span>
+    <span v-if="text" class="text-[12px]" style="color: var(--color-text-tertiary)">{{ text }}</span>
   </div>
 </template>

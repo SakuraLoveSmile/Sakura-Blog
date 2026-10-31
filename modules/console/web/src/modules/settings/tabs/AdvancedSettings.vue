@@ -173,12 +173,12 @@ const cacheServices = [
 
 <style scoped>
 .settings-advanced-form {
-  background: var(--color-card);
+  background: transparent;
 }
 
 .settings-section {
   margin: 0;
-  padding: 28px;
+  padding: 24px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -188,12 +188,12 @@ const cacheServices = [
 
 .settings-section:last-of-type {
   border-bottom: 0;
-  padding-bottom: 36px;
+  padding-bottom: 24px;
 }
 
 .settings-section-heading {
   max-width: 860px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .settings-section-heading h2 {
@@ -202,19 +202,13 @@ const cacheServices = [
   gap: 8px;
   margin: 0;
   color: var(--color-foreground);
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .settings-section-heading h2::before {
-  content: "";
-  display: inline-block;
-  width: 3.5px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  flex-shrink: 0;
+  display: none;
 }
 
 .settings-section-heading p,
@@ -246,13 +240,13 @@ const cacheServices = [
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-state-warning) 10%, transparent);
   color: var(--color-state-warning);
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
 .settings-warning-icon {
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 14px;
   margin-top: 2px;
 }
 
@@ -274,8 +268,8 @@ const cacheServices = [
   display: block;
   margin-bottom: 10px;
   color: var(--color-foreground);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .settings-field > .apple-input,
@@ -300,8 +294,8 @@ const cacheServices = [
 
 .settings-switch-name {
   color: var(--color-foreground);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.4;
 }
 
@@ -318,13 +312,6 @@ const cacheServices = [
   display: flex;
   align-items: center;
   padding-top: 4px;
-}
-
-@media (max-width: 767px) {
-  .settings-section {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
 }
 
 @media (max-width: 640px) {

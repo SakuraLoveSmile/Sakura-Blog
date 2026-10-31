@@ -250,9 +250,6 @@ function methodBadge(method: string) {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="性能监控">
-      <template #icon>
-        <Icon icon="ri:speed-line" class="text-primary" />
-      </template>
       <template #subtitle>实时监控 Go 运行时负载、内存分配趋势、Goroutines 并发与高耗时路由排行</template>
       <template #actions>
         <div class="apple-segmented">

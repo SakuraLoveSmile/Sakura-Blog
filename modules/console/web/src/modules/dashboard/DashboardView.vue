@@ -7,6 +7,7 @@ import { VButton } from "@/components/ui";
 import { useModulesStore } from "@/stores/modules";
 import DashboardGrid from "./DashboardGrid.vue";
 import { useDashboardLayout } from "./useDashboardLayout";
+import { buildDashboardQuickLinks } from "./dashboard-quick-links";
 import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
 import { DASHBOARD_REFRESH_EVENT } from "./widgets/useDashboardStats";
 import "./dashboard.css";
@@ -14,6 +15,9 @@ import "./dashboard.css";
 const router = useRouter();
 const authStore = useAuthStore();
 const modulesStore = useModulesStore();
+const quickLinks = computed(() =>
+  buildDashboardQuickLinks(modulesStore.enabledNav(), (permission) => authStore.hasPermission(permission)),
+);
 const hasPosts = computed(() => modulesStore.enabledNav().some((item) => item.path === "/posts"));
 const canWritePost = computed(() => hasPosts.value && authStore.hasPermission("content:write"));
 const { breakpoint, viewMode, previewWidth, isPreview, setViewMode } = provideBreakpoint();
@@ -53,6 +57,9 @@ onMounted(load);
           <div>
             <h1>仪表盘</h1>
             <p>{{ today() }}</p>
+            <nav class="dashboard-quick-links" aria-label="快捷操作">
+              <RouterLink v-for="link in quickLinks" :key="link.path" :to="link.path">{{ link.label }}</RouterLink>
+            </nav>
           </div>
           <div class="apple-header-actions">
             <div v-if="hasPosts" class="dashboard-writing-actions" role="group" aria-label="写作快捷入口">

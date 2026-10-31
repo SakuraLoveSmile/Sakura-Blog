@@ -1,0 +1,1077 @@
+{
+  "viewports": {
+    "390": {
+      "dashboard": {
+        "label": "dashboard-390",
+        "vw": 390,
+        "vh": 844,
+        "pageHeight": 844,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 10,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "写文章",
+            "w": 39,
+            "h": 20
+          },
+          {
+            "tag": "a",
+            "text": "评论",
+            "w": 26,
+            "h": 20
+          },
+          {
+            "tag": "a",
+            "text": "分类",
+            "w": 26,
+            "h": 20
+          },
+          {
+            "tag": "a",
+            "text": "设置",
+            "w": 26,
+            "h": 20
+          },
+          {
+            "tag": "button",
+            "text": "全部",
+            "w": 42,
+            "h": 18
+          },
+          {
+            "tag": "button",
+            "text": "写作流水线草稿：短代码与图床2 天前",
+            "w": 358,
+            "h": 31
+          },
+          {
+            "tag": "button",
+            "text": "关于离线优先的一点思考4 天前",
+            "w": 358,
+            "h": 31
+          },
+          {
+            "tag": "button",
+            "text": "设计系统不是组件库5 天前",
+            "w": 358,
+            "h": 31
+          },
+          {
+            "tag": "button",
+            "text": "全部",
+            "w": 42,
+            "h": 18
+          },
+          {
+            "tag": "a",
+            "text": "访问网站",
+            "w": 48,
+            "h": 16
+          }
+        ],
+        "bottomNav": {
+          "top": 787,
+          "height": 57,
+          "display": "grid"
+        }
+      },
+      "posts": {
+        "label": "posts-390",
+        "vw": 390,
+        "vh": 844,
+        "pageHeight": 844,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 29,
+        "smallSamples": [
+          {
+            "tag": "input",
+            "text": "搜索文章",
+            "w": 308,
+            "h": 20
+          },
+          {
+            "tag": "button",
+            "text": "全部",
+            "w": 26,
+            "h": 44
+          },
+          {
+            "tag": "button",
+            "text": "已发布",
+            "w": 39,
+            "h": 44
+          },
+          {
+            "tag": "button",
+            "text": "草稿",
+            "w": 26,
+            "h": 44
+          },
+          {
+            "tag": "button",
+            "text": "回收站",
+            "w": 39,
+            "h": 44
+          },
+          {
+            "tag": "input",
+            "text": "选择文章：写作流水线草稿：短代码与图床",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "button",
+            "text": "#工具",
+            "w": 34,
+            "h": 44
+          },
+          {
+            "tag": "button",
+            "text": "#写作",
+            "w": 34,
+            "h": 44
+          },
+          {
+            "tag": "input",
+            "text": "选择文章：关于离线优先的一点思考",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "button",
+            "text": "技术",
+            "w": 24,
+            "h": 44
+          },
+          {
+            "tag": "button",
+            "text": "#架构",
+            "w": 34,
+            "h": 44
+          },
+          {
+            "tag": "button",
+            "text": "#思考",
+            "w": 34,
+            "h": 44
+          }
+        ],
+        "bottomNav": {
+          "top": 787,
+          "height": 57,
+          "display": "grid"
+        }
+      },
+      "settings": {
+        "label": "settings-390",
+        "vw": 390,
+        "vh": 844,
+        "pageHeight": 844,
+        "overflowX": 0,
+        "wide": [
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 391
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 441
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 429
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 491
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 479
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 541
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 529
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 630
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 618
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 680
+          }
+        ],
+        "smallCount": 5,
+        "smallSamples": [
+          {
+            "tag": "input",
+            "text": "",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "a",
+            "text": "访问网站",
+            "w": 48,
+            "h": 16
+          }
+        ],
+        "bottomNav": {
+          "top": 787,
+          "height": 57,
+          "display": "grid"
+        }
+      },
+      "comments": {
+        "label": "comments-390",
+        "vw": 390,
+        "vh": 844,
+        "pageHeight": 844,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 8,
+        "smallSamples": [
+          {
+            "tag": "input",
+            "text": "",
+            "w": 150,
+            "h": 20
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "input",
+            "text": "",
+            "w": 16,
+            "h": 16
+          },
+          {
+            "tag": "a",
+            "text": "访问网站",
+            "w": 48,
+            "h": 16
+          }
+        ],
+        "bottomNav": {
+          "top": 787,
+          "height": 57,
+          "display": "grid"
+        }
+      },
+      "appearance": {
+        "label": "appearance-390",
+        "vw": 390,
+        "vh": 844,
+        "pageHeight": 844,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 1,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "访问网站",
+            "w": 48,
+            "h": 16
+          }
+        ],
+        "bottomNav": {
+          "top": 787,
+          "height": 57,
+          "display": "grid"
+        }
+      },
+      "settings-appearance": {
+        "label": "settings-appearance-390",
+        "vw": 390,
+        "vh": 844,
+        "pageHeight": 844,
+        "overflowX": 0,
+        "wide": [
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 391
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 441
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 429
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 491
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 479
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 541
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 529
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 630
+          },
+          {
+            "tag": "span",
+            "cls": "tabbar-item-label",
+            "right": 618
+          },
+          {
+            "tag": "button",
+            "cls": "tabbar-item",
+            "right": 680
+          }
+        ],
+        "smallCount": 99,
+        "smallSamples": [
+          {
+            "tag": "button",
+            "text": "主题外观恢复默认",
+            "w": 56,
+            "h": 36
+          },
+          {
+            "tag": "button",
+            "text": "外观预设恢复默认",
+            "w": 48,
+            "h": 18
+          },
+          {
+            "tag": "input",
+            "text": "卡片",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "玻璃",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "极简",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "平面",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "button",
+            "text": "配色模式恢复默认",
+            "w": 48,
+            "h": 18
+          },
+          {
+            "tag": "input",
+            "text": "自动",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "浅色",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "input",
+            "text": "深色",
+            "w": 1,
+            "h": 1
+          },
+          {
+            "tag": "button",
+            "text": "颜色恢复默认",
+            "w": 48,
+            "h": 18
+          },
+          {
+            "tag": "button",
+            "text": "主题色恢复默认",
+            "w": 48,
+            "h": 18
+          }
+        ],
+        "bottomNav": {
+          "top": 787,
+          "height": 57,
+          "display": "grid"
+        }
+      },
+      "dashboard-scroll-bottom": {
+        "nav": true,
+        "navTop": 787,
+        "worst": {
+          "tag": "div",
+          "cls": "dashboard-viewport",
+          "overlap": 787
+        }
+      },
+      "posts-scroll-bottom": {
+        "nav": true,
+        "navTop": 787,
+        "worst": {
+          "tag": "div",
+          "cls": "min-h-full",
+          "overlap": 787
+        }
+      },
+      "settings-scroll-bottom": {
+        "nav": true,
+        "navTop": 787,
+        "worst": {
+          "tag": "div",
+          "cls": "settings-view",
+          "overlap": 787
+        }
+      },
+      "comments-scroll-bottom": {
+        "nav": true,
+        "navTop": 787,
+        "worst": {
+          "tag": "div",
+          "cls": "min-h-full",
+          "overlap": 787
+        }
+      },
+      "appearance-scroll-bottom": {
+        "nav": true,
+        "navTop": 787,
+        "worst": {
+          "tag": "div",
+          "cls": "appearance-page",
+          "overlap": 764
+        }
+      }
+    },
+    "1280": {
+      "dashboard": {
+        "label": "dashboard-1280",
+        "vw": 1280,
+        "vh": 900,
+        "pageHeight": 900,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 54,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "Console",
+            "w": 87,
+            "h": 24
+          },
+          {
+            "tag": "button",
+            "text": "开始写作",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "button",
+            "text": "搜索",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "仪表盘",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文章",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "专栏",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "笔记本",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "页面",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文库",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "作者",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "瞬间",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "评论",
+            "w": 199,
+            "h": 36
+          }
+        ],
+        "bottomNav": null
+      },
+      "posts": {
+        "label": "posts-1280",
+        "vw": 1280,
+        "vh": 900,
+        "pageHeight": 900,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 108,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "Console",
+            "w": 87,
+            "h": 24
+          },
+          {
+            "tag": "button",
+            "text": "开始写作",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "button",
+            "text": "搜索",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "仪表盘",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文章",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "分享链接",
+            "w": 199,
+            "h": 32
+          },
+          {
+            "tag": "a",
+            "text": "专栏",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "笔记本",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "页面",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文库",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "作者",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "瞬间",
+            "w": 199,
+            "h": 36
+          }
+        ],
+        "bottomNav": null
+      },
+      "settings": {
+        "label": "settings-1280",
+        "vw": 1280,
+        "vh": 900,
+        "pageHeight": 900,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 44,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "Console",
+            "w": 87,
+            "h": 24
+          },
+          {
+            "tag": "button",
+            "text": "开始写作",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "button",
+            "text": "搜索",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "仪表盘",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文章",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "专栏",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "笔记本",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "页面",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文库",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "作者",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "瞬间",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "评论",
+            "w": 199,
+            "h": 36
+          }
+        ],
+        "bottomNav": null
+      },
+      "comments": {
+        "label": "comments-1280",
+        "vw": 1280,
+        "vh": 900,
+        "pageHeight": 900,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 73,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "Console",
+            "w": 87,
+            "h": 24
+          },
+          {
+            "tag": "button",
+            "text": "开始写作",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "button",
+            "text": "搜索",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "仪表盘",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文章",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "专栏",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "笔记本",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "页面",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文库",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "作者",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "瞬间",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "评论",
+            "w": 199,
+            "h": 36
+          }
+        ],
+        "bottomNav": null
+      },
+      "appearance": {
+        "label": "appearance-1280",
+        "vw": 1280,
+        "vh": 900,
+        "pageHeight": 900,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 34,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "Console",
+            "w": 87,
+            "h": 24
+          },
+          {
+            "tag": "button",
+            "text": "开始写作",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "button",
+            "text": "搜索",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "仪表盘",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文章",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "专栏",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "笔记本",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "页面",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文库",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "作者",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "瞬间",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "评论",
+            "w": 199,
+            "h": 36
+          }
+        ],
+        "bottomNav": null
+      },
+      "settings-appearance": {
+        "label": "settings-appearance-1280",
+        "vw": 1280,
+        "vh": 900,
+        "pageHeight": 900,
+        "overflowX": 0,
+        "wide": [],
+        "smallCount": 208,
+        "smallSamples": [
+          {
+            "tag": "a",
+            "text": "Console",
+            "w": 87,
+            "h": 24
+          },
+          {
+            "tag": "button",
+            "text": "开始写作",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "button",
+            "text": "搜索",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "仪表盘",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文章",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "专栏",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "笔记本",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "页面",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "文库",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "作者",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "瞬间",
+            "w": 199,
+            "h": 36
+          },
+          {
+            "tag": "a",
+            "text": "评论",
+            "w": 199,
+            "h": 36
+          }
+        ],
+        "bottomNav": null
+      }
+    }
+  },
+  "guide": {
+    "basic": {
+      "guideTitle": "站点身份",
+      "guideText": "站点身份 更新站点名称、品牌信息和图标后，访客会在浏览器标签与站点标识看到新内容。",
+      "sectionTitles": [
+        "站点身份",
+        "Logo",
+        "Favicon",
+        "Apple Touch Icon"
+      ],
+      "detailsSummary": "影响位置与检查方法"
+    },
+    "appearance": {
+      "guideTitle": "调整整站视觉",
+      "guideText": "调整整站视觉 预设决定页面的卡片、玻璃、极简或平面质感；配色、字体和背景会改变整个主题的阅读氛围。",
+      "sectionTitles": [],
+      "detailsSummary": "影响位置与检查方法"
+    },
+    "basic390": {
+      "guideTitle": "站点身份",
+      "guideText": "站点身份 更新站点名称、品牌信息和图标后，访客会在浏览器标签与站点标识看到新内容。",
+      "sectionTitles": [
+        "站点身份",
+        "Logo",
+        "Favicon",
+        "Apple Touch Icon"
+      ],
+      "detailsSummary": "影响位置与检查方法"
+    }
+  },
+  "notes": [
+    "登录 admin/e2e-password 成功"
+  ],
+  "errors": []
+}

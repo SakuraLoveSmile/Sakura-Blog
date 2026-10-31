@@ -190,7 +190,7 @@ onUnmounted(() => {
           <button type="button" :class="['seg-btn', trendDays === 7 && 'active']" :aria-pressed="trendDays === 7" @click="trendDays = 7">7 天</button>
           <button type="button" :class="['seg-btn', trendDays === 30 && 'active']" :aria-pressed="trendDays === 30" @click="trendDays = 30">30 天</button>
         </div>
-        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/15">
+        <span class="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-secondary">
           <Icon icon="ri:fire-line" class="w-3.5 h-3.5" />
           {{ statsSummary.peakStr }}
         </span>
@@ -199,26 +199,26 @@ onUnmounted(() => {
 
     <!-- Large 尺寸时段分析胶囊：表面层级与 apple-card 边框语言一致 -->
     <div v-if="sizePreset === 'large'" class="grid grid-cols-3 gap-2.5 mb-3 text-xs">
-      <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+      <div class="py-2 border-t border-border flex items-center justify-between">
         <span class="text-muted-foreground flex items-center gap-1">
-          <Icon icon="ri:sun-line" class="w-3.5 h-3.5 text-amber-400" />
+          <Icon icon="ri:sun-line" class="w-3.5 h-3.5 text-text-tertiary" />
           日间活跃
         </span>
         <strong class="text-foreground tabular-nums font-semibold">{{ statsSummary.dayPct }}%</strong>
       </div>
-      <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+      <div class="py-2 border-t border-border flex items-center justify-between">
         <span class="text-muted-foreground flex items-center gap-1">
-          <Icon icon="ri:moon-line" class="w-3.5 h-3.5 text-indigo-400" />
+          <Icon icon="ri:moon-line" class="w-3.5 h-3.5 text-text-tertiary" />
           夜间活跃
         </span>
         <strong class="text-foreground tabular-nums font-semibold">{{ 100 - statsSummary.dayPct }}%</strong>
       </div>
-      <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+      <div class="py-2 border-t border-border flex items-center justify-between">
         <span class="text-muted-foreground flex items-center gap-1">
-          <Icon icon="ri:flashlight-line" class="w-3.5 h-3.5 text-primary" />
+          <Icon icon="ri:flashlight-line" class="w-3.5 h-3.5 text-text-tertiary" />
           单时段峰值
         </span>
-        <strong class="text-primary tabular-nums font-semibold">{{ statsSummary.maxVal.toLocaleString() }} 次</strong>
+        <strong class="text-foreground tabular-nums font-semibold">{{ statsSummary.maxVal.toLocaleString() }} 次</strong>
       </div>
     </div>
 
@@ -282,7 +282,7 @@ onUnmounted(() => {
   justify-content: space-around;
   gap: 5px;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .hourly-chart-skeleton span {
@@ -290,7 +290,7 @@ onUnmounted(() => {
   z-index: 0;
   width: 3.5%;
   min-height: 8px;
-  border-radius: 999px 999px 2px 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   background: color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
@@ -307,7 +307,7 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 6px;
   border: 1px dashed color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   color: var(--color-muted-foreground);
   background: color-mix(in srgb, var(--color-background) 35%, transparent);
 }
@@ -319,7 +319,7 @@ onUnmounted(() => {
 }
 
 .hourly-empty-state small {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--color-muted-foreground);
 }
 
@@ -336,7 +336,7 @@ onUnmounted(() => {
   width: 5px;
   height: 12px;
   border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
-  border-radius: 3px 3px 1px 1px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
 .hourly-empty-lines i:nth-child(2) { height: 22px; }

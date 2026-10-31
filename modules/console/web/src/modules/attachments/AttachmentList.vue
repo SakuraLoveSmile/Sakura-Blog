@@ -431,9 +431,6 @@ function formatMimeBadge(mime: string): string {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="媒体库" actions-layout="stack-below-lg">
-      <template #icon>
-        <Icon icon="ri:image-line" class="text-primary" />
-      </template>
       <template #subtitle>管理博客全部图片、音视频与文档附件，支持分组合辑与快速直链</template>
       <template #actions>
         <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
@@ -596,6 +593,7 @@ function formatMimeBadge(mime: string): string {
               <div class="apple-segmented">
                 <button
                   type="button"
+                  class="segmented-icon-btn"
                   :class="{ active: viewMode === 'grid' }"
                   title="网格视图"
                   @click="viewMode = 'grid'"
@@ -604,6 +602,7 @@ function formatMimeBadge(mime: string): string {
                 </button>
                 <button
                   type="button"
+                  class="segmented-icon-btn"
                   :class="{ active: viewMode === 'table' }"
                   title="表格视图"
                   @click="viewMode = 'table'"
@@ -643,7 +642,7 @@ function formatMimeBadge(mime: string): string {
                   class="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                   :alt="a.filename"
                 />
-                <div v-else class="flex h-full w-full flex-col items-center justify-center text-3xl text-text-tertiary">
+                <div v-else class="flex h-full w-full flex-col items-center justify-center text-2xl text-text-tertiary">
                   <Icon
                     :icon="
                       categoryOf(a.mime) === 'video'
@@ -657,7 +656,7 @@ function formatMimeBadge(mime: string): string {
 
                 <!-- 格式角标 -->
                 <span
-                  class="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white/90"
+                  class="absolute bottom-1.5 left-1.5 rounded-sm bg-black/60 px-1.5 py-0.5 font-mono text-[11px] font-bold text-white/90"
                 >
                   {{ formatMimeBadge(a.mime) }}
                 </span>
@@ -667,7 +666,7 @@ function formatMimeBadge(mime: string): string {
                   <input
                     type="checkbox"
                     :checked="selectedIds.has(a.id)"
-                    class="h-4 w-4 rounded border-border text-primary"
+                    class="h-4 w-4 rounded-sm border-border text-primary"
                     @change="toggleSelect(a.id)"
                   />
                 </div>
@@ -679,7 +678,7 @@ function formatMimeBadge(mime: string): string {
                 >
                   <button
                     type="button"
-                    class="rounded-full bg-white/20 p-2 text-white hover:bg-primary"
+                    class="rounded-sm bg-white/20 p-2 text-white hover:bg-primary hover:text-primary-foreground"
                     title="复制 Markdown"
                     @click.stop="copyText(`![${a.filename}](${a.url})`, '已复制 Markdown 语法')"
                   >
@@ -687,7 +686,7 @@ function formatMimeBadge(mime: string): string {
                   </button>
                   <button
                     type="button"
-                    class="rounded-full bg-white/20 p-2 text-white hover:bg-primary"
+                    class="rounded-sm bg-white/20 p-2 text-white hover:bg-primary hover:text-primary-foreground"
                     title="复制直链 URL"
                     @click.stop="copyText(a.url, '已复制直链 URL')"
                   >
@@ -695,7 +694,7 @@ function formatMimeBadge(mime: string): string {
                   </button>
                   <button
                     type="button"
-                    class="rounded-full bg-white/20 p-2 text-white hover:bg-state-error"
+                    class="rounded-sm bg-white/20 p-2 text-white hover:bg-state-error"
                     title="删除"
                     @click.stop="handleDeleteSingle(a)"
                   >
@@ -729,7 +728,7 @@ function formatMimeBadge(mime: string): string {
                         v-if="attachments.length > 0"
                         type="checkbox"
                         :checked="selectedIds.size === attachments.length"
-                        class="h-4 w-4 rounded border-border text-primary"
+                        class="h-4 w-4 rounded-sm border-border text-primary"
                         @change="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
                       />
                     </th>
@@ -752,7 +751,7 @@ function formatMimeBadge(mime: string): string {
                       <input
                         type="checkbox"
                         :checked="selectedIds.has(a.id)"
-                        class="h-4 w-4 rounded border-border text-primary"
+                        class="h-4 w-4 rounded-sm border-border text-primary"
                         @change="toggleSelect(a.id)"
                       />
                     </td>
@@ -766,7 +765,7 @@ function formatMimeBadge(mime: string): string {
                         />
                         <div
                           v-else
-                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-base text-text-tertiary"
+                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-[14px] text-text-tertiary"
                         >
                           <Icon :icon="categoryOf(a.mime) === 'video' ? 'ri:video-line' : 'ri:file-text-line'" />
                         </div>
@@ -779,7 +778,7 @@ function formatMimeBadge(mime: string): string {
                       </div>
                     </td>
                     <td class="px-4 py-3 text-xs font-mono text-text-secondary">
-                      <span class="rounded bg-secondary px-2 py-0.5 font-bold">
+                      <span class="rounded-sm bg-secondary px-2 py-0.5 font-bold">
                         {{ formatMimeBadge(a.mime) }}
                       </span>
                     </td>
@@ -890,7 +889,7 @@ function formatMimeBadge(mime: string): string {
             class="max-h-[260px] rounded-xl object-contain shadow-sm"
             :alt="detailItem.filename"
           />
-          <div v-else class="py-12 text-center text-4xl text-text-tertiary">
+          <div v-else class="py-12 text-center text-2xl text-text-tertiary">
             <Icon icon="ri:file-text-line" />
           </div>
         </div>
@@ -965,7 +964,7 @@ function formatMimeBadge(mime: string): string {
               <span
                 v-for="p in detailRefs.posts"
                 :key="p.slug"
-                class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]"
+                class="ml-1 rounded-sm bg-secondary px-1.5 py-0.5 text-[11px]"
               >
                 {{ p.title }}
               </span>
@@ -975,7 +974,7 @@ function formatMimeBadge(mime: string): string {
               <span
                 v-for="p in detailRefs.pages"
                 :key="p.slug"
-                class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]"
+                class="ml-1 rounded-sm bg-secondary px-1.5 py-0.5 text-[11px]"
               >
                 {{ p.title }}
               </span>
@@ -1042,10 +1041,13 @@ function formatMimeBadge(mime: string): string {
 }
 .group-item-btn.active {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-foreground);
 }
 .group-item-btn.active .text-primary {
-  color: #fff !important;
+  color: var(--color-primary-foreground) !important;
+}
+@media (max-width: 767px) {
+  .group-item-btn { min-height: 44px; }
 }
 .group-count-badge {
   font-size: 11px;

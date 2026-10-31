@@ -83,9 +83,6 @@ function shortUA(ua: string): string {
 <template>
   <div>
     <VPageHeader title="登录日志">
-      <template #icon>
-        <Icon icon="ri:shield-user-line" class="mr-2 self-center text-xl" />
-      </template>
     </VPageHeader>
 
     <div class="m-0 md:m-4">

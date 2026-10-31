@@ -1,0 +1,197 @@
+{
+  "total": 19,
+  "passed": 18,
+  "failed": 1,
+  "results": [
+    {
+      "name": "创建隔离交互夹具文章",
+      "ok": true,
+      "detail": "4 posts",
+      "ms": 209
+    },
+    {
+      "name": "文章列表有数据（7 行 + 混合状态）",
+      "ok": true,
+      "detail": {
+        "count": 11,
+        "statuses": [
+          "已发布",
+          "草稿"
+        ]
+      },
+      "ms": 14
+    },
+    {
+      "name": "搜索 SQLite 只保留匹配行",
+      "ok": true,
+      "detail": [
+        "SQLite 在个人项目里的正确打开方式"
+      ],
+      "ms": 1386
+    },
+    {
+      "name": "状态筛选草稿：全部为草稿且 URL 同步",
+      "ok": true,
+      "detail": {
+        "statuses": [
+          "草稿",
+          "草稿",
+          "草稿"
+        ],
+        "url": "http://127.0.0.1:8137/console/posts?status=draft"
+      },
+      "ms": 1621
+    },
+    {
+      "name": "分类筛选技术（含子分类）",
+      "ok": true,
+      "detail": [
+        "写作流水线草稿：短代码与图床",
+        "关于离线优先的一点思考",
+        "从 Stellar 聊聊前端性能取舍",
+        "SQLite 在个人项目里的正确打开方式",
+        "用 Go 重写博客的这一年"
+      ],
+      "ms": 1559
+    },
+    {
+      "name": "本页排序最早创建改变顺序",
+      "ok": true,
+      "detail": {
+        "before": "验收批量一",
+        "after": "用 Go 重写博客的这一年"
+      },
+      "ms": 974
+    },
+    {
+      "name": "全选本页出现批量浮栏并可取消",
+      "ok": false,
+      "error": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: '取消全选' }) resolved to 2 elements:\n    1) <button type=\"button\" data-v-978de976=\"\" class=\"apple-filter-btn rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40\">取消全选</button> aka getByText('取消全选')\n    2) <button title=\"取消全选\" type=\"button\" aria-label=\"取消全选\" data-v-068a5925=\"\" class=\"ml-1 flex min-h-9 min-w-9 items",
+      "ms": 596
+    },
+    {
+      "name": "点击标题进入编辑器并渲染表单",
+      "ok": true,
+      "detail": {
+        "url": "http://127.0.0.1:8137/console/posts/edit/acc-batch-1",
+        "titleValue": "验收批量一"
+      },
+      "ms": 1609
+    },
+    {
+      "name": "发布草稿：状态变为已发布并回到列表",
+      "ok": true,
+      "detail": [
+        "验收批量一",
+        "验收批量二",
+        "验收回收站目标",
+        "验收待发布草稿",
+        "设计系统不是组件库",
+        "从 Stellar 聊聊前端性能取舍",
+        "十月书单与电影清单",
+        "SQLite 在个人项目里的正确打开方式",
+        "用 Go 重写博客的这一年"
+      ],
+      "ms": 4658
+    },
+    {
+      "name": "已发布文章保存草稿：提示尚未发布且线上状态不变",
+      "ok": true,
+      "detail": {
+        "toast": "当前有内容已保存，但还未发布。正在编辑的是草稿版本，线上内容不受影响。",
+        "target": {
+          "title": "设计系统不是组件库",
+          "status": "已发布"
+        }
+      },
+      "ms": 4466
+    },
+    {
+      "name": "回收站：移入 → 回收站可见 → 恢复",
+      "ok": true,
+      "detail": {
+        "trashedBefore": 2,
+        "restored": true
+      },
+      "ms": 5185
+    },
+    {
+      "name": "批量移入回收站（搜索 acc-batch 后全选）",
+      "ok": true,
+      "detail": [
+        "验收批量一",
+        "验收批量二",
+        "旧文：博客迁移记录"
+      ],
+      "ms": 5382
+    },
+    {
+      "name": "评论待审核 → 批准，状态与计数同步",
+      "ok": true,
+      "detail": {
+        "pendingTab": "待审核1",
+        "approvedHasAlan": true
+      },
+      "ms": 4121
+    },
+    {
+      "name": "评论拒绝动作生效",
+      "ok": true,
+      "detail": 2,
+      "ms": 3251
+    },
+    {
+      "name": "设置脏标记 + 保存 + 提示消失",
+      "ok": true,
+      "detail": {
+        "dirty": "未保存修改",
+        "guideDirty": "未保存修改",
+        "badgeGone": 0
+      },
+      "ms": 4819
+    },
+    {
+      "name": "设置切 Tab 保留脏标记（外观）",
+      "ok": true,
+      "detail": {
+        "panel": true
+      },
+      "ms": 1253
+    },
+    {
+      "name": "查看草稿效果打开预览面板",
+      "ok": true,
+      "detail": {
+        "label": "预览：整站外观",
+        "hasBody": 1
+      },
+      "ms": 2619
+    },
+    {
+      "name": "未保存修改离开页面触发确认",
+      "ok": true,
+      "detail": {
+        "dialogMsg": "您有未保存的设置更改，离开后修改将丢失，是否确认离开？",
+        "url": "http://127.0.0.1:8137/console/settings?tab=basic"
+      },
+      "ms": 4326
+    },
+    {
+      "name": "手机底栏导航与末项不被遮挡",
+      "ok": true,
+      "detail": {
+        "navVisible": true,
+        "mainScrollTop": 1534,
+        "mainMax": 1534,
+        "lastRow": {
+          "top": 525,
+          "bottom": 703
+        },
+        "navTop": 787,
+        "lastRowVisible": true
+      },
+      "ms": 3550
+    }
+  ],
+  "consoleErrors": []
+}

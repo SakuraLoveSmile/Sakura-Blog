@@ -35,6 +35,15 @@
   grid-column: 1 / -1;
 }
 
+/* 共享帮助文字：子组件（StructuredSetting 等）复用同一字号，避免继承 16px。 */
+.settings-help {
+  margin: 6px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .settings-hint {
   margin: 0 0 12px;
   color: var(--color-text-quaternary);
@@ -80,7 +89,7 @@
 
 .settings-switch-name {
   color: var(--color-foreground);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -185,11 +194,11 @@
   gap: 6px;
   padding: 6px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   background: var(--color-secondary);
   color: var(--color-text-secondary);
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
 .settings-chip input {
@@ -235,7 +244,7 @@
 
 .settings-preview-item {
   color: var(--color-text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
   text-align: center;
 }
 
@@ -249,7 +258,8 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 9999px;
+  /* 头像属于允许的圆形例外，不能跟随 6px 控件圆角。 */
+  border-radius: 50%;
 }
 
 .settings-avatar-32 { width: 32px; height: 32px; }
@@ -309,7 +319,7 @@
   gap: 4px;
   font-size: 11px;
   padding: 1px 6px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
   line-height: 1.4;
 }
@@ -344,7 +354,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   background-color: var(--color-state-warning);
   margin-left: 4px;
 }
@@ -390,60 +400,40 @@
   overflow: hidden;
 }
 
-/* 分区区块统一规范（消除多层嵌套卡片） */
-.settings-basic-section {
+/* 分区区块统一规范：标题 + 24px 留白 + 细分隔线，不再使用卡片外框/蓝色竖条。 */
+.settings-basic-section,
+.settings-post-section,
+.settings-section {
   margin: 0;
-  padding: 28px;
+  padding: 24px 0;
   border-bottom: 1px solid var(--color-border);
 }
-.settings-basic-section:last-child {
+.settings-basic-section:last-child,
+.settings-post-section:last-child,
+.settings-section:last-child {
   border-bottom: none;
 }
 .settings-basic-section-heading {
   max-width: 860px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .settings-basic-section-heading h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   margin: 0;
   color: var(--color-foreground);
-  font-size: 16px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 .settings-basic-section-heading h2::before {
-  content: "";
-  display: inline-block;
-  width: 3.5px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  flex-shrink: 0;
+  display: none;
 }
 .settings-basic-section-heading p,
 .settings-basic-help {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--color-text-tertiary);
   font-size: 12px;
-  line-height: 1.5;
-}
-@media (max-width: 767px) {
-  .settings-basic-section,
-  .settings-post-section,
-  .settings-section {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-}
-@media (max-width: 640px) {
-  .settings-basic-section,
-  .settings-post-section,
-  .settings-section {
-    padding-top: 16px;
-    padding-bottom: 16px;
-  }
+  line-height: 1.6;
 }
 
 

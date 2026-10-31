@@ -483,7 +483,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   position: absolute;
   left: 10px;
   color: var(--color-text-quaternary);
-  font-size: 15px;
+  font-size: 14px;
   pointer-events: none;
 }
 
@@ -527,8 +527,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-cat-pill {
   padding: 3px 8px;
-  font-size: 11.5px;
-  border-radius: 9999px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
   color: var(--color-text-tertiary);
@@ -546,13 +546,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-cat-pill.active {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-foreground);
   font-weight: 550;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .studio-cat-pill .cat-count {
-  font-size: 10px;
+  font-size: 11px;
   opacity: 0.85;
 }
 
@@ -586,9 +586,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-type-badge {
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -661,8 +661,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   gap: 6px;
   min-height: 34px;
   padding: 0 14px;
-  border-radius: var(--radius-full);
-  color: var(--color-foreground);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-foreground);
   background: var(--color-primary);
   font-size: 13px;
   font-weight: 600;
@@ -670,6 +670,12 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .retry-button:hover {
   opacity: 0.9;
+}
+
+@media (max-width: 767px) {
+  .retry-button {
+    min-height: 44px;
+  }
 }
 
 /* 顶部 Hero 概览卡片 */
@@ -705,7 +711,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   display: inline-block;
   width: 3.5px;
   height: 18px;
-  border-radius: 2px;
+  border-radius: 6px;
   background: var(--color-primary);
 }
 
@@ -738,14 +744,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 .studio-pill-badge {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
 }
 
 .studio-hero-desc {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -764,7 +770,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-section-heading h2 {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 14px;
   font-weight: 650;
   color: var(--color-foreground);
   display: flex;
@@ -777,7 +783,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   display: inline-block;
   width: 3.5px;
   height: 15px;
-  border-radius: 2px;
+  border-radius: 6px;
   background: var(--color-primary);
 }
 
@@ -885,7 +891,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-table th {
   padding: 10px 16px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text-tertiary);
   border-bottom: 1px solid var(--color-border);
@@ -906,7 +912,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   font-family: var(--font-mono, monospace);
   font-size: 12px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
   color: var(--color-foreground);
   font-weight: 550;
@@ -914,7 +920,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .default-code {
   font-family: var(--font-mono, monospace);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-tertiary);
 }
 
@@ -1026,19 +1032,19 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .canvas-services-tag {
   font-family: var(--font-mono, monospace);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--color-text-tertiary);
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
 }
 
 .canvas-fixture-badge {
-  font-size: 10.5px;
+  font-size: 11px;
   padding: 2px 7px;
-  border-radius: 9999px;
-  background: rgba(48, 209, 88, 0.15);
-  color: #30d158;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-state-success) 15%, transparent);
+  color: var(--color-state-success);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1050,7 +1056,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   gap: 5px;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
   color: var(--color-text-secondary);
@@ -1110,6 +1116,11 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   .studio-workbench {
     padding: 16px;
     gap: 16px;
+  }
+  .studio-hero-shortcode-tag,
+  .studio-copy-action,
+  .canvas-refresh-btn {
+    min-height: 44px;
   }
 }
 </style>

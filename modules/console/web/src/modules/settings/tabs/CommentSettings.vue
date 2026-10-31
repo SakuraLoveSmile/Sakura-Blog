@@ -163,12 +163,12 @@ function handleSubmit() {
 
 <style scoped>
 .settings-comment-form {
-  background: var(--color-card);
+  background: transparent;
 }
 
 .settings-section {
   margin: 0;
-  padding: 28px;
+  padding: 24px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -178,7 +178,7 @@ function handleSubmit() {
 
 .settings-section-heading {
   max-width: 860px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .settings-section-heading h2 {
@@ -187,19 +187,13 @@ function handleSubmit() {
   gap: 8px;
   margin: 0;
   color: var(--color-foreground);
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .settings-section-heading h2::before {
-  content: "";
-  display: inline-block;
-  width: 3.5px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  flex-shrink: 0;
+  display: none;
 }
 
 .settings-section-heading p,
@@ -238,8 +232,8 @@ function handleSubmit() {
   display: block;
   margin-bottom: 10px;
   color: var(--color-foreground);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .settings-field > .apple-input {
@@ -280,8 +274,8 @@ function handleSubmit() {
 
 .settings-switch-name {
   color: var(--color-foreground);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.4;
 }
 
@@ -324,22 +318,15 @@ function handleSubmit() {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  padding: 16px 28px calc(16px + env(safe-area-inset-bottom));
+  padding: 16px 0 calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
-  background: var(--color-card);
+  background: var(--color-background);
 }
 
 .settings-comment-actions-inner {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-}
-
-@media (max-width: 767px) {
-  .settings-section {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -363,7 +350,7 @@ function handleSubmit() {
   }
 
   .settings-comment-actions {
-    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
   }
 }
 </style>
