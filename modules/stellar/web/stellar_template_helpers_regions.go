@@ -435,6 +435,7 @@ func (r stellarTemplateRenderer) regions(d *StellarRenderData) (map[string]any, 
 			if actions := r.actions(d, stellarList(stellarGet(state, "footer.actions"))); actions != "" {
 				fmt.Fprintf(&body, `<div class="site-region__footer-actions"><div class="widget-instance widget-instance--actions" data-widget-id="leftbar:fixed:actions" data-presentation="leftbar">%s</div></div>`, actions)
 			}
+			body.WriteString(`<div class="widget-instance widget-instance--wormhole site-region__wormhole" data-widget-id="leftbar:fixed:wormhole" data-presentation="leftbar">` + stellarWormholeButton() + `</div>`)
 			fmt.Fprintf(&body, `<div class="site-region__system ui-collection" data-layout="inline" data-variant="nav" data-density="compact"><div class="site-region__settings"><div class="widget-instance widget-instance--settings" data-widget-id="leftbar:fixed:settings" data-presentation="leftbar" data-leftbar-rail>%s</div></div><button type="button" class="%s" aria-label="Collapse leftbar" aria-expanded="true" data-shell-action="toggle-leftbar"><span class="ui-icon">%s</span></button></div></footer>`, r.settings(d, name), stellarEscape(r.ui(d, "leftbar-state-toggle", "collectionItem", "is-icon-only")), r.icon("default:leftbar-toggle"))
 		} else {
 			body.WriteString(string(stack))

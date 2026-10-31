@@ -1,0 +1,52 @@
+{
+  "baseline": "b114e1d45664bb2a00c446f01c8db07593ee969d",
+  "sources": {
+    "modules/stellar/web/stellar_template_helpers_document.go": "d1a9860dddefc3baa3ef50210b87ae3838a907cba0860ad599c2cb553c6c0f89",
+    "modules/stellar/web/stellar_template_helpers_regions.go": "80f99e766b3795deb00e1343b3e83eb20645c2153340f398d9b8bb7d3a39b907",
+    "modules/stellar/web/assets/css/site-footer.css": "bebdb8246caa9777c7f9c37e2538815781d3554f896d432428dcd1ac924a4df7"
+  },
+  "binarySHA256": "eed97ec23b62bf7eac6d3be67d935040005c67b7b55bc495067bf5ef5c0626d7",
+  "servedCSS": {
+    "url": "/assets/css/site-footer.css?v=bebdb824",
+    "sha256": "bebdb8246caa9777c7f9c37e2538815781d3554f896d432428dcd1ac924a4df7",
+    "matchesSource": true
+  },
+  "consoleAssets": [
+    {
+      "url": "/console/assets/index-C1Fo-hM1.js",
+      "sha256": "b54dd198c18b95c55ed2456faff6c2dc61d5b979d5e76c5f18d9b1c1a1e12068"
+    },
+    {
+      "url": "/console/assets/api-C-H7IBEY.js",
+      "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80"
+    },
+    {
+      "url": "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+      "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c"
+    },
+    {
+      "url": "/console/assets/pinia-CXeiBUD1.js",
+      "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888"
+    },
+    {
+      "url": "/console/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+    },
+    {
+      "url": "/console/assets/index-CfvuPiHM.css",
+      "sha256": "b430ed50780208253a91f2991e56761bb85112405c403b3f625dd2047ed85da9"
+    }
+  ],
+  "build": {
+    "command": "make build",
+    "exitCode": 0,
+    "log": ".tmp/wormhole-sidebar/build.log"
+  },
+  "test": {
+    "command": "make test",
+    "exitCode": 0,
+    "log": ".tmp/wormhole-sidebar/test.log"
+  },
+  "review": "independent read-only review: no material findings",
+  "cssDriftCheck": "not applicable: generated CSS and shared upstream source unchanged"
+}
