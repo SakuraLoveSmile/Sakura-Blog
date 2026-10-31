@@ -611,6 +611,10 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
             page.locator(`#tabpanel-${settingsTab}`),
             `${tab.url} 在 ${vp.width}px 必须激活 #tabpanel-${settingsTab}`,
           ).toBeVisible();
+          await expect(
+            page.locator(`#tabpanel-${settingsTab} ${settingsTab === "basic" ? ".settings-basic-form" : ".canonical-settings-form"}`),
+            `${tab.url} 在 ${vp.width}px 必须加载活动表单`,
+          ).toBeVisible();
         }
 
         // 外层只有一个主卡片面板 .settings-basic-panel
@@ -619,17 +623,16 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
         // 验证表单分区容器存在，且必须遍历所有匹配项，不可为 0
         const sections = page.locator(".settings-basic-section, .settings-section, .settings-post-section");
-        const sectionCount = await sections.count();
+        // 批量读取全部分区（含保留草稿的隐藏标签页），避免逐节点跨浏览器往返耗尽测试预算。
+        const sectionStylesList = await sections.evaluateAll((elements) => elements.map((el) => {
+          const cs = window.getComputedStyle(el);
+          return { paddingLeft: cs.paddingLeft, paddingRight: cs.paddingRight };
+        }));
+        const sectionCount = sectionStylesList.length;
         expect(sectionCount, `${tab.url} 在 ${vp.width}px 必须存在表单分区容器`).toBeGreaterThan(0);
 
         for (let s = 0; s < sectionCount; s++) {
-          const sectionStyles = await sections.nth(s).evaluate((el) => {
-            const cs = window.getComputedStyle(el);
-            return {
-              paddingLeft: cs.paddingLeft,
-              paddingRight: cs.paddingRight,
-            };
-          });
+          const sectionStyles = sectionStylesList[s];
           if (vp.width < 768) {
             expect(
               parseFloat(sectionStyles.paddingLeft),
@@ -653,24 +656,25 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
         // 针对包含 .settings-section-body 的表单页，明确遍历断言背景透明、无重复边框、内边距为0
         const bodies = page.locator(".settings-section-body");
-        const bodyCount = await bodies.count();
+        const bodyStylesList = await bodies.evaluateAll((elements) => elements.map((el) => {
+          const cs = window.getComputedStyle(el);
+          return {
+            bg: cs.backgroundColor,
+            borderWidth: cs.borderWidth,
+            borderStyle: cs.borderStyle,
+            borderRadius: cs.borderRadius,
+            boxShadow: cs.boxShadow,
+            paddingLeft: cs.paddingLeft,
+            paddingRight: cs.paddingRight,
+            paddingTop: cs.paddingTop,
+            paddingBottom: cs.paddingBottom,
+          };
+        }));
+        const bodyCount = bodyStylesList.length;
         if (tab.hasBodies) {
           expect(bodyCount, `${tab.url} 在 ${vp.width}px 预期存在 .settings-section-body 容器，缺失必须失败`).toBeGreaterThan(0);
           for (let i = 0; i < bodyCount; i++) {
-            const bodyStyles = await bodies.nth(i).evaluate((el) => {
-              const cs = window.getComputedStyle(el);
-              return {
-                bg: cs.backgroundColor,
-                borderWidth: cs.borderWidth,
-                borderStyle: cs.borderStyle,
-                borderRadius: cs.borderRadius,
-                boxShadow: cs.boxShadow,
-                paddingLeft: cs.paddingLeft,
-                paddingRight: cs.paddingRight,
-                paddingTop: cs.paddingTop,
-                paddingBottom: cs.paddingBottom,
-              };
-            });
+            const bodyStyles = bodyStylesList[i];
             expect(
               bodyStyles.bg === "transparent" || bodyStyles.bg === "rgba(0, 0, 0, 0)",
               `${tab.url} ${vp.width}px .settings-section-body[${i}] 背景必须透明（实际为 ${bodyStyles.bg}）`,

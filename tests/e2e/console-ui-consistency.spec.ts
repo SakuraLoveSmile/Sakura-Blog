@@ -1066,11 +1066,16 @@ test("Console 全部主导航在桌面和手机可达且无整页横向溢出", 
     Array.from(new Set(links.map((link) => new URL((link as HTMLAnchorElement).href).pathname))),
   );
   expect(paths.length).toBeGreaterThanOrEqual(25);
+  // 这两个侧栏分组入口按已登记路由跳转到默认子页，仍精确核验最终地址。
+  const destinations: Record<string, string> = {
+    "/console/plugins": "/console/plugins/shortcodes",
+    "/console/seo": "/console/seo/overview",
+  };
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     for (const path of paths) {
       await page.goto(path);
-      await expect(page).toHaveURL(new RegExp(`${path}$`));
+      await expect(page).toHaveURL(new RegExp(`${destinations[path] ?? path}$`));
       await expect(page.locator("main.content h1").first(), path).toBeVisible();
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { message: `${path} 在 ${width}px 不得整页横向溢出` }).toBe(true);
       const main = page.locator("main.content");
@@ -1084,7 +1089,7 @@ test("Console 全部主导航在桌面和手机可达且无整页横向溢出", 
       }
     }
   }
-  await testInfo.attach("navigation-report", { body: JSON.stringify({ paths, widths: [1280, 390], errors, layoutIssues }, null, 2), contentType: "application/json" });
+  await testInfo.attach("navigation-report", { body: JSON.stringify({ paths, destinations, widths: [1280, 390], errors, layoutIssues }, null, 2), contentType: "application/json" });
   expect(errors, "主导航切换不应产生未捕获错误").toEqual([]);
   expect(layoutIssues, "各页主工作区不得横向溢出").toEqual([]);
 });
