@@ -1,0 +1,130 @@
+[
+  {
+    "preset": "card",
+    "color_scheme": "light",
+    "os": "light",
+    "width": 1280,
+    "background": "hsla(210deg 20% 98% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "card",
+    "color_scheme": "dark",
+    "os": "dark",
+    "width": 390,
+    "background": "hsla(210deg 8% 12% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "card",
+    "color_scheme": "auto",
+    "os": "light",
+    "width": 390,
+    "background": "hsla(210deg 20% 98% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "card",
+    "color_scheme": "auto",
+    "os": "dark",
+    "width": 1280,
+    "background": "hsla(210deg 8% 12% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "glass",
+    "color_scheme": "light",
+    "os": "light",
+    "width": 1280,
+    "background": "hsla(210deg 20% 98% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "glass",
+    "color_scheme": "dark",
+    "os": "dark",
+    "width": 390,
+    "background": "hsla(210deg 8% 12% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "glass",
+    "color_scheme": "auto",
+    "os": "light",
+    "width": 390,
+    "background": "hsla(210deg 20% 98% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "glass",
+    "color_scheme": "auto",
+    "os": "dark",
+    "width": 1280,
+    "background": "hsla(210deg 8% 12% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "minimal",
+    "color_scheme": "light",
+    "os": "light",
+    "width": 1280,
+    "background": "hsla(44 50% 96% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "minimal",
+    "color_scheme": "dark",
+    "os": "dark",
+    "width": 390,
+    "background": "hsla(44 12% 12% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "minimal",
+    "color_scheme": "auto",
+    "os": "light",
+    "width": 390,
+    "background": "hsla(44 50% 96% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "minimal",
+    "color_scheme": "auto",
+    "os": "dark",
+    "width": 1280,
+    "background": "hsla(44 12% 12% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "flat",
+    "color_scheme": "light",
+    "os": "light",
+    "width": 1280,
+    "background": "hsla(210deg 20% 98% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "flat",
+    "color_scheme": "dark",
+    "os": "dark",
+    "width": 390,
+    "background": "hsla(210deg 8% 12% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "flat",
+    "color_scheme": "auto",
+    "os": "light",
+    "width": 390,
+    "background": "hsla(210deg 20% 98% / 1)",
+    "overflow": false
+  },
+  {
+    "preset": "flat",
+    "color_scheme": "auto",
+    "os": "dark",
+    "width": 1280,
+    "background": "hsla(210deg 8% 12% / 1)",
+    "overflow": false
+  }
+]

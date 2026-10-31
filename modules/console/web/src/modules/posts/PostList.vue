@@ -8,7 +8,6 @@ import { usePagedList } from "@/composables/usePagedList";
 import { Icon } from "@iconify/vue";
 import {
   VPageHeader,
-  VCard,
   VButton,
   VEmpty,
   VLoading,
@@ -18,7 +17,6 @@ import {
   Dialog,
   Toast,
 } from "@/components/ui";
-import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
 import { formatRelative, formatDateTime } from "@/lib/format";
 
 interface PostItem {
@@ -56,7 +54,7 @@ const selectedSort = ref<string>("newest");
 const selectedCategory = ref<string | undefined>(categoryFromQuery());
 const selectedTag = ref<string | undefined>(undefined);
 const VIEW_KEY = "console:posts-view";
-const viewMode = ref<"grid" | "table">(localStorage.getItem(VIEW_KEY) === "table" ? "table" : "grid");
+const viewMode = ref<"grid" | "table">(localStorage.getItem(VIEW_KEY) === "grid" ? "grid" : "table");
 watch(viewMode, (value) => localStorage.setItem(VIEW_KEY, value));
 
 const {
@@ -331,25 +329,6 @@ function statusBadge(status: string) {
       return { cls: "bg-secondary text-text-tertiary", dotCls: "bg-text-quaternary", label: status };
   }
 }
-
-function handleTitleEnter(e: MouseEvent) {
-  const container = e.currentTarget as HTMLElement | null;
-  if (!container) return;
-  const inner = container.querySelector(".post-title-inner") as HTMLElement | null;
-  if (!inner) return;
-  const overflow = inner.scrollWidth - container.clientWidth;
-  if (overflow > 2) {
-    container.style.setProperty("--scroll-dist", `-${overflow + 8}px`);
-    container.style.setProperty("--scroll-duration", `${Math.max(3, overflow / 30)}s`);
-    container.classList.add("is-overflowing");
-  }
-}
-
-function handleTitleLeave(e: MouseEvent) {
-  const container = e.currentTarget as HTMLElement | null;
-  if (!container) return;
-  container.classList.remove("is-overflowing");
-}
 </script>
 
 <template>
@@ -359,7 +338,7 @@ function handleTitleLeave(e: MouseEvent) {
       <template #icon>
         <Icon icon="ri:article-line" class="text-primary" />
       </template>
-      <template #subtitle>撰写与管理博客博文，支持分类标签筛选、版本追踪与临时分享链接</template>
+      <template #subtitle>{{ total }} 篇文章</template>
       <template #actions>
         <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
           <div class="apple-search w-full lg:min-w-[200px] lg:max-w-[280px]">
@@ -392,42 +371,8 @@ function handleTitleLeave(e: MouseEvent) {
     </VPageHeader>
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
-      <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <ConsoleStatsCard
-          label="匹配文章"
-          :value="stats.total"
-          sub="当前筛选下的总数"
-          icon="ri:article-line"
-          color="primary"
-        />
-        <ConsoleStatsCard
-          label="本页已发布"
-          :value="stats.pubCount"
-          sub="篇在线查阅"
-          icon="ri:checkbox-circle-line"
-          color="success"
-          value-class="text-state-success"
-        />
-        <ConsoleStatsCard
-          label="本页草稿"
-          :value="stats.draftCount"
-          sub="篇未发布"
-          icon="ri:draft-line"
-          color="warning"
-          value-class="text-state-warning"
-        />
-        <ConsoleStatsCard
-          label="本页置顶"
-          :value="stats.pinCount"
-          sub="篇精选置顶"
-          icon="ri:pushpin-line"
-          color="purple"
-        />
-      </div>
-
       <!-- 工具栏：状态分段 + 筛选 + 视图模式 -->
-      <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
+      <div class="console-toolbar flex flex-wrap items-center justify-between gap-3">
         <!-- 状态分段 -->
         <div class="apple-segmented" role="group" aria-label="文章状态">
           <button
@@ -508,14 +453,29 @@ function handleTitleLeave(e: MouseEvent) {
             <button
               type="button"
               :class="{ active: viewMode === 'table' }"
-              title="表格视图"
-              aria-label="表格视图"
+              title="列表视图"
+              aria-label="列表视图"
               :aria-pressed="viewMode === 'table'"
               @click="viewMode = 'table'"
             >
               <Icon icon="ri:table-line" />
             </button>
           </div>
+        </div>
+      </div>
+
+      <div class="console-summary" aria-label="文章摘要">
+        <div class="stats-card">
+          <span class="stats-label">匹配文章</span><span class="stats-value">{{ stats.total }}</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">本页已发布</span><span class="stats-value">{{ stats.pubCount }}</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">本页草稿</span><span class="stats-value">{{ stats.draftCount }}</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">本页置顶</span><span class="stats-value">{{ stats.pinCount }}</span>
         </div>
       </div>
 
@@ -535,8 +495,8 @@ function handleTitleLeave(e: MouseEvent) {
 
       <VEmpty
         v-else-if="posts.length === 0"
-        :title="hasFilters ? '未找到匹配的文章' : '开始你的第一篇文章'"
-        :message="hasFilters ? '可以调整筛选条件，或清除筛选查看全部文章。' : '记录一个想法，从草稿开始慢慢写。'"
+        :title="hasFilters ? '未找到匹配的文章' : '暂无文章'"
+        :message="hasFilters ? '可以调整筛选条件，或清除筛选查看全部文章。' : '点击“撰写文章”创建草稿。'"
       >
         <template #actions>
           <VButton v-if="hasFilters" @click="clearFilters">清除筛选</VButton>
@@ -549,7 +509,7 @@ function handleTitleLeave(e: MouseEvent) {
         <article
           v-for="p in posts"
           :key="p.slug"
-          class="post-card group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card hover:-translate-y-0.5 hover:border-border-strong hover:shadow-lg"
+          class="post-card group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card hover:border-border-strong"
           :class="{ 'is-selected': selectedSlugs.has(p.slug) }"
         >
           <!-- 封面图：只保留媒体与轻量浮层，点击直达编辑，悬停平滑缩放 -->
@@ -563,12 +523,9 @@ function handleTitleLeave(e: MouseEvent) {
               alt=""
               loading="lazy"
               decoding="async"
-              class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+              class="h-full w-full object-cover"
             />
-            <div
-              v-else
-              class="post-card-placeholder flex h-full w-full items-center justify-center transition-transform duration-500 ease-out group-hover:scale-105"
-            >
+            <div v-else class="post-card-placeholder flex h-full w-full items-center justify-center">
               <Icon icon="ri:article-line" />
             </div>
 
@@ -597,7 +554,7 @@ function handleTitleLeave(e: MouseEvent) {
                   <!-- 已选中：Apple 蓝实心底板 + 锐利白色勾选 -->
                   <div
                     v-else
-                    class="flex h-7 w-7 items-center justify-center rounded-full border border-primary bg-primary text-white shadow-[0_0_10px_rgba(46,141,255,0.6)] transition-colors duration-200"
+                    class="flex h-7 w-7 items-center justify-center rounded-full border border-primary bg-primary text-primary-foreground transition-colors duration-200"
                   >
                     <Icon icon="ri:check-line" class="text-sm font-bold" />
                   </div>
@@ -613,10 +570,7 @@ function handleTitleLeave(e: MouseEvent) {
               <span
                 class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-2.5 py-0.5 text-[11px] font-medium text-white/90 shadow-sm"
               >
-                <span
-                  class="h-1.5 w-1.5 rounded-full shadow-[0_0_6px_currentColor]"
-                  :class="statusBadge(p.status).dotCls"
-                ></span>
+                <span class="h-1.5 w-1.5 rounded-full" :class="statusBadge(p.status).dotCls"></span>
                 {{ statusBadge(p.status).label }}
               </span>
             </div>
@@ -659,12 +613,10 @@ function handleTitleLeave(e: MouseEvent) {
                 </span>
               </div>
 
-              <!-- 2. 单行自适应溢出平滑滚动标题 -->
+              <!-- 完整标题通过提示可查看，点击进入编辑。 -->
               <div
                 class="post-title-wrapper mb-2"
                 :title="p.title"
-                @mouseenter="handleTitleEnter($event)"
-                @mouseleave="handleTitleLeave($event)"
                 @click="router.push(`/posts/edit/${p.slug}`)"
               >
                 <div class="post-title-scroll">
@@ -682,7 +634,7 @@ function handleTitleLeave(e: MouseEvent) {
               </p>
             </div>
 
-            <!-- 底部时间、阅读量与操作：默认半透明弱化呈现，悬停/聚焦时高亮 -->
+            <!-- 时间、阅读量与常显操作。 -->
             <div class="flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs">
               <div
                 class="flex items-center gap-1.5 text-[11px] text-text-tertiary transition-colors hover:text-text-secondary"
@@ -695,9 +647,7 @@ function handleTitleLeave(e: MouseEvent) {
                 </template>
               </div>
 
-              <div
-                class="post-card-actions flex items-center gap-1 opacity-60 transition-opacity duration-200 sm:opacity-40 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
-              >
+              <div class="post-card-actions flex items-center gap-1">
                 <button type="button" class="post-card-action" title="生成临时分享链接" @click="openShareModal(p)">
                   <Icon icon="ri:share-forward-line" />
                 </button>
@@ -757,139 +707,115 @@ function handleTitleLeave(e: MouseEvent) {
         </article>
       </div>
 
-      <!-- ============ 模式 2：表格列表视图 ============ -->
-      <VCard v-else>
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[800px] text-left">
-            <thead>
-              <tr class="border-b border-border text-xs font-medium text-text-quaternary">
-                <th class="w-12 px-4 py-3 text-center">
-                  <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
-                  <input
-                    v-if="posts.length > 0"
-                    type="checkbox"
-                    :checked="selectedSlugs.size === posts.length"
-                    class="h-4 w-4 rounded border-border text-primary"
-                    @change="selectedSlugs.size === posts.length ? clearSelection() : selectAll()"
-                  />
-                </th>
-                <th class="px-4 py-3">文章标题</th>
-                <th class="px-4 py-3">分类 / 标签</th>
-                <th class="px-4 py-3">状态</th>
-                <th class="px-4 py-3">更新时间</th>
-                <th class="w-40 px-4 py-3 text-right">操作</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border/60">
-              <tr
-                v-for="p in posts"
-                :key="p.slug"
-                class="cursor-pointer transition-colors hover:bg-secondary/40"
-                :class="{ 'bg-primary/5': selectedSlugs.has(p.slug) }"
-                @click="router.push(`/posts/edit/${p.slug}`)"
+      <!-- 行列表在窄屏内折行，保留同一份选择与操作状态。 -->
+      <ul v-else class="console-records content-records" aria-label="文章列表">
+        <li
+          v-for="p in posts"
+          :key="p.slug"
+          class="content-record post-record"
+          :class="{ 'is-selected': selectedSlugs.has(p.slug) }"
+        >
+          <label class="record-selection" :aria-label="`选择文章：${p.title}`">
+            <input
+              type="checkbox"
+              :aria-label="`选择文章：${p.title}`"
+              :checked="selectedSlugs.has(p.slug)"
+              @change="toggleSelect(p.slug)"
+            />
+          </label>
+          <div class="record-main">
+            <div class="record-title-line">
+              <button type="button" class="record-title" :title="p.title" @click="router.push(`/posts/edit/${p.slug}`)">
+                {{ p.title }}
+              </button>
+              <span v-if="p.pinned" class="record-note">置顶</span>
+            </div>
+            <div class="record-metadata">
+              <span class="record-slug" :title="`/${p.slug}`">/{{ p.slug }}</span>
+              <button
+                v-if="p.category"
+                type="button"
+                :title="`按分类「${p.category}」筛选`"
+                @click="
+                  selectedCategory = p.category;
+                  page = 1;
+                "
               >
-                <td class="px-4 py-3.5 text-center" @click.stop>
-                  <input
-                    type="checkbox"
-                    :checked="selectedSlugs.has(p.slug)"
-                    class="h-4 w-4 rounded border-border text-primary"
-                    @change="toggleSelect(p.slug)"
-                  />
-                </td>
-                <td class="px-4 py-3.5">
-                  <div class="flex items-center gap-3">
-                    <img
-                      v-if="p.cover"
-                      :src="p.cover"
-                      class="h-10 w-14 shrink-0 rounded-lg border border-border object-cover bg-secondary"
-                      alt=""
-                    />
-                    <div class="min-w-0">
-                      <div class="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                        <span class="truncate max-w-[320px]">{{ p.title }}</span>
-                        <span v-if="p.pinned" class="rounded bg-primary px-1.5 py-0.2 text-[9px] font-bold text-white"
-                          >置顶</span
-                        >
-                      </div>
-                      <div class="text-xs font-mono text-text-quaternary">/{{ p.slug }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-4 py-3.5 text-xs text-text-secondary">
-                  <div class="flex flex-wrap items-center gap-1">
-                    <span v-if="p.category" class="rounded bg-secondary px-1.5 py-0.5 text-[10px]">
-                      {{ p.category }}
-                    </span>
-                    <span v-for="t in parseTags(p.tags).slice(0, 2)" :key="t" class="text-text-quaternary text-[11px]">
-                      #{{ t }}
-                    </span>
-                  </div>
-                </td>
-                <td class="px-4 py-3.5 text-xs">
-                  <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusBadge(p.status).cls">
-                    {{ statusBadge(p.status).label }}
-                  </span>
-                </td>
-                <td class="px-4 py-3.5 text-xs text-text-quaternary">
-                  {{ formatRelative(p.updated_at) }}
-                </td>
-                <td class="px-4 py-3.5 text-right" @click.stop>
-                  <div class="flex items-center justify-end gap-1">
-                    <button type="button" class="action-icon-btn" title="分享链接" @click="openShareModal(p)">
-                      <Icon icon="ri:share-forward-line" />
-                    </button>
-                    <button
-                      v-if="p.status === 'published'"
-                      type="button"
-                      class="action-icon-btn"
-                      title="前台查阅"
-                      @click="openPostPreview(p.slug)"
-                    >
-                      <Icon icon="ri:external-link-line" />
-                    </button>
-                    <button
-                      v-if="p.status !== 'trashed'"
-                      type="button"
-                      class="action-icon-btn"
-                      title="编辑"
-                      @click="router.push(`/posts/edit/${p.slug}`)"
-                    >
-                      <Icon icon="ri:edit-line" />
-                    </button>
-                    <button
-                      v-if="p.status === 'trashed'"
-                      type="button"
-                      class="action-icon-btn text-primary"
-                      title="恢复"
-                      @click="handleRestore(p)"
-                    >
-                      <Icon icon="ri:restart-line" />
-                    </button>
-                    <button
-                      v-if="p.status !== 'trashed'"
-                      type="button"
-                      class="action-icon-btn hover:text-state-error"
-                      title="移入回收站"
-                      @click="handleDelete(p)"
-                    >
-                      <Icon icon="ri:delete-bin-line" />
-                    </button>
-                    <button
-                      v-if="p.status === 'trashed'"
-                      type="button"
-                      class="action-icon-btn text-state-error"
-                      title="彻底删除"
-                      @click="handlePurge(p)"
-                    >
-                      <Icon icon="ri:delete-bin-7-line" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </VCard>
+                {{ p.category }}
+              </button>
+              <button
+                v-for="tag in parseTags(p.tags).slice(0, 2)"
+                :key="tag"
+                type="button"
+                :title="`按标签「#${tag}」筛选`"
+                @click="
+                  selectedTag = tag;
+                  page = 1;
+                "
+              >
+                #{{ tag }}
+              </button>
+            </div>
+          </div>
+          <div class="record-state">
+            <span class="record-status" :class="statusBadge(p.status).cls">{{ statusBadge(p.status).label }}</span>
+            <span class="record-updated" :title="`更新时间：${formatDateTime(p.updated_at)}`">{{
+              formatRelative(p.updated_at)
+            }}</span>
+            <span class="record-views">{{ formatViews(p.views ?? 0) }} 浏览</span>
+          </div>
+          <div class="record-actions">
+            <button type="button" class="action-icon-btn" title="生成临时分享链接" @click="openShareModal(p)">
+              <Icon icon="ri:share-forward-line" />
+            </button>
+            <button
+              v-if="p.status === 'published'"
+              type="button"
+              class="action-icon-btn"
+              title="前台查阅"
+              @click="openPostPreview(p.slug)"
+            >
+              <Icon icon="ri:external-link-line" />
+            </button>
+            <button
+              v-if="p.status !== 'trashed'"
+              type="button"
+              class="action-icon-btn"
+              title="编辑博文"
+              @click="router.push(`/posts/edit/${p.slug}`)"
+            >
+              <Icon icon="ri:edit-line" />
+            </button>
+            <button
+              v-if="p.status === 'trashed'"
+              type="button"
+              class="action-icon-btn text-primary"
+              title="恢复博文"
+              @click="handleRestore(p)"
+            >
+              <Icon icon="ri:restart-line" />
+            </button>
+            <button
+              v-if="p.status !== 'trashed'"
+              type="button"
+              class="action-icon-btn record-danger"
+              title="移入回收站"
+              @click="handleDelete(p)"
+            >
+              <Icon icon="ri:delete-bin-line" />
+            </button>
+            <button
+              v-if="p.status === 'trashed'"
+              type="button"
+              class="action-icon-btn record-danger text-state-error"
+              title="彻底删除"
+              @click="handlePurge(p)"
+            >
+              <Icon icon="ri:delete-bin-7-line" />
+            </button>
+          </div>
+        </li>
+      </ul>
 
       <!-- 分页 -->
       <div v-if="total > size" class="flex justify-center pt-4">
@@ -955,71 +881,24 @@ function handleTitleLeave(e: MouseEvent) {
 </template>
 
 <style scoped>
-/* Apple 深色卡片微光边框与选中光效 */
+/* 封面视图保留内容预览，选中状态只用边界区分。 */
 .post-card {
-  position: relative;
-  transition:
-    transform var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard);
+  transition: border-color var(--duration-fast) var(--ease-standard);
 }
-
-.post-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-  z-index: 10;
-}
-
 .post-card.is-selected {
   border-color: var(--color-primary);
-  box-shadow:
-    0 0 0 1px var(--color-primary),
-    0 0 24px rgba(46, 141, 255, 0.18);
-  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-card));
 }
-
-/* 标题单行与自适应溢出滚动 */
 .post-title-wrapper {
-  position: relative;
   overflow: hidden;
-  white-space: nowrap;
   cursor: pointer;
 }
-
-.post-title-wrapper.is-overflowing {
-}
-
-.post-title-scroll {
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.post-title-wrapper.is-overflowing .post-title-inner {
-  animation: title-marquee var(--scroll-duration, 4s) cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
-  will-change: transform;
-}
-
-@keyframes title-marquee {
-  0%,
-  20% {
-    transform: translateX(0);
-  }
-  80%,
-  100% {
-    transform: translateX(var(--scroll-dist, 0px));
-  }
-}
-
 .post-title-inner {
-  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 海报卡片媒体占位：克制的暗色渐变承托图标，不抢标题层级 */
+/* 封面缺省图使用中性背景。 */
 .post-card-placeholder {
   background: var(--color-secondary);
   color: color-mix(in srgb, var(--color-foreground) 22%, transparent);
@@ -1087,10 +966,7 @@ function handleTitleLeave(e: MouseEvent) {
   border-color: var(--color-border);
 }
 
-@media (max-width: 640px) {
-  .post-card-action {
-    width: 32px;
-    height: 32px;
-  }
+@media (max-width: 1023px) {
+  .action-icon-btn, .post-card-action { width: 44px; height: 44px; }
 }
 </style>

@@ -1,0 +1,38 @@
+/* 官方虫洞按钮跟随 Stellar 配色，自动模式读取系统偏好。 */
+.site-region--leftbar .site-region__wormhole {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+.foreverblog-wormhole {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 6px;
+}
+.foreverblog-wormhole:focus-visible {
+  outline: 2px solid var(--theme);
+  outline-offset: 2px;
+}
+.foreverblog-wormhole img {
+  display: block;
+  width: auto;
+  height: 32px;
+  object-fit: contain;
+}
+.foreverblog-wormhole .wormhole-logo--on-dark,
+html[data-theme="dark"] .foreverblog-wormhole .wormhole-logo--on-light {
+  display: none;
+}
+html[data-theme="dark"] .foreverblog-wormhole .wormhole-logo--on-dark {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .foreverblog-wormhole .wormhole-logo--on-light {
+    display: none;
+  }
+  html:not([data-theme]) .foreverblog-wormhole .wormhole-logo--on-dark {
+    display: block;
+  }
+}

@@ -133,7 +133,7 @@ func v2Number(s string) float64 {
 	return n
 }
 func (r *shortcodeV2Renderer) okr(a map[string]string, body string) string {
-	parts := v2SplitCaptured(reOKRItem, body)
+	parts := r.splitCaptured(reOKRItem, body)
 	if len(parts) < 3 {
 		return ""
 	}

@@ -1,30 +1,19 @@
 document.currentScript.stellarMount = function (root, context) {
   const utils = context.serviceUtils;
+  const text = utils.escapeHTML;
+  const url = utils.safeURL;
 
   const el = root.querySelector('.ds-twikoo');
   if (!el) return;
-      utils.onLoading(el); // 加载动画
   
       const api = el.dataset.api;
       const limit = parseInt(el.getAttribute('limit')) || 10;
       const reply = el.getAttribute('hide') !== 'reply';
       if (!api) return;
   
-      fetch(api, {
-        signal: context.signal,
-        method: "POST",
-        body: JSON.stringify({
-          "event": "GET_RECENT_COMMENTS",
-          "envId": api,
-          "pageSize": limit,
-          "includeReply": reply
-        }),
-        headers: { 'Content-Type': 'application/json' }
-      })
-      .then(res => res.json())
-      .then(({ data }) => {
-        context.signal.throwIfAborted();
-        utils.onLoadSuccess(el); // 移除动画
+      utils.request(el, api, async response => {
+        const { data } = await response.json();
+        const cells = [];
         data.forEach((comment, j) => {
           let commentText = comment.commentText;
           if (!commentText || commentText.trim() === '') return; // 跳过空评论
@@ -34,17 +23,21 @@ document.currentScript.stellarMount = function (root, context) {
           var cell = '<div class="timenode" index="' + j + '">';
           cell += '<div class="header">';
           cell += '<div class="user-info">';
-          cell += '<span>' + comment.nick + '</span>';
+          cell += '<span>' + text(comment.nick) + '</span>';
           cell += '</div>';
           cell += '<span>' + new Date(comment.created).toLocaleString('zh-CN', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false}) + '</span>';
           cell += '</div>';
-          cell += '<a class="body" href="' + comment.url + '#' + comment.id + '">';
+          cell += '<a class="body" href="' + url(comment.url, 'href') + '#' + text(comment.id) + '">';
           cell += commentText;
           cell += '</a>';
           cell += '</div>';
-          utils.dom(el).append(cell);
+          cells.push(cell);
         });
-      })
-      .catch(() => { if (!context.signal.aborted) utils.onLoadFailure(el); });
+        if (cells.length) utils.dom(el).append(cells.join(''));
+      }, undefined, {
+        method: 'POST',
+        body: JSON.stringify({ event: 'GET_RECENT_COMMENTS', envId: api, pageSize: limit, includeReply: reply }),
+        headers: { 'Content-Type': 'application/json' }
+      });
 
 };

@@ -69,18 +69,20 @@ const iconStyle = computed(() => {
   if (preset) {
     return {
       color: preset.text,
-      backgroundColor: preset.bg,
+      backgroundColor: "transparent",
     };
   }
   return {
     color: props.color,
-    backgroundColor: `color-mix(in srgb, ${props.color} 12%, transparent)`,
+    backgroundColor: "transparent",
   };
 });
 </script>
 
 <template>
-  <div
+  <component
+    :is="clickable ? 'button' : 'div'"
+    :type="clickable ? 'button' : undefined"
     class="stats-card"
     :class="{ 'cursor-pointer hover:border-border-strong': clickable }"
     @click="$emit('click', $event)"
@@ -101,5 +103,5 @@ const iconStyle = computed(() => {
         </span>
       </div>
     </div>
-  </div>
+  </component>
 </template>

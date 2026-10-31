@@ -1,5 +1,8 @@
 document.currentScript.stellarMount = function (root, context) {
   const utils = context.serviceUtils;
+  const text = utils.escapeHTML;
+  const url = utils.safeURL;
+  const color = utils.safeColor;
 
   const els = root.getElementsByClassName('ds-sites');
     for (var i = 0; i < els.length; i++) {
@@ -13,33 +16,35 @@ document.currentScript.stellarMount = function (root, context) {
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
-        for (let item of data.content) {
+        const cells = [];
+        for (let item of (data.content || data)) {
           const siteinfoApi = !item.appicon && !item.icon && !item.avatar && ctx.services.siteinfo?.api
-            ? ctx.services.siteinfo.api.replace('{href}', item.url)
+            ? ctx.services.siteinfo.api.replace('{href}', encodeURIComponent(item.url))
             : '';
           var cell = `<div class="grid-cell site-card">`;
-          cell += `<a class="card-link"${siteinfoApi ? ` data-siteinfo-api="${siteinfoApi}"` : ''} target="_blank" rel="external nofollow noopener noreferrer" href="${item.url}">`;
-          cell += `<img src="${item.cover || item.snapshot || item.screenshot}" onerror="javascript:this.removeAttribute(\'data-src\');this.src=\'${default_cover}\';"/>`;
+          cell += `<a class="card-link"${siteinfoApi ? ` data-siteinfo-api="${url(siteinfoApi)}"` : ''} target="_blank" rel="external nofollow noopener noreferrer" href="${url(item.url, 'href')}">`;
+          cell += `<img src="${url(item.cover || item.snapshot || item.screenshot, 'src')}" data-fallback-src="${url(default_cover)}"/>`;
           cell += `<div class="info">`;
-          cell += `<img class="siteinfo-icon" src="${item.appicon || item.icon || item.avatar || default_avatar}" onerror="javascript:this.removeAttribute(\'data-src\');this.src=\'${default_avatar}\';"/>`;
-          cell += `<span class="title">${item.title}</span>`;
-          cell += `<span class="desc">${item.description || item.url}</span>`;
+          cell += `<img class="siteinfo-icon" src="${url(item.appicon || item.icon || item.avatar || default_avatar, 'src')}" data-fallback-src="${url(default_avatar)}"/>`;
+          cell += `<span class="title">${text(item.title)}</span>`;
+          cell += `<span class="desc">${text(item.description || item.url)}</span>`;
           cell += `</div>`;
           cell += `<div class="labels">`;
-          for (let label of item.labels) {
+          for (let label of (item.labels || [])) {
             if (label.lightness > 75) {
-              cell += `<div class="label" style="background:#${label.color};color:hsla(${label.hue}, ${label.saturation}%, 20%, 1);">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${color(label.color)};color:hsla(${Number(label.hue) || 0}, ${Number(label.saturation) || 0}%, 20%, 1);">${text(label.name)}</div>`;
             } else if (label.saturation > 90 && label.lightness > 40) {
-              cell += `<div class="label" style="background:#${label.color};color:hsla(${label.hue}, 50%, 20%, 1);">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${color(label.color)};color:hsla(${Number(label.hue) || 0}, 50%, 20%, 1);">${text(label.name)}</div>`;
             } else {
-              cell += `<div class="label" style="background:#${label.color};color:white">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${color(label.color)};color:white">${text(label.name)}</div>`;
             }
           }
           cell += `</div>`;
           cell += `</a>`;
           cell += `</div>`;
-          utils.dom(el).find('.grid-box').append(cell);
+          cells.push(cell);
         }
+        if (cells.length) utils.dom(el).find('.grid-box').append(cells.join(''));
         window.wrapLazyloadImages(el);
         window.dispatchEvent(new CustomEvent('stellar:sites-ready', { detail: { target: el } }));
       });

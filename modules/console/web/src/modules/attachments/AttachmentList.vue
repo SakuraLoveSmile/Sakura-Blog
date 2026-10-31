@@ -467,36 +467,27 @@ function formatMimeBadge(mime: string): string {
     </VPageHeader>
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
-      <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <!-- 当前数据摘要 -->
+      <div class="console-summary" role="group" aria-label="概览摘要">
         <ConsoleStatsCard
-          label="全部附件"
+          label="匹配附件"
           :value="stats.total"
           sub="个实体文件"
-          icon="ri:attachment-line"
-          color="primary"
         />
         <ConsoleStatsCard
-          label="当前列表占用"
+          label="本页占用"
           :value="stats.totalBytes"
-          sub="磁盘已用空间"
-          icon="ri:hard-drive-2-line"
-          color="success"
-          value-class="text-[#30D158]"
+          sub="当前页文件大小"
         />
         <ConsoleStatsCard
-          label="图片素材"
+          label="本页图片"
           :value="stats.imgCount"
           sub="张配图/封面"
-          icon="ri:image-line"
-          color="cyan"
         />
         <ConsoleStatsCard
           label="分组合辑"
           :value="groups.length"
           sub="个自定义分组"
-          icon="ri:folder-zip-line"
-          color="purple"
         />
       </div>
 
@@ -573,7 +564,7 @@ function formatMimeBadge(mime: string): string {
         <!-- 右侧主内容区 -->
         <div class="min-w-0 flex-1 space-y-4">
           <!-- 工具栏：类型分段 + 视图模式 -->
-          <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
+          <div class="console-toolbar">
             <!-- 类型筛选 -->
             <div class="apple-segmented max-w-full flex-wrap">
               <button
@@ -1083,7 +1074,4 @@ function formatMimeBadge(mime: string): string {
   border-color: var(--color-border);
 }
 
-/* 移动端适配 */
-@media (max-width: 640px) {
-}
 </style>

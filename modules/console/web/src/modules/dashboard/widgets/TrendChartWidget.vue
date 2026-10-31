@@ -273,8 +273,8 @@ function onChartLeave() {
     <!-- Medium / Large 尺寸顶部标准标题与分段器 -->
     <div v-else class="flex items-center justify-between trend-header">
       <div>
-        <h3 class="apple-section-title">{{ sizePreset === 'large' ? '流量深度分析与访问趋势' : '访问趋势' }}</h3>
-        <p class="trend-subtitle">{{ sizePreset === 'large' ? 'PV / UV 双指标趋势与转化监测' : 'Traffic Overview' }}</p>
+        <h3 class="apple-section-title">访问趋势</h3>
+        <p class="trend-subtitle">浏览量与独立访客</p>
       </div>
       <div class="flex items-center gap-2">
         <!-- Medium / Large 尺寸图例：Medium 可切换 UV 辅助线 -->

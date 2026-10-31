@@ -39,7 +39,7 @@ test("首页草稿入口、状态筛选与浏览器返回保持一致", async ({
   await page.getByRole("button", { name: "清除筛选", exact: true }).first().click();
   await expect(page.getByLabel("搜索文章", { exact: true })).toHaveValue("");
   await expect(statusGroup.getByRole("button", { name: "全部", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".post-card").filter({ hasText: `${token} published` })).toBeVisible();
+  await expect(page.locator(".post-record").filter({ hasText: `${token} published` })).toBeVisible();
 });
 
 test("手机底栏保持五项，其余内容入口仍可达", async ({ page }) => {
@@ -74,9 +74,16 @@ test("文章视图偏好刷新后保留，滚动时页头操作可用", async ({
     expect(response.ok()).toBeTruthy();
   }
   await page.goto("/console/posts");
-  await page.getByRole("button", { name: "表格视图", exact: true }).click();
+  await expect(page.getByRole("button", { name: "列表视图", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".post-record").first()).toBeVisible();
+  // 已有封面偏好仍能保存；不能通过改默认值破坏用户选择。
+  await page.getByRole("button", { name: "海报卡片视图", exact: true }).click();
   await page.reload();
-  await expect(page.getByRole("button", { name: "表格视图", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "海报卡片视图", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".post-card").first()).toBeVisible();
+  await page.getByRole("button", { name: "列表视图", exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "列表视图", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.locator("main.content").evaluate((element) => {
     element.scrollTop = element.scrollHeight;
   });

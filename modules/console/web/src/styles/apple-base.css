@@ -35,67 +35,91 @@ select {
   outline-offset: 2px;
 }
 
-/* 概览统计卡片规范（对齐设计基准：桌面 min-height 80px，手机 min-height 88px） */
+/* 管理页事实摘要：统计辅助扫描，不占用独立卡片层级。 */
+.console-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
 .stats-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  min-height: 80px;
+  gap: 10px;
+  padding: 4px 16px;
+  min-width: 0;
   box-sizing: border-box;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
-/* stats-card highlight removed */
+.console-summary > .stats-card + .stats-card {
+  border-left: 1px solid var(--color-border);
+}
+.console-summary > .stats-card:first-child { padding-left: 0; }
+.stats-card:is(button, [role="button"]) {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.stats-card:is(button, [role="button"]):hover,
+.stats-card:is(button, [role="button"])[aria-pressed="true"] {
+  background: var(--color-card);
+}
 .stats-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  font-size: 18px;
   flex-shrink: 0;
 }
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  
-  letter-spacing: 0.2px;
-}
+.stats-label { display: block; font-size: 12px; color: var(--color-text-tertiary); }
 .stats-value {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--color-foreground);
-  line-height: 1.2;
+  line-height: 1.5;
 }
 .stats-sub {
-  display: block;
-  font-size: 11px;
+  display: inline;
+  margin-left: 6px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--color-text-tertiary);
 }
-
-@media (max-width: 640px) {
-  .stats-card {
-    min-height: 88px;
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
+.console-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+.console-toolbar > .apple-segmented {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.console-records {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+@media (max-width: 1023px) {
+  .console-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
+  .console-summary > .stats-card:nth-child(odd) { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 767px) {
+  .stats-card { padding-right: 8px; }
+  .stats-value { font-size: 16px; }
+  .stats-sub { display: block; margin-left: 0; }
+  .console-summary button.stats-card { min-height: 44px; }
 }
 
 /* 卡片顶部高光（Apple 风常用 1px 顶部亮线） */
@@ -135,12 +159,12 @@ select {
   background: #007aff;
 }
 
-/* 胶囊分段控件（设计稿通用 segmented control） */
+/* 紧凑分段控件 */
 .apple-segmented {
   display: inline-flex;
   padding: 2px;
   background: var(--color-secondary);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   gap: 2px;
 }
 .apple-segmented button {
@@ -148,7 +172,7 @@ select {
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text-tertiary);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   transition: color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
   white-space: nowrap;
   outline: none;
@@ -159,7 +183,7 @@ select {
 .apple-segmented button.active {
   background: var(--color-accent);
   color: var(--color-foreground);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .apple-segmented button:focus-visible,
 .appearance-tabs button:focus-visible {
@@ -240,7 +264,7 @@ select {
   cursor: pointer;
 }
 
-/* 胶囊搜索框 */
+/* 搜索框与表单控件使用同一圆角 */
 .apple-search {
   display: flex;
   align-items: center;
@@ -249,7 +273,7 @@ select {
   padding: 0 14px;
   background: color-mix(in srgb, #000 30%, var(--color-secondary));
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   transition:
     border-color var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
@@ -258,6 +282,8 @@ select {
   border-color: var(--color-ring);
 }
 .apple-search input {
+  min-width: 0;
+  width: 100%;
   flex: 1;
   background: transparent;
   border: none;
@@ -480,5 +506,155 @@ select {
   [data-app="console"] .apple-filter-btn {
     min-height: 44px;
     box-sizing: border-box;
+  }
+}
+
+/* 文章与独立页面共用一份响应式记录布局。 */
+.content-records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.content-records .content-record {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 116px 144px;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 10px 16px 10px 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+.content-records .content-record:last-child {
+  border-bottom: 0;
+}
+.content-records .content-record.is-selected {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-card));
+}
+.content-records .record-selection {
+  display: flex;
+  width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.content-records .record-selection input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+.content-records .record-main {
+  min-width: 0;
+}
+.content-records .record-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.content-records .record-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-foreground);
+  cursor: pointer;
+}
+.content-records .record-title:hover,
+.content-records .record-metadata button:hover {
+  color: var(--color-primary);
+}
+.content-records .record-note {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+.content-records .record-metadata {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+.content-records .record-slug {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+.content-records .record-metadata button {
+  flex-shrink: 0;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.content-records .record-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 12px;
+}
+.content-records .record-status {
+  border-radius: var(--radius-xs);
+  padding: 2px 6px;
+}
+.content-records .record-updated,
+.content-records .record-views {
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+.content-records .record-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.content-records .record-danger:hover {
+  color: var(--color-state-error);
+}
+@media (max-width: 1023px) {
+  .content-records .content-record {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 4px 8px;
+    padding: 12px 12px 8px 0;
+  }
+  .content-records .record-selection {
+    grid-row: 1 / span 3;
+    align-self: start;
+  }
+  .content-records .record-main,
+  .content-records .record-state,
+  .content-records .record-actions {
+    grid-column: 2;
+  }
+  .content-records .record-title {
+    min-height: 44px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .content-records .record-metadata {
+    flex-wrap: wrap;
+    margin-top: 0;
+  }
+  .content-records .record-slug {
+    max-width: 100%;
+  }
+  .content-records .record-metadata button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .content-records .record-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 }

@@ -166,7 +166,6 @@ function openCategory(name: string) {
     <div class="donut-header">
       <div class="flex items-center gap-2">
         <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">分类分布</h3>
-        <span class="apple-card-badge">Categories</span>
       </div>
       <span class="text-xs text-muted-foreground">{{ data.length }} 个分类</span>
     </div>
@@ -189,12 +188,6 @@ function openCategory(name: string) {
             :d="a.path"
             :fill="a.color"
             :opacity="hoveredIdx === null || hoveredIdx === a.sourceIndex ? 1 : 0.35"
-            :style="{
-              filter: hoveredIdx === a.sourceIndex ? `drop-shadow(0 0 6px ${a.color})` : 'none',
-              transform: hoveredIdx === a.sourceIndex ? 'scale(1.03)' : 'scale(1)',
-              transformOrigin: '90px 90px',
-              transition: 'all 0.2s ease',
-            }"
             class="donut-segment"
             @mouseenter="hoveredIdx = a.sourceIndex"
           />
@@ -220,12 +213,6 @@ function openCategory(name: string) {
             :d="a.path"
             :fill="a.color"
             :opacity="hoveredIdx === null || hoveredIdx === a.sourceIndex ? 1 : 0.35"
-            :style="{
-              filter: hoveredIdx === a.sourceIndex ? `drop-shadow(0 0 6px ${a.color})` : 'none',
-              transform: hoveredIdx === a.sourceIndex ? 'scale(1.03)' : 'scale(1)',
-              transformOrigin: '90px 90px',
-              transition: 'all 0.2s ease',
-            }"
             class="donut-segment"
             @mouseenter="hoveredIdx = a.sourceIndex"
           />
@@ -256,7 +243,7 @@ function openCategory(name: string) {
           @keydown.enter="a.name !== '其他分类' && openCategory(a.name)"
           @keydown.space.prevent="a.name !== '其他分类' && openCategory(a.name)"
         >
-          <span class="donut-dot" :style="{ backgroundColor: a.color, boxShadow: hoveredIdx === i ? `0 0 6px ${a.color}` : 'none' }" />
+          <span class="donut-dot" :style="{ backgroundColor: a.color }" />
           <span class="donut-name">{{ a.name }}</span>
           <span class="donut-count tabular-nums">{{ a.count }}</span>
           <span class="donut-pct tabular-nums">{{ a.pct }}%</span>
@@ -274,12 +261,6 @@ function openCategory(name: string) {
             :d="a.path"
             :fill="a.color"
             :opacity="hoveredIdx === null || hoveredIdx === a.sourceIndex ? 1 : 0.35"
-            :style="{
-              filter: hoveredIdx === a.sourceIndex ? `drop-shadow(0 0 6px ${a.color})` : 'none',
-              transform: hoveredIdx === a.sourceIndex ? 'scale(1.03)' : 'scale(1)',
-              transformOrigin: '90px 90px',
-              transition: 'all 0.2s ease',
-            }"
             class="donut-segment"
             @mouseenter="hoveredIdx = a.sourceIndex"
           />
@@ -309,13 +290,13 @@ function openCategory(name: string) {
         >
           <div class="flex items-center justify-between text-xs mb-1.5">
             <span class="font-medium text-foreground flex items-center gap-1.5 truncate">
-              <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: a.color, boxShadow: `0 0 5px ${a.color}` }" />
+              <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: a.color }" />
               <span class="truncate">{{ a.name }}</span>
             </span>
             <span class="text-muted-foreground font-semibold tabular-nums flex-shrink-0">{{ a.count }} 篇 · {{ a.pct }}%</span>
           </div>
           <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <div class="h-full rounded-full transition-colors duration-150 duration-300" :style="{ width: `${a.pct}%`, backgroundColor: a.color, boxShadow: `0 0 4px ${a.color}` }" />
+            <div class="h-full rounded-full transition-colors duration-150 duration-300" :style="{ width: `${a.pct}%`, backgroundColor: a.color }" />
           </div>
         </div>
       </div>

@@ -56,19 +56,19 @@ const presetMeta: Record<
 > = {
   small: {
     label: "小",
-    title: "紧凑速览",
+    title: "紧凑",
     description: "保留核心指标，适合并排查看。",
     icon: "ri:layout-column-line",
   },
   medium: {
     label: "中",
-    title: "平衡标准",
-    description: "标准内容密度，兼顾信息与呼吸感。",
+    title: "标准",
+    description: "显示指标和摘要。",
     icon: "ri:layout-grid-line",
   },
   large: {
     label: "大",
-    title: "深度洞察",
+    title: "展开",
     description: "展开趋势、明细与更多操作入口。",
     icon: "ri:layout-right-line",
   },
@@ -114,7 +114,7 @@ function close() {
         :data-size-preset="option.key"
         :aria-pressed="selectedPreset === option.key"
         :class="[
-          'size-preset-option flex min-h-40 flex-col items-center justify-start gap-2 rounded-xl border p-3 text-center transition-all',
+          'size-preset-option flex min-h-40 flex-col items-center justify-start gap-2 rounded-xl border p-3 text-center transition-colors',
           selectedPreset === option.key
             ? 'is-selected border-primary bg-primary/10 text-primary'
             : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-primary/50 hover:bg-white/[0.06]',
@@ -160,11 +160,7 @@ function close() {
 <style scoped>
 .size-preset-option {
   min-height: 176px;
-  background: color-mix(in srgb, var(--color-card) 88%, transparent);
-}
-
-.size-preset-option.is-selected {
-  transform: translateY(-1px);
+  background: var(--color-card);
 }
 
 .size-preset-option:focus-visible {
@@ -200,7 +196,7 @@ function close() {
   height: 64%;
   border-radius: 6px;
   background: color-mix(in srgb, var(--color-primary) 78%, var(--color-card));
-  box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--color-primary) 60%, transparent);
+  box-shadow: none;
 }
 
 .size-preset-preview.is-small .size-preset-preview-block {
@@ -227,7 +223,7 @@ function close() {
 }
 
 .size-modal-header {
-  background: color-mix(in srgb, var(--color-card) 82%, var(--color-primary));
+  background: var(--color-card);
   border: 1px solid color-mix(in srgb, #fff 7%, transparent);
 }
 

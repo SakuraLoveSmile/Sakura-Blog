@@ -1,5 +1,7 @@
 document.currentScript.stellarMount = function (root, context) {
   const utils = context.serviceUtils;
+  const text = utils.escapeHTML;
+  const url = utils.safeURL;
 
   const els = Array.from(root.getElementsByClassName('ds-memos'));
 
@@ -29,12 +31,11 @@ document.currentScript.stellarMount = function (root, context) {
       const users = el.getAttribute('user')?.split(",") || [];
       const hide = el.getAttribute('hide')?.split(",") || [];
 
-      await Promise.all(memos.data.slice(0, limit || memos.data.length).map(item =>
-          createMemoCell(item, memos, users, hide, default_avatar, origin).then(cell => {
-            context.signal.throwIfAborted();
-            utils.dom(el).append(cell);
-          })
+      const cells = await Promise.all(memos.data.slice(0, limit || memos.data.length).map(item =>
+          createMemoCell(item, memos, users, hide, default_avatar, origin)
       ));
+      context.signal.throwIfAborted();
+      if (cells.length) utils.dom(el).append(cells.join(''));
     });
 
     async function createMemoCell(item, memos, users, hide, default_avatar, origin) {
@@ -51,10 +52,10 @@ document.currentScript.stellarMount = function (root, context) {
     const versionHandlers = {
       "22-": {
         buildUser: async (item, memos, default_avatar) =>
-            `<div class="user-info">${default_avatar ? `<img src="${default_avatar}">` : ''}<span>${item.creatorName}</span></div>`,
+            `<div class="user-info">${default_avatar ? `<img src="${url(default_avatar)}">` : ''}<span>${text(item.creatorName)}</span></div>`,
         buildDate: item => new Date(item.createdTs * 1000),
         buildImages: (item, origin) => (item.resourceList || []).filter(res => res.type?.includes('image/')).map(res =>
-            `<p><img src="${res.externalLink || `${origin}/o/r/${res.id}`}"></p>`
+            `<p><img src="${url(res.externalLink || `${origin}/o/r/${res.id}`)}"></p>`
         )
       },
       "22+": {
@@ -86,11 +87,11 @@ document.currentScript.stellarMount = function (root, context) {
           }
           const name = user ? user.nickname || user.username : 'memos';
           const avatarUrl = user?.avatarUrl ? `${memos.site}${user.avatarUrl}` : default_avatar || '';
-          return `<div class="user-info">${avatarUrl ? `<img src="${avatarUrl}">` : ''}<span>${name}</span></div>`;
+          return `<div class="user-info">${avatarUrl ? `<img src="${url(avatarUrl)}">` : ''}<span>${text(name)}</span></div>`;
         },
         buildDate: item => new Date(item.createTime),
         buildImages: (item) => (item.resources || []).filter(res => res.type?.includes('image/')).map(res =>
-            `<p><img src="${res.externalLink || `${origin}/o/r/${res.id}`}"></p>`
+            `<p><img src="${url(res.externalLink || `${origin}/o/r/${res.id}`)}"></p>`
         )
       },
       "25+": {
@@ -122,11 +123,11 @@ document.currentScript.stellarMount = function (root, context) {
           }
           const name = user ? user.displayName || user.username : 'memos';
           const avatarUrl = user?.avatarUrl ? `${memos.site}${user.avatarUrl}` : default_avatar || '';
-          return `<div class="user-info">${avatarUrl ? `<img src="${avatarUrl}">` : ''}<span>${name}</span></div>`;
+          return `<div class="user-info">${avatarUrl ? `<img src="${url(avatarUrl)}">` : ''}<span>${text(name)}</span></div>`;
         },
         buildDate: item => new Date(item.createTime),
         buildImages: (item) => (item.attachments || []).filter(res => res.type?.includes('image/')).map(res =>
-            `<div class="image-bg"><img src="${res.externalLink || `${origin}/file/${res.name}/${res.filename}`}"></div>`
+            `<div class="image-bg"><img src="${url(res.externalLink || `${origin}/file/${res.name}/${res.filename}`)}"></div>`
         )
       },
       "v1": {
@@ -158,7 +159,7 @@ document.currentScript.stellarMount = function (root, context) {
           const avatarUrl = user?.avatarUrl
             ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${memos.site}${user.avatarUrl}`)
             : default_avatar || '';
-          return `<div class="user-info">${avatarUrl ? `<img src="${avatarUrl}">` : ''}<span>${name}</span></div>`;
+          return `<div class="user-info">${avatarUrl ? `<img src="${url(avatarUrl)}">` : ''}<span>${text(name)}</span></div>`;
         },
         buildDate: item => {
           const d = new Date(item.createTime);
@@ -169,7 +170,7 @@ document.currentScript.stellarMount = function (root, context) {
             res && res.type && String(res.type).includes('image/')
           );
           return list.map(res =>
-            `<div class="image-bg"><img src="${res.externalLink || res.url || `${origin}/file/${res.name}/${res.filename}`}"></div>`
+            `<div class="image-bg"><img src="${url(res.externalLink || res.url || `${origin}/file/${res.name}/${res.filename}`)}"></div>`
           );
         }
       },

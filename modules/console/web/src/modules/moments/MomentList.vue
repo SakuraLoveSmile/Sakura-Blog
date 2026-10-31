@@ -439,12 +439,9 @@ function formatTime(s: string): string {
       <VLoading v-if="isLoading" />
 
       <template v-else>
-        <!-- 概览数据指标卡 -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <!-- 当前数据摘要 -->
+        <div class="console-summary" role="group" aria-label="概览摘要">
           <div class="stats-card">
-            <div class="stats-icon text-primary bg-primary/10">
-              <Icon icon="ri:chat-smile-2-line" />
-            </div>
             <div>
               <div class="stats-label">全部瞬间</div>
               <div class="stats-value">{{ stats.total }} <span class="stats-sub">条动态记录</span></div>
@@ -452,11 +449,8 @@ function formatTime(s: string): string {
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-              <Icon icon="ri:global-line" />
-            </div>
             <div>
-              <div class="stats-label">公开展示</div>
+              <div class="stats-label">本页公开</div>
               <div class="stats-value text-[#30D158]">
                 {{ stats.publicCount }} <span class="stats-sub">条公开动态</span>
               </div>
@@ -464,11 +458,8 @@ function formatTime(s: string): string {
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
-              <Icon icon="ri:lock-line" />
-            </div>
             <div>
-              <div class="stats-label">私密归档</div>
+              <div class="stats-label">本页私密</div>
               <div class="stats-value text-[#FF9500]">
                 {{ stats.privateCount }} <span class="stats-sub">条仅己可见</span>
               </div>
@@ -476,11 +467,8 @@ function formatTime(s: string): string {
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-              <Icon icon="ri:image-2-line" />
-            </div>
             <div>
-              <div class="stats-label">图文动态</div>
+              <div class="stats-label">本页图文</div>
               <div class="stats-value">{{ stats.withImg }} <span class="stats-sub">条包含配图</span></div>
             </div>
           </div>
@@ -932,58 +920,6 @@ function formatTime(s: string): string {
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  /* highlight removed */
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
 
 /* 工具栏小按钮 */
 .action-tool-btn {
@@ -1080,19 +1016,4 @@ function formatTime(s: string): string {
   font-family: monospace;
 }
 
-/* 移动端适配 */
-@media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
-}
 </style>

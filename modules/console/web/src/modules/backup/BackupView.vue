@@ -447,36 +447,27 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="mx-auto max-w-[1200px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
-      <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <!-- 当前数据摘要 -->
+      <div class="console-summary" role="group" aria-label="概览摘要">
         <ConsoleStatsCard
           label="本地快照备份"
           :value="stats.totalSnapshots"
           sub="份快照文件"
-          icon="ri:database-2-line"
-          color="primary"
         />
         <ConsoleStatsCard
           label="快照占用空间"
           :value="stats.totalBytes"
           sub="磁盘已用"
-          icon="ri:hard-drive-2-line"
-          color="success"
-          value-class="text-[#30D158]"
         />
         <ConsoleStatsCard
           label="定时自动备份"
           :value="stats.autoBackup"
           sub="每 24 小时执行"
-          icon="ri:timer-line"
-          color="cyan"
         />
         <ConsoleStatsCard
           label="快照轮转策略"
           :value="stats.backupKeep"
           sub="自动清理旧版本"
-          icon="ri:history-line"
-          color="purple"
         />
       </div>
 

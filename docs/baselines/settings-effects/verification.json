@@ -1,0 +1,167 @@
+{
+  "task": "BLG-20261025-02",
+  "status": "待体验",
+  "checked_at": "2026-10-25T19:54:58.059311+08:00",
+  "head": "e05aec52fe9cb724f063648ce3132b321702047c",
+  "branch": "codex/feat/20261025-blg-20261025-02-settings-effects",
+  "code_state": "基线 HEAD 加本任务未提交改动；源码 SHA-256 绑定下方检查",
+  "source_sha256": {
+    "modules/console/tests/setting-color.test.ts": "cf41719f5848c75f45c448d0f8b297b2f114b73b24622ef74286a8a486d3d62a",
+    "modules/console/web/src/modules/settings/CanonicalSettingsForm.vue": "f7dbe5be03c0c802ec06bba309e85f340a5f1ea412a669d600540f2e9a07d3d0",
+    "modules/console/web/src/modules/settings/SettingColorEditor.vue": "eb78b8da8ecf60a94256658f154a29370a8c0ccd71e5c9d8c3a261685c98651d",
+    "modules/console/web/src/modules/settings/SettingsEffectGuide.vue": "eb686d950976355715591150a1e35f7f998fb25ca683ebc62c48266cfde88cb0",
+    "modules/console/web/src/modules/settings/SettingsView.vue": "b00ce31e5f228b5b2c44c9b026d6c85bcad1af8a02ab17645bece9bd590f8152",
+    "modules/console/web/src/modules/settings/StructuredSetting.vue": "031ee540c559bb2135e3aa86cec169e176982c541b3b5a1bd42ac01d57c6926f",
+    "modules/console/web/src/modules/settings/StructuredSettingChoices.vue": "0210dbabf02c8d38746f41a938cf3cacf3fe77ed0be96c0d7ab9cdfaf3819a40",
+    "modules/console/web/src/modules/settings/setting-color.ts": "5b4fcbd652a0eed29a4665be501342178b6bcfa1d46649f3d9e56f8be17f27a7",
+    "modules/console/web/src/modules/settings/settings-category-guide.ts": "493e20392901167f83dead805b15db5d768c34fcef77348186dc18a1aa2ac728",
+    "modules/console/web/src/modules/settings/settings-field-effects.ts": "d603e35c20142e604cc5237d84e147ea35deb15f9d70145f2fab1c6f82b16704",
+    "modules/console/web/src/modules/settings/structured-setting-guidance.ts": "9eecbc23d8859c1f7fdf35a9008923422ead7888e833442de73d07592d8e3c94",
+    "modules/console/web/src/modules/settings/useSettingsPreview.ts": "7bc2edb715b3058db23b108626c86ec707d4af8839995413bc542dc790cc21d1",
+    "tests/e2e/console-settings-canonical.spec.ts": "66a04f837e8c8da418feb3ddd22305c337ad9fa52bf3619a4a691597f0f00d52",
+    "tests/e2e/settings-colors.spec.ts": "bf6f56d28cf7d44c19fca06855378136b6040f66391729e78daebe10b7f40a2d",
+    "tests/e2e/settings-effects.spec.ts": "71bd0781605002fc887e41db269d346c25b6962c51c8fabfd593fdfd904b3e99",
+    "tests/e2e/stellar-settings-groups.spec.ts": "96e209d44e93fd8f2e043ec7535a925c377dc97e07dd4c5cfff3b3594d5cf461"
+  },
+  "checks": {
+    "make test": {
+      "exit_code": 0,
+      "console": 305,
+      "stellar": 225,
+      "go": "vet/staticcheck/all packages passed"
+    },
+    "make build": {
+      "exit_code": 0,
+      "outputs": [
+        "Console",
+        "User Center",
+        "Go binary"
+      ]
+    },
+    "eslint": {
+      "exit_code": 0,
+      "scope": "颜色组件/helper与接入文件"
+    },
+    "playwright_existing_settings": {
+      "passed": 18,
+      "failed": 0,
+      "log": "settings-colors-e2e-initial.log",
+      "note": "同轮首次组合态，颜色新用例2项失败在下方说明；之后仅调整上下文颜色提示及新增用例"
+    },
+    "playwright_final_colors": {
+      "exit_code": 0,
+      "passed": 3,
+      "failed": 0,
+      "retries": 0,
+      "widths": [
+        390,
+        1280
+      ],
+      "covers": [
+        "原文/默认无写入",
+        "取色与色板保留alpha",
+        "透明度调整",
+        "真实草稿前台CSS",
+        "HEX-only分类与AI",
+        "新增映射待添加",
+        "恢复默认",
+        "保存重读与大整数保留",
+        "44px点击区与键盘",
+        "窄屏无横向溢出"
+      ]
+    },
+    "initial_failures": {
+      "new_colors": 2,
+      "reason": "原生type=color也具有textbox角色导致宽泛定位歧义；单字段恢复保留父空对象，新增用例误当成整组恢复清空草稿。已精确定位并核验字段默认，再用既有整组恢复确认无草稿；业务语义和原有断言未改。"
+    },
+    "primary_agent_browser": {
+      "palette": "clicked purple and observed text/current color/native picker sync",
+      "picker": "opened native color panel (AX observed; tab screenshot does not capture native popup)",
+      "alpha": "set 65% and observed rgba value",
+      "preview": "loaded current draft front page",
+      "cleanup": "closed preview, restored appearance group; no settings saved"
+    }
+  },
+  "preview": {
+    "url": "http://127.0.0.1:8097/console/settings?tab=appearance",
+    "root": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261025-feat-blg-20261025-02-settings-effects/.tmp/e2e-server.wMjMqV",
+    "fixture": "settings-effects-demo",
+    "persistent_for_user_review": true,
+    "service": "COMMAND   PID      USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\nblog    13482 sakurasep   13u  IPv6 0xe6b7e39f990d8492      0t0  TCP *:8097 (LISTEN)",
+    "binary_sha256": "dca5e1cb695650a44938cbd9ceb884d33e29ab439d710735c5dfe84dad29942d",
+    "verified_assets": [
+      {
+        "path": "/console/assets/SettingsView-CwhGtTq7.css",
+        "sha256": "fb23c669b6189bc8def8b45a5e18ef565280608c9da0810e795b73bde94587d4"
+      },
+      {
+        "path": "/console/assets/SettingsView-D_-xrXSF.js",
+        "sha256": "4f0af5100f833e9f1f3b2581c7e68276fcc82aa0662c454aa0ade63a03477d35"
+      },
+      {
+        "path": "/console/assets/api-C-H7IBEY.js",
+        "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80"
+      },
+      {
+        "path": "/console/assets/index-CaV0O0Oj.js",
+        "sha256": "729926d9ca7a17b5401f55ee93d47eabde7f0005d585376aaaaac1c0c7b4ffa1"
+      },
+      {
+        "path": "/console/assets/index-biOtWNDO.css",
+        "sha256": "bb741a7f3dc7c74b836fcb7876955093126d40e2c21b004fddd1c92c0fdf1d73"
+      },
+      {
+        "path": "/console/assets/pinia-CXeiBUD1.js",
+        "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888"
+      },
+      {
+        "path": "/console/assets/preload-helper-l0U7FUPx.js",
+        "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+      },
+      {
+        "path": "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+        "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c"
+      },
+      {
+        "path": "/console/assets/useStellarSettings-DIgdyzwG.css",
+        "sha256": "5d12afe0d11cb1b6b5d160e97cad98283d818b5f4636677cd0666b22210bce5c"
+      },
+      {
+        "path": "/console/assets/useStellarSettings-Dx_h_Y1d.js",
+        "sha256": "40d78b61d99d3e9fd5dd52d4bd7bec618e529afe18f5ab3536ed35caea2b5393"
+      }
+    ]
+  },
+  "screenshots": {
+    "before-color-editor.png": "001dd9017344ab7dccb57b97dbee54e7537033669f335f235098d2c8737c6e65",
+    "after-color-1280.png": "45da71f6011fa898567b367356563a0bcbe29fd743ec3f8656932cd44e9b978b",
+    "after-color-390.png": "63a023c8c5add88c676d607a755e6b754488f0bf06f7b6406080452c36e69cf6",
+    "after-category-color-1280.png": "6e6b23feba2978269c5bfecfc32a31f33d6ff4d0805b1b3b0a0a728a77079bab",
+    "after-category-color-390.png": "b2290a32a177572aa9fbe8cafc6e030045747945edab0118580167c47d7e8333",
+    "browser-color-editor.png": "4354796336ab9e711c3157a784fe434f24f6ba75b82eee98ce85991512d7849b",
+    "browser-color-editor-default.png": "50515b1aa6cdeee496f6ae4ea053a8752e3ec13b709545a511f499f6332061b7",
+    "browser-color-preview.png": "d4d50e7f3e58b3da7aacff740f3a40e13911bebb0db063799aec1d07de47fa22"
+  },
+  "logs": {
+    "settings-colors-test.log": {
+      "sha256": "84ba5f4c42f3cb0164b892425e657acb70cf10a4d6bdb2fd7f44a5c7e9d06842"
+    },
+    "settings-colors-build.log": {
+      "sha256": "b6aab2fdd1aeb4a4a9e13c998a4cf4f938400192b88bc4269802ebd352a96ae7"
+    },
+    "settings-colors-e2e-initial.log": {
+      "sha256": "86732300fe037010ed74768cea7b73c843a1867becd77144536c903f62502297"
+    },
+    "settings-colors-e2e.log": {
+      "sha256": "a93ef3c0b4e9dd50d569722ac13b0de528e037ca293e5665ce7bbfd9e1e58f52"
+    }
+  },
+  "previous_iteration": "verification-before-colors.json",
+  "limits": [
+    "No commit, push, merge or release",
+    "No production data or settings modified",
+    "Static preview does not verify scripts, mail, external service connectivity or search engine indexing",
+    "分类颜色与AI前台既有消费者仅支持HEX，新色板遵守此限制",
+    "高级CSS颜色可保留原文；上下文变量需前台预览，不猜测转换为HEX"
+  ]
+}

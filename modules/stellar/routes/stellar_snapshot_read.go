@@ -43,7 +43,8 @@ func (s *webServer) readStellarInventory(ctx context.Context, include *store.Pos
 		}
 		return rows.Err()
 	}
-	if err := read(`SELECT `+strings.Join((&store.Post{}).Columns(), ",")+` FROM posts WHERE status='published' AND deleted_at='' AND (publish_at='' OR publish_at IS NULL OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now')) ORDER BY substr(created_at,1,19) DESC,id DESC`, func(rows *sql.Rows) error {
+	// UTC 时间同时存在导入的 RFC3339 和驱动保存的 Go 文本；统一分隔符，保留秒级与 ID 排序。
+	if err := read(`SELECT `+strings.Join((&store.Post{}).Columns(), ",")+` FROM posts WHERE status='published' AND deleted_at='' AND (publish_at='' OR publish_at IS NULL OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now')) ORDER BY replace(substr(created_at,1,19),'T',' ') DESC,id DESC`, func(rows *sql.Rows) error {
 		p := &store.Post{}
 		if err := p.ScanRow(rows); err != nil {
 			return err

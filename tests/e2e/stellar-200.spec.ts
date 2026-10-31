@@ -1,5 +1,5 @@
 // 隔离 Chromium 运行时验收；仅使用本文件 HTTP fixture，不读取或写入 Blog 数据。
-import { test, type Browser } from '@playwright/test';
+import { expect, test, type Browser } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -9,8 +9,8 @@ const assetRoot = new URL('../../modules/stellar/web/assets/js/', import.meta.ur
 let server: ReturnType<typeof createServer>, browser: Browser, base: string;
 const manifest = {
   version: 1, root: '/',
-  extensions: [['shell', 'shell'], ['search', 'blog-search']].map(([id, name]) => ({ id: 'blog-' + id,
-    module: '/assets/js/runtime/extensions/' + name + '.js', scope: 'document', when: { always: true }, config: {} })),
+  extensions: [{ id: 'blog-search', module: '/assets/js/runtime/extensions/blog-search.js',
+    scope: 'document', when: { selector: '.search-input' }, config: {} }],
   policy: { cache: { enabled: false, defaultTtl: 3600, ttl: {}, maxEntries: 200 },
     request: { retries: 2, timeoutMs: 5000, idleTimeoutMs: 3000, maxCacheEntryBytes: 204800 } },
 };
@@ -22,14 +22,11 @@ const fixture = `<!doctype html><html data-theme="dark"><body>
 <button id="right-toggle" data-shell-action="toggle-rightbar-drawer" aria-controls="rightbar-region">右栏</button>
 <button id="collapse" data-shell-action="toggle-leftbar">折叠</button><button id="dismiss" data-shell-action="dismiss-drawer">关闭</button>
 <dialog id="site-search-dialog"><button id="search-close" data-shell-action="close-search">关闭搜索</button>
-<div class="search-wrapper" id="search-wrapper"><input type="search" id="search-input" class="search-input" data-filter="/wiki/demo/"><div id="search-result" class="search-result"></div></div></dialog></div>
-<!-- 与生产 clientconfig 一致，搜索结果使用统一的交互卡片 class。 -->
-<script>const ctx = {root:'/',ui:{classes:{interactive:'ui-interactive',interactiveSpotlight:'ui-interactive card-hover card-hover--spotlight'}},search:{path:'/search.json',local_search:{lazy_load:true,cache_ttl:0}}}; window.canonical = {encoded: btoa(location.hostname), host: location.host, allowedHosts: [location.hostname], param: {}};</script>
-<!-- 与生产 CoreScripts 同序加载 utils.js 与 main.js（head.html 提供 window.canonical），让 legacy 分发与 ESM 运行时同时在位。 -->
-<script src="/assets/js/utils.js"></script>
-<script src="/assets/js/main.js"></script>
+<div class="search-wrapper" id="search-wrapper"><input type="search" class="search-input" id="search-input" data-filter="/wiki/demo/"><div class="search-result" id="search-result"></div></div></dialog></div>
+<script>window.stellarClientData = {canonical:{},ctx:{root:'/',ui:{classes:{interactive:'ui-interactive',interactiveSpotlight:'ui-interactive card-hover card-hover--spotlight'}},search:{path:'/search.json',local_search:{lazy_load:true,cache_ttl:0}},services:{gravatar:{baseUrl:'https://www.gravatar.com/avatar/'}}},def:{}};window.canonical=stellarClientData.canonical;const ctx=stellarClientData.ctx;window.ctx=ctx;const def=stellarClientData.def;window.def=def;</script>
 <script id="stellar-runtime-config" type="application/json">${JSON.stringify(manifest)}</script>
-<script src="/assets/js/search/local-search.js"></script><script src="/assets/js/search/shortcut.js"></script>
+<script src="/assets/js/utils.js" defer></script><script src="/assets/js/main.js" defer></script>
+<script src="/assets/js/navigation-init.js" defer></script><script src="/assets/js/profile.js" defer></script>
 <script type="module" src="/assets/js/runtime/index.js?v=fixture"></script></body></html>`;
 test.beforeAll(async ({ browser: testBrowser }) => {
   browser = testBrowser;
@@ -69,7 +66,7 @@ async function pageAt(width: number) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error' && message.text().includes('stellar')) errors.push(message.text()); });
   await page.goto(base);
-  await page.waitForFunction(() => window.blogShell && (document.querySelector('#search-input')?._searchCleanups?.length > 0));
+  await page.waitForFunction(() => document.querySelector('#left-toggle').hasAttribute('aria-expanded') && document.querySelector('#search-input')._searchCleanups?.length > 0);
   assert.deepEqual(errors, []);
   return page;
 }
@@ -78,7 +75,7 @@ test('浏览器：2.0 ESM 启动传播缓存版本，移动抽屉互斥、隐藏
   const modules: string[] = [];
   page.on('request', request => { if (request.url().includes('/runtime/')) modules.push(request.url()); });
   await page.goto(base);
-  await page.waitForFunction(() => window.blogShell);
+  await page.waitForFunction(() => document.querySelector('#left-toggle').hasAttribute('aria-expanded') && document.querySelector('#search-input')._searchCleanups?.length > 0);
   assert.ok(modules.length >= 6);
   assert.ok(modules.every(url => new URL(url).searchParams.get('v') === 'fixture'));
   assert.equal(await page.locator('#leftbar-region').evaluate(el => el.inert), true);
@@ -120,22 +117,27 @@ test('浏览器：搜索使用真正 modal dialog，窄屏快捷键、编辑区�
   assert.equal(await page.locator('#search-input').evaluate(el => document.activeElement === el), true);
   await page.locator('#search-input').fill('Stellar');
   await page.keyboard.press('Escape');
-  // closeSearch 在 animationend（260ms 兜底）后才真正 close，等待关闭完成而不是采样中间态。
-  await page.waitForFunction(() => !document.querySelector('#site-search-dialog').open);
+  await expect(page.locator('#site-search-dialog')).not.toBeVisible();
   assert.equal(await page.locator('#right-toggle').evaluate(el => document.activeElement === el), true);
   await page.locator('#editor').focus();
   await page.keyboard.press('Meta+k');
-  assert.equal(await page.locator('#site-search-dialog').evaluate(el => el.open), false);
+  await expect(page.locator('#site-search-dialog')).not.toBeVisible();
   await page.locator('#left-toggle').click();
-  // 指针打开不还原焦点；Escape 总是 restoreFocus:true，焦点必须回到触发按钮。
-  await page.locator('#search-open').click();
-  await page.keyboard.press('Escape');
-  await page.waitForFunction(() => !document.querySelector('#site-search-dialog').open);
-  assert.equal(await page.locator('#search-open').evaluate(el => document.activeElement === el), true);
-  // 关闭按钮不还原焦点（指针打开的既定行为），这里只断言真正关闭。
   await page.locator('#search-open').click();
   await page.locator('#search-close').click();
-  await page.waitForFunction(() => !document.querySelector('#site-search-dialog').open);
+  await expect(page.locator('#site-search-dialog')).not.toBeVisible();
+  // 指针打开并点击关闭不强留焦点；键盘与 Escape 路径必须回到触发控件。
+  await expect(page.locator('#search-open')).not.toBeFocused();
+  await page.locator('#search-open').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#site-search-dialog')).toBeVisible();
+  await page.locator('#search-close').click();
+  await expect(page.locator('#site-search-dialog')).not.toBeVisible();
+  await expect(page.locator('#search-open')).toBeFocused();
+  await page.locator('#search-open').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#site-search-dialog')).not.toBeVisible();
+  await expect(page.locator('#search-open')).toBeFocused();
   await page.close();
 });
 test('浏览器：保留 Wiki filter 与 Go FTS/本地索引，清空输入不被旧响应覆盖', async () => {
@@ -153,13 +155,16 @@ test('浏览器：保留 Wiki filter 与 Go FTS/本地索引，清空输入不�
   assert.ok((await page.locator('#search-result a').getAttribute('href')).startsWith('/wiki/demo/local/?kw='));
   await page.close();
 });
-test('浏览器：pagehide 卸载与 BFCache pageshow 重挂载不叠加 shell/search 监听', async () => {
+test('浏览器：pagehide 归还抽屉背景与卸载搜索，BFCache pageshow 重挂载不叠加监听', async () => {
   const page = await pageAt(390);
+  await page.locator('#left-toggle').click();
+  assert.equal(await page.locator('#main').evaluate(el => el.inert), true);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted:true })));
-  await page.waitForFunction(() => !window.blogShell && !(document.querySelector('#search-input')?._searchCleanups?.length > 0));
-  // main.js 的全局 click 分发不随 pagehide 解绑（离页期间没有用户输入），此处只验证运行时卸载状态，不再点击。
+  await page.waitForFunction(() => document.querySelector('#search-input')._searchCleanups?.length === 0);
+  assert.equal(await page.locator('.site-shell').getAttribute('data-drawer'), null);
+  assert.equal(await page.locator('#main').evaluate(el => el.inert), false);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted:true })));
-  await page.waitForFunction(() => window.blogShell && (document.querySelector('#search-input')?._searchCleanups?.length > 0));
+  await page.waitForFunction(() => document.querySelector('#left-toggle').hasAttribute('aria-expanded') && document.querySelector('#search-input')._searchCleanups?.length > 0);
   await page.locator('#left-toggle').click();
   assert.equal(await page.locator('.site-shell').getAttribute('data-drawer'), 'leftbar');
   await page.locator('#search-open').click();
@@ -220,15 +225,19 @@ test('浏览器：等待 Wiki 本地索引期间清空、改词或卸载会丢�
     await page.locator('#search-open').click();
     await page.locator('#search-input').fill('文库搜索独特词');
     await requested;
+    const failed = action === 'unmount' ? page.waitForEvent('requestfailed', { predicate: request => request.url().endsWith('/search.json') }) : undefined;
     if (action === 'clear') await page.locator('#search-input').fill('');
     else if (action === 'replace') await page.locator('#search-input').fill('更新的词');
     else {
       await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', {persisted:true})));
-      await page.waitForFunction(() => !(document.querySelector('#search-input')?._searchCleanups?.length > 0));
+      await page.waitForFunction(() => document.querySelector('#search-input')._searchCleanups?.length === 0);
     }
+    const received = action !== 'unmount' ? page.waitForResponse(response => response.url().endsWith('/search.json')) : undefined;
     releaseIndex();
-    // 清空、改词或卸载可能已 abort 旧请求，不保证产生响应；给旧响应一个落地窗口后再断言结果区。
-    await page.waitForTimeout(300);
+    // 卸载会主动取消索引请求；其余分支等正文消费完再检查可见结果。
+    if (failed) assert.ok((await failed).failure());
+    if (received) await (await received).finished();
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     if (action === 'replace') {
       await page.waitForFunction(() => document.querySelector('#search-result').textContent.includes('Late new wiki'));
       assert.equal(await page.locator('#search-result a').count(), 1);

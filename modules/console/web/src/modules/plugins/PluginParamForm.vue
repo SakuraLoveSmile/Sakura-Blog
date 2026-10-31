@@ -44,7 +44,7 @@ const fields = computed<SchemaField[]>(() =>
 function initValues() {
   values.value = initFormValues(props.plugin.form || [], props.initialValues);
   presentKeys.value = props.present === undefined ? undefined : [...props.present];
-  updateValidation(values.value, false);
+  updateValidation(values.value, props.initialValues === undefined);
 }
 
 function shortcodeValues(next: SchemaValues): Record<string, string | boolean> {

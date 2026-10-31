@@ -48,7 +48,7 @@ test("普通标签共用草稿并真实保存，重读和前台热更新使用�
     });
     expect(post.ok(), await post.text()).toBeTruthy();
     await page.goto("/console/settings?tab=post");
-    await field(page, "theme.article.style").locator("select").selectOption("story");
+    await field(page, "theme.article.style").locator('input[type="radio"][value="story"]').check();
     await input(page, "theme.article.listing.cover_ratio").fill("1.6");
     await toggle(page, "blog_extensions.content.enabled", true);
     await toggle(page, "blog_extensions.content.reward.enabled", true);
@@ -65,7 +65,7 @@ test("普通标签共用草稿并真实保存，重读和前台热更新使用�
     await input(page, "blog_extensions.seo.default_description").fill("设置测试描述");
     await toggle(page, "blog_extensions.seo.no_index", true);
     await tab(page, "搜索");
-    await field(page, "theme.search.provider").locator("select").selectOption("local");
+    await field(page, "theme.search.provider").locator('input[type="radio"][value="local"]').check();
     await toggle(page, "theme.search.local.include_content", false);
     await tab(page, "高级");
     for (const position of ["head_begin", "head_end", "body_begin", "body_end"]) {
@@ -86,7 +86,7 @@ test("普通标签共用草稿并真实保存，重读和前台热更新使用�
 
     await page.reload();
     await tab(page, "文章");
-    await expect(field(page, "theme.article.style").locator("select")).toHaveValue("story");
+    await expect(field(page, "theme.article.style").getByRole("radio", {name: "叙事文章", exact: true})).toBeChecked();
     await expect(input(page, "blog_extensions.content.reward.text")).toHaveValue("设置测试打赏");
     const publicPage = await page.request.get(`/post/${slug}`);
     expect(publicPage.ok()).toBeTruthy();
@@ -188,7 +188,7 @@ test("AI 设置写入独立 Blog 扩展，密钥占位与无关字段保持不�
 test("有效普通草稿通过真实预览渲染，预览不写入数据库", async ({ page }) => {
   const original = await (await page.request.get(endpoint)).text();
   await page.goto("/console/settings?tab=post");
-  await field(page, "theme.article.listing.card_layout").locator("select").selectOption("classic");
+  await field(page, "theme.article.listing.card_layout").locator('input[type="radio"][value="classic"]').check();
   const response = page.waitForResponse((r) => r.url().endsWith("/api/v1/preview/site"));
   await page.getByRole("button", { name: "前端预览", exact: true }).click();
   const preview = await response;
@@ -278,8 +278,8 @@ test("Go 搜索覆盖保留到用户显式切换，搜索接口随保存切换",
   try {
     await put(page, '{"version":2,"theme":{"search":{"provider":null}},"blog_extensions":{"search":{"provider":"go","custom":9007199254740993}}}');
     await page.goto("/console/settings?tab=search");
-    const provider = field(page, "theme.search.provider").locator("select");
-    await expect(provider).toHaveValue("go");
+    const provider = field(page, "theme.search.provider");
+    await expect(provider.locator('input[type="radio"][value="go"]')).toBeChecked();
     const persist = async () => {
       const response = page.waitForResponse((r) => r.url().endsWith(endpoint) && r.request().method() === "PUT");
       await save(page).click();
@@ -291,16 +291,16 @@ test("Go 搜索覆盖保留到用户显式切换，搜索接口随保存切换",
     const retained = await (await page.request.get(endpoint)).text();
     expect(retained).toMatch(/9007199254740993/);
     expect(JSON.parse(retained).blog_extensions.search.provider).toBe("go");
-    await provider.selectOption("local");
+    await provider.locator('input[type="radio"][value="local"]').check();
     await persist();
     expect((await page.request.get("/api/search?q=settings")).status()).toBe(404);
     expect((await page.request.get("/search.json")).status()).toBe(200);
     expect(JSON.parse(await (await page.request.get(endpoint)).text()).blog_extensions.search).not.toHaveProperty("provider");
-    await provider.selectOption("none");
+    await provider.locator('input[type="radio"][value="none"]').check();
     await persist();
     expect((await page.request.get("/search.json")).status()).toBe(404);
     await page.reload();
-    await expect(field(page, "theme.search.provider").locator("select")).toHaveValue("none");
+    await expect(field(page, "theme.search.provider").locator('input[type="radio"][value="none"]')).toBeChecked();
   } finally { await put(page, original); }
 });
 

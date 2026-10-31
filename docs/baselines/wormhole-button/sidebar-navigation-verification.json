@@ -1,0 +1,18 @@
+{
+  "keyboard": {
+    "isSidebarWormhole": true,
+    "outlineStyle": "solid",
+    "outlineWidth": "2px"
+  },
+  "originalURL": "http://127.0.0.1:19831/",
+  "newTabs": [
+    {
+      "id": "4",
+      "providerTabId": "e32343ba-c26e-4ea8-b177-4c823b31a9a9",
+      "title": "博客首页 - Jake blog",
+      "url": "https://jaketao.com/blog"
+    }
+  ],
+  "observedOfficialWormhole": "https://www.foreverblog.cn/go.html",
+  "officialOutboundCount": "not checked"
+}

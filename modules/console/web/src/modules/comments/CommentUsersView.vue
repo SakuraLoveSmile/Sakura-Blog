@@ -208,12 +208,9 @@ async function doBulk(action: "spam" | "delete") {
     </VPageHeader>
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
-      <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      <!-- 当前数据摘要 -->
+      <div class="console-summary" role="group" aria-label="概览摘要">
         <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:user-community-line" />
-          </div>
           <div>
             <div class="stats-label">注册读者总数</div>
             <div class="stats-value">{{ counts.all }} <span class="stats-sub">位注册读者</span></div>
@@ -221,9 +218,6 @@ async function doBulk(action: "spam" | "delete") {
         </div>
 
         <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:checkbox-circle-line" />
-          </div>
           <div>
             <div class="stats-label">正常活跃读者</div>
             <div class="stats-value text-[#30D158]">
@@ -233,9 +227,6 @@ async function doBulk(action: "spam" | "delete") {
         </div>
 
         <div class="stats-card">
-          <div class="stats-icon text-[#FF453A] bg-[#FF453A]/10">
-            <Icon icon="ri:forbid-2-line" />
-          </div>
           <div>
             <div class="stats-label">已封禁读者</div>
             <div class="stats-value text-[#FF453A]">
@@ -245,9 +236,6 @@ async function doBulk(action: "spam" | "delete") {
         </div>
 
         <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:chat-voice-line" />
-          </div>
           <div>
             <div class="stats-label">当前列表用户</div>
             <div class="stats-value">
@@ -440,58 +428,6 @@ async function doBulk(action: "spam" | "delete") {
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  /* highlight removed */
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
 
 /* 操作小按钮 */
 .action-btn {
@@ -507,18 +443,4 @@ async function doBulk(action: "spam" | "delete") {
   cursor: pointer;
 }
 
-@media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
-}
 </style>
