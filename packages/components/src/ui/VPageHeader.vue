@@ -83,12 +83,12 @@ onUnmounted(() => {
     "
   >
     <div
-      class="min-w-0 self-center"
+      class="page-header-title min-w-0 self-center"
       :class="actionsLayout === 'stack-below-lg' ? 'w-full lg:w-auto lg:flex-1' : 'flex-1'"
     >
       <div class="flex items-center gap-2.5">
-        <slot name="icon" />
-        <h1 class="truncate text-xl font-semibold tracking-tight text-foreground sm:text-[22px] md:text-[24px]">
+        <span v-if="$slots.icon" class="page-header-icon" aria-hidden="true"><slot name="icon" /></span>
+        <h1 class="truncate text-xl font-semibold tracking-tight text-foreground">
           <slot name="title">{{ title }}</slot>
         </h1>
         <slot name="badge" />
@@ -108,6 +108,27 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.page-header-icon {
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+}
+.page-header-icon :deep(svg) {
+  color: inherit;
+  width: 18px;
+  height: 18px;
+}
+
+/* 手机标题独占一行，避免搜索与操作把标题压成零宽。 */
+@media (max-width: 767px) {
+  .page-header-title {
+    flex: none;
+    width: 100%;
+  }
+  .page-header-actions {
+    width: 100%;
+  }
+}
+
 .page-header-scroll-aware {
   will-change: transform, opacity;
   transition:

@@ -5,18 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { pageApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
-import {
-  VPageHeader,
-  VCard,
-  VButton,
-  VEmpty,
-  VLoading,
-  VPagination,
-  VFloatingDock,
-  Dialog,
-  Toast,
-} from "@/components/ui";
-import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
+import { VPageHeader, VButton, VEmpty, VLoading, VPagination, VFloatingDock, Dialog, Toast } from "@/components/ui";
 import { formatRelative } from "@/lib/format";
 
 interface PageItem {
@@ -34,7 +23,7 @@ const queryClient = useQueryClient();
 
 const page = ref(1);
 const size = ref(20);
-const viewMode = ref<"grid" | "table">("grid");
+const viewMode = ref<"grid" | "table">("table");
 
 // 搜索关键词（debounce 300ms）
 const keyword = ref("");
@@ -238,13 +227,19 @@ function statusBadge(status: string) {
       <template #icon>
         <Icon icon="ri:pages-line" class="text-primary" />
       </template>
-      <template #subtitle>管理博客独立单页与自定义内容，支持草稿保存与前台直达预览</template>
+      <template #subtitle>{{ total }} 个页面</template>
       <template #actions>
         <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
           <div class="apple-search w-full lg:min-w-[200px] lg:max-w-[280px]">
             <Icon icon="ri:search-line" class="text-text-quaternary" />
-            <input v-model="keyword" placeholder="搜索页面标题或 Slug..." />
-            <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+            <input v-model="keyword" aria-label="搜索页面" placeholder="搜索页面标题或 Slug..." />
+            <button
+              v-if="keyword"
+              type="button"
+              aria-label="清除搜索"
+              class="text-text-quaternary hover:text-foreground"
+              @click="keyword = ''"
+            >
               <Icon icon="ri:close-line" />
             </button>
           </div>
@@ -260,49 +255,16 @@ function statusBadge(status: string) {
     </VPageHeader>
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
-      <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <ConsoleStatsCard
-          label="独立页面"
-          :value="stats.total"
-          sub="个页面"
-          icon="ri:pages-line"
-          color="primary"
-        />
-        <ConsoleStatsCard
-          label="已公开发布"
-          :value="stats.publishedCount"
-          sub="个正常展示"
-          icon="ri:checkbox-circle-line"
-          color="success"
-          value-class="text-[#30D158]"
-        />
-        <ConsoleStatsCard
-          label="草稿状态"
-          :value="stats.draftCount"
-          sub="个未发布草稿"
-          icon="ri:draft-line"
-          color="warning"
-          value-class="text-[#FF9500]"
-        />
-        <ConsoleStatsCard
-          label="系统内置页"
-          :value="stats.systemCount"
-          sub="个系统保留路由"
-          icon="ri:cpu-line"
-          color="purple"
-        />
-      </div>
-
       <!-- 工具栏：状态分段 + 排序 + 视图模式 -->
-      <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
+      <div class="console-toolbar flex flex-wrap items-center justify-between gap-3">
         <!-- 状态分段 -->
-        <div class="apple-segmented">
+        <div class="apple-segmented" role="group" aria-label="页面状态">
           <button
             v-for="st in statusTabs"
             :key="st.key"
             type="button"
             :class="{ active: selectedStatus === st.key }"
+            :aria-pressed="selectedStatus === st.key"
             @click="
               selectedStatus = st.key;
               page = 1;
@@ -314,8 +276,8 @@ function statusBadge(status: string) {
         </div>
 
         <!-- 排序与视图 -->
-        <div class="flex items-center gap-2">
-          <select v-model="selectedSort" class="apple-select text-xs h-8">
+        <div class="flex flex-wrap items-center gap-2">
+          <select v-model="selectedSort" aria-label="本页排序" class="apple-select text-xs h-8">
             <option value="newest">最近更新</option>
             <option value="oldest">最早更新</option>
             <option value="views">浏览最多</option>
@@ -331,13 +293,22 @@ function statusBadge(status: string) {
           </button>
 
           <div class="apple-segmented">
-            <button type="button" :class="{ active: viewMode === 'grid' }" title="卡片视图" @click="viewMode = 'grid'">
+            <button
+              type="button"
+              :class="{ active: viewMode === 'grid' }"
+              title="卡片视图"
+              aria-label="卡片视图"
+              :aria-pressed="viewMode === 'grid'"
+              @click="viewMode = 'grid'"
+            >
               <Icon icon="ri:layout-grid-line" />
             </button>
             <button
               type="button"
               :class="{ active: viewMode === 'table' }"
-              title="表格视图"
+              title="列表视图"
+              aria-label="列表视图"
+              :aria-pressed="viewMode === 'table'"
               @click="viewMode = 'table'"
             >
               <Icon icon="ri:table-line" />
@@ -346,12 +317,27 @@ function statusBadge(status: string) {
         </div>
       </div>
 
+      <div class="console-summary" aria-label="页面摘要">
+        <div class="stats-card">
+          <span class="stats-label">匹配页面</span><span class="stats-value">{{ stats.total }}</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">本页已发布</span><span class="stats-value">{{ stats.publishedCount }}</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">本页草稿</span><span class="stats-value">{{ stats.draftCount }}</span>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">本页系统内置</span><span class="stats-value">{{ stats.systemCount }}</span>
+        </div>
+      </div>
+
       <VLoading v-if="isLoading" />
 
       <VEmpty
         v-else-if="pages.length === 0"
         :title="keyword ? '未找到匹配的页面' : '暂无对应页面'"
-        :message="keyword ? '换个搜索关键词试试' : '点击右上角「新建页面」创建独立关于、隐私或赞助页面'"
+        :message="keyword ? '换个搜索关键词试试' : '点击“新建页面”创建独立页面。'"
       />
 
       <!-- ============ 模式 1：卡片网格视图 ============ -->
@@ -463,123 +449,92 @@ function statusBadge(status: string) {
         </div>
       </div>
 
-      <!-- ============ 模式 2：表格列表视图 ============ -->
-      <VCard v-else>
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[760px] text-left">
-            <thead>
-              <tr class="border-b border-border text-xs font-medium text-text-quaternary">
-                <th class="w-12 px-4 py-3 text-center">
-                  <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
-                  <input
-                    v-if="pages.length > 0"
-                    type="checkbox"
-                    :checked="selectedSlugs.size === pages.length"
-                    class="h-4 w-4 rounded border-border text-primary"
-                    @change="selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
-                  />
-                </th>
-                <th class="px-4 py-3">页面标题</th>
-                <th class="px-4 py-3">访问路径 (Slug)</th>
-                <th class="px-4 py-3">状态</th>
-                <th class="px-4 py-3">浏览量</th>
-                <th class="px-4 py-3">更新时间</th>
-                <th class="w-36 px-4 py-3 text-right">操作</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border/60">
-              <tr
-                v-for="p in pages"
-                :key="p.slug"
-                class="cursor-pointer transition-colors hover:bg-secondary/40"
-                :class="{ 'bg-primary/5': selectedSlugs.has(p.slug) }"
+      <!-- 行列表在窄屏内折行，保留同一份选择与操作状态。 -->
+      <ul v-else class="console-records content-records" aria-label="页面列表">
+        <li
+          v-for="p in pages"
+          :key="p.slug"
+          class="content-record page-record"
+          :class="{ 'is-selected': selectedSlugs.has(p.slug) }"
+        >
+          <label class="record-selection" :aria-label="`选择页面：${p.title || p.slug}`">
+            <input
+              type="checkbox"
+              :aria-label="`选择页面：${p.title || p.slug}`"
+              :checked="selectedSlugs.has(p.slug)"
+              @change="toggleSelect(p.slug)"
+            />
+          </label>
+          <div class="record-main">
+            <div class="record-title-line">
+              <button
+                type="button"
+                class="record-title"
+                :title="p.title || p.slug"
                 @click="router.push(`/pages/edit/${p.slug}`)"
               >
-                <td class="px-4 py-3.5 text-center" @click.stop>
-                  <input
-                    type="checkbox"
-                    :checked="selectedSlugs.has(p.slug)"
-                    class="h-4 w-4 rounded border-border text-primary"
-                    @change="toggleSelect(p.slug)"
-                  />
-                </td>
-                <td class="px-4 py-3.5">
-                  <div class="flex items-center gap-2">
-                    <span class="font-semibold text-foreground text-sm">{{ p.title || p.slug }}</span>
-                    <span
-                      v-if="p.is_system"
-                      class="rounded bg-primary/10 px-1.5 py-0.2 font-medium text-[10px] text-primary"
-                    >
-                      系统
-                    </span>
-                  </div>
-                </td>
-                <td class="px-4 py-3.5 font-mono text-xs text-text-tertiary">/{{ p.slug }}</td>
-                <td class="px-4 py-3.5 text-xs">
-                  <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusBadge(p.status).cls">
-                    {{ statusBadge(p.status).label }}
-                  </span>
-                </td>
-                <td class="px-4 py-3.5 font-mono text-xs text-text-tertiary">
-                  {{ formatViews(p.views) }}
-                </td>
-                <td class="px-4 py-3.5 text-xs text-text-quaternary">
-                  {{ formatRelative(p.updated_at) }}
-                </td>
-                <td class="px-4 py-3.5 text-right" @click.stop>
-                  <div class="flex items-center justify-end gap-1">
-                    <button
-                      v-if="p.status === 'published'"
-                      type="button"
-                      class="action-icon-btn"
-                      title="前台预览"
-                      @click="openPagePreview(p.slug)"
-                    >
-                      <Icon icon="ri:external-link-line" />
-                    </button>
-                    <button
-                      v-if="p.status !== 'trashed'"
-                      type="button"
-                      class="action-icon-btn"
-                      title="编辑"
-                      @click="router.push(`/pages/edit/${p.slug}`)"
-                    >
-                      <Icon icon="ri:edit-line" />
-                    </button>
-                    <button
-                      v-if="p.status === 'trashed'"
-                      type="button"
-                      class="action-icon-btn text-primary"
-                      title="恢复"
-                      @click="handleRestore(p)"
-                    >
-                      <Icon icon="ri:restart-line" />
-                    </button>
-                    <button
-                      v-if="p.status !== 'trashed'"
-                      type="button"
-                      class="action-icon-btn hover:text-state-error"
-                      title="删除"
-                      @click="handleDelete(p)"
-                    >
-                      <Icon icon="ri:delete-bin-line" />
-                    </button>
-                    <button
-                      v-if="p.status === 'trashed'"
-                      type="button"
-                      class="action-icon-btn text-state-error"
-                      title="彻底删除"
-                      @click="handlePurge(p)"
-                    >
-                      <Icon icon="ri:delete-bin-7-line" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </VCard>
+                {{ p.title || p.slug }}
+              </button>
+              <span v-if="p.is_system" class="record-note">系统内置</span>
+            </div>
+            <div class="record-metadata">
+              <span class="record-slug" :title="`/${p.slug}`">/{{ p.slug }}</span>
+            </div>
+          </div>
+          <div class="record-state">
+            <span class="record-status" :class="statusBadge(p.status).cls">{{ statusBadge(p.status).label }}</span>
+            <span class="record-updated" :title="`更新时间：${p.updated_at}`">{{ formatRelative(p.updated_at) }}</span>
+            <span class="record-views">{{ formatViews(p.views) }} 浏览</span>
+          </div>
+          <div class="record-actions">
+            <button
+              v-if="p.status === 'published'"
+              type="button"
+              class="action-icon-btn"
+              title="前台预览"
+              @click="openPagePreview(p.slug)"
+            >
+              <Icon icon="ri:external-link-line" />
+            </button>
+            <button
+              v-if="p.status !== 'trashed'"
+              type="button"
+              class="action-icon-btn"
+              title="编辑页面"
+              @click="router.push(`/pages/edit/${p.slug}`)"
+            >
+              <Icon icon="ri:edit-line" />
+            </button>
+            <button
+              v-if="p.status === 'trashed'"
+              type="button"
+              class="action-icon-btn text-primary"
+              title="从回收站恢复"
+              @click="handleRestore(p)"
+            >
+              <Icon icon="ri:restart-line" />
+            </button>
+            <button
+              v-if="p.status !== 'trashed'"
+              type="button"
+              class="action-icon-btn record-danger"
+              title="移入回收站"
+              @click="handleDelete(p)"
+            >
+              <Icon icon="ri:delete-bin-line" />
+            </button>
+            <button
+              v-if="p.status === 'trashed'"
+              type="button"
+              class="action-icon-btn record-danger text-state-error"
+              title="彻底删除"
+              @click="handlePurge(p)"
+            >
+              <Icon icon="ri:delete-bin-7-line" />
+            </button>
+          </div>
+        </li>
+      </ul>
 
       <!-- 分页 -->
       <div v-if="total > size" class="flex justify-center pt-4">
@@ -619,12 +574,19 @@ function statusBadge(status: string) {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {
   background: var(--color-secondary);
   color: var(--color-foreground);
   border-color: var(--color-border);
+}
+
+@media (max-width: 1023px) {
+  .action-icon-btn, .post-card-action { width: 44px; height: 44px; }
 }
 </style>

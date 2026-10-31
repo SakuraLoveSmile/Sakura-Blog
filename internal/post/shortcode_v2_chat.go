@@ -41,8 +41,8 @@ func (r *shortcodeV2Renderer) chat(a map[string]string, body string) string {
 	var cells []cell
 	tagCells := map[string]map[string]string{}
 	count := 0
-	for _, m := range reChatComment.FindAllStringSubmatch(body, -1) {
-		kind, text, ok := strings.Cut(strings.TrimSpace(m[1]), " ")
+	for _, loc := range r.markerLocations(reChatComment, body) {
+		kind, text, ok := strings.Cut(strings.TrimSpace(body[loc[2]:loc[3]]), " ")
 		if !ok {
 			continue
 		}

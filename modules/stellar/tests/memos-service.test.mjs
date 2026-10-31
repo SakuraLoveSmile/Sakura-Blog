@@ -17,10 +17,11 @@ function fixture(apis) {
   const policy = { retries: 0, timeoutMs: 5000, idleTimeoutMs: 100, maxCacheEntryBytes: 1024 };
   const client = createRequestClient({ policy, cache: { enabled: false, defaultTtl: 0, ttl: {}, maxEntries: 0 },
     fetch: (url, options) => new Promise(resolve => requests.push({ url, options, resolve })) });
-  const utils = { onLoadFailure: element => failures.push(element), dom: element => ({ append: html => cells.push({ element, html }) }) };
+  const utils = { onLoadFailure: element => { if (element) failures.push(element); }, dom: element => ({ append: html => cells.push({ element, html }) }) };
   installLegacyRequestAdapter(utils, client, policy);
-  const document = Object.assign(new EventTarget(), { currentScript: {} });
-  const window = Object.assign(new EventTarget(), { utils });
+  const document = Object.assign(new EventTarget(), { currentScript: {}, baseURI: 'https://blog.example.test/' });
+  const sanitized = [];
+  const window = Object.assign(new EventTarget(), { DOMPurify: () => ({ isSupported: true, addHook() {}, sanitize(html, config) { sanitized.push({ html, config }); return html; } }), utils });
   const sandbox = vm.createContext({ document, window, URL, def: { avatar: '' }, marked: { parse: content => `<p>${content}</p>` },
     console: { log() {} }, setTimeout, clearTimeout, setInterval, clearInterval,
     IntersectionObserver: class { constructor() { observers.push(this); } disconnect() { this.disconnected = true; } }

@@ -23,12 +23,10 @@ defineEmits<{
     <Transition name="dock-slide">
       <div
         v-if="visible && count > 0"
-        class="v-floating-dock fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border px-4 py-2.5 shadow-2xl  md:bottom-6"
+        class="v-floating-dock fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-50 flex -translate-x-1/2 max-w-[calc(100%-2rem)] flex-wrap justify-center items-center gap-3 rounded-lg border border-border px-4 py-2.5 shadow-lg  md:bottom-6"
         style="
           background: var(--color-card);
-          box-shadow:
-            0 16px 36px -8px rgba(0, 0, 0, 0.65),
-            0 0 0 1px rgba(255, 255, 255, 0.08);
+          box-shadow: var(--shadow-lg);
         "
       >
         <!-- 已选计数药丸 -->
@@ -44,15 +42,16 @@ defineEmits<{
         </div>
 
         <!-- 动作操作区 -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-center gap-2">
           <slot />
         </div>
 
         <!-- 取消选择按钮 -->
         <button
           type="button"
-          class="ml-1 rounded-full p-1 text-text-quaternary transition-colors hover:bg-secondary hover:text-foreground"
+          class="ml-1 flex min-h-9 min-w-9 items-center justify-center rounded-lg p-1 text-text-quaternary transition-colors hover:bg-secondary hover:text-foreground"
           title="取消全选"
+          aria-label="取消全选"
           @click="$emit('clear')"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

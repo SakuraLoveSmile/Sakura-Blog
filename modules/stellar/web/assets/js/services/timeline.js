@@ -1,5 +1,8 @@
 document.currentScript.stellarMount = function (root, context) {
   const utils = context.serviceUtils;
+  const text = utils.escapeHTML;
+  const url = utils.safeURL;
+  const color = utils.safeColor;
 
   const reactions = {
       '+1': '👍',
@@ -21,7 +24,8 @@ document.currentScript.stellarMount = function (root, context) {
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
-        const query = new URL(api).search;
+        const cells = [];
+        const query = new URL(api, el.baseURI).search;
         const arr = data.content || data;
         var users = [];
         const filter = el.getAttribute('user');
@@ -42,9 +46,9 @@ document.currentScript.stellarMount = function (root, context) {
           var cell = '<div class="timenode" index="' + i + '">';
           cell += '<div class="header">';
           if (!users.length && item.user && !hide.includes('user')) {
-            cell += '<a class="user-info" href="' + item.user.html_url + '" target="_blank" rel="external nofollow noopener noreferrer">';
-            cell += '<img src="' + item.user.avatar_url + '">';
-            cell += '<span>' + item.user.login + '</span>';
+            cell += '<a class="user-info" href="' + url(item.user.html_url, 'href') + '" target="_blank" rel="external nofollow noopener noreferrer">';
+            cell += '<img src="' + url(item.user.avatar_url) + '">';
+            cell += '<span>' + text(item.user.login) + '</span>';
             cell += '</a>';
           }
           let date = new Date(item.created_at);
@@ -53,8 +57,8 @@ document.currentScript.stellarMount = function (root, context) {
           cell += '<div class="body">';
           if (!hide.includes('title')) {
             cell += '<p class="title">';
-            cell += '<a href="' + item.html_url + '" target="_blank" rel="external nofollow noopener noreferrer">';
-            cell += item.title || item.name || item.tag_name;
+            cell += '<a href="' + url(item.html_url, 'href') + '" target="_blank" rel="external nofollow noopener noreferrer">';
+            cell += text(item.title || item.name || item.tag_name);
             cell += '</a>';
             cell += '</p>';
           }
@@ -66,14 +70,14 @@ document.currentScript.stellarMount = function (root, context) {
             if (item.labels) {
               item.labels.forEach((label, i) => {
                 if (!query || !query.includes(encodeURI(label.name))) {
-                  cell += '<div class="item label ' + label.name + '" style="background:#' + label.color + '18;border-color:#' + label.color + '36">';
-                  cell += '<span>' + label.name + '</span>';
+                  cell += '<div class="item label ' + text(label.name) + '" style="background:#' + color(label.color) + '18;border-color:#' + color(label.color) + '36">';
+                  cell += '<span>' + text(label.name) + '</span>';
                   cell += '</div>';
                 }
               });
             } else if (item.zipball_url) {
-              cell += '<a class="item download" href="' + item.zipball_url + '" target="_blank" rel="external nofollow noopener noreferrer">';
-              cell += '<span>📦 ' + item.tag_name + '.zip</span>';
+              cell += '<a class="item download" href="' + url(item.zipball_url, 'href') + '" target="_blank" rel="external nofollow noopener noreferrer">';
+              cell += '<span>📦 ' + text(item.tag_name) + '.zip</span>';
               cell += '</a>';
             }
             cell += '</div>';
@@ -83,14 +87,14 @@ document.currentScript.stellarMount = function (root, context) {
                 let num = item.reactions[key];
                 if (num > 0) {
                   cell += '<div class="item reaction ' + key + '">';
-                  cell += '<span>' + reactions[key] + ' ' + item.reactions[key] + '</span>';
+                  cell += '<span>' + reactions[key] + ' ' + text(item.reactions[key]) + '</span>';
                   cell += '</div>';
                 }
               }
             }
             if (item.comments != null) {
-              cell += '<a class="item comments last" href="' + item.html_url + '#issuecomment-new" target="_blank" rel="external nofollow noopener noreferrer">';
-              cell += '<span>' + ctx.icons['default:to-comment'] + ' ' + (item.comments || 0) + '</span>';
+              cell += '<a class="item comments last" href="' + url(item.html_url, 'href') + '#issuecomment-new" target="_blank" rel="external nofollow noopener noreferrer">';
+              cell += '<span>' + ctx.icons['default:to-comment'] + ' ' + text(item.comments || 0) + '</span>';
               cell += '</a>';
             }
             
@@ -100,8 +104,9 @@ document.currentScript.stellarMount = function (root, context) {
           
           cell += '</div>';
           cell += '</div>';
-          utils.dom(el).append(cell);
+          cells.push(cell);
         });
+        if (cells.length) utils.dom(el).append(cells.join(''));
         window.wrapLazyloadImages(el);
       });
     }

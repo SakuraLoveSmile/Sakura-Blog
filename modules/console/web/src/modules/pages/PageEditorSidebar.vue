@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { Icon } from "@iconify/vue";
+import ShortcodeInsertPanel from "@/modules/plugins/ShortcodeInsertPanel.vue";
 
 // 页面编辑器右侧辅助面板（参考 PostEditor 的 EditorSidebar）：
 // 大纲：解析 Markdown 标题可点击跳转；详情：slug/status + 侧边栏组件参数编辑（快速入口）
@@ -25,9 +26,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "jump", line: number, index: number): void;
   (e: "openSidebarConfig"): void;
+  (e: "insert", code: string): void;
 }>();
 
-const activeTab = ref<"outline" | "detail">("outline");
+const activeTab = ref<"outline" | "detail" | "plugins">("outline");
 
 // ---------- 大纲：解析 ATX 标题（跳过代码围栏），点击跳转到对应行 ----------
 interface OutlineItem {
@@ -62,10 +64,10 @@ function widgetLabelOf(name: string) {
 
 <template>
   <div
-    class="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-white dark:border-border-strong dark:bg-secondary"
+    class="flex min-h-0 max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-white dark:border-border-strong dark:bg-secondary"
   >
     <!-- Tabs -->
-    <div class="grid grid-cols-2 gap-0.5 rounded-t-xl bg-secondary p-1 dark:bg-accent/50">
+    <div class="grid shrink-0 grid-cols-3 gap-0.5 rounded-t-xl bg-secondary p-1 dark:bg-accent/50">
       <button
         :class="[
           'rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
@@ -98,10 +100,26 @@ function widgetLabelOf(name: string) {
           详情
         </span>
       </button>
+      <button
+        type="button"
+        :class="[
+          'rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+          activeTab === 'plugins'
+            ? 'bg-white text-text-quaternary shadow-sm dark:bg-secondary dark:text-foreground'
+            : 'text-text-quaternary hover:text-text-quaternary dark:text-muted-foreground dark:hover:text-foreground',
+        ]"
+        @click="activeTab = 'plugins'"
+      >
+        <span class="inline-flex items-center gap-1"><Icon icon="ri:code-s-slash-line" class="h-3.5 w-3.5" />标签</span>
+      </button>
+    </div>
+
+    <div v-if="activeTab === 'plugins'" class="min-h-0 min-w-0 flex-1 overflow-y-auto p-3">
+      <ShortcodeInsertPanel @insert="emit('insert', $event)" />
     </div>
 
     <!-- Outline Tab -->
-    <div v-if="activeTab === 'outline'" class="flex-1 overflow-y-auto p-3">
+    <div v-else-if="activeTab === 'outline'" class="min-h-0 flex-1 overflow-y-auto p-3">
       <div v-if="!outline.length" class="flex flex-col items-center justify-center py-8 text-center">
         <Icon icon="ri:article-line" class="mb-2 h-8 w-8 text-text-secondary dark:text-text-quaternary" />
         <p class="text-xs text-muted-foreground">暂无标题，添加 # 标题后可在此跳转</p>
@@ -123,7 +141,7 @@ function widgetLabelOf(name: string) {
     </div>
 
     <!-- Detail Tab -->
-    <div v-else class="flex-1 overflow-y-auto p-3 space-y-4">
+    <div v-else class="min-h-0 flex-1 overflow-y-auto p-3 space-y-4">
       <div class="space-y-2">
         <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">
           页面信息

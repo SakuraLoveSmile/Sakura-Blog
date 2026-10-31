@@ -126,10 +126,14 @@ test("五类列表清理失效选择，且空列表不渲染禁用态选择入�
     assert.match(code, /if \(!visible\.has\(/, `${file}: 必须剔除不在当前列表中的选择`);
     assert.doesNotMatch(code, /:disabled="[a-zA-Z]+\.length === 0"/, `${file}: 不得以禁用态保留空列表选择入口`);
   }
-  // 文章/页面/附件三个表格表头复选框改为条件渲染
-  for (const file of lists.slice(0, 3)) {
-    assert.match(read(file), /v-if="[a-zA-Z]+\.length > 0"\s*\n\s*type="checkbox"/, `${file}: 表头复选框必须条件渲染`);
+  // 文章/页面改用记录列表；空态与带选择框的记录必须互斥。真实选择/清空由 E2E 覆盖。
+  for (const file of lists.slice(0, 2)) {
+    const code = read(file);
+    assert.match(code, /v-else-if="[a-zA-Z]+\.length === 0"/, `${file}: 必须保留独立空态`);
+    assert.match(code, /<ul v-else class="console-records content-records"/, `${file}: 空态不得同时渲染记录选择入口`);
   }
+  // 媒体库保留表格视图，表头选择框仍须按非空条件渲染。
+  assert.match(read(lists[2]), /v-if="[a-zA-Z]+\.length > 0"\s*\n\s*type="checkbox"/);
 });
 
 test("DefaultLayout 导航使用原生 router-link/button、动态移动列数与带关闭和焦点管理的抽屉", () => {

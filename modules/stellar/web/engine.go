@@ -164,7 +164,15 @@ func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		output, err = stellarhtml.ProcessSite(output, stellarhtml.Context{Theme: prepared.Stellar.Theme, SiteURL: data.Site.URL, IconData: e.icons.Get})
+		// 无图标预览仍不注入图标 CSS；固定页脚图片的失败处理单独使用内置图标。
+		imageIcons := e.icons
+		if imageIcons == nil {
+			imageIcons, err = settings.LoadIconsEmbed()
+			if err != nil {
+				return "", fmt.Errorf("load image fallback icons: %w", err)
+			}
+		}
+		output, err = stellarhtml.ProcessSite(output, stellarhtml.Context{Theme: prepared.Stellar.Theme, SiteURL: data.Site.URL, IconData: imageIcons.Get})
 		if err != nil {
 			return "", err
 		}

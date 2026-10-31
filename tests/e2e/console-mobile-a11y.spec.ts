@@ -165,7 +165,7 @@ async function contrastRatio(page: Page, foreground: string, background: string)
 async function readButtonColors(page: Page, selector: string) {
   return page.locator(selector).evaluate((el) => {
     const cs = window.getComputedStyle(el);
-    return { color: cs.color, background: cs.backgroundColor };
+    return { color: cs.color, background: cs.backgroundColor, opacity: cs.opacity };
   });
 }
 
@@ -174,7 +174,7 @@ async function assertButtonContrast(page: Page, selector: string, label: string)
   const button = page.locator(selector);
   await expect(button).toBeVisible();
 
-  const states: Array<{ name: string; colors: { color: string; background: string } }> = [];
+  const states: Array<{ name: string; colors: { color: string; background: string; opacity: string } }> = [];
   states.push({ name: "默认", colors: await readButtonColors(page, selector) });
 
   await button.hover();
@@ -190,6 +190,7 @@ async function assertButtonContrast(page: Page, selector: string, label: string)
   await page.mouse.up();
 
   for (const state of states) {
+    expect(state.colors.opacity, `${label} ${state.name} 态不应通过透明度降低对比度`).toBe("1");
     const ratio = await contrastRatio(page, state.colors.color, state.colors.background);
     expect(
       ratio,
@@ -284,7 +285,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
     // 用夹具 token 过滤，保证页面上的卡片全部来自本轮夹具
     await page.getByPlaceholder("搜索页面标题或 Slug...").fill(token);
-    const cards = page.locator("main div.group").filter({ has: page.locator('button[title="编辑页面"]') });
+    const cards = page.locator(".page-record");
     await expect(cards).toHaveCount(fixtures.length);
 
     const nav = await bottomNavBox(page);
@@ -292,7 +293,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
     const lastCard = cards.last();
     await expect(lastCard).toBeVisible();
-    const lastTitle = ((await lastCard.locator("h3").first().textContent()) ?? "").trim();
+    const lastTitle = ((await lastCard.locator(".record-title").textContent()) ?? "").trim();
     const mapped = fixtures.find((item) => item.title === lastTitle);
     expect(mapped, `末项必须对应本轮夹具，实际标题=${lastTitle}`).toBeTruthy();
 
@@ -415,7 +416,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await assertButtonContrast(page, 'header.page-header-stack-below-lg .btn-primary', "主操作按钮");
 
     // 危险操作：选中夹具后批量浮条中的「批量移入回收站」
-    const card = page.locator(".post-card").filter({ hasText: fixture.title }).first();
+    const card = page.locator(".post-record").filter({ hasText: fixture.title }).first();
     await expect(card).toBeVisible();
     await card.locator('label[aria-label^="选择文章"]').click();
     const dock = page.locator(".v-floating-dock");
@@ -438,7 +439,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
           { selector: ".apple-search", min: 1 },
           { selector: ".apple-select", min: 1 },
           { selector: ".apple-segmented button", min: 1 },
-          { selector: ".post-card-action", min: 1, square: true },
+          { selector: ".post-record .action-icon-btn", min: 1, square: true },
         ],
       },
       {
@@ -510,7 +511,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     }
   });
 
-  test("概览卡片：五个统一页面在断点前后守住两列与四列（390/639/640/768/1023 两列，1024/1280 四列）", async ({ page }) => {
+  test("紧凑摘要：五个统一页面在断点前后守住两列与四列（390/639/640/768/1023 两列，1024/1280 四列）", async ({ page }) => {
     await login(page);
     const token = `t1-stats-${Date.now()}`;
     await createPost(page, token, 1);
@@ -543,7 +544,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         expect(await columnsOf(page), `${item.path} 在 ${w}px 必须为两列`).toBe(2);
       }
 
-      // 验证 390px 最小高度 88px
+      // 新摘要保留信息可读且不再使用 88px 高的独立卡片。
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(item.path);
       await expect(page.getByRole("heading", { name: item.heading, exact: true })).toBeVisible();
@@ -553,7 +554,8 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
       );
       expect(mobileHeights.length, `${item.path} 必须有概览卡片`).toBeGreaterThan(0);
       for (const height of mobileHeights) {
-        expect(height, `${item.path} 手机概览卡片最小高度 88px`).toBeGreaterThanOrEqual(88);
+        expect(height).toBeGreaterThanOrEqual(28);
+        expect(height, `${item.path} 手机摘要应保持紧凑`).toBeLessThanOrEqual(88);
       }
 
       // 验证断点后四列 (宽度 >= 1024px)
@@ -564,12 +566,13 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         expect(await columnsOf(page), `${item.path} 在 ${w}px 必须为四列`).toBe(4);
       }
 
-      // 验证 1280px 最小高度 80px
+      // 桌面摘要同样不保留大卡片的最小高度。
       const desktopHeights = await page.locator(".stats-card").evaluateAll((els) =>
         els.map((el) => el.getBoundingClientRect().height),
       );
       for (const height of desktopHeights) {
-        expect(height, `${item.path} 桌面概览卡片最小高度 80px`).toBeGreaterThanOrEqual(80);
+        expect(height).toBeGreaterThanOrEqual(28);
+        expect(height, `${item.path} 桌面摘要应保持紧凑`).toBeLessThanOrEqual(88);
       }
     }
   });
@@ -608,6 +611,10 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
             page.locator(`#tabpanel-${settingsTab}`),
             `${tab.url} 在 ${vp.width}px 必须激活 #tabpanel-${settingsTab}`,
           ).toBeVisible();
+          await expect(
+            page.locator(`#tabpanel-${settingsTab} ${settingsTab === "basic" ? ".settings-basic-form" : ".canonical-settings-form"}`),
+            `${tab.url} 在 ${vp.width}px 必须加载活动表单`,
+          ).toBeVisible();
         }
 
         // 外层只有一个主卡片面板 .settings-basic-panel
@@ -616,17 +623,16 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
         // 验证表单分区容器存在，且必须遍历所有匹配项，不可为 0
         const sections = page.locator(".settings-basic-section, .settings-section, .settings-post-section");
-        const sectionCount = await sections.count();
+        // 批量读取全部分区（含保留草稿的隐藏标签页），避免逐节点跨浏览器往返耗尽测试预算。
+        const sectionStylesList = await sections.evaluateAll((elements) => elements.map((el) => {
+          const cs = window.getComputedStyle(el);
+          return { paddingLeft: cs.paddingLeft, paddingRight: cs.paddingRight };
+        }));
+        const sectionCount = sectionStylesList.length;
         expect(sectionCount, `${tab.url} 在 ${vp.width}px 必须存在表单分区容器`).toBeGreaterThan(0);
 
         for (let s = 0; s < sectionCount; s++) {
-          const sectionStyles = await sections.nth(s).evaluate((el) => {
-            const cs = window.getComputedStyle(el);
-            return {
-              paddingLeft: cs.paddingLeft,
-              paddingRight: cs.paddingRight,
-            };
-          });
+          const sectionStyles = sectionStylesList[s];
           if (vp.width < 768) {
             expect(
               parseFloat(sectionStyles.paddingLeft),
@@ -650,24 +656,25 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
         // 针对包含 .settings-section-body 的表单页，明确遍历断言背景透明、无重复边框、内边距为0
         const bodies = page.locator(".settings-section-body");
-        const bodyCount = await bodies.count();
+        const bodyStylesList = await bodies.evaluateAll((elements) => elements.map((el) => {
+          const cs = window.getComputedStyle(el);
+          return {
+            bg: cs.backgroundColor,
+            borderWidth: cs.borderWidth,
+            borderStyle: cs.borderStyle,
+            borderRadius: cs.borderRadius,
+            boxShadow: cs.boxShadow,
+            paddingLeft: cs.paddingLeft,
+            paddingRight: cs.paddingRight,
+            paddingTop: cs.paddingTop,
+            paddingBottom: cs.paddingBottom,
+          };
+        }));
+        const bodyCount = bodyStylesList.length;
         if (tab.hasBodies) {
           expect(bodyCount, `${tab.url} 在 ${vp.width}px 预期存在 .settings-section-body 容器，缺失必须失败`).toBeGreaterThan(0);
           for (let i = 0; i < bodyCount; i++) {
-            const bodyStyles = await bodies.nth(i).evaluate((el) => {
-              const cs = window.getComputedStyle(el);
-              return {
-                bg: cs.backgroundColor,
-                borderWidth: cs.borderWidth,
-                borderStyle: cs.borderStyle,
-                borderRadius: cs.borderRadius,
-                boxShadow: cs.boxShadow,
-                paddingLeft: cs.paddingLeft,
-                paddingRight: cs.paddingRight,
-                paddingTop: cs.paddingTop,
-                paddingBottom: cs.paddingBottom,
-              };
-            });
+            const bodyStyles = bodyStylesList[i];
             expect(
               bodyStyles.bg === "transparent" || bodyStyles.bg === "rgba(0, 0, 0, 0)",
               `${tab.url} ${vp.width}px .settings-section-body[${i}] 背景必须透明（实际为 ${bodyStyles.bg}）`,
@@ -751,11 +758,11 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await refresh.click();
     await expect(page.getByRole("heading", { name: "通知中心", exact: true })).toBeVisible();
 
-    // 共享按钮样式在 UC 生效（胶囊圆角来自 VButton）
+    // 共享按钮样式在 UC 生效（工具型圆角来自 VButton）
     const readAll = page.getByRole("button", { name: /全部已读/ });
     await expect(readAll).toBeVisible();
     const radius = await readAll.evaluate((el) => parseFloat(window.getComputedStyle(el).borderRadius));
-    expect(radius, "UC 共享按钮必须保持胶囊圆角").toBeGreaterThanOrEqual(18);
+    expect(radius, "UC 共享按钮应使用同一工具型圆角").toBe(8);
 
     // 共享弹层：附件选择弹层具备 dialog 语义并可 Esc 关闭
     await page.goto("/uc/profile");

@@ -306,6 +306,60 @@ func TestRenderSitePreviewWikiUsesFirstProjectTreeAndRelatedData(t *testing.T) {
 	}
 }
 
+func TestRenderSitePreviewPostUsesNewestAcrossStoredDateFormats(t *testing.T) {
+	for _, tc := range []struct {
+		name, imported, native, title string
+	}{
+		{"older-import", "2026-10-31T06:17:58Z", "2026-10-31T06:21:16Z", "Native article"},
+		{"newer-import", "2026-10-31T06:21:16Z", "2026-10-31T06:17:58Z", "Imported article"},
+		{"same-second-keeps-id-order", "2026-10-31T06:21:16.9Z", "2026-10-31T06:21:16.1Z", "Native article"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ws, st, capture, _ := stellarRouteFixture(t)
+			ws.site.Store(canonicalRouteSite(t, "Preview", nil, nil))
+			for _, row := range []struct{ slug, title, date string }{
+				{"imported", "Imported article", tc.imported},
+				{"native", "Native article", tc.native},
+			} {
+				created, err := time.Parse(time.RFC3339Nano, row.date)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := st.Create(&store.Post{Slug: row.slug, Title: row.title, CreatedAt: created, Status: store.StatusPublished, ContentMD: row.title, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			// portable 导入原样保存 RFC3339，普通新建由驱动保存 Go 时间文本。
+			if _, err := st.DB().Exec(`UPDATE posts SET created_at=? WHERE slug='imported'`, tc.imported); err != nil {
+				t.Fatal(err)
+			}
+			var before string
+			if err := st.DB().QueryRow(`SELECT created_at FROM posts WHERE slug='native'`).Scan(&before); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := ws.renderSitePreview(nil, "post"); err != nil {
+				t.Fatal(err)
+			}
+			if capture.last == nil {
+				t.Fatal("preview did not render a page")
+			}
+			if capture.last.Page.Title != tc.title {
+				t.Fatalf("preview selected %v, want %s", capture.last.Page.Title, tc.title)
+			}
+			var imported, native string
+			if err := st.DB().QueryRow(`SELECT created_at FROM posts WHERE slug='imported'`).Scan(&imported); err != nil {
+				t.Fatal(err)
+			}
+			if err := st.DB().QueryRow(`SELECT created_at FROM posts WHERE slug='native'`).Scan(&native); err != nil {
+				t.Fatal(err)
+			}
+			if imported != tc.imported || native != before {
+				t.Fatal("preview rewrote persisted timestamps")
+			}
+		})
+	}
+}
+
 func TestRenderSitePreviewPostUsesDraftTOCDepth(t *testing.T) {
 	ws, st := newWikiVerifyServer(t)
 	if _, err := st.Create(&store.Post{Slug: "toc-preview", Title: "TOC 预览", Status: store.StatusPublished, ContentMD: `<h1 id="h1">一级标题</h1><h2 id="h2">二级标题</h2>`, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {

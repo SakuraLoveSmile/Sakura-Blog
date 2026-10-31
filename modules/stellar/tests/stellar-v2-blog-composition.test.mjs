@@ -77,7 +77,7 @@ test('Blog原生评论只挂独立容器；TOC控件跳Blog目标并清理监听
 });
 
 test('stock services排除Blog归属DOM，regional卸载后取消信号与迟到正文不再回写',async t=>{
- const f=fixture(t),stock=new Element(),blog=new Element();blog.closestMap={'[data-blog-service]':blog};
+ const f=fixture(t),stock=new Element(),blog=new Element();f.view.DOMPurify=()=>({isSupported:true,addHook(){},sanitize:html=>html});blog.closestMap={'[data-blog-service]':blog};
  f.root.getElementsByClassName=()=>[stock,blog];f.root.documentElement.map['service']=[stock,blog];
  f.context.legacy={ctx:{services:{friends:{js:'/fixture/friends.js'}},icons:{}}};
  let resolveBody,requestOptions,writes=0;const mounted=[];let pending;

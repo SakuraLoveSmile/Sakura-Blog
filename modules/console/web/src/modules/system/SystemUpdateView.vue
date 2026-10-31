@@ -185,9 +185,9 @@ onMounted(() => {
         class="flex items-start gap-3 rounded-base border border-state-error/30 bg-state-error/10 p-4 text-sm text-state-error"
       >
         <Icon icon="ri:error-warning-line" class="mt-0.5 shrink-0 text-xl text-state-error" />
-        <div class="flex-1">
+        <div class="min-w-0 flex-1">
           <div class="font-semibold text-state-error">检查更新遇到错误</div>
-          <p class="mt-1 text-xs leading-relaxed text-text-secondary">{{ checkData.error }}</p>
+          <p class="mt-1 break-words text-xs leading-relaxed text-text-secondary">{{ checkData.error }}</p>
           <p class="mt-2 text-xs text-text-tertiary">
             提示：若为私有仓库或触碰 GitHub 匿名 API 速率限制（60次/小时），请在下方配置 GitHub Token。
           </p>

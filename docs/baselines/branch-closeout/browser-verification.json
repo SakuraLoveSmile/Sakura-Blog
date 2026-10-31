@@ -1,0 +1,408 @@
+{
+  "base": "http://127.0.0.1:8134",
+  "checked_at": "2026-10-26T09:19:24.316Z",
+  "checks": [
+    "正式产物文章列表在桌面和手机可见、无整页横向溢出",
+    "紧凑导航与效果导读/颜色/透明度/整页草稿预览共存，预览前后设置原文相同",
+    "正式构建页面侧栏标签预览可切换，插入后真实保存并重开，Markdown保持完整",
+    "正式构建Studio直接源码与参数同步"
+  ],
+  "page_errors": [],
+  "assets": [
+    {
+      "url": "/console/",
+      "local": "modules/console/web/dist/index.html",
+      "sha256": "b8a603bea7da7ea9926f9c72f9ce9d096c164e19578342ce3f5ec596307c7b90"
+    },
+    {
+      "url": "/uc/",
+      "local": "modules/console/web/dist-uc/uc.html",
+      "sha256": "f71a89815a3d7e70898a3c07c045f3dd234ba48abcf37ec6bc16daee47ab33e7"
+    },
+    {
+      "url": "/console/assets/index-CfvuPiHM.css",
+      "local": "modules/console/web/dist/assets/index-CfvuPiHM.css",
+      "sha256": "b430ed50780208253a91f2991e56761bb85112405c403b3f625dd2047ed85da9"
+    },
+    {
+      "url": "/console/assets/pinia-CXeiBUD1.js",
+      "local": "modules/console/web/dist/assets/pinia-CXeiBUD1.js",
+      "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888"
+    },
+    {
+      "url": "/console/assets/preload-helper-l0U7FUPx.js",
+      "local": "modules/console/web/dist/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+    },
+    {
+      "url": "/console/assets/api-C-H7IBEY.js",
+      "local": "modules/console/web/dist/assets/api-C-H7IBEY.js",
+      "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80"
+    },
+    {
+      "url": "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+      "local": "modules/console/web/dist/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+      "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c"
+    },
+    {
+      "url": "/console/assets/index-C1Fo-hM1.js",
+      "local": "modules/console/web/dist/assets/index-C1Fo-hM1.js",
+      "sha256": "b54dd198c18b95c55ed2456faff6c2dc61d5b979d5e76c5f18d9b1c1a1e12068"
+    },
+    {
+      "url": "/console/assets/Login-CEv5Q2db.css",
+      "local": "modules/console/web/dist/assets/Login-CEv5Q2db.css",
+      "sha256": "80b628dea447ce6bec6c26c83d62b27ffc23b3278c2a656f5b37f78d5af5fc77"
+    },
+    {
+      "url": "/console/assets/Login-GyIb6xP8.js",
+      "local": "modules/console/web/dist/assets/Login-GyIb6xP8.js",
+      "sha256": "510ec1e7f452ff8375b0b72b552275f90d9f9da68fb7fc6041d2442a3fe137ab"
+    },
+    {
+      "url": "/console/assets/registry-ByUA0WsA.css",
+      "local": "modules/console/web/dist/assets/registry-ByUA0WsA.css",
+      "sha256": "deb44c672f620fa4e3d62c6ce3f3b0b44a3b90910e3b0beaf6853605d2d20bd2"
+    },
+    {
+      "url": "/console/assets/format-DaBMN9QY.js",
+      "local": "modules/console/web/dist/assets/format-DaBMN9QY.js",
+      "sha256": "56bddbae35b89cadd93b9f303ef5fdcf9a89ba39878fdf8084e2aef1a4ebb5c5"
+    },
+    {
+      "url": "/console/assets/chart-init-BhrNxZ3G.js",
+      "local": "modules/console/web/dist/assets/chart-init-BhrNxZ3G.js",
+      "sha256": "7611c10adc735595c79f05b8dfca742eb8e2c87d2b2d4a404d4cf59b3318958a"
+    },
+    {
+      "url": "/console/assets/registry-CpRU1W7m.js",
+      "local": "modules/console/web/dist/assets/registry-CpRU1W7m.js",
+      "sha256": "e32237795607782e47bb6431062b83bf73617c755aed1595acc30b78929e2935"
+    },
+    {
+      "url": "/console/assets/DefaultLayout-z35fnn2N.css",
+      "local": "modules/console/web/dist/assets/DefaultLayout-z35fnn2N.css",
+      "sha256": "5f10db4c76531452570599dd0300d11ff408ed5376aff2f6db07117bd782c0c7"
+    },
+    {
+      "url": "/console/assets/useQuery-BjIek7KT.js",
+      "local": "modules/console/web/dist/assets/useQuery-BjIek7KT.js",
+      "sha256": "0b1d0b65dade6a173783f8f5c67fdbc3fe693fd6aa6143636bb434d25cf13508"
+    },
+    {
+      "url": "/console/assets/useQueryClient-CNluhkiM.js",
+      "local": "modules/console/web/dist/assets/useQueryClient-CNluhkiM.js",
+      "sha256": "8a15bd1dfc734403ca7aacc1c5b58fa315ee9b4e270ad0aedb311ca318d24190"
+    },
+    {
+      "url": "/console/assets/DefaultLayout-CGYK_oTV.js",
+      "local": "modules/console/web/dist/assets/DefaultLayout-CGYK_oTV.js",
+      "sha256": "93b9fc2f1dad085eee587aec0111235b52f12a24d1f9427ea7a9ad3e8a3d748d"
+    },
+    {
+      "url": "/console/assets/DashboardView-5cgdEJk_.js",
+      "local": "modules/console/web/dist/assets/DashboardView-5cgdEJk_.js",
+      "sha256": "962a6b9401b846b1c6b87fa9d3ef8b39376f24c7e5b72e5531357ce6169d898a"
+    },
+    {
+      "url": "/console/assets/useDashboardLayout-B4y1ktfN.js",
+      "local": "modules/console/web/dist/assets/useDashboardLayout-B4y1ktfN.js",
+      "sha256": "c04be72c1dcc1cd69cb5b13c46bd5d969f001fce90a73efcba7f719fc03bd245"
+    },
+    {
+      "url": "/console/assets/useDashboardLayout-BExs-U8x.css",
+      "local": "modules/console/web/dist/assets/useDashboardLayout-BExs-U8x.css",
+      "sha256": "4d3dca43271f34df5c22c5fb7d1dcb9702f50adfb29801ab3234d84a4883797c"
+    },
+    {
+      "url": "/console/assets/PostList--driXpSa.css",
+      "local": "modules/console/web/dist/assets/PostList--driXpSa.css",
+      "sha256": "0943e830af98c3d1036fcad4838f53b162f098ee598eb716fa34b3fa6739ecc9"
+    },
+    {
+      "url": "/console/assets/VPagination-C-eoiwtg.js",
+      "local": "modules/console/web/dist/assets/VPagination-C-eoiwtg.js",
+      "sha256": "0d02d70cdc51008ead5505f0390fd743a70c00ea36857e41e34d8a91fc4bf959"
+    },
+    {
+      "url": "/console/assets/VLoading-zdiV8KT-.js",
+      "local": "modules/console/web/dist/assets/VLoading-zdiV8KT-.js",
+      "sha256": "6baf47ae8413c7ec57954d99d285252445c83547c30a614fb4f92f37ad2c2625"
+    },
+    {
+      "url": "/console/assets/usePagedList-bKG4801i.js",
+      "local": "modules/console/web/dist/assets/usePagedList-bKG4801i.js",
+      "sha256": "f3cc453f6652f80f8129c32948ad03c92024235330fe63fefa5af155e5f1654f"
+    },
+    {
+      "url": "/console/assets/VEmpty-B8HxL7vI.js",
+      "local": "modules/console/web/dist/assets/VEmpty-B8HxL7vI.js",
+      "sha256": "83800d8a21eacf68a493b94c74f3769b453d241ddf9c421fa07cff40be186241"
+    },
+    {
+      "url": "/console/assets/PostList-C9-krqLk.js",
+      "local": "modules/console/web/dist/assets/PostList-C9-krqLk.js",
+      "sha256": "c7ffd05d80f3c7cc079bb2fbb70bb8a39c9bc00954f4b695f34a1b2077bcc381"
+    },
+    {
+      "url": "/console/assets/AttachmentField-D1RH2W8a.css",
+      "local": "modules/console/web/dist/assets/AttachmentField-D1RH2W8a.css",
+      "sha256": "2a177cdd49f183d5130f12f95020c7a28d777be30ac9e2905fdfd3c5c16c593d"
+    },
+    {
+      "url": "/console/assets/AttachmentField-iITA1hL6.js",
+      "local": "modules/console/web/dist/assets/AttachmentField-iITA1hL6.js",
+      "sha256": "276c7125641d64ae5893fd0acef5345e22e29212c11144860ab2890c355a4482"
+    },
+    {
+      "url": "/console/assets/AttachmentPickerModal-Bivj3txa.js",
+      "local": "modules/console/web/dist/assets/AttachmentPickerModal-Bivj3txa.js",
+      "sha256": "9f3b36acfe1f8e909bd213008c55a4c6d80e7e0057014a02a8acea3a15136bd0"
+    },
+    {
+      "url": "/console/assets/VSwitch-OK9SpF8m.js",
+      "local": "modules/console/web/dist/assets/VSwitch-OK9SpF8m.js",
+      "sha256": "30d9883c7839e4a334f2142e431615e781758f4325e42fd0200155425612d5d5"
+    },
+    {
+      "url": "/console/assets/SettingsView-BZqG5lKo.js",
+      "local": "modules/console/web/dist/assets/SettingsView-BZqG5lKo.js",
+      "sha256": "0b0b2dfa75af16923e58175a0ab7bcdb54199a577bc4b54c5250fcb406e0fcec"
+    },
+    {
+      "url": "/console/assets/SettingsView-BBbsucJj.css",
+      "local": "modules/console/web/dist/assets/SettingsView-BBbsucJj.css",
+      "sha256": "0b1d620a02dd6fa20ae66392e08fabed6feaa2341a1f20414f9163d3eaef23f1"
+    },
+    {
+      "url": "/console/assets/useStellarSettings-DIgdyzwG.css",
+      "local": "modules/console/web/dist/assets/useStellarSettings-DIgdyzwG.css",
+      "sha256": "5d12afe0d11cb1b6b5d160e97cad98283d818b5f4636677cd0666b22210bce5c"
+    },
+    {
+      "url": "/console/assets/stellar-form-json-JZMf33Rj.js",
+      "local": "modules/console/web/dist/assets/stellar-form-json-JZMf33Rj.js",
+      "sha256": "9a8129909d3d0341bc8748a81a9357a4f72f20684a1972053c4cf544213f8b5f"
+    },
+    {
+      "url": "/console/assets/useStellarSettings-BzKpPcF2.js",
+      "local": "modules/console/web/dist/assets/useStellarSettings-BzKpPcF2.js",
+      "sha256": "ca05a43a62c2c5c93602bc2a06b2902fd53ca1b8a38aa90138e336ab4d45e5c0"
+    },
+    {
+      "url": "/assets/css/highlight.css",
+      "local": "modules/stellar/web/assets/css/highlight.css",
+      "sha256": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8"
+    },
+    {
+      "url": "/assets/css/main-appearance-card.css",
+      "local": "modules/stellar/web/assets/css/main-appearance-card.css",
+      "sha256": "3c0edfe14289ad11933cb65a2534d30eb3f1001bcee83a3f1744b447376ca8bf"
+    },
+    {
+      "url": "/assets/css/pagination.css",
+      "local": "modules/stellar/web/assets/css/pagination.css",
+      "sha256": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5"
+    },
+    {
+      "url": "/assets/css/main-card.css",
+      "local": "modules/stellar/web/assets/css/main-card.css",
+      "sha256": "aa6b222ec57d7981a75e4d40ae7e97246f4897d6d3128d89d8bf1c94e19eed5d"
+    },
+    {
+      "url": "/console/assets/RichTextEditor-BHvzqLau.css",
+      "local": "modules/console/web/dist/assets/RichTextEditor-BHvzqLau.css",
+      "sha256": "d37f758e907acac56c8bdb4d9122b3b48ba4583fb5566279d6b2dfb3c169b144"
+    },
+    {
+      "url": "/console/assets/PluginParamForm--_s4mNa9.js",
+      "local": "modules/console/web/dist/assets/PluginParamForm--_s4mNa9.js",
+      "sha256": "0aef4f88428502a5730b487bf8acdcd195a8e76b18d3df727e7e730d8c1268f8"
+    },
+    {
+      "url": "/console/assets/SchemaForm-CFLNRDRe.js",
+      "local": "modules/console/web/dist/assets/SchemaForm-CFLNRDRe.js",
+      "sha256": "2a16eb4c155b23b9ab3418495be31b26f39b9e1d0413da07aa54754ca2c704cc"
+    },
+    {
+      "url": "/console/assets/MarkdownEditor-C-01YHhJ.js",
+      "local": "modules/console/web/dist/assets/MarkdownEditor-C-01YHhJ.js",
+      "sha256": "07fd5f11db7aa9c94b0b0db9bdf83bad1f96ad3ca23ed54fd1fa47fe7068238e"
+    },
+    {
+      "url": "/console/assets/PageEditor-BBb9e0ah.js",
+      "local": "modules/console/web/dist/assets/PageEditor-BBb9e0ah.js",
+      "sha256": "a88ab83f4dc6fe0c0970fef55e02ef01505ba75420cbb6fff5582ceda4368303"
+    },
+    {
+      "url": "/console/assets/ShortcodeInsertPanel-B-TFNBcG.css",
+      "local": "modules/console/web/dist/assets/ShortcodeInsertPanel-B-TFNBcG.css",
+      "sha256": "f2961b84c490e2778fa21009d2e8284b6b4fb3d91d19530ae17b03d952d147d8"
+    },
+    {
+      "url": "/console/assets/usePluginPreview-B7K3bzoR.js",
+      "local": "modules/console/web/dist/assets/usePluginPreview-B7K3bzoR.js",
+      "sha256": "9e9b4094c974c6db13aa7c257daf80f5821152fcb0621e1c843d3c211bbf37e6"
+    },
+    {
+      "url": "/console/assets/useShortcodeDraft-BEes2uw7.js",
+      "local": "modules/console/web/dist/assets/useShortcodeDraft-BEes2uw7.js",
+      "sha256": "b5e56c760951e22848febf3b2dfdd5521de5bc8ce2171dd16f34dc8896fd5b39"
+    },
+    {
+      "url": "/console/assets/ShortcodeInsertPanel-HlIPY3l3.js",
+      "local": "modules/console/web/dist/assets/ShortcodeInsertPanel-HlIPY3l3.js",
+      "sha256": "a3fbbc97aba1744df085921ef34350e02b155a5eb9ea6e1d068366bd2cc84b80"
+    },
+    {
+      "url": "/console/assets/PageEditor-BgUqyPku.css",
+      "local": "modules/console/web/dist/assets/PageEditor-BgUqyPku.css",
+      "sha256": "7d57eee3f5a9f918f6ba9eba66963ba0f951a3d07e49d6a089709e813ec97b40"
+    },
+    {
+      "url": "/console/assets/stellar-form-fields-_EgFlOlx.js",
+      "local": "modules/console/web/dist/assets/stellar-form-fields-_EgFlOlx.js",
+      "sha256": "743fd9141581dde20bd295c01d0481ce9c6f79079d97c80e83422fb6a30cbd46"
+    },
+    {
+      "url": "/console/assets/StellarContentConfig-D5BGV9M6.js",
+      "local": "modules/console/web/dist/assets/StellarContentConfig-D5BGV9M6.js",
+      "sha256": "6e62152e54871f3a4bc88b3c01deae84cf6ee514ba32bd2cd168c1dd233124f8"
+    },
+    {
+      "url": "/console/assets/RichTextEditor-BTfpX7yy.js",
+      "local": "modules/console/web/dist/assets/RichTextEditor-BTfpX7yy.js",
+      "sha256": "1435a6a6fa1a5303d4372bfa7cde6e5879e1f7084960de383d918aaa9f57c4e4"
+    },
+    {
+      "url": "/assets/js/runtime/index.js",
+      "local": "modules/stellar/web/assets/js/runtime/index.js",
+      "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f"
+    },
+    {
+      "url": "/assets/js/utils.js",
+      "local": "modules/stellar/web/assets/js/utils.js",
+      "sha256": "d990afb2fa48ad5fee69d01615cded392ec676004c9cc694cc335da9f63ae142"
+    },
+    {
+      "url": "/assets/js/blog-preview.js",
+      "local": "modules/stellar/web/assets/js/blog-preview.js",
+      "sha256": "371f4a2dc5d7d8fca69905b372c4e4221857d8e6d51f18cc0cb185e93d0119f4"
+    },
+    {
+      "url": "/assets/js/profile.js",
+      "local": "modules/stellar/web/assets/js/profile.js",
+      "sha256": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d"
+    },
+    {
+      "url": "/assets/js/navigation-init.js",
+      "local": "modules/stellar/web/assets/js/navigation-init.js",
+      "sha256": "d1e00ede1461e4f0cfbdc7edb946db7a3056d180384a65d356df467454f251bd"
+    },
+    {
+      "url": "/assets/js/main.js",
+      "local": "modules/stellar/web/assets/js/main.js",
+      "sha256": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87"
+    },
+    {
+      "url": "/assets/js/runtime/asset-loader.js",
+      "local": "modules/stellar/web/assets/js/runtime/asset-loader.js",
+      "sha256": "d8f9625d7f4c67e625ed3af536ce474eeee9c185df81538f5b4a533de3985763"
+    },
+    {
+      "url": "/assets/js/runtime/legacy-request-adapter.js",
+      "local": "modules/stellar/web/assets/js/runtime/legacy-request-adapter.js",
+      "sha256": "3d3122e0dfbae142fb1d63943dc60e8f8dbfa8c938003d14769de06657d1fa42"
+    },
+    {
+      "url": "/assets/js/runtime/request-cache.js",
+      "local": "modules/stellar/web/assets/js/runtime/request-cache.js",
+      "sha256": "029f9237efbc6ec8daf8556ca4507ae9e5241abd96f06e8f2b62f60fad71f177"
+    },
+    {
+      "url": "/assets/js/runtime/extension-registry.js",
+      "local": "modules/stellar/web/assets/js/runtime/extension-registry.js",
+      "sha256": "81e17082d343b1a76e6e1b242da892ac9402c35568981e7eb08cd35311b64ebd"
+    },
+    {
+      "url": "/assets/js/runtime/extensions/blog-lazy-loading.js",
+      "local": "modules/stellar/web/assets/js/runtime/extensions/blog-lazy-loading.js",
+      "sha256": "3bfc30725f134d7a68a7b4cef7b51d82c30f35d6e3808c44f8f050e09a6971c5"
+    },
+    {
+      "url": "/assets/js/runtime/extensions/blog-page-controls.js",
+      "local": "modules/stellar/web/assets/js/runtime/extensions/blog-page-controls.js",
+      "sha256": "882d1972f4de03d3f786883dfd95541bb71f2358a923b2dc43e3ffbda3255a58"
+    },
+    {
+      "url": "/assets/js/runtime/extensions/link-prefetch.js",
+      "local": "modules/stellar/web/assets/js/runtime/extensions/link-prefetch.js",
+      "sha256": "3b17b57fdddc5e0a644c2ee3d9485c4f2c1d8be9ec7fc208e238eca36e03e0ab"
+    },
+    {
+      "url": "/assets/js/runtime/extensions/reveal.js",
+      "local": "modules/stellar/web/assets/js/runtime/extensions/reveal.js",
+      "sha256": "5ead7bc261be600c774a371b7769931ed7b24d7b3e246e1d5bccf78e7ed4ce0a"
+    },
+    {
+      "url": "/assets/js/runtime/extensions/lazy-loading.js",
+      "local": "modules/stellar/web/assets/js/runtime/extensions/lazy-loading.js",
+      "sha256": "915deb0fb8a5981986bc51acaf358993586437b5529c5f28e74c04194e245489"
+    },
+    {
+      "url": "/assets/js/runtime/extensions/page-controls.js",
+      "local": "modules/stellar/web/assets/js/runtime/extensions/page-controls.js",
+      "sha256": "f4072ae8ca059e89157ccb5109eeb3cccf32d0e2647620882707b85826e28bb1"
+    },
+    {
+      "url": "/console/assets/PageList-vXmvvxdo.css",
+      "local": "modules/console/web/dist/assets/PageList-vXmvvxdo.css",
+      "sha256": "0dc12af093fb4d85c910c0a6aedeac480bf2a1a1b4d027a0ad45e1bf4262138b"
+    },
+    {
+      "url": "/console/assets/PageList-u0CVqNxn.js",
+      "local": "modules/console/web/dist/assets/PageList-u0CVqNxn.js",
+      "sha256": "7256a350b17fe948f27d4e3f8278bc7aea178f3b7f3f250a0a84db14d596b04f"
+    },
+    {
+      "url": "/console/assets/ShortcodeStudioView-D2AQFvbb.css",
+      "local": "modules/console/web/dist/assets/ShortcodeStudioView-D2AQFvbb.css",
+      "sha256": "c0e3bcc41834213d30750b5420ccafd93c2f0726ddacf887bb294cd8969927f2"
+    },
+    {
+      "url": "/console/assets/ShortcodeStudioView-B4W4qdtS.js",
+      "local": "modules/console/web/dist/assets/ShortcodeStudioView-B4W4qdtS.js",
+      "sha256": "70dcbdef6c889821fed7deee0a34a957d99558593f400b5355f5c30e9e5e757a"
+    },
+    {
+      "url": "/uc/assets/index-BI0IccAj.css",
+      "local": "modules/console/web/dist-uc/assets/index-BI0IccAj.css",
+      "sha256": "7208b321370871a59760ca266a77e7b2175858ac241578dccbbd7bbb9779b819"
+    },
+    {
+      "url": "/uc/assets/auth-CF35a6WB.css",
+      "local": "modules/console/web/dist-uc/assets/auth-CF35a6WB.css",
+      "sha256": "02374f7c91cd0917fff2d22c68405dc1d16eb45831ee15771df9faeac0c91e83"
+    },
+    {
+      "url": "/uc/assets/index-CH45MgIG.js",
+      "local": "modules/console/web/dist-uc/assets/index-CH45MgIG.js",
+      "sha256": "81ef7a8cb38a5fbdcdf739c156a4623c5d18305c042b952859162cbf1e62b22a"
+    },
+    {
+      "url": "/uc/assets/auth-BDhVOMOU.js",
+      "local": "modules/console/web/dist-uc/assets/auth-BDhVOMOU.js",
+      "sha256": "7ae174304892f7c9c835073bf571d0eea77881a97064a0f31b836657ebafe250"
+    }
+  ],
+  "visual_review": {
+    "headful_preview": "iframe load complete; shell, published cards and sidebar visible",
+    "reviewed": [
+      "posts-1280.png",
+      "settings-color-390.png",
+      "page-tag-preview-1280.png",
+      "settings-preview-headed-1280.png"
+    ],
+    "early_capture_limitation": "Initial screenshots before iframe load were blank; retained separately as diagnostics."
+  }
+}

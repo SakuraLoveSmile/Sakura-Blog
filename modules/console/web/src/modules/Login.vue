@@ -102,16 +102,17 @@ function backToStep1() {
               <path d="M8 11h8" />
             </svg>
           </div>
-          <h1 class="login-title">欢迎使用</h1>
-          <p class="login-subtitle">登录以管理你的博客</p>
+          <h1 class="login-title">登录 Console</h1>
+          <p class="login-subtitle">管理内容与站点设置</p>
         </div>
 
         <!-- 登录表单 -->
         <form class="login-form" @submit.prevent="handleLogin">
           <div class="form-group">
-            <label class="form-label">账号</label>
+            <label class="form-label" for="console-username">账号</label>
             <input
               v-model="username"
+              id="console-username"
               type="text"
               class="apple-input"
               placeholder="请输入用户名"
@@ -121,10 +122,11 @@ function backToStep1() {
           </div>
 
           <div class="form-group">
-            <label class="form-label">密码</label>
+            <label class="form-label" for="console-password">密码</label>
             <div class="password-wrapper">
               <input
                 v-model="password"
+                id="console-password"
                 :type="showPassword ? 'text' : 'password'"
                 class="apple-input"
                 placeholder="请输入密码"
@@ -248,28 +250,26 @@ function backToStep1() {
   max-width: 360px;
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  box-shadow:
-    0 1px 2px 0 color-mix(in srgb, #000 36%, transparent),
-    0 1px 3px -1px color-mix(in srgb, #000 36%, transparent);
-  padding: 40px;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  padding: 32px;
   overflow: visible;
 }
 
 .login-header {
-  text-align: center;
-  margin-bottom: 32px;
+  text-align: left;
+  margin-bottom: 28px;
 }
 
 .logo-icon {
-  width: 56px;
-  height: 56px;
+  width: 36px;
+  height: 36px;
   border-radius: 12px;
-  background: var(--color-primary);
+  background: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
+  margin: 0 0 20px;
 }
 
 .logo-icon.totp-icon {
@@ -277,7 +277,7 @@ function backToStep1() {
 }
 
 .login-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--color-foreground);
   letter-spacing: -0.01em;
@@ -352,11 +352,11 @@ function backToStep1() {
 
 .password-toggle {
   position: absolute;
-  right: 12px;
+  right: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
+  width: 44px;
+  height: 44px;
   color: var(--color-text-secondary);
   background: none;
   border: none;
@@ -388,7 +388,7 @@ function backToStep1() {
   color: var(--color-primary-foreground);
   font-size: 15px;
   font-weight: 600;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
   transition: background-color var(--duration-normal) var(--ease-standard);

@@ -56,6 +56,7 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 - `gin.H` 只存在于历史或不可生成的局部响应中；它不能作为新 API 的模式。新增 endpoint 时先确定稳定的请求/响应 struct 与错误语义。
 - 前端 workspace 依赖由根 `pnpm-lock.yaml` 统一锁定。不要在单个 package 目录单独安装依赖或绕过 `pnpm --filter`。
 - 系统设置的主题分类通过 `useStellarSettings` 共用原文草稿与完整文档 API；`StructuredSetting` 直接消费 `internal/stellarv2/schema.json` 的类型、默认值和枚举，只写用户修改的节点。站点与 Feedback 仍用宿主分段接口；旧 `tab=stellar2` 定位高级原文。
+- 设置效果说明由 `settings-category-guide.ts`、`structured-setting-guidance.ts` 和 `settings-field-effects.ts` 提供展示文案，类型/默认值/保存契约仍以原有 schema 与 API 为准。`useSettingsPreview` 使用当前草稿请求只读整页预览，支持选择页面与实际视口宽度；静态 iframe 移除脚本并展开懒加载图片，不代替真实交互或外部服务验证。
 - Console 的局部 UI 变更除了类型/行为测试外，还需要加载真实服务后的浏览器验收；SPA 构建成功不证明后端仍在服务当前入口。
 
 ## 数据、配置与内容生命周期
@@ -93,12 +94,15 @@ Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `
 - Go `html/template` 的结构必须与当前上游 Stellar EJS 和已存在的项目模板对齐。新增/改动前先对照 class、属性和嵌套，不凭记忆复刻过时的 layout 片段。
 - `template.HTML` 已是可信渲染结果时直接输出；不要再次传给只接收 `string` 的 `safe` helper。任何作者可控原始 HTML 都应先走现有渲染/净化链。
 - 前台采用 Stellar 2.0 `site-shell/site-region/brand/listing-nav` 骨架，运行时外观注入必须输出对应的新选择器；旧 settings 字段保留。原生 ESM runtime 通过 `stellar-runtime-config` 加载本地 shell/search 扩展，入口 `asset_ver` 聚合本地 assets 全部 JS/CSS（包括动态 search/services/plugins 和 vendor）及实际 IconRegistry 公开派生资源（包括继承 runtime query 的 `js/icons/*.json`）；生成素材按 path/body 稳定排序并快照，HTTP 与离线 CLI 使用同一注册表，文档和独立静态图片不参与；磁盘与 embed 使用同一规则。完整移植要求保留 SSR 的同时接通上游 partial navigation；本地扩展须先具备区域挂载、取消与卸载，不能只注册模块而跳过自建服务初始化。前台脚本依赖的 `ctx`、模板函数和 `asset_ver` 是服务端到浏览器的契约。新增依赖时在模板注入与消费端一起修改；静态资源引用使用 `asset_ver`，不手写 cache-busting 版本戳。
+- 标签数据服务由 `blog-upstream-services.js` 划分区域所有权，`services.js` 提供共享请求生命周期和局部 DOMPurify 净化。服务脚本必须用该上下文处理远端普通文本、URL 与动态 HTML；完整解码/渲染后才记成功，失败或取消必须允许重挂重试。DOMPurify 的版本、许可证和文件校验在 `assets/vendor/dompurify/UPSTREAM.json`；不要绕开局部边界使用全局 `innerHTML`。
 - 部署使用 `internal/settings/data/icons.yml` 的嵌入图标注册表；开发默认也读取这份受跟踪副本。图标为内联 SVG，未知 key 会安全地渲染占位。新配置使用当前语义化键；保留 `legacyIconAlias`，直到迁移数据确认不再需要旧 `solar:`/`ph:`/`bxs:` 键。
 - 用户已批准完整移植中的浅色、深色与自动配色以及四种外观预设。当前是否接通以代码与浏览器证据为准，不能再用旧的仅深色约定缩减本任务。
 
 ## 编辑器与 shortcode
 
 shortcode 的解析、表单 schema 和重建路径必须共享一份 catalog：以后端 `internal/post/shortcode_catalog.go` 和各 renderer 实际接受的 named/positional 参数为准，而不是复制第二份前端字段表。
+
+文章与页面共用 `ShortcodeInsertPanel`；Studio 与面板通过 `useShortcodeDraft` 将源码交后端解析并同步参数。预览消费服务端完整文档和 token/resize 协议。富文本的 `stellar-tag-syntax.ts` 按完整外层区间保留 raw；未知或残缺结构也保存为源码节点，避免 Markdown 解析丢弃 marker 注释。后端严格语法校验继续决定能否保存，源码回退不代表无效内容可发布。
 
 - 编辑既有内容时，不为缺失字段补默认值；否则只改一个字段也会污染原始 Markdown。
 - 无法可靠解析的未知参数、多余位置参数或未闭合块级标签必须回退到原始源码编辑，而非猜测性重建。

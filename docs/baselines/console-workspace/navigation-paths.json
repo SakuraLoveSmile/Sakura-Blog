@@ -1,0 +1,35 @@
+{
+  "source": "authenticated administrator sidebar on isolated 8132",
+  "paths": [
+    "/console/dashboard",
+    "/console/posts",
+    "/console/topics",
+    "/console/notebooks",
+    "/console/pages",
+    "/console/wiki",
+    "/console/authors",
+    "/console/moments",
+    "/console/comments",
+    "/console/comment-users",
+    "/console/notifications",
+    "/console/friends",
+    "/console/subscriptions",
+    "/console/attachments",
+    "/console/appearance",
+    "/console/menus",
+    "/console/taxonomy",
+    "/console/users",
+    "/console/login-logs",
+    "/console/plugins",
+    "/console/modules",
+    "/console/settings",
+    "/console/backup",
+    "/console/system-update",
+    "/console/seo",
+    "/console/assistant"
+  ],
+  "testedWidths": [
+    1280,
+    390
+  ]
+}

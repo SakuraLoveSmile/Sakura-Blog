@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -122,8 +123,36 @@ func (r *shortcodeV2Renderer) quot(a map[string]string) string {
 	return `<div class="tag-plugin quot ` + el + `"><` + el + ` class="content"` + id + `>` + icon(prefix, "prefix") + `<span class="text">` + html.EscapeString(a["text"]) + `</span>` + icon(suffix, "suffix") + `</` + el + `></div>`
 }
 
+// 只消费当前块的标记；子标签参数、嵌套块及代码中的注释仍属于其原文。
+func (r *shortcodeV2Renderer) markerLocations(re *regexp.Regexp, body string) [][]int {
+	protected := v2CodeRanges(body)
+	directives := v2Directive.FindAllStringSubmatchIndex(body, -1)
+	closings := r.matchBlocks(body, directives, protected)
+	for i := 0; i < len(directives); i++ {
+		if closing, ok := closings[i]; ok {
+			protected = append(protected, [2]int{directives[i][0], directives[closing][1]})
+			i = closing
+		} else {
+			protected = append(protected, [2]int{directives[i][0], directives[i][1]})
+		}
+	}
+	sort.Slice(protected, func(i, j int) bool { return protected[i][0] < protected[j][0] })
+	var visible [][]int
+	region := 0
+	for _, loc := range re.FindAllStringSubmatchIndex(body, -1) {
+		for region < len(protected) && protected[region][1] <= loc[0] {
+			region++
+		}
+		if region < len(protected) && protected[region][0] <= loc[0] {
+			continue
+		}
+		visible = append(visible, loc)
+	}
+	return visible
+}
+
 // JS String.split(regex) 保留捕获组且过滤空白：包括标记之前的内容，不能默默丢弃。
-func v2SplitCaptured(re *regexp.Regexp, body string) []string {
+func (r *shortcodeV2Renderer) splitCaptured(re *regexp.Regexp, body string) []string {
 	var out []string
 	last := 0
 	appendNonempty := func(s string) {
@@ -131,7 +160,7 @@ func v2SplitCaptured(re *regexp.Regexp, body string) []string {
 			out = append(out, s)
 		}
 	}
-	for _, loc := range re.FindAllStringSubmatchIndex(body, -1) {
+	for _, loc := range r.markerLocations(re, body) {
 		appendNonempty(body[last:loc[0]])
 		for i := 2; i < len(loc); i += 2 {
 			if loc[i] >= 0 {
@@ -143,8 +172,8 @@ func v2SplitCaptured(re *regexp.Regexp, body string) []string {
 	appendNonempty(body[last:])
 	return out
 }
-func v2Pairs(re *regexp.Regexp, body string) []markerPair {
-	arr := v2SplitCaptured(re, body)
+func (r *shortcodeV2Renderer) pairs(re *regexp.Regexp, body string) []markerPair {
+	arr := r.splitCaptured(re, body)
 	var pairs []markerPair
 	for i, s := range arr {
 		if i%2 == 0 {
@@ -156,7 +185,7 @@ func v2Pairs(re *regexp.Regexp, body string) []markerPair {
 	return pairs
 }
 func (r *shortcodeV2Renderer) tabs(a map[string]string, body string) string {
-	pairs := v2Pairs(reTabSplit, body)
+	pairs := r.pairs(reTabSplit, body)
 	if len(pairs) == 0 {
 		return ""
 	}
@@ -181,7 +210,7 @@ func (r *shortcodeV2Renderer) tabs(a map[string]string, body string) string {
 func (r *shortcodeV2Renderer) folders(a map[string]string, body string) string {
 	var b strings.Builder
 	b.WriteString(`<div class="tag-plugin colorful folders"` + v2Attrs(a, "color") + `>`)
-	for i, p := range v2Pairs(reFolderSplit, body) {
+	for i, p := range r.pairs(reFolderSplit, body) {
 		fmt.Fprintf(&b, `<details class="folder" index="%d"><summary>%s</summary><div class="body">%s</div></details>`, i, r.markdown(p.header), v2Compact(r.markdown(p.body)))
 	}
 	b.WriteString(`</div>`)
@@ -208,7 +237,7 @@ func (r *shortcodeV2Renderer) grid(a map[string]string, body string) string {
 	}
 	var b strings.Builder
 	b.WriteString(`<div class="tag-plugin grid"` + v2Attrs(a, "bg", "columns") + ` style="` + html.EscapeString(style) + `">`)
-	for _, cell := range v2SplitCaptured(reCellSplit, body) {
+	for _, cell := range r.splitCaptured(reCellSplit, body) {
 		br := ""
 		if a["br"] != "" {
 			br = "border-radius:" + a["br"] + ";"
@@ -333,7 +362,7 @@ func (r *shortcodeV2Renderer) read(name string, a map[string]string, body string
 	}
 	b.WriteString(`<div class="tag-plugin paper"><div` + v2Attr("class", class) + `><div class="title">` + title + `</div><div class="body">`)
 	// 按官方捕获数组运行小状态机，保留 marker 之前/之间的相同过滤规则。
-	parts := v2SplitCaptured(regexp.MustCompile(`<!--\s*(paragraph|section|line) (.*?)\s*-->`), body)
+	parts := r.splitCaptured(regexp.MustCompile(`<!--\s*(paragraph|section|line) (.*?)\s*-->`), body)
 	kind, innerTitle := "", ""
 	for _, part := range parts {
 		if part == "paragraph" || part == "section" || part == "line" {

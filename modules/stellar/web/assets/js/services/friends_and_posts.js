@@ -1,5 +1,8 @@
 document.currentScript.stellarMount = function (root, context) {
   const utils = context.serviceUtils;
+  const text = utils.escapeHTML;
+  const url = utils.safeURL;
+  const color = utils.safeColor;
 
   const els = root.getElementsByClassName('ds-friends_and_posts');
     for (var i = 0; i < els.length; i++) {
@@ -14,6 +17,7 @@ document.currentScript.stellarMount = function (root, context) {
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
+        const cells = [];
         const requestedLimit = Number.parseInt(el.dataset.limit || '', 10);
         const items = data.content || data;
         const visibleItems = Number.isInteger(requestedLimit) && requestedLimit > 0
@@ -22,35 +26,35 @@ document.currentScript.stellarMount = function (root, context) {
         for (let item of visibleItems) {
           var cell = `<div class="grid-cell user-post-card">`;
           cell += `<div class="avatar-box">`;
-          cell += `<a class="card-link" target="_blank" rel="external nofollow noopener noreferrer" href="${item.html_url || item.url}">`;;
-          cell += `<img src="${item.avatar_url || item.avatar || item.appicon || item.icon || default_avatar}" onerror="javascript:this.removeAttribute(\'data-src\');this.src=\'${default_avatar}\';"/>`;
-          cell += `<span class="title">${item.title || item.login}</span>`;
+          cell += `<a class="card-link" target="_blank" rel="external nofollow noopener noreferrer" href="${url(item.html_url || item.url, 'href')}">`;;
+          cell += `<img src="${url(item.avatar_url || item.avatar || item.appicon || item.icon || default_avatar, 'src')}" data-fallback-src="${url(default_avatar)}"/>`;
+          cell += `<span class="title">${text(item.title || item.login)}</span>`;
           cell += `</a>`;
           cell += `<div class="labels">`;
-          for (let label of item.labels) {
+          for (let label of (item.labels || [])) {
             if (label.lightness > 75) {
-              cell += `<div class="label" style="background:#${label.color};color:hsla(${label.hue}, ${label.saturation}%, 20%, 1);">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${color(label.color)};color:hsla(${Number(label.hue) || 0}, ${Number(label.saturation) || 0}%, 20%, 1);">${text(label.name)}</div>`;
             } else if (label.saturation > 90 && label.lightness > 40) {
-              cell += `<div class="label" style="background:#${label.color};color:hsla(${label.hue}, 50%, 20%, 1);">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${color(label.color)};color:hsla(${Number(label.hue) || 0}, 50%, 20%, 1);">${text(label.name)}</div>`;
             } else {
-              cell += `<div class="label" style="background:#${label.color};color:white">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${color(label.color)};color:white">${text(label.name)}</div>`;
             }
           }
           cell += `</div>`;
           cell += `</div>`;
           cell += `<div class="post-panel">`;
           if (item.description) {
-            cell += `<div class="desc">${item.description || item.issue_number || ''}</div>`;
+            cell += `<div class="desc">${text(item.description || item.issue_number || '')}</div>`;
           } else {
-            cell += `<div class="desc">#${item.issue_number}</div>`;
+            cell += `<div class="desc">#${text(item.issue_number)}</div>`;
           }
           cell += `<div class="posts">`;
           if (showPosts) {
           if (item.posts?.length > 0) {
             for (let post of item.posts) {
-              cell += `<a class="post-link" target="_blank" rel="external nofollow noopener noreferrer" href="${post.link}">`;
-              cell += `<span class="title">${post.title}</span>`;
-              cell += `<span class="date">${post.published}</span>`;
+              cell += `<a class="post-link" target="_blank" rel="external nofollow noopener noreferrer" href="${url(post.link, 'href')}">`;
+              cell += `<span class="title">${text(post.title)}</span>`;
+              cell += `<span class="date">${text(post.published)}</span>`;
               cell += `</a>`;
             }
           } else {
@@ -60,8 +64,9 @@ document.currentScript.stellarMount = function (root, context) {
           cell += `</div>`;
           cell += `</div>`;
           cell += `</div>`;
-          utils.dom(el).find('.grid-box').append(cell);
+          cells.push(cell);
         }
+        if (cells.length) utils.dom(el).find('.grid-box').append(cells.join(''));
         window.wrapLazyloadImages(el);
       });
     }

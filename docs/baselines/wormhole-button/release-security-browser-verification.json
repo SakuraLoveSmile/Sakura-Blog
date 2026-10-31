@@ -1,0 +1,30 @@
+{
+  "desktop": {
+    "count": 1,
+    "footer": 0,
+    "images": [
+      {
+        "loaded": false,
+        "src": "",
+        "visible": false
+      },
+      {
+        "loaded": true,
+        "src": "https://www.foreverblog.cn/assets/logo/wormhole_v2_light.webp",
+        "visible": true
+      }
+    ],
+    "overflow": false,
+    "sidebar": true,
+    "visible": true
+  },
+  "mobile": {
+    "count": 1,
+    "footer": 0,
+    "height": 844,
+    "overflow": false,
+    "sidebar": true,
+    "visible": true,
+    "width": 390
+  }
+}

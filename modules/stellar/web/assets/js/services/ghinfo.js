@@ -46,7 +46,7 @@ document.currentScript.stellarMount = function (root, context) {
               return;
             }
             value.textContent = el.dataset.projectName + ' ' + tag.textContent;
-            el.href = url;
+            el.href = utils.resolveURL(url, 'href');
             el.classList.remove('is-loading');
             el.classList.add('loaded');
           } else {

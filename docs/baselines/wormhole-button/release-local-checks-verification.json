@@ -1,0 +1,16 @@
+{
+  "sources": {
+    "modules/stellar/web/stellar_template_helpers_document.go": "d12b7ca126964d0c0e48b07d3e6893fcb0e990a471a8378f2ea296d181d326e9",
+    "modules/stellar/web/assets/css/site-footer.css": "177e3f5f39054164eb8027051ac1f16ac1091c86ee19cb8a4994feeac70cd386"
+  },
+  "servedCSS": {
+    "url": "/assets/css/site-footer.css?v=177e3f5f",
+    "sha256": "177e3f5f39054164eb8027051ac1f16ac1091c86ee19cb8a4994feeac70cd386",
+    "matchesSource": true
+  },
+  "build": {
+    "command": "make build",
+    "exitCode": 0
+  },
+  "actualUI": "one sidebar wormhole and zero footer wormholes; footer credit preserved"
+}

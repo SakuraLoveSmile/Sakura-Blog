@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "task": "BLG-20261031-01",
+  "operation": "preflight",
+  "checked_at": "2026-10-31T05:37:08.162744+00:00",
+  "image": "sha256:ccfccc57fc90ffd1e5ab5d1a318ecdfa4c95f229248a2cf4b2a68e9aa3a7e008",
+  "readyz": 200,
+  "restart_count": 0,
+  "pending_maintenance": 0,
+  "backup_required_bytes": 862635039,
+  "free_bytes": 10854387712,
+  "business_table_count": 39,
+  "protected_file_count": 392
+}
