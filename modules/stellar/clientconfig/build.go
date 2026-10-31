@@ -377,6 +377,7 @@ func buildStyles(theme, defaults object, blog BlogConfig, math, preset string, s
 	// 服务端 Markdown 使用 Chroma token；官方 Highlight.js 样式不消费这些类名。
 	add("/assets/css/highlight.css", "", false)
 	add("/assets/css/pagination.css", "", false)
+	add("/assets/css/site-footer.css", "", false)
 	if blog.GoSearch || blog.AIAsk {
 		add("/assets/css/search.css", "", false)
 	}

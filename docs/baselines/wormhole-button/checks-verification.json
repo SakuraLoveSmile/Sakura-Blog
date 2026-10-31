@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-31",
+  "base": "84fe1baa13f89b5964ab06a1f40ccc5693066abe",
+  "candidate": "uncommitted source with hashes below",
+  "source_sha256": {
+    "modules/stellar/web/engine.go": "b10a7c3a5f825c0628ceb6faa751a0166dd0a2287f83a5ff6ad22451914ae574",
+    "modules/stellar/web/stellar_template_helpers_document.go": "425f99f04198867d8bab315e7947388b2a8e179e4560726b38edf764c97846e7",
+    "modules/stellar/web/assets/css/site-footer.css": "3bdb44289354acddf87ac4e221639475e8f66e69e54cfa5e745dee9ae311470e",
+    "modules/stellar/clientconfig/build.go": "760405e031cc24759c12af1dc28ab2b662bb3ab4ab9dd4d7eebd77a027be18e1",
+    "modules/stellar/clientconfig/build_test.go": "08d8d142628068add71db2106ade1b4cba37ebd5602e44bb56aa169eb5ae5a41"
+  },
+  "binary_sha256": "1fdcb1476f147702add125c5b2c25cf38866a1b2461ac0ef0c938a0114a4cc91",
+  "go": "go version go1.26.10 darwin/arm64",
+  "build": {
+    "make_build": 0,
+    "make_go_build_final": 0,
+    "console_assets": [
+      {
+        "url": "/console/assets/index-C1Fo-hM1.js",
+        "sha256": "b54dd198c18b95c55ed2456faff6c2dc61d5b979d5e76c5f18d9b1c1a1e12068",
+        "matches_build": true
+      },
+      {
+        "url": "/console/assets/api-C-H7IBEY.js",
+        "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80",
+        "matches_build": true
+      },
+      {
+        "url": "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+        "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c",
+        "matches_build": true
+      },
+      {
+        "url": "/console/assets/pinia-CXeiBUD1.js",
+        "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888",
+        "matches_build": true
+      },
+      {
+        "url": "/console/assets/preload-helper-l0U7FUPx.js",
+        "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+        "matches_build": true
+      },
+      {
+        "url": "/console/assets/index-CfvuPiHM.css",
+        "sha256": "b430ed50780208253a91f2991e56761bb85112405c403b3f625dd2047ed85da9",
+        "matches_build": true
+      }
+    ]
+  },
+  "served_css_sha256": "3bdb44289354acddf87ac4e221639475e8f66e69e54cfa5e745dee9ae311470e",
+  "checks": [
+    {
+      "command": "make test",
+      "exit_code": 2,
+      "state": "initial candidate failure",
+      "reason": "new footer images triggered nil IconRegistry in existing preview tests"
+    },
+    {
+      "command": "go test ./modules/stellar/web ./modules/stellar/routes ./modules/stellar/clientconfig",
+      "exit_code": 0,
+      "state": "after image fallback fix"
+    },
+    {
+      "command": "make test",
+      "exit_code": 0,
+      "state": "after image fallback fix; native image lazy-loading class added afterward and covered by browser; commit hook will check final code"
+    }
+  ],
+  "not_run": [
+    "remote CI",
+    "release",
+    "production deployment",
+    "official outbound counter verification"
+  ],
+  "css_generated": "unchanged; make css and css-drift-check not applicable"
+}
