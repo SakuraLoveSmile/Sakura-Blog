@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "scenario": "embedded-final-preview",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "23.9961px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "scenario": "embedded-final-preview",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16.0077px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    }
+  ]
+}
