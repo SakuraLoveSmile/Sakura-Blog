@@ -2,7 +2,7 @@
 
 任务编号：BLG-20261031-01。状态：实现中。
 
-- 目标：在博客现有页脚添加十年之约虫洞入口，点击在新标签打开 `https://www.foreverblog.cn/go.html`；保留站点地图、自定义页脚与署名。
+- 当前目标：仅在博客侧栏保留十年之约虫洞入口，移除页脚重复按钮，并连同用户确认的 4 个已有提交发布上线；点击在新标签打开 `https://www.foreverblog.cn/go.html`，保留站点地图、自定义页脚与署名。以下初始阶段记录保留历史决定，最新范围以文末发布节为准。
 - 已确认：用户选择虫洞按钮；采用官方 32px 深浅色按钮，放在署名下方。沿用 Stellar 页脚结构、间距与语义 token，不添加脚本、挂件或配置字段。使用 `noopener` 隔离新窗口，同时保留来源站点信息供官方统计。
 - 基线：`dev` / `84fe1baa13f89b5964ab06a1f40ccc5693066abe`；工作树 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261031-feat-blg-20261031-01-wormhole-button`；分支 `codex/feat/20261031-blg-20261031-01-wormhole-button`；本地合入目标 `dev`。根工作区已有文档与验收素材改动，均保留。
 - 唯一布局参照：`docs/baselines/wormhole-button/reference-before.png`，2026-10-31 从线上首页页脚实拍；官方按钮来源：<https://www.foreverblog.cn/about.html#ab-8>。验收截图同目录。
@@ -75,3 +75,11 @@
 
 - 本轮实际构建完成，HTTP CSS 与本次源码一致；四种 appearance × 四种浅深/自动状态 × 桌面/手机共 32 组检查通过，均为侧栏 1 个入口、页脚 0 个入口，署名保留。参见 `release-local-browser-verification.json` 与 `release-local-checks-verification.json`。
 - 服务器当前已实查仍为 v2.0.2 / 镜像 `sha256:ccfccc57...e008`，readyz 200、39 张业务表、392 个受保护文件，无未完成维护任务，约 10.85GB 可用；本轮未改变 Compose、业务数据或配置。记录为 `release-server-preflight.json`。
+
+### 发布门禁必要修复
+
+- `a2df83589856b460877e06af066d706345cc2053` 已通过提交 hook 和 `make merge-check` 的 feature/dev 两轮完整测试，并推送 dev；晋级 PR 为 <https://github.com/SakuraLoveSmile/Sakura-Blog/pull/25>。
+- PR #25 首轮 Go CI 在原有 govulncheck 门禁失败，本地使用同一 `govulncheck@v1.1.4 ./...` 复现。`golang.org/x/net v0.60.0` 的 GO-2026-6866 与 GO-2026-6860 分别经图片 HTML 渲染、导航和评论 HTML 解析可达，均由上游 v0.62.0 修复。
+- 仅执行 `go get golang.org/x/net@v0.62.0`：x/crypto 升至 v0.58.0、x/sys v0.49.0、x/text v0.43.0，为新版本的最低依赖；依赖图的 x/tools v0.51.0、x/sync v0.24.0 校验随之记录。现有 Go 1.26.10 满足模块最低 Go 1.26.0，无配置、API 或数据结构变动。
+- 相同漏洞扫描重跑退出 0：当前代码可达漏洞为 0；工具仍报告导入包/模块中存在当前代码未调用的漏洞，未修改或降低门禁。升级后的 `make build` 退出 0，独立只读 review 未发现差异或兼容问题；后续提交、集成及 PR CI 将绑定最终提交重新验证。
+- `go mod verify` 为 `all modules verified`。从升级后真实 embed 二进制重启本任务隔离预览，34 项 HTTP/资源检查通过，Console/CSS 指纹对应当前产物；真实浏览器复查桌面和 390×844 手机抽屉，侧栏 1、页脚 0，图片可见、无横向溢出。设备模拟已还原，证据为 `release-security-checks-verification.json` 与 `release-security-browser-verification.json`。

@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "govulncheck": "exit 0; no reachable vulnerabilities",
+  "go_mod_verify": "all modules verified",
+  "make_build": "exit 0",
+  "current_binary_sha256": "e8a1784805ca694c03f67874faca7b31bdd07a544096d567a8e7c8d56dd7c49d",
+  "files": {
+    "go.mod": "380f0bbc136fc23cdac5b65cf142e2b9b963191689b80f05e5d8a8e11b791079",
+    "go.sum": "a93bf8ec5a51a60c83e7953bdc2d557d3baf7b6c4f9cc7a74ef68cea7072c2c3",
+    "modules/stellar/web/assets/css/site-footer.css": "177e3f5f39054164eb8027051ac1f16ac1091c86ee19cb8a4994feeac70cd386"
+  },
+  "http_checks": {
+    "pages": [
+      "/",
+      "/settings",
+      "/wiki",
+      "/notebooks",
+      "/console/",
+      "/uc/"
+    ],
+    "http_count": 34,
+    "asset_sha256": {
+      "/assets/css/highlight.css?v=f38ba7df": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8",
+      "/assets/css/main-appearance-flat.css?v=e23beb98": "e23beb98f904d0beb37684ff4959b92f69ed6b641e7cf5856e57ef14a121ef3f",
+      "/assets/css/main-appearance-minimal.css": "dfa57057265f79020279b0fc5cbed69672a20bfc9cbfde4357d5734be42773cc",
+      "/assets/css/main-flat.css?v=5cc07d11": "5cc07d111c1b162a08078fb3c6db99a651e4e8ff5a6d4d48f604016148520325",
+      "/assets/css/main-minimal.css": "db804e0a7723954b550b58e3de9924f7c6bb54baf11f2e1f0647dc5d3a218cd0",
+      "/assets/css/pagination.css?v=fe27f525": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5",
+      "/assets/css/site-footer.css?v=177e3f5f": "177e3f5f39054164eb8027051ac1f16ac1091c86ee19cb8a4994feeac70cd386",
+      "/assets/js/blog/search/local-search.js": "8ba285447df77d60ecb947adb2a6fc3bd3c084f1743400f8dbeea4fddd2c36e5",
+      "/assets/js/main.js?v=39fa2eb1": "39fa2eb1c4b6349c94c52c9783b66516e7c75f886c8692b1f9a6cd4ceb0c5c87",
+      "/assets/js/navigation-init.js?v=d1e00ede": "d1e00ede1461e4f0cfbdc7edb946db7a3056d180384a65d356df467454f251bd",
+      "/assets/js/profile.js": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d",
+      "/assets/js/profile.js?v=797baded": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d",
+      "/assets/js/runtime/index.js?v=688c259b": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f",
+      "/assets/js/utils.js?v=d990afb2": "d990afb2fa48ad5fee69d01615cded392ec676004c9cc694cc335da9f63ae142",
+      "/console/assets/api-C-H7IBEY.js": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80",
+      "/console/assets/index-C1Fo-hM1.js": "b54dd198c18b95c55ed2456faff6c2dc61d5b979d5e76c5f18d9b1c1a1e12068",
+      "/console/assets/index-CfvuPiHM.css": "b430ed50780208253a91f2991e56761bb85112405c403b3f625dd2047ed85da9",
+      "/console/assets/pinia-CXeiBUD1.js": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888",
+      "/console/assets/preload-helper-l0U7FUPx.js": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+      "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c",
+      "/console/favicon.svg": "e1edf0018a5bea5ab718a1ad5e7bf893576c52b50163057c464f11d53ecdcdb2",
+      "/uc/assets/auth-BDhVOMOU.js": "7ae174304892f7c9c835073bf571d0eea77881a97064a0f31b836657ebafe250",
+      "/uc/assets/auth-CF35a6WB.css": "02374f7c91cd0917fff2d22c68405dc1d16eb45831ee15771df9faeac0c91e83",
+      "/uc/assets/index-BI0IccAj.css": "7208b321370871a59760ca266a77e7b2175858ac241578dccbbd7bbb9779b819",
+      "/uc/assets/index-CH45MgIG.js": "81ef7a8cb38a5fbdcdf739c156a4623c5d18305c042b952859162cbf1e62b22a"
+    },
+    "settings_svg": true,
+    "icon_css_variables": 5,
+    "real_spa_entries": true,
+    "settings_authentication": true,
+    "wormhole_sidebar_count": 1,
+    "wormhole_footer_count": 0,
+    "host_version": null,
+    "version_source": null
+  }
+}
