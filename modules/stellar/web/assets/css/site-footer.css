@@ -1,7 +1,4 @@
-/* 两处官方虫洞按钮共用样式，自动配色与 Stellar 一样读取系统偏好。 */
-.page-footer .community-links {
-  margin-top: 0.5rem;
-}
+/* 官方虫洞按钮跟随 Stellar 配色，自动模式读取系统偏好。 */
 .site-region--leftbar .site-region__wormhole {
   display: flex;
   justify-content: center;

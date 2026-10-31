@@ -1,6 +1,6 @@
 # 虫洞入口
 
-任务编号：BLG-20261031-01。状态：待体验。
+任务编号：BLG-20261031-01。状态：实现中。
 
 - 目标：在博客现有页脚添加十年之约虫洞入口，点击在新标签打开 `https://www.foreverblog.cn/go.html`；保留站点地图、自定义页脚与署名。
 - 已确认：用户选择虫洞按钮；采用官方 32px 深浅色按钮，放在署名下方。沿用 Stellar 页脚结构、间距与语义 token，不添加脚本、挂件或配置字段。使用 `noopener` 隔离新窗口，同时保留来源站点信息供官方统计。
@@ -50,4 +50,28 @@
 - 这是隔离合成夹具的样式与交互验收；配色通过开发工具模拟，未冒充生产页面或完整设置 UI 旅程。独立 review 未发现实质缺陷。
 - 截图：`sidebar-card-dark-desktop.jpg`、`sidebar-card-light-desktop.jpg`、`sidebar-card-dark-mobile.jpg`；其余 appearance 与收起状态同目录。
 
-下一步：本地提交与组合态集成核验，保留可体验预览。推送、远端 CI 和生产部署未执行。
+本轮本地集成已完成，证据见下节；推送、远端 CI 和生产部署未执行。
+
+### 侧栏本地集成
+
+- 提交 `bc7e2da11c68346dbd48375efa7844a5126f5b90` 已通过最终提交 hook，并由 `make merge-check` 合入本地 `dev`；feature 和组合态完整门禁均退出 0。
+- 合并后 `make build` 退出 0，以根工作区最终 embed 二进制重启合成夹具预览；HTTP CSS、6 个 Console 资源与矩阵验证/当前源码一致。`/readyz` 正常，PID `12003`，运行根目录仍为 `.tmp/wormhole-button/runtime`。
+- 组合态再验桌面、手机打开/关闭抽屉，按钮位置、图片和 inert 正常；最终截图为 `sidebar-combined-desktop.jpg`、`sidebar-combined-mobile.jpg`。系统媒体和临时视口模拟已还原，card / 自动配色预览保留在 <http://127.0.0.1:19831/>。
+- 任务日志与脚本已核验归档到 `.tmp/wormhole-button/sidebar-verification/worktree-verification-archive.tar.gz`。262 份既有文件与本轮快照 hash 相同；另有一份与本次无关的 Console 截图在执行期间变化，未触碰或回写。前阶段任务记录原件已单独保留，内容并入本次记录。
+- 此节和组合态证据为合并后的补记，不为记录单独创建提交；远端 CI、推送、发布、生产部署和官方计数仍未执行。
+
+- 本轮临时 worktree 与已合并本地分支已正常删除，`git worktree list` 仅保留根 `dev`；预览使用根工作区二进制和夹具，不依赖已删除路径。
+
+下一步：用户查看本地效果，状态为待体验。
+
+## 侧栏独立入口与线上发布（2026-10-31）
+
+- 用户最新决定：删除页脚虫洞，仅保留侧栏；明确授权线上应用，并确认连同 dev 中已有的 Console 工作台、设置效果预览、标签插件等 4 个提交一起上线。允许本任务提交、推送、PR 晋级、tag 双产物发布及生产镜像升级。
+- 本轮基线：`bc7e2da11c68346dbd48375efa7844a5126f5b90`；worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261031-fix-blg-20261031-01-wormhole-release`；分支 `codex/fix/20261031-blg-20261031-01-wormhole-release`；本地合入 `dev`，经 main/release PR 发布。
+- 唯一 UI 参照：`docs/baselines/wormhole-button/sidebar-combined-desktop.jpg`；指定差异仅移除页脚按钮，保留署名、站点地图及侧栏既有位置、配色和折叠规则。验收为侧栏一个入口、页脚零入口，桌面/手机与四种外观正常。
+- 目标补丁版本：`v2.0.3`（当前公开最新 v2.0.2）；发布前复核 tag 无冲突。无新增配置、数据库迁移或内容导入。生产切换前检查维护日志、固定镜像、完整数据备份并核对，使用线上数据隔离副本预演，保留旧版本回退。
+- 主 agent 独占源码、记录、临时服务和发布/生产操作；独立 reviewer 只读检查历史部署助手的适用边界，不运行或操作服务器。
+- 验证：make build、完整提交/集成门禁、lint 与发布凭据检查；本地侧栏/页脚浏览器核验；两次 PR 的各项 CI；同一 release tag 的二进制 Release 与 GHCR 镜像；镜像 -h、服务器隔离预演、生产健康/版本/资源指纹及真实公开页面验收。
+
+- 本轮实际构建完成，HTTP CSS 与本次源码一致；四种 appearance × 四种浅深/自动状态 × 桌面/手机共 32 组检查通过，均为侧栏 1 个入口、页脚 0 个入口，署名保留。参见 `release-local-browser-verification.json` 与 `release-local-checks-verification.json`。
+- 服务器当前已实查仍为 v2.0.2 / 镜像 `sha256:ccfccc57...e008`，readyz 200、39 张业务表、392 个受保护文件，无未完成维护任务，约 10.85GB 可用；本轮未改变 Compose、业务数据或配置。记录为 `release-server-preflight.json`。

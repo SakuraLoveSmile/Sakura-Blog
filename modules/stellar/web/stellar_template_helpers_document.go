@@ -373,11 +373,11 @@ func (r stellarTemplateRenderer) footer(d *StellarRenderData) template.HTML {
 	author := stellarFirst(d.Stellar.Data["authorName"], stellarGet(d.Site, "Author"), "Anonymity")
 	content = strings.NewReplacer("{author.name}", stellarText(author), "{theme.name}", "Stellar", "{theme.version}", "2.0.0", "{theme.tree}", "https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0").Replace(content)
 	fmt.Fprintf(&b, `<div class="text">%s</div>`, stellarMarkdown(d, content))
-	b.WriteString(`<div class="community-links">` + stellarWormholeButton() + `</div></footer>`)
+	b.WriteString(`</footer>`)
 	return template.HTML(b.String())
 }
 
-// 两处入口共用官方按钮，保留来源站点供统计，并用 noopener 隔离新窗口。
+// 侧栏使用官方按钮，保留来源站点供统计，并用 noopener 隔离新窗口。
 func stellarWormholeButton() string {
 	return `<a class="foreverblog-wormhole" href="https://www.foreverblog.cn/go.html" target="_blank" rel="external nofollow noopener" referrerpolicy="strict-origin-when-cross-origin" aria-label="虫洞：随机访问十年之约成员博客（新标签页打开）" title="虫洞 · 随机访问十年之约成员博客"><img class="wormhole-logo--on-light no-lazy" src="https://www.foreverblog.cn/assets/logo/wormhole_v2_dark.webp" alt="十年之约虫洞" height="32" loading="lazy" decoding="async"><img class="wormhole-logo--on-dark no-lazy" src="https://www.foreverblog.cn/assets/logo/wormhole_v2_light.webp" alt="" aria-hidden="true" height="32" loading="lazy" decoding="async"></a>`
 }
