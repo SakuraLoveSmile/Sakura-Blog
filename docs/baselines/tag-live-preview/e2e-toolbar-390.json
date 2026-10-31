@@ -1,0 +1,15 @@
+{
+  "hoverMetrics": {
+    "scrollWidth": 390,
+    "innerWidth": 390,
+    "bubbleWidth": 320,
+    "bubbleRight": 359
+  },
+  "focusMetrics": {
+    "scrollWidth": 390,
+    "innerWidth": 390,
+    "bubbleRight": 359
+  },
+  "hoverCards": 4,
+  "tabsPanes": 2
+}

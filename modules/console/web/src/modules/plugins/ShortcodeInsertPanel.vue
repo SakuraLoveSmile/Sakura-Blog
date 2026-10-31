@@ -7,6 +7,7 @@ import { PLUGIN_CATEGORIES, previewInfoFor, type PluginCategory, type PluginMeta
 import { catalogError, catalogStatus, loadPluginCatalog, retryLoadCatalog, runtimePlugins } from "./usePluginCatalog";
 import { useShortcodeDraft } from "./useShortcodeDraft";
 import { usePluginPreview } from "./preview/usePluginPreview";
+import { previewInvalidNoticeVisible } from "./preview/preview-document";
 
 const emit = defineEmits<{ insert: [code: string] }>();
 const sourceID = useId();
@@ -21,6 +22,10 @@ const draft = useShortcodeDraft(
 );
 const preview = usePluginPreview(() => (selected.value ? previewInfoFor(selected.value) : { capability: "static" }));
 const frame = ref<HTMLIFrameElement | null>(null);
+// 参数无效/校验中时保留旧预览，但必须说明它没有更新。
+const stalePreview = computed(() =>
+  previewInvalidNoticeVisible(draft.canApply.value, draft.parsing.value, Boolean(preview.srcdoc.value)),
+);
 
 function selectPlugin(event: Event) {
   selected.value =
@@ -30,9 +35,18 @@ function selectPlugin(event: Event) {
   draft.startInsertion();
 }
 
-watch([draft.raw, draft.canApply], ([raw, valid]) => {
-  if (valid) preview.scheduleRender(raw);
-  else preview.clearPreview();
+// 输入过程中保留旧预览：raw 为空才清空；参数解析完成（canApply）后再调度渲染。
+watch(draft.raw, (raw) => {
+  if (!raw.trim()) {
+    preview.clearPreview();
+    return;
+  }
+  // 输入已变化：新文档 ready 前冻结高度，避免旧文档兜底回传先收缩。
+  preview.holdHeight();
+  if (draft.canApply.value) preview.scheduleRender(raw);
+});
+watch(draft.canApply, (valid) => {
+  if (valid) preview.scheduleRender(draft.raw.value);
 });
 function insert() {
   if (draft.canApply.value) emit("insert", "\n" + draft.raw.value + "\n");
@@ -101,24 +115,53 @@ onBeforeUnmount(() => window.removeEventListener("message", onMessage));
       </div>
       <div>
         <label class="mb-1.5 block text-[12.5px] font-medium text-text-secondary"
-          >预览<span v-if="preview.rendering.value" class="ml-1 text-text-quaternary">渲染中…</span></label
+          >预览<span v-if="preview.rendering.value" class="ml-1 text-text-quaternary">{{
+            preview.status.value === "updating" ? "更新中…" : "渲染中…"
+          }}</span></label
         >
-        <div class="overflow-hidden rounded-lg border border-border">
-          <p v-if="preview.previewError.value" class="px-3 py-4 text-center text-xs text-state-error">
+        <div class="relative overflow-hidden rounded-lg border border-border">
+          <p
+            v-if="!preview.srcdoc.value && preview.status.value === 'error'"
+            class="px-3 py-4 text-center text-xs text-state-error"
+          >
             {{ preview.previewError.value }}
+            <button type="button" class="ml-1 text-primary" @click="preview.retry()">重试</button>
+          </p>
+          <p
+            v-else-if="!preview.srcdoc.value"
+            class="px-3 py-4 text-center text-xs text-text-quaternary"
+          >
+            {{ preview.status.value === "loading" ? "正在生成预览…" : "填写参数后预览" }}
           </p>
           <iframe
-            v-else-if="preview.srcdoc.value"
+            v-if="preview.srcdoc.value"
             ref="frame"
             :srcdoc="preview.srcdoc.value"
             title="标签插件预览"
-            class="block w-full border-0"
+            class="block w-full border-0 transition-[height] duration-150"
             :style="{ height: preview.frameHeight.value + 'px' }"
             sandbox="allow-scripts"
           ></iframe>
-          <p v-else class="px-3 py-4 text-center text-xs text-text-quaternary">
-            {{ preview.rendering.value ? "正在生成预览…" : "填写参数后预览" }}
+          <!-- 渲染期间保留旧 iframe，只叠加轻量更新状态 -->
+          <p
+            v-if="preview.srcdoc.value && preview.status.value === 'updating' && !stalePreview"
+            class="pointer-events-none absolute right-2 top-2 rounded bg-card/90 px-1.5 py-0.5 text-[10px] text-text-quaternary"
+          >
+            更新中…
           </p>
+          <p
+            v-if="stalePreview"
+            class="pointer-events-none absolute right-2 top-2 rounded bg-card/90 px-1.5 py-0.5 text-[10px] text-text-quaternary"
+          >
+            参数无效，预览未更新
+          </p>
+          <div
+            v-if="preview.srcdoc.value && preview.status.value === 'error'"
+            class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 border-t border-state-error/30 bg-card/95 px-2 py-1 text-[11px] text-state-error"
+          >
+            <span>预览更新失败，仍显示上一次结果</span>
+            <button type="button" class="text-primary" @click="preview.retry()">重试</button>
+          </div>
         </div>
       </div>
       <p

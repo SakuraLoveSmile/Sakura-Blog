@@ -1,0 +1,60 @@
+{
+  "colorScheme": "dark",
+  "results": [
+    {
+      "label": "studio",
+      "textColor": "rgba(255, 255, 255, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(28, 31, 33)",
+      "html": "rgb(28, 31, 33)",
+      "background": "rgb(28, 31, 33)",
+      "backgroundLuminance": 0.01336654786196943,
+      "ratio": 10.97079086613533
+    },
+    {
+      "label": "insert",
+      "textColor": "rgba(255, 255, 255, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(28, 31, 33)",
+      "html": "rgb(28, 31, 33)",
+      "background": "rgb(28, 31, 33)",
+      "backgroundLuminance": 0.01336654786196943,
+      "ratio": 10.97079086613533
+    },
+    {
+      "label": "toolbar",
+      "textColor": "rgba(255, 255, 255, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(28, 31, 33)",
+      "html": "rgb(28, 31, 33)",
+      "background": "rgb(28, 31, 33)",
+      "backgroundLuminance": 0.01336654786196943,
+      "ratio": 10.97079086613533
+    },
+    {
+      "label": "nodeview",
+      "textColor": "rgba(255, 255, 255, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(28, 31, 33)",
+      "html": "rgb(28, 31, 33)",
+      "background": "rgb(28, 31, 33)",
+      "backgroundLuminance": 0.01336654786196943,
+      "ratio": 10.97079086613533
+    },
+    {
+      "label": "markdown",
+      "textColor": "rgba(255, 255, 255, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(28, 31, 33)",
+      "html": "rgb(28, 31, 33)",
+      "background": "rgb(28, 31, 33)",
+      "backgroundLuminance": 0.01336654786196943,
+      "ratio": 10.97079086613533
+    }
+  ]
+}

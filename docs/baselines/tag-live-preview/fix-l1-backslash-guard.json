@@ -1,0 +1,32 @@
+{
+  "outcome": {
+    "hasGuard": true,
+    "backslashAbsolute": {
+      "name": "PreviewWriteBlockedError",
+      "marker": {
+        "method": "POST",
+        "url": "\\\\evil.example/api/v1/preview/rating",
+        "at": 1793463391683
+      }
+    },
+    "slashBackslash": {
+      "name": "PreviewWriteBlockedError",
+      "marker": {
+        "method": "POST",
+        "url": "/\\evil.example/api/v1/preview/rating",
+        "at": 1793463391684
+      }
+    },
+    "allowedName": "resolved",
+    "allowedStatus": 200,
+    "markerAfterAllowed": null
+  },
+  "evilRequests": [],
+  "ratingUpdates": [
+    {
+      "url": "http://127.0.0.1:8096/api/v1/preview/rating/update?id=l1-e2e&value=5",
+      "status": 200,
+      "cors": "*"
+    }
+  ]
+}

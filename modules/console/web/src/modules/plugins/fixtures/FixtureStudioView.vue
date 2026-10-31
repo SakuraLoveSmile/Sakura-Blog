@@ -61,6 +61,8 @@ watch(
   () => {
     localEditorData.value = store.currentData.value;
     validateEditorData();
+    // 切换 Fixture 即清空旧文档：否则新 Fixture 渲染完成前会暂时展示上一个 Fixture 的内容。
+    preview.clearPreview();
     preview.resetHeight();
     preview.scheduleRender(currentFixture.value.previewShortcode, true);
   },
