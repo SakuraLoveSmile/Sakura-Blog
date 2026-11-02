@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,8 +14,11 @@ import (
 )
 
 // updateRepoDefault 为 api 层兜底常量，与 config.DefaultApp 对齐；Config 缺省时由 New() 填入。
-// 该值同时用于推导 GHCR 镜像名（小写 owner/repo）。
+// 该值同时用于推导 GHCR 镜像名（小写 owner/repo）与更新日志来源的 GitHub 仓库。
 const updateRepoDefault = "SakuraLoveSmile/Sakura-Blog"
+
+// releaseNotesMaxBytes 截断 Release 正文的上限，防止超长更新日志撑爆响应。
+const releaseNotesMaxBytes = 32 * 1024
 
 // SystemVersionResponse GET /api/v1/system/version
 type SystemVersionResponse struct {
@@ -28,13 +32,15 @@ type SystemVersionResponse struct {
 
 // UpdateCheckResponse GET /api/v1/system/update/check
 // 发布只产出 Docker 镜像（GHCR），latest_version 来自镜像版本标签；
-// release_url 指向镜像包页面，release_notes / published_at 当前无对应数据，保留字段以兼容 Console。
+// release_url 指向镜像包页面，release_notes / release_notes_url / published_at
+// 来自 tag 发布时自动创建的 GitHub Release（仅说明、无资产），取不到时留空。
 type UpdateCheckResponse struct {
 	CurrentVersion      string `json:"current_version"`
 	LatestVersion       string `json:"latest_version"`
 	UpdateAvailable     bool   `json:"update_available"`
 	ReleaseURL          string `json:"release_url"`
 	ReleaseNotes        string `json:"release_notes"`
+	ReleaseNotesURL     string `json:"release_notes_url"`
 	PublishedAt         string `json:"published_at"`
 	CheckedAt           string `json:"checked_at"`
 	Error               string `json:"error,omitempty"`
@@ -99,10 +105,53 @@ func (h *Handler) systemUpdateCheck(c *gin.Context) {
 	if current != "unknown" {
 		resp.UpdateAvailable = semverCompare(latest, current) > 0
 	}
+	// 更新日志是可选增强：只有 Release 与最新镜像版本一致时才展示，取不到不影响版本检查。
+	if release, err := h.latestRelease(c.Query("refresh") == "1"); err == nil && release != nil &&
+		normalizeSemver(release.TagName) == latest {
+		resp.ReleaseNotes = truncateString(release.Body, releaseNotesMaxBytes)
+		resp.ReleaseNotesURL = release.HTMLURL
+		if !release.PublishedAt.IsZero() {
+			resp.PublishedAt = release.PublishedAt.UTC().Format(time.RFC3339)
+		}
+	}
 	c.JSON(http.StatusOK, resp)
 }
 
 // --- helpers ---
+
+// githubRelease 是更新日志所需的 GitHub Release 字段子集。
+type githubRelease struct {
+	TagName     string    `json:"tag_name"`
+	HTMLURL     string    `json:"html_url"`
+	Body        string    `json:"body"`
+	PublishedAt time.Time `json:"published_at"`
+}
+
+// latestRelease 读取 GitHub Release 作为更新日志来源；发布链路已不再产出二进制资产，
+// Release 只承载自动生成的说明。GitHub 客户端未启用或请求失败时返回 nil，不阻断版本检查。
+func (h *Handler) latestRelease(refresh bool) (*githubRelease, error) {
+	if h.gh == nil {
+		return nil, nil
+	}
+	owner, repo := splitOwnerRepo(h.updateRepo)
+	var (
+		payload []byte
+		err     error
+	)
+	if refresh {
+		payload, err = h.gh.RefreshLatestRelease(owner, repo)
+	} else {
+		payload, err = h.gh.GetLatestReleaseRaw(owner, repo)
+	}
+	if err != nil {
+		return nil, err
+	}
+	var release githubRelease
+	if err := json.Unmarshal(payload, &release); err != nil {
+		return nil, err
+	}
+	return &release, nil
+}
 
 // latestVersionTag 从镜像标签中挑出最高的语义化版本；
 // `2`、`2.0`、`latest`、`sha-xxxx` 等派生标签不参与比较。
@@ -144,6 +193,13 @@ func (h *Handler) resolveCurrentVersion() string {
 		}
 	}
 	return "unknown"
+}
+
+func truncateString(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max]
 }
 
 // splitOwnerRepo 将 "owner/repo" 拆分为 (owner, repo)，缺斜杠时整体当 repo。

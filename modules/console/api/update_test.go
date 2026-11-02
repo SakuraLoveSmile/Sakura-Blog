@@ -11,11 +11,18 @@ import (
 	"github.com/gin-gonic/gin"
 
 	ghcr "blog/internal/ghcr"
+	ghpkg "blog/internal/github"
 	tmpl "blog/internal/settings"
 )
 
 // newUpdateEnvWithCookie 构造带 GHCR 模拟的测试环境，额外返回 admin cookie 与标签接口命中次数。
 func newUpdateEnvWithCookie(t *testing.T, tagsHandler http.HandlerFunc) (*gin.Engine, *Handler, string, *int32) {
+	t.Helper()
+	return newUpdateEnvWithRelease(t, tagsHandler, nil)
+}
+
+// newUpdateEnvWithRelease 在 GHCR 模拟之外再注入 GitHub Release 模拟（nil 表示没有 Release）。
+func newUpdateEnvWithRelease(t *testing.T, tagsHandler, releaseHandler http.HandlerFunc) (*gin.Engine, *Handler, string, *int32) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
@@ -49,6 +56,21 @@ func newUpdateEnvWithCookie(t *testing.T, tagsHandler http.HandlerFunc) (*gin.En
 
 	registry := ghcr.New(ghcr.Config{RegistryBase: srv.URL, CacheDir: t.TempDir(), HTTPClient: srv.Client()})
 
+	ghSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/repos/SakuraLoveSmile/Sakura-Blog/releases/latest") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if releaseHandler != nil {
+			releaseHandler(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"message":"Not Found"}`))
+	}))
+	t.Cleanup(ghSrv.Close)
+	gh := ghpkg.New(ghpkg.Config{CacheDir: t.TempDir(), APIBase: ghSrv.URL, HTTPClient: ghSrv.Client()})
+
 	r := gin.New()
 	h, err := MountConsole(r, MountDeps{
 		Config: Config{
@@ -59,6 +81,7 @@ func newUpdateEnvWithCookie(t *testing.T, tagsHandler http.HandlerFunc) (*gin.En
 			Root:       t.TempDir(),
 			Registry:   registry,
 		},
+		GH: gh,
 	})
 	if err != nil {
 		t.Fatalf("mount: %v", err)
@@ -191,6 +214,72 @@ func TestSystemUpdateCheck_UpstreamError(t *testing.T) {
 	}
 	if resp.LatestVersion != "" {
 		t.Errorf("latest_version should stay empty on failure, got %q", resp.LatestVersion)
+	}
+}
+
+// Release 与最新镜像标签一致时，更新日志、发布时间与发布说明链接应回填。
+func TestSystemUpdateCheck_ReleaseNotes(t *testing.T) {
+	const releaseURL = "https://github.com/SakuraLoveSmile/Sakura-Blog/releases/tag/v2.0.4"
+	r, _, cookie, _ := newUpdateEnvWithRelease(t, nil, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"tag_name":"v2.0.4","html_url":"` + releaseURL + `","body":"- 统一镜像发布\n- 修复若干问题","published_at":"2026-11-02T09:00:00Z"}`))
+	})
+	w := doUpdate(r, http.MethodGet, "/api/v1/system/update/check", cookie)
+	if w.Code != 200 {
+		t.Fatalf("check: %d %s", w.Code, w.Body.String())
+	}
+	var resp UpdateCheckResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.LatestVersion != "2.0.4" {
+		t.Fatalf("latest: got %q, want 2.0.4", resp.LatestVersion)
+	}
+	if !strings.Contains(resp.ReleaseNotes, "统一镜像发布") {
+		t.Errorf("release_notes should carry the release body, got %q", resp.ReleaseNotes)
+	}
+	if resp.ReleaseNotesURL != releaseURL {
+		t.Errorf("release_notes_url = %q, want %q", resp.ReleaseNotesURL, releaseURL)
+	}
+	if resp.PublishedAt == "" {
+		t.Error("published_at should be filled from the release")
+	}
+	if !strings.Contains(resp.ReleaseURL, "/pkgs/container/sakura-blog") {
+		t.Errorf("release_url should stay on the package page, got %q", resp.ReleaseURL)
+	}
+}
+
+// Release 版本落后于最新镜像标签时不得展示过期日志。
+func TestSystemUpdateCheck_StaleReleaseNotesIgnored(t *testing.T) {
+	r, _, cookie, _ := newUpdateEnvWithRelease(t, nil, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"tag_name":"v2.0.3","html_url":"https://example.com/v2.0.3","body":"旧版本日志","published_at":"2026-10-31T07:00:00Z"}`))
+	})
+	w := doUpdate(r, http.MethodGet, "/api/v1/system/update/check", cookie)
+	var resp UpdateCheckResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.LatestVersion != "2.0.4" {
+		t.Fatalf("latest: got %q, want 2.0.4", resp.LatestVersion)
+	}
+	if resp.ReleaseNotes != "" || resp.ReleaseNotesURL != "" || resp.PublishedAt != "" {
+		t.Errorf("stale release notes must be ignored, got notes=%q url=%q at=%q", resp.ReleaseNotes, resp.ReleaseNotesURL, resp.PublishedAt)
+	}
+}
+
+// GitHub 获取失败只降级更新日志，不影响版本检查结果。
+func TestSystemUpdateCheck_ReleaseFetchErrorDegrades(t *testing.T) {
+	r, _, cookie, _ := newUpdateEnvWithRelease(t, nil, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	})
+	w := doUpdate(r, http.MethodGet, "/api/v1/system/update/check", cookie)
+	var resp UpdateCheckResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.LatestVersion != "2.0.4" || !resp.UpdateAvailable {
+		t.Fatalf("version check must survive release fetch failure, got latest=%q update=%v", resp.LatestVersion, resp.UpdateAvailable)
+	}
+	if resp.ReleaseNotes != "" {
+		t.Errorf("release notes should stay empty, got %q", resp.ReleaseNotes)
+	}
+	if resp.Error != "" {
+		t.Errorf("release fetch failure must not surface as check error, got %q", resp.Error)
 	}
 }
 

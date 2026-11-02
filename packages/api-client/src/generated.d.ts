@@ -647,6 +647,9 @@ export interface SystemVersionResponse {
 }
 /**
  * UpdateCheckResponse GET /api/v1/system/update/check
+ * 发布只产出 Docker 镜像（GHCR），latest_version 来自镜像版本标签；
+ * release_url 指向镜像包页面，release_notes / release_notes_url / published_at
+ * 来自 tag 发布时自动创建的 GitHub Release（仅说明、无资产），取不到时留空。
  */
 export interface UpdateCheckResponse {
   current_version: string;
@@ -654,6 +657,7 @@ export interface UpdateCheckResponse {
   update_available: boolean;
   release_url: string;
   release_notes: string;
+  release_notes_url: string;
   published_at: string;
   checked_at: string;
   error?: string;

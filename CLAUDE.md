@@ -33,8 +33,8 @@ Go 版本由根 `go.mod` 决定，pnpm 版本由根 `package.json` 的 `packageM
 ### 发布流水线
 
 - 发布只产出 Docker 镜像：`.github/workflows/release.yml` 已移除，仓库不再构建或分发单二进制；`deploy/update.sh`、`deploy/update-docker.sh` 与 systemd 更新单元一并移除，服务器统一用 `docker compose pull && docker compose up -d` 升级。
-- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，镜像标签不带 `v`（`1.7.4`、`1.7`、`1`）。`latest` 只由 tag 推送更新，`workflow_dispatch` 不会改写它。`ci.yml` 的 `image` 作业在晋级 `release` 的 PR 上预构建 Dockerfile（不推送）。发布步骤见 AGENTS.md「发布 release」。
-- v1.7.3 起 Console 只保留「检查更新」（`GET /system/update/check`），一键更新执行链（`internal/updaterunner`、apply/status 端点、systemd path/timer watcher）已移除；检查来源是 GHCR 镜像标签（`internal/ghcr`，公开包匿名 token，6h 缓存），升级一律在宿主执行 `docker compose pull && docker compose up -d`。
+- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，镜像标签不带 `v`（`1.7.4`、`1.7`、`1`）。`latest` 只由 tag 推送更新，`workflow_dispatch` 不会改写它。tag 推送后该工作流还会用内置 `GITHUB_TOKEN` 创建一个不带资产的 GitHub Release（`--generate-notes`），作为 Console「检查更新」的更新日志来源；镜像仍是唯一发布产物。`ci.yml` 的 `image` 作业在晋级 `release` 的 PR 上预构建 Dockerfile（不推送）。发布步骤见 AGENTS.md「发布 release」。
+- v1.7.3 起 Console 只保留「检查更新」（`GET /system/update/check`），一键更新执行链（`internal/updaterunner`、apply/status 端点、systemd path/timer watcher）已移除；版本来源是 GHCR 镜像标签（`internal/ghcr`，公开包匿名 token，6h 缓存）；更新日志、发布时间与发布说明链接来自 tag 对应的 GitHub Release（仅说明、无资产），只有 Release tag 与最新镜像版本一致时才展示，取不到时静默降级。升级一律在宿主执行 `docker compose pull && docker compose up -d`。
 
 ### `go:embed` 与前端重建
 

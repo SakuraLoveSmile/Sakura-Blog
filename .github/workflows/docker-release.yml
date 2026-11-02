@@ -2,6 +2,7 @@ name: Docker Release
 
 # 打 tag 或手动触发构建并推送 GHCR 镜像。镜像把二进制打进镜像层，
 # 是本仓库唯一的发布产物；服务器通过 compose 拉取固定版本标签升级（详见 deploy/README.md）。
+# tag 推送后额外创建一个不带资产的 GitHub Release（自动生成更新日志），供 Console「检查更新」展示。
 # latest 只由 tag 推送更新：手动触发（无论在哪个 ref 上）不得改写生产 compose 使用的 :latest。
 on:
   push:
@@ -20,7 +21,7 @@ jobs:
   image:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write   # 创建仅含更新日志的 GitHub Release
       packages: write   # 推送 GHCR（同一 owner 命名空间，GITHUB_TOKEN 即可）
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -74,3 +75,13 @@ jobs:
             FRONTEND_HASH=${{ steps.meta.outputs.frontend_hash }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # 仅补充更新日志的 Release：不附加任何二进制资产，镜像仍是唯一发布产物。
+      # 已存在时跳过，避免重跑 tag 工作流失败。
+      - name: Create GitHub Release (notes only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
