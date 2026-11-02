@@ -3,33 +3,9 @@ import { ref, computed, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VCard, VButton, VTag, Toast } from "@/components/ui";
 import { systemApi, type UpdateCheckResponse } from "@/api";
-import { formatDate } from "@/lib/format";
 
 const checkData = ref<UpdateCheckResponse | null>(null);
 const checking = ref(false);
-
-// GitHub Token（可选）：用于私有仓库鉴权或提升速率上限。
-// 仅保存在本浏览器 localStorage，随请求以 X-GitHub-Token 头发送，不存储到服务端。
-const githubToken = ref<string>(localStorage.getItem("blog:github_token") || "");
-const showToken = ref(false);
-
-function onTokenInput(e: Event) {
-  githubToken.value = (e.target as HTMLInputElement).value;
-  if (githubToken.value) localStorage.setItem("blog:github_token", githubToken.value);
-  else localStorage.removeItem("blog:github_token");
-}
-
-function clearToken() {
-  githubToken.value = "";
-  localStorage.removeItem("blog:github_token");
-  Toast.success("已清除 GitHub Token");
-}
-
-// 统一把当前 Token 转成请求参数（空则不携带，回落到服务端配置 / 匿名）。
-function tokenParam(): string | undefined {
-  const t = githubToken.value.trim();
-  return t ? t : undefined;
-}
 
 const hasUpdate = computed(() => checkData.value?.update_available ?? false);
 // 三态：current 为 unknown 或 latest 缺失时，无法确定是否有更新（如本地 dev 构建恒为 unknown）。
@@ -50,7 +26,7 @@ const versionStatusClass = computed(() => {
 async function checkUpdate(refresh = false) {
   checking.value = true;
   try {
-    const { data } = await systemApi.check(refresh, tokenParam());
+    const { data } = await systemApi.check(refresh);
     checkData.value = data;
     if (refresh) {
       Toast.success("已完成最新版本检查");
@@ -79,7 +55,7 @@ onMounted(() => {
   <div>
     <!-- 顶部固定吸顶导航栏 -->
     <VPageHeader title="系统更新">
-      <template #subtitle> 检查 Blog 新版本并查看更新日志 </template>
+      <template #subtitle> 检查 GHCR 镜像的最新版本 </template>
       <template #actions>
         <VButton size="sm" type="default" :loading="checking" @click="checkUpdate(false)">
           <template #icon>
@@ -142,14 +118,14 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- GitHub 最新 Release -->
+          <!-- GHCR 最新镜像标签 -->
           <div
             class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong"
           >
             <div class="flex items-center justify-between text-xs text-text-tertiary">
               <span class="flex items-center gap-1.5">
                 <Icon icon="ri:github-fill" class="text-text-secondary" />
-                GitHub 最新
+                GHCR 最新镜像
               </span>
               <a
                 v-if="checkData?.release_url"
@@ -158,7 +134,7 @@ onMounted(() => {
                 rel="noopener noreferrer"
                 class="flex items-center gap-0.5 text-xs text-primary hover:underline"
               >
-                Release
+                镜像包
                 <Icon icon="ri:external-link-line" class="text-[11px]" />
               </a>
             </div>
@@ -167,9 +143,9 @@ onMounted(() => {
                 {{ checkData?.latest_version || "未获取" }}
               </div>
               <p class="mt-1 text-xs text-text-quaternary">
-                <span v-if="checkData?.published_at"> 发布于 {{ formatDate(checkData.published_at) }} </span>
-                <span v-else-if="checking">正在检索最新发布…</span>
-                <span v-else>暂无发布数据</span>
+                <span v-if="checking">正在检索 GHCR 镜像标签…</span>
+                <span v-else-if="checkData?.latest_version">GHCR 镜像版本标签</span>
+                <span v-else>暂无版本标签</span>
               </p>
             </div>
           </div>
@@ -186,7 +162,7 @@ onMounted(() => {
           <div class="font-semibold text-state-error">检查更新遇到错误</div>
           <p class="mt-1 break-words text-xs leading-relaxed text-text-secondary">{{ checkData.error }}</p>
           <p class="mt-2 text-xs text-text-tertiary">
-            提示：若为私有仓库或触碰 GitHub 匿名 API 速率限制（60次/小时），请在下方配置 GitHub Token。
+            提示：检查更新读取公开的 GHCR 镜像标签；服务器无法访问 ghcr.io，或镜像包不是公开的，都会在此显示具体原因。
           </p>
         </div>
         <VButton size="xs" type="danger" :loading="checking" @click="checkUpdate(true)">
@@ -224,7 +200,7 @@ onMounted(() => {
                 <template #icon>
                   <Icon icon="ri:external-link-line" />
                 </template>
-                GitHub 发布页
+                镜像包页面
               </VButton>
             </a>
           </div>
@@ -238,13 +214,9 @@ onMounted(() => {
             <Icon icon="ri:arrow-up-circle-fill" class="text-base text-primary" />
             <span
               >发现新版本 <strong>{{ checkData?.latest_version }}</strong
-              >，按部署方式手动升级：Docker 镜像部署执行 <code>docker compose pull && up -d</code>；二进制部署执行
-              <code>deploy/update.sh</code> 或替换 Release 中的新二进制。</span
+              >，在服务器执行 <code>docker compose pull && docker compose up -d</code> 完成升级。</span
             >
           </div>
-          <span v-if="checkData?.published_at" class="text-text-tertiary">
-            发布于 {{ formatDate(checkData.published_at) }}
-          </span>
         </div>
 
         <div v-if="checkData?.release_notes" class="rounded-base border border-border bg-secondary p-4">
@@ -257,66 +229,6 @@ onMounted(() => {
         <div v-else class="py-4 text-center text-xs text-text-quaternary">暂无详细更新日志</div>
       </VCard>
 
-      <!-- 4. GitHub Token 配置卡片 -->
-      <VCard>
-        <template #header>
-          <div class="flex items-center gap-2 text-[14px] font-semibold text-foreground">
-            <Icon icon="ri:key-2-line" class="text-lg text-primary" />
-            <span>GitHub Token（可选鉴权）</span>
-          </div>
-          <div v-if="githubToken" class="flex items-center gap-2">
-            <VButton size="xs" type="danger" @click="clearToken">
-              <template #icon>
-                <Icon icon="ri:delete-bin-line" />
-              </template>
-              清除 Token
-            </VButton>
-          </div>
-        </template>
-
-        <div class="space-y-3">
-          <p class="text-xs leading-relaxed text-text-secondary">
-            私有仓库需鉴权才能检查更新；填入 Personal Access Token 可访问私有仓库并提升速率上限（从 60次/小时 提升至
-            5,000次/小时）。Token 仅保存在本浏览器 localStorage，随请求以 X-GitHub-Token 头发送，不会存储到服务端。
-          </p>
-          <div class="relative flex items-center">
-            <div class="pointer-events-none absolute left-3 flex items-center text-text-quaternary">
-              <Icon icon="ri:lock-line" class="text-base" />
-            </div>
-            <input
-              :type="showToken ? 'text' : 'password'"
-              :value="githubToken"
-              @input="onTokenInput"
-              placeholder="ghp_xxx…（留空则使用服务端已配置的 github_token / 匿名）"
-              class="w-full rounded-base border border-border bg-card py-2 pl-9 pr-10 text-xs font-mono text-foreground outline-none transition-colors placeholder:font-sans placeholder:text-text-quaternary focus:border-primary max-sm:min-h-11"
-            />
-            <button
-              type="button"
-              class="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-sm text-text-quaternary transition-colors hover:bg-accent hover:text-foreground max-sm:h-11 max-sm:w-11"
-              :title="showToken ? '隐藏 Token' : '显示 Token'"
-              @click="showToken = !showToken"
-            >
-              <Icon :icon="showToken ? 'ri:eye-off-line' : 'ri:eye-line'" class="text-sm" />
-            </button>
-          </div>
-          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <p v-if="githubToken" class="flex items-center gap-1 text-state-success">
-              <Icon icon="ri:checkbox-circle-line" />
-              已填入，「检查更新」将携带该 Token
-            </p>
-            <p v-else class="text-text-quaternary">未配置 Token，当前采用匿名请求</p>
-            <a
-              href="https://github.com/settings/tokens/new?scopes=repo&description=Blog%20System%20Update"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center gap-0.5 text-primary hover:underline"
-            >
-              去 GitHub 创建 Token
-              <Icon icon="ri:external-link-line" class="text-[11px]" />
-            </a>
-          </div>
-        </div>
-      </VCard>
     </div>
   </div>
 </template>

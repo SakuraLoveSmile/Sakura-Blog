@@ -10,12 +10,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	ghpkg "blog/internal/github"
+	ghcr "blog/internal/ghcr"
 	tmpl "blog/internal/settings"
 )
 
-// newUpdateEnvWithCookie 构造带 GitHub 模拟的测试环境，额外返回 admin cookie。
-func newUpdateEnvWithCookie(t *testing.T, ghHandler http.HandlerFunc) (*gin.Engine, *Handler, string, *int32) {
+// newUpdateEnvWithCookie 构造带 GHCR 模拟的测试环境，额外返回 admin cookie 与标签接口命中次数。
+func newUpdateEnvWithCookie(t *testing.T, tagsHandler http.HandlerFunc) (*gin.Engine, *Handler, string, *int32) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
@@ -27,19 +27,27 @@ func newUpdateEnvWithCookie(t *testing.T, ghHandler http.HandlerFunc) (*gin.Engi
 		t.Fatalf("get admin: %v", err)
 	}
 
-	var ghHits int32
+	var tagHits int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&ghHits, 1)
-		if ghHandler != nil {
-			ghHandler(w, r)
-			return
+		switch {
+		case r.URL.Path == "/token":
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"token":"test-token"}`))
+		case strings.HasPrefix(r.URL.Path, "/v2/"):
+			atomic.AddInt32(&tagHits, 1)
+			if tagsHandler != nil {
+				tagsHandler(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"name":"sakuralovesmile/sakura-blog","tags":["2.0.4","2.0","2","latest","2.0.3","sha-abc1234"]}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"tag_name":"v1.4.2","html_url":"https://github.com/SakuraLoveSmile/Sakura-Blog/releases/tag/v1.4.2","body":"Bug fixes.","published_at":"2026-08-15T10:00:00Z"}`))
 	}))
 	t.Cleanup(srv.Close)
 
-	gh := ghpkg.New(ghpkg.Config{CacheDir: t.TempDir(), APIBase: srv.URL, HTTPClient: srv.Client()})
+	registry := ghcr.New(ghcr.Config{RegistryBase: srv.URL, CacheDir: t.TempDir(), HTTPClient: srv.Client()})
 
 	r := gin.New()
 	h, err := MountConsole(r, MountDeps{
@@ -49,14 +57,14 @@ func newUpdateEnvWithCookie(t *testing.T, ghHandler http.HandlerFunc) (*gin.Engi
 			AppVersion: "v1.4.1",
 			UpdateRepo: "SakuraLoveSmile/Sakura-Blog",
 			Root:       t.TempDir(),
+			Registry:   registry,
 		},
-		GH: gh,
 	})
 	if err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	cookie := authCookie(admin)
-	return r, h, cookie, &ghHits
+	return r, h, cookie, &tagHits
 }
 
 // doUpdate 发起带 cookie 的请求。
@@ -116,21 +124,21 @@ func TestSystemUpdateCheck_UpdateAvailable(t *testing.T) {
 	if resp.CurrentVersion != "1.4.1" {
 		t.Errorf("current: got %q, want 1.4.1", resp.CurrentVersion)
 	}
-	if resp.LatestVersion != "1.4.2" {
-		t.Errorf("latest: got %q, want 1.4.2", resp.LatestVersion)
+	if resp.LatestVersion != "2.0.4" {
+		t.Errorf("latest: got %q, want 2.0.4", resp.LatestVersion)
 	}
 	if !resp.UpdateAvailable {
 		t.Error("update_available should be true")
 	}
-	if resp.ReleaseURL == "" {
-		t.Error("release_url should not be empty")
+	if !strings.Contains(resp.ReleaseURL, "/pkgs/container/sakura-blog") {
+		t.Errorf("release_url should point to the GHCR package page, got %q", resp.ReleaseURL)
 	}
 }
 
 func TestSystemUpdateCheck_NoUpdate(t *testing.T) {
 	r, _, cookie, _ := newUpdateEnvWithCookie(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"tag_name":"v1.4.1","html_url":"https://example.com","body":"","published_at":"2026-08-10T10:00:00Z"}`))
+		w.Write([]byte(`{"tags":["1.4.1","1.4.0","2.0","latest"]}`))
 	})
 	w := doUpdate(r, http.MethodGet, "/api/v1/system/update/check", cookie)
 	if w.Code != 200 {
@@ -140,6 +148,9 @@ func TestSystemUpdateCheck_NoUpdate(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	if resp.UpdateAvailable {
 		t.Error("update_available should be false for same version")
+	}
+	if resp.LatestVersion != "1.4.1" {
+		t.Errorf("latest: got %q, want 1.4.1", resp.LatestVersion)
 	}
 }
 
@@ -175,8 +186,40 @@ func TestSystemUpdateCheck_UpstreamError(t *testing.T) {
 	}
 	var resp UpdateCheckResponse
 	json.Unmarshal(w.Body.Bytes(), &resp)
-	if !strings.Contains(resp.Error, "检查更新失败") || !strings.Contains(resp.Error, "500") {
+	if !strings.Contains(resp.Error, "检查镜像标签失败") || !strings.Contains(resp.Error, "500") {
 		t.Errorf("error should surface the real upstream failure (status 500), got %q", resp.Error)
+	}
+	if resp.LatestVersion != "" {
+		t.Errorf("latest_version should stay empty on failure, got %q", resp.LatestVersion)
+	}
+}
+
+// 派生标签（2 / 2.0 / latest / sha-*）不参与版本比较。
+func TestLatestVersionTag(t *testing.T) {
+	cases := []struct {
+		tags []string
+		want string
+	}{
+		{[]string{"2.0.4", "2.0", "2", "latest", "2.0.3", "sha-abc1234"}, "2.0.4"},
+		{[]string{"1.10.0", "1.9.9"}, "1.10.0"},
+		{[]string{"latest", "sha-abc"}, ""},
+		{nil, ""},
+	}
+	for _, c := range cases {
+		if got := latestVersionTag(c.tags); got != c.want {
+			t.Errorf("latestVersionTag(%v) = %q, want %q", c.tags, got, c.want)
+		}
+	}
+}
+
+func TestRegistryPackageURL(t *testing.T) {
+	got := registryPackageURL("SakuraLoveSmile/Sakura-Blog")
+	want := "https://github.com/SakuraLoveSmile/Sakura-Blog/pkgs/container/sakura-blog"
+	if got != want {
+		t.Errorf("registryPackageURL = %q, want %q", got, want)
+	}
+	if got := registryPackageURL("single"); got != "" {
+		t.Errorf("registryPackageURL without owner should be empty, got %q", got)
 	}
 }
 

@@ -32,9 +32,9 @@ Go 版本由根 `go.mod` 决定，pnpm 版本由根 `package.json` 的 `packageM
 
 ### 发布流水线
 
-- `.github/workflows/release.yml`：tag 推送时构建 `blog-linux-amd64`，Release 直接发布到本仓库 `SakuraLoveSmile/Sakura-Blog`（公开仓库，使用内置 `GITHUB_TOKEN`，无需跨仓库 PAT）；`update.sh`/`update-docker.sh` 的 `BLOG_REPO`/`update_repo` 默认值保持同一目标。
-- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，镜像标签不带 `v`（`1.7.4`、`1.7`、`1`）。`latest` 只由 tag 推送更新，`workflow_dispatch` 不会改写它。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态。`ci.yml` 的 `image` 作业在晋级 `release` 的 PR 上预构建 Dockerfile（不推送）。发布步骤见 AGENTS.md「发布 release」。
-- v1.7.3 起 Console 只保留「检查更新」（`GET /system/update/check`），一键更新执行链（`internal/updaterunner`、apply/status 端点、systemd path/timer watcher）已移除；升级一律在宿主手动执行 `update.sh`/`update-docker.sh` 或 `docker compose pull`。
+- 发布只产出 Docker 镜像：`.github/workflows/release.yml` 已移除，仓库不再构建或分发单二进制；`deploy/update.sh`、`deploy/update-docker.sh` 与 systemd 更新单元一并移除，服务器统一用 `docker compose pull && docker compose up -d` 升级。
+- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`，镜像标签不带 `v`（`1.7.4`、`1.7`、`1`）。`latest` 只由 tag 推送更新，`workflow_dispatch` 不会改写它。`ci.yml` 的 `image` 作业在晋级 `release` 的 PR 上预构建 Dockerfile（不推送）。发布步骤见 AGENTS.md「发布 release」。
+- v1.7.3 起 Console 只保留「检查更新」（`GET /system/update/check`），一键更新执行链（`internal/updaterunner`、apply/status 端点、systemd path/timer watcher）已移除；检查来源是 GHCR 镜像标签（`internal/ghcr`，公开包匿名 token，6h 缓存），升级一律在宿主执行 `docker compose pull && docker compose up -d`。
 
 ### `go:embed` 与前端重建
 

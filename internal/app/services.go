@@ -18,6 +18,7 @@ import (
 	"blog/internal/config"
 	"blog/internal/content"
 	"blog/internal/friends"
+	ghcr "blog/internal/ghcr"
 	ghpkg "blog/internal/github"
 	"blog/internal/identity"
 	"blog/internal/linkwatch"
@@ -72,6 +73,7 @@ type Services struct {
 	Friends     *friends.Aggregator
 	LinkWatch   *linkwatch.Watcher
 	GitHub      *ghpkg.Client
+	Registry    *ghcr.Client
 	OG          *og.Generator
 	Modules     *module.Manager
 	Storage     *attachmentstorage.Manager
@@ -293,6 +295,7 @@ func Bootstrap(options Options) (*Services, error) {
 		Token:    appConfig.GitHubToken,
 		CacheDir: filepath.Join(filepath.Dir(appConfig.DBPath), "ghcache"),
 	})
+	registry := ghcr.New(ghcr.Config{CacheDir: filepath.Join(filepath.Dir(appConfig.DBPath), "ghcache")})
 	posts.SetGHClient(githubPostAdapter{client: ghClient})
 
 	ogCacheDir := filepath.Join(filepath.Dir(appConfig.DBPath), "ogcache")
@@ -423,7 +426,7 @@ func Bootstrap(options Options) (*Services, error) {
 		App: appConfig, Maintenance: st.Maintenance(), devMode: options.DevMode, Store: st, Settings: settingsMgr, Site: sitePtr, Post: posts,
 		Comment: commentHandler, Identity: identity.NewService(st), Search: searchIdx, RAG: ragSvc,
 		Backup: backupSvc, Notify: notifySvc, Friends: friendsAgg, LinkWatch: linkWatch,
-		GitHub: ghClient, OG: ogGen, Modules: moduleMgr, Storage: attachmentStorage, Plugins: pluginRuntime, Events: events, Icons: icons, SitePath: sitePath,
+		GitHub: ghClient, Registry: registry, OG: ogGen, Modules: moduleMgr, Storage: attachmentStorage, Plugins: pluginRuntime, Events: events, Icons: icons, SitePath: sitePath,
 	}
 	backupSvc.SetOperationLock(func() (func(), error) { return maintenance.LockOperation(operationLockPath(appConfig)) })
 	backupSvc.SetBackupLock(st.Maintenance().Acquire)

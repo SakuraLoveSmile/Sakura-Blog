@@ -65,23 +65,20 @@ make pre-commit-check
 
 ### 发布 release
 
-发布路径只有一条：`dev` → `main`（PR）→ `release`（PR）→ 在 `release` 的合并提交上打 `vX.Y.Z` tag。服务器采用 Docker 部署，**一次发布 = 二进制 Release + GHCR 镜像，两者都成功才算完成**。
+发布路径只有一条：`dev` → `main`（PR）→ `release`（PR）→ 在 `release` 的合并提交上打 `vX.Y.Z` tag。服务器统一 Docker 镜像部署，**一次发布 = `docker-release.yml` 成功产出并验证 GHCR 镜像**；仓库不再构建或分发单二进制。
 
 用户要求「完成 feature 后按要求发布」时按本节执行。标注「需授权」的外部步骤（推送、开/合并 PR、打 tag、服务器部署）仍须在当次请求中获得明确同意；流程要求本身不构成预先授权。
 
 1. **准备（本地）**：feature 已通过 `make merge-check` 合入 `dev`，且 `dev` 已推送。先 `git fetch origin`，确认 `git rev-list --count dev..origin/main` 为 `0`。若 `origin/main` 有 `dev` 缺少的提交（例如直接合入 `main` 的热修），先在 feature worktree 中从 `origin/main` 建同步分支，经 `make merge-check` 合回 `dev` 并解决冲突，再开 PR。
 2. **dev → main（需授权）**：开 PR，CI 全部通过后合并。
 3. **main → release（需授权）**：开 PR。`release-source` 校验来源必须是本仓库的 `main`；`ci.yml` 的 `image` 作业预构建 Dockerfile（不推送）。两者都通过才能合并。推送 `release` 分支只产生 Actions 构建产物，不创建 Release，也不推送镜像。
-4. **打 tag（需授权）**：在 `release` 的合并提交上打 `vX.Y.Z` 并推送。tag 同时触发两个 workflow：
-   - `release.yml`：构建 `blog-linux-amd64`、`.sha256` 与 SPDX SBOM，发布到本仓库 `SakuraLoveSmile/Sakura-Blog` 的 Release（公开仓库，使用内置 `GITHUB_TOKEN`）。
-   - `docker-release.yml`：推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像标签不带 `v`，为 `X.Y.Z`、`X.Y`、`X`、`latest` 与 `sha-<短哈希>`。
+4. **打 tag（需授权）**：在 `release` 的合并提交上打 `vX.Y.Z` 并推送。tag 触发 `docker-release.yml`，推送 `ghcr.io/sakuralovesmile/sakura-blog`；镜像标签不带 `v`，为 `X.Y.Z`、`X.Y`、`X`、`latest` 与 `sha-<短哈希>`。
 5. **完成判定**（缺任一项即未完成，不得宣布发布）：
-   - 该 tag 上 `Release Build` 与 `Docker Release` 均为 `success`（`gh run list --workflow=release.yml` 与 `--workflow=docker-release.yml`）。
-   - 本项目 Release 含 `blog-linux-amd64`、`blog-linux-amd64.sha256`、`blog-linux-amd64.spdx.json` 三个资产。
+   - 该 tag 上 `Docker Release` 为 `success`（`gh run list --workflow=docker-release.yml`）。
    - `docker run --rm ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z -h` 退出码为 0，证明镜像内二进制可启动。
+   - 仓库不再有 `release.yml` 二进制发布工作流；`update.sh`、`update-docker.sh` 与 systemd 更新单元已移除，不要恢复。
 6. **服务器升级（需授权，且第 5 步已完成）**：compose 的 `image` 固定为 `ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z`，执行 `docker compose pull && docker compose up -d`，再探测宿主映射端口的 `/readyz`，并在 Console 核对版本。不要以 `latest` 是否变化作为版本证据。
    - 回退：把 `image` 改回上一个已验证的版本标签并 `up -d`。若该版本含数据迁移，回退前必须先恢复停服前的完整数据备份，只切回镜像不足以回退（见 `deploy/README.md`「整站恢复与维护窗口」）。
-   - 若服务器改用宿主挂载二进制（`update-docker.sh`），第 5 步的 Release 资产检查同样适用，升级步骤见 `deploy/README.md`。
 
 ### CSS 产物
 

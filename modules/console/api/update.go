@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,15 +9,12 @@ import (
 	"time"
 
 	"blog/internal/app"
-	ghpkg "blog/internal/github"
 	"github.com/gin-gonic/gin"
 )
 
 // updateRepoDefault 为 api 层兜底常量，与 config.DefaultApp 对齐；Config 缺省时由 New() 填入。
+// 该值同时用于推导 GHCR 镜像名（小写 owner/repo）。
 const updateRepoDefault = "SakuraLoveSmile/Sakura-Blog"
-
-// releaseNotesMaxBytes 截断 release body 的上限，防止超长正文撑爆响应。
-const releaseNotesMaxBytes = 32 * 1024
 
 // SystemVersionResponse GET /api/v1/system/version
 type SystemVersionResponse struct {
@@ -31,6 +27,8 @@ type SystemVersionResponse struct {
 }
 
 // UpdateCheckResponse GET /api/v1/system/update/check
+// 发布只产出 Docker 镜像（GHCR），latest_version 来自镜像版本标签；
+// release_url 指向镜像包页面，release_notes / published_at 当前无对应数据，保留字段以兼容 Console。
 type UpdateCheckResponse struct {
 	CurrentVersion      string `json:"current_version"`
 	LatestVersion       string `json:"latest_version"`
@@ -45,21 +43,6 @@ type UpdateCheckResponse struct {
 	StellarCommit       string `json:"stellar_commit,omitempty"`
 	FrontendFingerprint string `json:"frontend_fingerprint,omitempty"`
 	IsDev               bool   `json:"is_dev,omitempty"`
-}
-
-// githubClientFor 解析本次请求的 GitHub 客户端：
-// 若请求携带 X-GitHub-Token 头，则构造一个带该 Token 的请求级客户端（复用同一磁盘缓存），
-// 用于私有仓库鉴权或提升速率上限；否则回落到启动时构建的共享客户端（已含 app.yml / 环境变量 Token）。
-// 两者皆不可用时返回 nil（GitHub 功能未启用）。
-func (h *Handler) githubClientFor(c *gin.Context) *ghpkg.Client {
-	if t := strings.TrimSpace(c.GetHeader("X-GitHub-Token")); t != "" {
-		cacheDir := "data/ghcache"
-		if h.gh != nil {
-			cacheDir = h.gh.CacheDir()
-		}
-		return ghpkg.New(ghpkg.Config{Token: t, CacheDir: cacheDir})
-	}
-	return h.gh
 }
 
 // systemVersion GET /api/v1/system/version
@@ -77,6 +60,7 @@ func (h *Handler) systemVersion(c *gin.Context) {
 }
 
 // systemUpdateCheck GET /api/v1/system/update/check?refresh=1
+// 版本来源为 GHCR 镜像标签：只读取公开镜像包，不访问 GitHub Release。
 func (h *Handler) systemUpdateCheck(c *gin.Context) {
 	current := h.resolveCurrentVersion()
 	resp := UpdateCheckResponse{
@@ -89,55 +73,62 @@ func (h *Handler) systemUpdateCheck(c *gin.Context) {
 		IsDev:               app.IsDev(),
 	}
 
-	gh := h.githubClientFor(c)
-	if gh == nil {
-		resp.Error = "GitHub 客户端未启用"
-		c.JSON(200, resp)
+	if h.registry == nil {
+		resp.Error = "镜像标签客户端未启用"
+		c.JSON(http.StatusOK, resp)
 		return
 	}
 
-	refresh := c.Query("refresh") == "1"
-	var payload []byte
-	var err error
-	if refresh {
-		payload, err = gh.RefreshLatestRelease(splitOwnerRepo(h.updateRepo))
-	} else {
-		payload, err = gh.GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
-	}
+	image := strings.ToLower(strings.TrimSpace(h.updateRepo))
+	tags, err := h.registry.ListTags(image, c.Query("refresh") == "1")
 	if err != nil {
-		resp.Error = fmt.Sprintf("检查更新失败: %s（私有仓库可在「系统更新」页填入 GitHub Token 鉴权；仓库无 Release 时也会返回 404）", err.Error())
-		c.JSON(200, resp)
+		resp.Error = fmt.Sprintf("检查镜像标签失败: %s（GHCR 不可达或镜像包不是公开的）", err.Error())
+		c.JSON(http.StatusOK, resp)
 		return
 	}
 
-	var release struct {
-		TagName     string    `json:"tag_name"`
-		HTMLURL     string    `json:"html_url"`
-		Body        string    `json:"body"`
-		PublishedAt time.Time `json:"published_at"`
-	}
-	if err := json.Unmarshal(payload, &release); err != nil {
-		resp.Error = "解析 GitHub release 失败: " + err.Error()
-		c.JSON(200, resp)
+	latest := latestVersionTag(tags)
+	if latest == "" {
+		resp.Error = "镜像包暂无可比较的版本标签"
+		c.JSON(http.StatusOK, resp)
 		return
 	}
 
-	latest := normalizeSemver(release.TagName)
 	resp.LatestVersion = latest
-	resp.ReleaseURL = release.HTMLURL
-	resp.ReleaseNotes = truncateString(release.Body, releaseNotesMaxBytes)
-	if !release.PublishedAt.IsZero() {
-		resp.PublishedAt = release.PublishedAt.UTC().Format(time.RFC3339)
-	}
-
-	if latest != "" && current != "unknown" {
+	resp.ReleaseURL = registryPackageURL(h.updateRepo)
+	if current != "unknown" {
 		resp.UpdateAvailable = semverCompare(latest, current) > 0
 	}
-
-	c.JSON(200, resp)
+	c.JSON(http.StatusOK, resp)
 }
 
 // --- helpers ---
+
+// latestVersionTag 从镜像标签中挑出最高的语义化版本；
+// `2`、`2.0`、`latest`、`sha-xxxx` 等派生标签不参与比较。
+func latestVersionTag(tags []string) string {
+	latest := ""
+	for _, tag := range tags {
+		version := normalizeSemver(tag)
+		if version == "" {
+			continue
+		}
+		if latest == "" || semverCompare(version, latest) > 0 {
+			latest = version
+		}
+	}
+	return latest
+}
+
+// registryPackageURL 返回镜像包页面：
+// https://github.com/<owner>/<repo>/pkgs/container/<package>（GHCR 包名小写）。
+func registryPackageURL(repo string) string {
+	owner, name := splitOwnerRepo(strings.TrimSpace(repo))
+	if owner == "" || name == "" {
+		return ""
+	}
+	return fmt.Sprintf("https://github.com/%s/%s/pkgs/container/%s", owner, name, strings.ToLower(name))
+}
 
 // resolveCurrentVersion 解析当前版本：app.Version ≠ "dev" → 用之；否则读 <Root>/version；都无 → unknown。
 func (h *Handler) resolveCurrentVersion() string {
@@ -162,11 +153,4 @@ func splitOwnerRepo(repo string) (owner, repoName string) {
 		return parts[0], parts[1]
 	}
 	return "", repo
-}
-
-func truncateString(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max]
 }

@@ -17,6 +17,7 @@ import (
 	"blog/internal/backup"
 	"blog/internal/comments"
 	"blog/internal/content"
+	ghcr "blog/internal/ghcr"
 	ghpkg "blog/internal/github"
 	"blog/internal/identity"
 	"blog/internal/linkwatch"
@@ -63,10 +64,11 @@ type Handler struct {
 	stellarOwner   string
 	stellarRepo    string
 
-	// 系统更新（Console 检查更新；v1.7.3 起移除一键更新执行链）
+	// 系统更新（Console 检查更新；v1.7.3 起移除一键更新执行链，版本来源为 GHCR 镜像标签）
 	appVersion string
 	root       string
 	updateRepo string
+	registry   *ghcr.Client
 
 	// icons 图标注册表（icons.yml），素材速查端点用，可空。
 	icons *tmpl.IconRegistry
@@ -121,6 +123,8 @@ type Config struct {
 	Root       string
 	AppVersion string
 	UpdateRepo string
+	// Registry 是 GHCR 镜像标签客户端；可空，空时按默认配置构造。
+	Registry *ghcr.Client
 }
 
 // New 创建 API handler。
@@ -134,6 +138,10 @@ func New(cfg Config) *Handler {
 	repo := cfg.UpdateRepo
 	if repo == "" {
 		repo = updateRepoDefault
+	}
+	registry := cfg.Registry
+	if registry == nil {
+		registry = ghcr.New(ghcr.Config{})
 	}
 
 	storageBackend := cfg.Storage
@@ -166,6 +174,7 @@ func New(cfg Config) *Handler {
 		appVersion:                  cfg.AppVersion,
 		root:                        cfg.Root,
 		updateRepo:                  repo,
+		registry:                    registry,
 		generate2FA:                 generate2FAToken,
 		loginFails: make(map[string]struct {
 			n int
