@@ -743,6 +743,83 @@ func (h *Handler) restorePost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
+// maxBatchPostSlugs 单次批量状态操作的 slug 上限（与评论批量一致）。
+const maxBatchPostSlugs = 100
+
+// batchPostsRequest 批量发布/设为草稿请求。action 仅 publish / draft。
+type batchPostsRequest struct {
+	Slugs  []string `json:"slugs"`
+	Action string   `json:"action"`
+}
+
+// batchPostsResponse 批量状态操作计数：succeeded 实际变更、skipped 已是目标状态、
+// failed 不存在或位于回收站。全部 skipped/failed 仍返回 200，由前端按计数提示。
+type batchPostsResponse struct {
+	Succeeded int `json:"succeeded"`
+	Skipped   int `json:"skipped"`
+	Failed    int `json:"failed"`
+}
+
+// batchPosts POST /api/v1/posts/batch：批量发布或批量设为草稿。
+// 语义是「切换已保存内容的发布状态」：只改 status/updated_at，不应用也不清空
+// 草稿头（draft_json），与单篇 publish 的整表单发布不同。
+// 非管理员必须对每个 slug 具备署名权限，任一越权整单 403，不做部分成功。
+func (h *Handler) batchPosts(c *gin.Context) {
+	var req batchPostsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, http.StatusBadRequest, "请求格式错误")
+		return
+	}
+	var status string
+	switch req.Action {
+	case "publish":
+		status = store.StatusPublished
+	case "draft":
+		status = store.StatusDraft
+	default:
+		Fail(c, http.StatusBadRequest, "action 仅支持 publish / draft")
+		return
+	}
+	// 去空白并去重（保留首次出现顺序）；过滤后为空或超过上限统一 400。
+	slugs := make([]string, 0, len(req.Slugs))
+	seen := make(map[string]struct{}, len(req.Slugs))
+	for _, raw := range req.Slugs {
+		slug := strings.TrimSpace(raw)
+		if slug == "" {
+			continue
+		}
+		if _, ok := seen[slug]; ok {
+			continue
+		}
+		seen[slug] = struct{}{}
+		slugs = append(slugs, slug)
+	}
+	if len(slugs) == 0 {
+		Fail(c, http.StatusBadRequest, "slugs 必填")
+		return
+	}
+	if len(slugs) > maxBatchPostSlugs {
+		Fail(c, http.StatusBadRequest, "单次最多操作 100 篇文章")
+		return
+	}
+	// 复用单篇接口的归属校验（失败时已写 403 响应并 Abort），保证提示语与语义一致。
+	for _, slug := range slugs {
+		if !h.requirePostOwnership(c, slug) {
+			return
+		}
+	}
+	succeeded, skipped, failed, err := h.store.SetPostsStatusBySlug(slugs, status)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	// 只有真实变更才发布内容变更事件；全 skipped/failed 不触发搜索索引重建。
+	if succeeded > 0 {
+		h.publishContentChanged()
+	}
+	c.JSON(http.StatusOK, batchPostsResponse{Succeeded: succeeded, Skipped: skipped, Failed: failed})
+}
+
 // purgePost DELETE /api/v1/posts/:slug/purge：彻底删除文章（物理删除）。
 func (h *Handler) purgePost(c *gin.Context) {
 	slug := c.Param("slug")

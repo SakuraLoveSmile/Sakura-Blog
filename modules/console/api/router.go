@@ -352,6 +352,8 @@ func (h *Handler) register(r *gin.Engine) {
 		author.GET("/posts", h.listPosts)
 		author.GET("/posts/:slug", h.getPost)
 		author.POST("/posts", h.createPost)
+		// 批量发布/设为草稿（只切状态，不应用草稿头）
+		author.POST("/posts/batch", h.batchPosts)
 		author.PUT("/posts/:slug", h.updatePost)
 		author.DELETE("/posts/:slug", h.deletePost)
 		author.POST("/posts/:slug/restore", h.restorePost)
