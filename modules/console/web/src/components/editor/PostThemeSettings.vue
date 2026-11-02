@@ -186,7 +186,7 @@ const tagsField: Field = { path: "footer.show_tags", label: "底部标签", choi
 </script>
 
 <template>
-  <div class="min-w-0 space-y-3">
+  <div class="min-w-0">
     <p v-if="configError || editError" role="alert" class="px-1 text-xs text-destructive">
       {{ configError || editError }}
     </p>
@@ -195,12 +195,12 @@ const tagsField: Field = { path: "footer.show_tags", label: "底部标签", choi
       v-for="(group, index) in groups"
       :key="group.title"
       :open="index === 0"
-      class="min-w-0 rounded-[14px] border border-border bg-card"
+      class="min-w-0 border-b border-border py-5 last:border-b-0"
     >
-      <summary class="cursor-pointer px-4 py-3.5 text-[12.5px] font-medium text-text-secondary">
+      <summary class="cursor-pointer py-0.5 text-[13px] font-medium text-foreground">
         {{ group.title }}
       </summary>
-      <fieldset :disabled="disabled" class="min-w-0 space-y-3.5 px-4 pb-4 disabled:opacity-50">
+      <fieldset :disabled="disabled" class="min-w-0 space-y-3.5 pt-4 disabled:opacity-50">
         <div v-for="field in group.fields" :key="field.path" class="min-w-0">
           <label :for="id + field.path" class="mb-1.5 block text-[12.5px] font-medium text-text-secondary">{{
             field.label
@@ -234,9 +234,9 @@ const tagsField: Field = { path: "footer.show_tags", label: "底部标签", choi
       </fieldset>
     </details>
 
-    <details class="min-w-0 rounded-[14px] border border-border bg-card">
-      <summary class="cursor-pointer px-4 py-3.5 text-[12.5px] font-medium text-text-secondary">文章底部</summary>
-      <fieldset :disabled="disabled" class="min-w-0 space-y-3.5 px-4 pb-4 disabled:opacity-50">
+    <details class="min-w-0 border-b border-border py-5 last:border-b-0">
+      <summary class="cursor-pointer py-0.5 text-[13px] font-medium text-foreground">文章底部</summary>
+      <fieldset :disabled="disabled" class="min-w-0 space-y-3.5 pt-4 disabled:opacity-50">
         <div>
           <label :for="id + 'footer.show_tags'" class="mb-1.5 block text-[12.5px] font-medium text-text-secondary"
             >底部标签</label
@@ -335,7 +335,7 @@ const tagsField: Field = { path: "footer.show_tags", label: "底部标签", choi
             {{
               complexReferences
                 ? "现有资料包含复杂对象，已完整保留，请在配置原文中编辑。"
-              : "清空可隐藏参考资料；恢复继承移除本文覆盖。"
+                : "清空可隐藏参考资料；恢复继承移除本文覆盖。"
             }}
           </p>
         </div>
