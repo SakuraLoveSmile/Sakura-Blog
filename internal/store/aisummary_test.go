@@ -56,3 +56,92 @@ func TestPostAISummary(t *testing.T) {
 		t.Fatal("expected error for non-existent slug")
 	}
 }
+
+// TestPostAISummaryProjectsToStellarExtensions：Stellar 2 的公开快照只读
+// blog_extensions.content.ai_summary，SetAISummary 必须同步投影且保留其它扩展字段；
+// 清空摘要时列与扩展同时移除。
+func TestPostAISummaryProjectsToStellarExtensions(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.EnsureSettingsTable(); err != nil {
+		t.Fatalf("ensure settings: %v", err)
+	}
+	p := &Post{
+		Slug: "canonical-ai", Title: "AI 摘要投影", Status: StatusPublished, ContentMD: "# 正文",
+		StellarVersion: 2,
+		StellarConfig:  `{"title":"AI 摘要投影"}`,
+		BlogExtensions: `{"status":"draft","content":{"banner_image":"/banner.jpg"},"custom":{"keep":true}}`,
+	}
+	if _, err := s.Create(p); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if err := s.SetAISummary("canonical-ai", "canonical 摘要"); err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	got, err := s.GetBySlug("canonical-ai")
+	if err != nil || got == nil {
+		t.Fatalf("get: %v, nil=%v", err, got == nil)
+	}
+	if got.AISummary != "canonical 摘要" {
+		t.Fatalf("ai_summary = %q, want canonical 摘要", got.AISummary)
+	}
+	extension, err := decodeStellarObject(got.BlogExtensions, "blog extensions")
+	if err != nil {
+		t.Fatalf("decode extensions: %v", err)
+	}
+	content, _ := extension["content"].(map[string]any)
+	if content["ai_summary"] != "canonical 摘要" {
+		t.Fatalf("content.ai_summary = %v, want canonical 摘要 (%s)", content["ai_summary"], got.BlogExtensions)
+	}
+	if content["banner_image"] != "/banner.jpg" || extension["status"] != "draft" {
+		t.Fatalf("extension fields lost: %s", got.BlogExtensions)
+	}
+	if custom, _ := extension["custom"].(map[string]any); custom["keep"] != true {
+		t.Fatalf("unknown extension keys lost: %s", got.BlogExtensions)
+	}
+
+	// 清空：列与 canonical 扩展同时移除，其它字段保留。
+	if err := s.SetAISummary("canonical-ai", ""); err != nil {
+		t.Fatalf("clear: %v", err)
+	}
+	got, _ = s.GetBySlug("canonical-ai")
+	if got.AISummary != "" {
+		t.Fatalf("ai_summary = %q, want empty", got.AISummary)
+	}
+	extension, err = decodeStellarObject(got.BlogExtensions, "blog extensions")
+	if err != nil {
+		t.Fatalf("decode extensions after clear: %v", err)
+	}
+	content, _ = extension["content"].(map[string]any)
+	if _, exists := content["ai_summary"]; exists {
+		t.Fatalf("content.ai_summary survived clear: %s", got.BlogExtensions)
+	}
+	if content["banner_image"] != "/banner.jpg" || extension["status"] != "draft" {
+		t.Fatalf("clear dropped unrelated extension fields: %s", got.BlogExtensions)
+	}
+	if custom, _ := extension["custom"].(map[string]any); custom["keep"] != true {
+		t.Fatalf("clear dropped unknown extension keys: %s", got.BlogExtensions)
+	}
+}
+
+// TestMergeAISummaryExtension 覆盖直接投影的边界：空原文、非法 JSON、
+// content 非对象时保留原文；摘要未变化时不制造格式漂移。
+func TestMergeAISummaryExtension(t *testing.T) {
+	cases := []struct {
+		name, raw, summary, want string
+		changed                  bool
+	}{
+		{"empty raw", "", "摘要", `{"content":{"ai_summary":"摘要"}}`, true},
+		{"clear on empty", "", "", "", false},
+		{"invalid json preserved", "{", "摘要", "{", false},
+		{"non-object content preserved", `{"content":"raw"}`, "摘要", `{"content":"raw"}`, false},
+		{"same value untouched", `{"content":{"ai_summary":"摘要"}}`, "摘要", `{"content":{"ai_summary":"摘要"}}`, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, changed := mergeAISummaryExtension(tc.raw, tc.summary)
+			if got != tc.want || changed != tc.changed {
+				t.Fatalf("mergeAISummaryExtension(%q, %q) = (%q, %v), want (%q, %v)", tc.raw, tc.summary, got, changed, tc.want, tc.changed)
+			}
+		})
+	}
+}

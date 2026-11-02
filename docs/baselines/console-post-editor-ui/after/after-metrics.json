@@ -1,0 +1,1785 @@
+{
+  "base": "http://127.0.0.1:8136",
+  "capturedAt": "2026-11-02T12:45:04.803Z",
+  "viewports": {
+    "after-1280": {
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 224,
+        "y": 0,
+        "width": 1056,
+        "height": 69,
+        "right": 1280,
+        "bottom": 69
+      },
+      "toolbar": {
+        "x": 252,
+        "y": 157,
+        "width": 656,
+        "height": 44,
+        "right": 908,
+        "bottom": 201
+      },
+      "toolbarScroll": {
+        "clientWidth": 412,
+        "scrollWidth": 621,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 748,
+        "y": 161,
+        "width": 154,
+        "height": 36,
+        "right": 902,
+        "bottom": 197
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 752,
+        "y": 161,
+        "width": 116,
+        "height": 36,
+        "right": 868,
+        "bottom": 197
+      },
+      "mobileSettings": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "desktopToggle": {
+        "x": 870,
+        "y": 163,
+        "width": 32,
+        "height": 32,
+        "right": 902,
+        "bottom": 195
+      },
+      "sidebarDesktop": {
+        "x": 932,
+        "y": 93,
+        "width": 320,
+        "height": 712,
+        "right": 1252,
+        "bottom": 805
+      },
+      "drawer": null,
+      "publish": {
+        "x": 1171,
+        "y": 16,
+        "width": 81,
+        "height": 36,
+        "right": 1252,
+        "bottom": 52
+      },
+      "toolbarButtonUnder44": [
+        {
+          "label": "插入 Stellar 标签",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "导入 Markdown 文件",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "加粗 (Cmd/Ctrl+B)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "斜体 (Cmd/Ctrl+I)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "删除线",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "标题",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "链接 (Cmd/Ctrl+K)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "引用",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "行内代码",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "代码块",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "上传图片",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "从图床选择",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "无序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "有序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "插入表格",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "AI 属性生成",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "发布前预览",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "版本历史",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "全屏编辑",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "切换编辑器",
+          "width": 116,
+          "height": 36,
+          "visible": true
+        },
+        {
+          "label": "收起右侧面板",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        }
+      ],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 252,
+        "y": 93,
+        "width": 656,
+        "height": 730,
+        "right": 908,
+        "bottom": 823
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-768": {
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 224,
+        "y": 0,
+        "width": 544,
+        "height": 69,
+        "right": 768,
+        "bottom": 69
+      },
+      "toolbar": {
+        "x": 252,
+        "y": 157,
+        "width": 488,
+        "height": 44,
+        "right": 740,
+        "bottom": 201
+      },
+      "toolbarScroll": {
+        "clientWidth": 244,
+        "scrollWidth": 621,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 580,
+        "y": 161,
+        "width": 154,
+        "height": 36,
+        "right": 734,
+        "bottom": 197
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 584,
+        "y": 161,
+        "width": 116,
+        "height": 36,
+        "right": 700,
+        "bottom": 197
+      },
+      "mobileSettings": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "desktopToggle": {
+        "x": 702,
+        "y": 163,
+        "width": 32,
+        "height": 32,
+        "right": 734,
+        "bottom": 195
+      },
+      "sidebarDesktop": {
+        "x": 252,
+        "y": 847,
+        "width": 488,
+        "height": 175.5,
+        "right": 740,
+        "bottom": 1022.5
+      },
+      "drawer": null,
+      "publish": {
+        "x": 659,
+        "y": 16,
+        "width": 81,
+        "height": 36,
+        "right": 740,
+        "bottom": 52
+      },
+      "toolbarButtonUnder44": [
+        {
+          "label": "插入 Stellar 标签",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "导入 Markdown 文件",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "加粗 (Cmd/Ctrl+B)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "斜体 (Cmd/Ctrl+I)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "删除线",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "标题",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "链接 (Cmd/Ctrl+K)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "引用",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "行内代码",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "代码块",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "上传图片",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "从图床选择",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "无序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "有序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "插入表格",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "AI 属性生成",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "发布前预览",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "版本历史",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "全屏编辑",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "切换编辑器",
+          "width": 116,
+          "height": 36,
+          "visible": true
+        },
+        {
+          "label": "收起右侧面板",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        }
+      ],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 252,
+        "y": 93,
+        "width": 488,
+        "height": 730,
+        "right": 740,
+        "bottom": 823
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-639": {
+      "scrollWidth": 639,
+      "clientWidth": 639,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 639,
+        "height": 65,
+        "right": 639,
+        "bottom": 65
+      },
+      "toolbar": {
+        "x": 16,
+        "y": 132,
+        "width": 607,
+        "height": 52,
+        "right": 623,
+        "bottom": 184
+      },
+      "toolbarScroll": {
+        "clientWidth": 346,
+        "scrollWidth": 825,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 470,
+        "y": 136,
+        "width": 147,
+        "height": 44,
+        "right": 617,
+        "bottom": 180
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 474,
+        "y": 136,
+        "width": 54,
+        "height": 44,
+        "right": 528,
+        "bottom": 180
+      },
+      "mobileSettings": {
+        "x": 530,
+        "y": 136,
+        "width": 87,
+        "height": 44,
+        "right": 617,
+        "bottom": 180
+      },
+      "desktopToggle": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "sidebarDesktop": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "drawer": null,
+      "publish": {
+        "x": 551,
+        "y": 10,
+        "width": 72,
+        "height": 44,
+        "right": 623,
+        "bottom": 54
+      },
+      "toolbarButtonUnder44": [],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 16,
+        "y": 81,
+        "width": 607,
+        "height": 725,
+        "right": 623,
+        "bottom": 806
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-640": {
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 640,
+        "height": 69,
+        "right": 640,
+        "bottom": 69
+      },
+      "toolbar": {
+        "x": 28,
+        "y": 157,
+        "width": 584,
+        "height": 44,
+        "right": 612,
+        "bottom": 201
+      },
+      "toolbarScroll": {
+        "clientWidth": 340,
+        "scrollWidth": 621,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 452,
+        "y": 161,
+        "width": 154,
+        "height": 36,
+        "right": 606,
+        "bottom": 197
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 456,
+        "y": 161,
+        "width": 116,
+        "height": 36,
+        "right": 572,
+        "bottom": 197
+      },
+      "mobileSettings": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "desktopToggle": {
+        "x": 574,
+        "y": 163,
+        "width": 32,
+        "height": 32,
+        "right": 606,
+        "bottom": 195
+      },
+      "sidebarDesktop": {
+        "x": 28,
+        "y": 847,
+        "width": 584,
+        "height": 219.5,
+        "right": 612,
+        "bottom": 1066.5
+      },
+      "drawer": null,
+      "publish": {
+        "x": 531,
+        "y": 12,
+        "width": 81,
+        "height": 44,
+        "right": 612,
+        "bottom": 56
+      },
+      "toolbarButtonUnder44": [
+        {
+          "label": "插入 Stellar 标签",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "导入 Markdown 文件",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "加粗 (Cmd/Ctrl+B)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "斜体 (Cmd/Ctrl+I)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "删除线",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "标题",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "链接 (Cmd/Ctrl+K)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "引用",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "行内代码",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "代码块",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "上传图片",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "从图床选择",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "无序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "有序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "插入表格",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "AI 属性生成",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "发布前预览",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "版本历史",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "全屏编辑",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "切换编辑器",
+          "width": 116,
+          "height": 36,
+          "visible": true
+        },
+        {
+          "label": "收起右侧面板",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        }
+      ],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 28,
+        "y": 93,
+        "width": 584,
+        "height": 730,
+        "right": 612,
+        "bottom": 823
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-1023": {
+      "scrollWidth": 1023,
+      "clientWidth": 1023,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 224,
+        "y": 0,
+        "width": 799,
+        "height": 69,
+        "right": 1023,
+        "bottom": 69
+      },
+      "toolbar": {
+        "x": 252,
+        "y": 157,
+        "width": 743,
+        "height": 44,
+        "right": 995,
+        "bottom": 201
+      },
+      "toolbarScroll": {
+        "clientWidth": 499,
+        "scrollWidth": 621,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 835,
+        "y": 161,
+        "width": 154,
+        "height": 36,
+        "right": 989,
+        "bottom": 197
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 839,
+        "y": 161,
+        "width": 116,
+        "height": 36,
+        "right": 955,
+        "bottom": 197
+      },
+      "mobileSettings": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "desktopToggle": {
+        "x": 957,
+        "y": 163,
+        "width": 32,
+        "height": 32,
+        "right": 989,
+        "bottom": 195
+      },
+      "sidebarDesktop": {
+        "x": 252,
+        "y": 847,
+        "width": 743,
+        "height": 175.5,
+        "right": 995,
+        "bottom": 1022.5
+      },
+      "drawer": null,
+      "publish": {
+        "x": 914,
+        "y": 16,
+        "width": 81,
+        "height": 36,
+        "right": 995,
+        "bottom": 52
+      },
+      "toolbarButtonUnder44": [
+        {
+          "label": "插入 Stellar 标签",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "导入 Markdown 文件",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "加粗 (Cmd/Ctrl+B)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "斜体 (Cmd/Ctrl+I)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "删除线",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "标题",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "链接 (Cmd/Ctrl+K)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "引用",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "行内代码",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "代码块",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "上传图片",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "从图床选择",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "无序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "有序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "插入表格",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "AI 属性生成",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "发布前预览",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "版本历史",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "全屏编辑",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "切换编辑器",
+          "width": 116,
+          "height": 36,
+          "visible": true
+        },
+        {
+          "label": "收起右侧面板",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        }
+      ],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 252,
+        "y": 93,
+        "width": 743,
+        "height": 730,
+        "right": 995,
+        "bottom": 823
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-1024": {
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 224,
+        "y": 0,
+        "width": 800,
+        "height": 69,
+        "right": 1024,
+        "bottom": 69
+      },
+      "toolbar": {
+        "x": 252,
+        "y": 157,
+        "width": 400,
+        "height": 44,
+        "right": 652,
+        "bottom": 201
+      },
+      "toolbarScroll": {
+        "clientWidth": 156,
+        "scrollWidth": 621,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 492,
+        "y": 161,
+        "width": 154,
+        "height": 36,
+        "right": 646,
+        "bottom": 197
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 496,
+        "y": 161,
+        "width": 116,
+        "height": 36,
+        "right": 612,
+        "bottom": 197
+      },
+      "mobileSettings": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "desktopToggle": {
+        "x": 614,
+        "y": 163,
+        "width": 32,
+        "height": 32,
+        "right": 646,
+        "bottom": 195
+      },
+      "sidebarDesktop": {
+        "x": 676,
+        "y": 93,
+        "width": 320,
+        "height": 730,
+        "right": 996,
+        "bottom": 823
+      },
+      "drawer": null,
+      "publish": {
+        "x": 915,
+        "y": 16,
+        "width": 81,
+        "height": 36,
+        "right": 996,
+        "bottom": 52
+      },
+      "toolbarButtonUnder44": [
+        {
+          "label": "插入 Stellar 标签",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "导入 Markdown 文件",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "加粗 (Cmd/Ctrl+B)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "斜体 (Cmd/Ctrl+I)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "删除线",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "标题",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "链接 (Cmd/Ctrl+K)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "引用",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "行内代码",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "代码块",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "上传图片",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "从图床选择",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "无序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "有序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "插入表格",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "AI 属性生成",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "发布前预览",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "版本历史",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "全屏编辑",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "切换编辑器",
+          "width": 116,
+          "height": 36,
+          "visible": true
+        },
+        {
+          "label": "收起右侧面板",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        }
+      ],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 252,
+        "y": 93,
+        "width": 400,
+        "height": 730,
+        "right": 652,
+        "bottom": 823
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-1440": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 224,
+        "y": 0,
+        "width": 1216,
+        "height": 69,
+        "right": 1440,
+        "bottom": 69
+      },
+      "toolbar": {
+        "x": 252,
+        "y": 157,
+        "width": 816,
+        "height": 44,
+        "right": 1068,
+        "bottom": 201
+      },
+      "toolbarScroll": {
+        "clientWidth": 572,
+        "scrollWidth": 621,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 908,
+        "y": 161,
+        "width": 154,
+        "height": 36,
+        "right": 1062,
+        "bottom": 197
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 912,
+        "y": 161,
+        "width": 116,
+        "height": 36,
+        "right": 1028,
+        "bottom": 197
+      },
+      "mobileSettings": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "desktopToggle": {
+        "x": 1030,
+        "y": 163,
+        "width": 32,
+        "height": 32,
+        "right": 1062,
+        "bottom": 195
+      },
+      "sidebarDesktop": {
+        "x": 1092,
+        "y": 93,
+        "width": 320,
+        "height": 730,
+        "right": 1412,
+        "bottom": 823
+      },
+      "drawer": null,
+      "publish": {
+        "x": 1331,
+        "y": 16,
+        "width": 81,
+        "height": 36,
+        "right": 1412,
+        "bottom": 52
+      },
+      "toolbarButtonUnder44": [
+        {
+          "label": "插入 Stellar 标签",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "导入 Markdown 文件",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "加粗 (Cmd/Ctrl+B)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "斜体 (Cmd/Ctrl+I)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "删除线",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "标题",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "链接 (Cmd/Ctrl+K)",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "引用",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "行内代码",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "代码块",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "上传图片",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "从图床选择",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "无序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "有序列表",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "插入表格",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "AI 属性生成",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "发布前预览",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "版本历史",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "全屏编辑",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        },
+        {
+          "label": "切换编辑器",
+          "width": 116,
+          "height": 36,
+          "visible": true
+        },
+        {
+          "label": "收起右侧面板",
+          "width": 32,
+          "height": 32,
+          "visible": true
+        }
+      ],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 252,
+        "y": 93,
+        "width": 816,
+        "height": 730,
+        "right": 1068,
+        "bottom": 823
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-390": {
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "liveStatusCount": 1,
+      "statusBarCount": 0,
+      "saveStatus": "所有修改已保存",
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 65,
+        "right": 390,
+        "bottom": 65
+      },
+      "toolbar": {
+        "x": 16,
+        "y": 132,
+        "width": 358,
+        "height": 52,
+        "right": 374,
+        "bottom": 184
+      },
+      "toolbarScroll": {
+        "clientWidth": 97,
+        "scrollWidth": 825,
+        "overflowX": "auto"
+      },
+      "toolbarEnd": {
+        "x": 221,
+        "y": 136,
+        "width": 147,
+        "height": 44,
+        "right": 368,
+        "bottom": 180
+      },
+      "endInsideScroller": false,
+      "kindPicker": {
+        "x": 225,
+        "y": 136,
+        "width": 54,
+        "height": 44,
+        "right": 279,
+        "bottom": 180
+      },
+      "mobileSettings": {
+        "x": 281,
+        "y": 136,
+        "width": 87,
+        "height": 44,
+        "right": 368,
+        "bottom": 180
+      },
+      "desktopToggle": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "sidebarDesktop": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "drawer": null,
+      "publish": {
+        "x": 302,
+        "y": 10,
+        "width": 72,
+        "height": 44,
+        "right": 374,
+        "bottom": 54
+      },
+      "toolbarButtonUnder44": [],
+      "settingsGroupCards": 0,
+      "writingSurface": {
+        "x": 16,
+        "y": 81,
+        "width": 358,
+        "height": 725,
+        "right": 374,
+        "bottom": 806
+      },
+      "postSettingsText": "大纲 设置 正文编辑区公式和正文验证下一段内容"
+    },
+    "after-390-drawer-open": {
+      "drawerRect": {
+        "x": 0,
+        "y": 128.609375,
+        "width": 390,
+        "height": 651.390625,
+        "top": 128.609375,
+        "right": 390,
+        "bottom": 780,
+        "left": 0
+      },
+      "scroller": {
+        "clientHeight": 589,
+        "scrollHeight": 2999,
+        "scrollTop": 2410
+      },
+      "lastItem": {
+        "top": -270.765625,
+        "bottom": -207.265625
+      },
+      "nav": {
+        "top": 787,
+        "bottom": 844,
+        "height": 57
+      },
+      "focused": "关闭文章设置",
+      "under44": []
+    },
+    "after-390-drawer-bottom": {
+      "scroller": {
+        "top": 190.609375,
+        "bottom": 780,
+        "height": 589.390625,
+        "clientHeight": 589,
+        "scrollHeight": 2999,
+        "scrollTop": 2410
+      },
+      "lastContent": {
+        "label": "配置原文（JSON） 完整 JSON 按原文保存；Stell",
+        "top": 720.734375,
+        "bottom": 779.734375,
+        "height": 59
+      },
+      "nav": {
+        "top": 787,
+        "bottom": 844,
+        "height": 57
+      },
+      "overlap": false
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "assets": [
+    {
+      "path": "/console/assets/AttachmentPickerModal-D-xzH6hB.js",
+      "served": "516b7e131f7d00149d898fd6a545fa4f956a65a6599817e67e5ab4b8711129d5",
+      "local": "516b7e131f7d00149d898fd6a545fa4f956a65a6599817e67e5ab4b8711129d5",
+      "match": true
+    },
+    {
+      "path": "/console/assets/DefaultLayout-02XDOw06.css",
+      "served": "ba00465f8d9c92f49821d65302359c262d2f4a9e9e54d82df0cdc3f7d6fa9734",
+      "local": "ba00465f8d9c92f49821d65302359c262d2f4a9e9e54d82df0cdc3f7d6fa9734",
+      "match": true
+    },
+    {
+      "path": "/console/assets/DefaultLayout-CNBQmnXB.js",
+      "served": "4dab97e3b501f3d80b82361400a2dcef4b4e8986e5ccb60c79def88311bd5dd7",
+      "local": "4dab97e3b501f3d80b82361400a2dcef4b4e8986e5ccb60c79def88311bd5dd7",
+      "match": true
+    },
+    {
+      "path": "/console/assets/MarkdownEditor-Ci8asMWF.js",
+      "served": "2887b5948b56aecf9ba2153d1e668a469bcefc5b153b87dfa6401e354aea3fa8",
+      "local": "2887b5948b56aecf9ba2153d1e668a469bcefc5b153b87dfa6401e354aea3fa8",
+      "match": true
+    },
+    {
+      "path": "/console/assets/PluginParamForm-D2kdQa5S.js",
+      "served": "4c850baac847f3eb1c723df37105108663dbf17b6f584be007c2bc381b60679a",
+      "local": "4c850baac847f3eb1c723df37105108663dbf17b6f584be007c2bc381b60679a",
+      "match": true
+    },
+    {
+      "path": "/console/assets/PostEditor-Bcx7l_mM.css",
+      "served": "738f286a307191fedbade1bcef802519d944fdaf3e1175248f229eb36f2bf4c2",
+      "local": "738f286a307191fedbade1bcef802519d944fdaf3e1175248f229eb36f2bf4c2",
+      "match": true
+    },
+    {
+      "path": "/console/assets/PostEditor-DYmp6YaO.js",
+      "served": "f5c7ea409b737c5714839f4a230326e17561d7d67b64e7cdc4c939446c7be20f",
+      "local": "f5c7ea409b737c5714839f4a230326e17561d7d67b64e7cdc4c939446c7be20f",
+      "match": true
+    },
+    {
+      "path": "/console/assets/RichTextEditor-D_0nS_i_.css",
+      "served": "e7476e64fc8227691ccdbb05ea06083853a66a4ca3013a70bd1b1e34a63a8bfb",
+      "local": "e7476e64fc8227691ccdbb05ea06083853a66a4ca3013a70bd1b1e34a63a8bfb",
+      "match": true
+    },
+    {
+      "path": "/console/assets/RichTextEditor-f24hMk8N.js",
+      "served": "9867880cf891038f7ed7e59ff9f38cdf086dd40982c7b8fb9830bfd97ecb7731",
+      "local": "9867880cf891038f7ed7e59ff9f38cdf086dd40982c7b8fb9830bfd97ecb7731",
+      "match": true
+    },
+    {
+      "path": "/console/assets/SchemaForm-OkWJbSWL.js",
+      "served": "bf5ad998279d459b6a0c11e3d502aa6613d2c282890e8f4bde056d05e16095da",
+      "local": "bf5ad998279d459b6a0c11e3d502aa6613d2c282890e8f4bde056d05e16095da",
+      "match": true
+    },
+    {
+      "path": "/console/assets/ShortcodeInsertPanel-BaP69ogp.css",
+      "served": "4ba17f4f88820abb8285e6f33799f13f6c658b4da4f27a58776c3c4865346765",
+      "local": "4ba17f4f88820abb8285e6f33799f13f6c658b4da4f27a58776c3c4865346765",
+      "match": true
+    },
+    {
+      "path": "/console/assets/ShortcodeInsertPanel-DfRhw6ba.js",
+      "served": "25edda4755be9252d402732174ed98ef2019e71ce98878bd88dbb6b4a2eba3db",
+      "local": "25edda4755be9252d402732174ed98ef2019e71ce98878bd88dbb6b4a2eba3db",
+      "match": true
+    },
+    {
+      "path": "/console/assets/StellarContentConfig-Bn03fcRh.js",
+      "served": "7ac3c5ce7da7bff376f99d54254672c63b521e07c5b1512b1a622b39b05bf955",
+      "local": "7ac3c5ce7da7bff376f99d54254672c63b521e07c5b1512b1a622b39b05bf955",
+      "match": true
+    },
+    {
+      "path": "/console/assets/VSwitch-0kow3yDj.js",
+      "served": "0775ed480f81bf59d6440505ecbfc872b1be3dfcfcf760d33a9b9ca03f236160",
+      "local": "0775ed480f81bf59d6440505ecbfc872b1be3dfcfcf760d33a9b9ca03f236160",
+      "match": true
+    },
+    {
+      "path": "/console/assets/api-A7kJ8ncB.js",
+      "served": "078ce9a31f2a3ee47c56f5c1d85e603e6b2c6bcfcb97ab345aca15e502e58627",
+      "local": "078ce9a31f2a3ee47c56f5c1d85e603e6b2c6bcfcb97ab345aca15e502e58627",
+      "match": true
+    },
+    {
+      "path": "/console/assets/chart-init-BhrNxZ3G.js",
+      "served": "7611c10adc735595c79f05b8dfca742eb8e2c87d2b2d4a404d4cf59b3318958a",
+      "local": "7611c10adc735595c79f05b8dfca742eb8e2c87d2b2d4a404d4cf59b3318958a",
+      "match": true
+    },
+    {
+      "path": "/console/assets/dm-sans-latin-400-normal-CW0RaeGs.woff2",
+      "served": "4ab51eb2cd7305d177187908d6397474d4520663f6c6e572feb0a64f4fa80006",
+      "local": "4ab51eb2cd7305d177187908d6397474d4520663f6c6e572feb0a64f4fa80006",
+      "match": true
+    },
+    {
+      "path": "/console/assets/dm-sans-latin-500-normal-B9HHJjqV.woff2",
+      "served": "19bf1984956517c35c2bd35b6cdedac12a21d6fcd3596c614ecdfb88b648909d",
+      "local": "19bf1984956517c35c2bd35b6cdedac12a21d6fcd3596c614ecdfb88b648909d",
+      "match": true
+    },
+    {
+      "path": "/console/assets/dm-sans-latin-600-normal-Aqo67rzb.woff2",
+      "served": "6bb2b2645ba5eeaecf56322c543fa3a75b87b927977b9c03b1dabc4205089120",
+      "local": "6bb2b2645ba5eeaecf56322c543fa3a75b87b927977b9c03b1dabc4205089120",
+      "match": true
+    },
+    {
+      "path": "/console/assets/dm-sans-latin-700-normal-DvUfVpUG.woff2",
+      "served": "35c5efa0e5daa52ee5c6500f5be354bf751fb65c4e49e1d6806c6eb5883e8fe9",
+      "local": "35c5efa0e5daa52ee5c6500f5be354bf751fb65c4e49e1d6806c6eb5883e8fe9",
+      "match": true
+    },
+    {
+      "path": "/console/assets/format-DaBMN9QY.js",
+      "served": "56bddbae35b89cadd93b9f303ef5fdcf9a89ba39878fdf8084e2aef1a4ebb5c5",
+      "local": "56bddbae35b89cadd93b9f303ef5fdcf9a89ba39878fdf8084e2aef1a4ebb5c5",
+      "match": true
+    },
+    {
+      "path": "/console/assets/index-k14YBz9D.js",
+      "served": "b94c9abd8c6e5deba57c0e314be0e06895c50b91a4d5fdfc9d65f0691b95564e",
+      "local": "b94c9abd8c6e5deba57c0e314be0e06895c50b91a4d5fdfc9d65f0691b95564e",
+      "match": true
+    },
+    {
+      "path": "/console/assets/index-xGzz64GR.css",
+      "served": "6a32e04831003a45c5a68e7c5ecafd6d30c0bf5936a9dda2739332cab135c9db",
+      "local": "6a32e04831003a45c5a68e7c5ecafd6d30c0bf5936a9dda2739332cab135c9db",
+      "match": true
+    },
+    {
+      "path": "/console/assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2",
+      "served": "14425ba9c695763c1547f48a206b7aa60350a33ae23de09f0407877f3fcd89eb",
+      "local": "14425ba9c695763c1547f48a206b7aa60350a33ae23de09f0407877f3fcd89eb",
+      "match": true
+    },
+    {
+      "path": "/console/assets/pinia-BLEL4_VJ.js",
+      "served": "7f308b4001acbcf83e9eaf3914f003591ce11cb07d7a261a018399e3b2141ece",
+      "local": "7f308b4001acbcf83e9eaf3914f003591ce11cb07d7a261a018399e3b2141ece",
+      "match": true
+    },
+    {
+      "path": "/console/assets/preload-helper-l0U7FUPx.js",
+      "served": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+      "local": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+      "match": true
+    },
+    {
+      "path": "/console/assets/preview-document-Dp-2cvqN.js",
+      "served": "774b79fb4ec3f3fcde09a20b2d71719c255549c984d2a3f3689fc7a1728dc7e9",
+      "local": "774b79fb4ec3f3fcde09a20b2d71719c255549c984d2a3f3689fc7a1728dc7e9",
+      "match": true
+    },
+    {
+      "path": "/console/assets/registry-D1WRZwEj.css",
+      "served": "225757fba522d5548824c900dd5854ae546530f0d1ac4347aa7c0bf24af49653",
+      "local": "225757fba522d5548824c900dd5854ae546530f0d1ac4347aa7c0bf24af49653",
+      "match": true
+    },
+    {
+      "path": "/console/assets/registry-Dqx6EyqZ.js",
+      "served": "0ebd04aec77747b8b1ea2760c3e25a54783565d2db64addb66f1bfbf5eefd5ff",
+      "local": "0ebd04aec77747b8b1ea2760c3e25a54783565d2db64addb66f1bfbf5eefd5ff",
+      "match": true
+    },
+    {
+      "path": "/console/assets/runtime-core.esm-bundler-_EIWwYTD.js",
+      "served": "03a968a2060625a4f413c3e8f30260cc3ee05a29bea7c3273b8aa65ee101d197",
+      "local": "03a968a2060625a4f413c3e8f30260cc3ee05a29bea7c3273b8aa65ee101d197",
+      "match": true
+    },
+    {
+      "path": "/console/assets/stellar-form-fields-q2muADzQ.js",
+      "served": "18a2247335568f3368a7c58b4efa6948de02bdbff7059dbdd8af6e6c01411acc",
+      "local": "18a2247335568f3368a7c58b4efa6948de02bdbff7059dbdd8af6e6c01411acc",
+      "match": true
+    },
+    {
+      "path": "/console/assets/stellar-form-json-JZMf33Rj.js",
+      "served": "9a8129909d3d0341bc8748a81a9357a4f72f20684a1972053c4cf544213f8b5f",
+      "local": "9a8129909d3d0341bc8748a81a9357a4f72f20684a1972053c4cf544213f8b5f",
+      "match": true
+    },
+    {
+      "path": "/console/assets/usePluginPreview-CR33HZl6.js",
+      "served": "5d15857f20ba24d0ad35ca223f4a564796a581b7ec6e421d9fd34ef1a434f7eb",
+      "local": "5d15857f20ba24d0ad35ca223f4a564796a581b7ec6e421d9fd34ef1a434f7eb",
+      "match": true
+    },
+    {
+      "path": "/console/assets/useQuery-DyDk5ATs.js",
+      "served": "67064f85bb2d70d225d7acf35b367888868f8db73d6d04fd648a5da2ab1d2141",
+      "local": "67064f85bb2d70d225d7acf35b367888868f8db73d6d04fd648a5da2ab1d2141",
+      "match": true
+    },
+    {
+      "path": "/console/assets/useQueryClient-C0DyK70p.js",
+      "served": "f29fbb15ceda2392bbf71b58a72504a809a8266274535fd726ac80717cbfa30a",
+      "local": "f29fbb15ceda2392bbf71b58a72504a809a8266274535fd726ac80717cbfa30a",
+      "match": true
+    },
+    {
+      "path": "/console/assets/useShortcodeDraft-BbXmszlD.js",
+      "served": "b87ce20fbf96f6dbbd753c0a39ac60ece4f691927ac3446f552d3dc72c5a2d4f",
+      "local": "b87ce20fbf96f6dbbd753c0a39ac60ece4f691927ac3446f552d3dc72c5a2d4f",
+      "match": true
+    },
+    {
+      "path": "/console/index.html",
+      "served": "049837eed30042278507dd458bd2f6ccb49bae97f04d3970f7ec3e128310d505",
+      "local": "049837eed30042278507dd458bd2f6ccb49bae97f04d3970f7ec3e128310d505",
+      "match": true
+    }
+  ],
+  "referencePreview": {
+    "background": "rgb(232, 232, 236)",
+    "color": "rgb(9, 9, 10)",
+    "fontSize": "12px",
+    "fontWeight": "400",
+    "rect": {
+      "width": 64,
+      "height": 40
+    },
+    "contrast": 16.28800037818688
+  },
+  "mobilePublish": {
+    "background": "rgb(232, 232, 236)",
+    "color": "rgb(0, 0, 0)",
+    "expectedBackground": "rgb(232, 232, 236)",
+    "expectedColor": "rgb(0, 0, 0)",
+    "fontSize": "13px",
+    "fontWeight": "500",
+    "rect": {
+      "x": 302,
+      "y": 10,
+      "width": 72,
+      "height": 44,
+      "right": 374,
+      "bottom": 54
+    },
+    "pageOverflow": 0,
+    "contrast": 17.185031866264257
+  }
+}

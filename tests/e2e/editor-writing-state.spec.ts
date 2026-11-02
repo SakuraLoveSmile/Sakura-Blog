@@ -27,7 +27,7 @@ async function createPost(page: Page, status = "draft") {
   await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
   return slug;
 }
-const status = (page: Page) => page.locator(".editor-status-bar [role='status']");
+const status = (page: Page) => page.locator(".editor-save-status");
 
 // 同一浏览器事件中输入并操作，明确覆盖富文本 200ms 防抖窗口。
 async function inputAndClick(page: Page, content: string, selector: string) {
@@ -67,6 +67,7 @@ test("立即输入后保存、预览与切换编辑器包含最新正文；元�
   expect((await preview).postDataJSON().content_md).toContain("立即预览的最新正文");
 
   await page.getByRole("button", { name: "切换编辑器" }).click();
+  await expect(page.getByRole("option", { name: "Markdown 编辑器" })).toBeVisible();
   await inputAndClick(page, "立即切换保留的最新正文", "#post-editor-kind-markdown");
   await expect(page.locator("textarea").first()).toHaveValue("立即切换保留的最新正文");
   await page.getByLabel("文章标题", { exact: true }).fill("元数据也尚未保存");

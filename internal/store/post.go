@@ -1086,14 +1086,94 @@ func (s *Store) ClearDraft(slug string) error {
 	return nil
 }
 
+// mergeAISummaryExtension 把 AI 摘要同步进 Stellar 2 canonical blog_extensions
+// 的 content.ai_summary：非空写入，空串删除。其它字段与未知键原样保留；
+// 原文不是 JSON 对象时放弃投影（changed=false），读取端仍以 ai_summary 列为回退。
+func mergeAISummaryExtension(raw, summary string) (updated string, changed bool) {
+	raw = strings.TrimSpace(raw)
+	root := map[string]any{}
+	if raw != "" {
+		decoded, err := decodeStellarObject(raw, "posts Blog extensions")
+		if err != nil {
+			return raw, false
+		}
+		root = decoded
+	}
+	content, hasContent := root["content"]
+	if !hasContent {
+		if summary == "" {
+			return raw, false
+		}
+		object := map[string]any{}
+		root["content"] = object
+		content = object
+	}
+	object, ok := content.(map[string]any)
+	if !ok {
+		return raw, false
+	}
+	current, hasSummary := object["ai_summary"]
+	if summary == "" {
+		if !hasSummary {
+			return raw, false
+		}
+		delete(object, "ai_summary")
+		// content 是本次为写入摘要才创建的，清空后一并移除，避免留下空对象。
+		if !hasContent && len(object) == 0 {
+			delete(root, "content")
+		}
+	} else {
+		if text, ok := current.(string); ok && text == summary {
+			return raw, false
+		}
+		object["ai_summary"] = summary
+	}
+	encoded, err := json.Marshal(root)
+	if err != nil {
+		return raw, false
+	}
+	return string(encoded), true
+}
+
 // SetAISummary 写入 AI 摘要（Spec 53）：传空串即清空。文章不存在返回错误。
+// 同时把摘要投影到 Stellar 2 canonical blog_extensions.content.ai_summary，前台
+// 公开快照只读该位置；旧记录仍可由读取端回退到 ai_summary 列。
 func (s *Store) SetAISummary(slug, summary string) error {
-	res, err := s.db.Exec(`UPDATE posts SET ai_summary = ? WHERE slug = ? AND deleted_at = ''`, summary, slug)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("set ai summary for %s: %w", slug, err)
+	}
+	defer tx.Rollback()
+	var (
+		extensions     string
+		stellarVersion int
+	)
+	err = tx.QueryRow(`SELECT blog_extensions, stellar_version FROM posts WHERE slug = ? AND deleted_at = ''`, slug).
+		Scan(&extensions, &stellarVersion)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("set ai summary for %s: no rows affected", slug)
+		}
+		return fmt.Errorf("set ai summary for %s: %w", slug, err)
+	}
+	updated, changed := extensions, false
+	if stellarVersion == StellarContentVersion {
+		updated, changed = mergeAISummaryExtension(extensions, summary)
+	}
+	var res sql.Result
+	if changed {
+		res, err = tx.Exec(`UPDATE posts SET ai_summary = ?, blog_extensions = ? WHERE slug = ? AND deleted_at = ''`, summary, updated, slug)
+	} else {
+		res, err = tx.Exec(`UPDATE posts SET ai_summary = ? WHERE slug = ? AND deleted_at = ''`, summary, slug)
+	}
 	if err != nil {
 		return fmt.Errorf("set ai summary for %s: %w", slug, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("set ai summary for %s: no rows affected", slug)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("set ai summary for %s: %w", slug, err)
 	}
 	return nil
 }

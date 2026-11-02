@@ -439,45 +439,46 @@ async function generateAiSummary() {
 const fieldCls = "apple-input";
 const textareaCls = "apple-textarea";
 const labelCls = "mb-1.5 block text-[12.5px] font-medium text-text-secondary";
-const cardCls = "rounded-[14px] border border-border bg-card";
-const cardHeaderCls = "px-4 pb-3 pt-3.5 text-[11px] font-semibold uppercase tracking-[0.6px] text-text-tertiary";
-const cardBodyCls = "px-4 pb-4";
+const groupCls = "border-b border-border py-5 last:border-b-0";
+const groupHeaderCls = "mb-4 text-[13px] font-medium text-foreground";
+const groupBodyCls = "";
 const chipCls = "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors";
 const chipIdleCls = "bg-secondary text-text-secondary hover:bg-accent";
 const chipActiveCls = "bg-primary/15 text-primary";
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <!-- Tab 切换（大纲 / 设置） -->
-    <div :class="cardCls">
-      <div class="p-1.5">
-        <div class="grid grid-cols-2 gap-0.5 rounded-lg bg-secondary p-0.5">
-          <button
-            v-for="tab in [
-              { key: 'outline', label: '大纲' },
-              { key: 'detail', label: '设置' },
-            ]"
-            :key="tab.key"
-            type="button"
-            :aria-pressed="activeTab === tab.key"
-            :class="[
-              'rounded-md py-1.5 text-[13px] transition-colors',
-              activeTab === tab.key
-                ? 'bg-card font-medium text-foreground shadow-sm'
-                : 'text-text-tertiary hover:text-foreground',
-            ]"
-            @click="activeTab = tab.key as 'outline' | 'detail'"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
+  <div class="flex flex-col px-4">
+    <!-- Tab 切换（大纲 / 设置）：无外层卡片，只用下划线与文字层级 -->
+    <div class="border-b border-border">
+      <div class="grid grid-cols-2">
+        <button
+          v-for="tab in [
+            { key: 'outline', label: '大纲' },
+            { key: 'detail', label: '设置' },
+          ]"
+          :key="tab.key"
+          type="button"
+          :aria-pressed="activeTab === tab.key"
+          :class="[
+            'relative min-h-11 py-2.5 text-[13px] transition-colors',
+            activeTab === tab.key ? 'font-medium text-foreground' : 'text-text-tertiary hover:text-foreground',
+          ]"
+          @click="activeTab = tab.key as 'outline' | 'detail'"
+        >
+          {{ tab.label }}
+          <span
+            v-if="activeTab === tab.key"
+            class="absolute inset-x-3 bottom-0 h-px bg-foreground"
+            aria-hidden="true"
+          ></span>
+        </button>
       </div>
     </div>
 
     <!-- 大纲 -->
-    <div v-if="activeTab === 'outline'" :class="cardCls">
-      <div class="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+    <div v-if="activeTab === 'outline'" class="py-2">
+      <div class="min-h-0 flex-1 overflow-y-auto px-1 py-2">
         <p v-if="outline.length === 0" class="py-10 text-center text-sm text-text-quaternary">
           添加正文标题后，可在这里跳转到对应段落
         </p>
@@ -500,10 +501,10 @@ const chipActiveCls = "bg-primary/15 text-primary";
     <!-- 设置 -->
     <template v-else>
       <p v-if="syncError" role="alert" class="px-1 text-xs text-destructive">{{ syncError }}</p>
-      <!-- 卡片 1：发布设置 -->
-      <div :class="cardCls">
-        <div :class="cardHeaderCls">发布设置</div>
-        <div :class="cardBodyCls + ' space-y-3.5'">
+      <!-- 分组 1：发布设置 -->
+      <div :class="groupCls">
+        <div :class="groupHeaderCls">发布设置</div>
+        <div :class="groupBodyCls + ' space-y-3.5'">
           <div>
             <label :class="labelCls">别名 (Slug)</label>
             <input v-model="form.slug" :class="fieldCls" @input="emit('slugEdited')" />
@@ -630,10 +631,10 @@ const chipActiveCls = "bg-primary/15 text-primary";
         </div>
       </div>
 
-      <!-- 卡片 2：分类与标签 -->
-      <div :class="cardCls">
-        <div :class="cardHeaderCls">分类与标签</div>
-        <div :class="cardBodyCls + ' space-y-3.5'">
+      <!-- 分组 2：分类与标签 -->
+      <div :class="groupCls">
+        <div :class="groupHeaderCls">分类与标签</div>
+        <div :class="groupBodyCls + ' space-y-3.5'">
           <div>
             <label :class="labelCls">分类</label>
             <input
@@ -757,30 +758,14 @@ const chipActiveCls = "bg-primary/15 text-primary";
         </div>
       </div>
 
-      <!-- 卡片 3：封面设置 -->
-      <div :class="cardCls">
-        <div :class="cardHeaderCls">封面设置</div>
-        <div :class="cardBodyCls + ' space-y-3'">
-          <!-- 封面预览 16:9 深色渐变 -->
+      <!-- 分组 3：封面设置 -->
+      <div :class="groupCls">
+        <div :class="groupHeaderCls">封面设置</div>
+        <div :class="groupBodyCls + ' space-y-3'">
+          <!-- 封面预览 16:9：中性占位，只保留媒体边界 -->
           <div
-            class="cover-preview-blue relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-border"
+            class="relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[var(--radius)] border border-border bg-secondary"
           >
-            <div
-              class="pointer-events-none absolute inset-0"
-              style="
-                background:
-                  radial-gradient(
-                    circle at 30% 30%,
-                    color-mix(in srgb, var(--color-primary) 15%, transparent) 0%,
-                    transparent 50%
-                  ),
-                  radial-gradient(
-                    circle at 70% 70%,
-                    color-mix(in srgb, var(--color-chart-5) 12%, transparent) 0%,
-                    transparent 50%
-                  );
-              "
-            ></div>
             <template v-if="form.cover">
               <img :src="form.cover" alt="封面预览" class="relative z-10 h-full w-full object-cover" />
             </template>
@@ -833,10 +818,10 @@ const chipActiveCls = "bg-primary/15 text-primary";
 
       <PostThemeSettings v-model:config="form.stellar_config" :version="form.stellar_version" :sync-error="syncError" />
 
-      <!-- 卡片 4：高级选项 -->
-      <div :class="cardCls">
-        <div :class="cardHeaderCls">高级选项</div>
-        <div :class="cardBodyCls + ' space-y-3.5'">
+      <!-- 分组 4：高级选项 -->
+      <div :class="groupCls">
+        <div :class="groupHeaderCls">高级选项</div>
+        <div :class="groupBodyCls + ' space-y-3.5'">
           <div>
             <label :class="labelCls">摘要</label>
             <textarea v-model="form.excerpt" rows="3" :class="textareaCls + ' resize-y'"></textarea>
@@ -896,10 +881,10 @@ const chipActiveCls = "bg-primary/15 text-primary";
         </div>
       </div>
 
-      <!-- 标签插件参数面板（折叠为独立卡片） -->
-      <div :class="cardCls">
-        <div :class="cardHeaderCls">标签插件</div>
-        <div :class="cardBodyCls">
+      <!-- 分组 5：标签插件参数面板 -->
+      <div :class="groupCls">
+        <div :class="groupHeaderCls">标签插件</div>
+        <div :class="groupBodyCls">
           <ShortcodeInsertPanel @insert="emit('insert', $event)" />
         </div>
       </div>
@@ -911,8 +896,32 @@ const chipActiveCls = "bg-primary/15 text-primary";
         :content="form.content_md"
         profile="post"
         summary="配置原文（JSON）"
-        class="min-w-0"
+        class="post-settings-content-config min-w-0"
       />
     </template>
   </div>
 </template>
+
+<style scoped>
+/* 共享配置组件保持功能边界，仅在文章侧栏内去掉卡片皮肤。 */
+.post-settings-content-config {
+  padding: 18px 0 20px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 移动抽屉内的直接控件保证可触控。 */
+@media (max-width: 639px) {
+  :deep(button),
+  :deep(input),
+  :deep(select),
+  :deep(textarea) {
+    min-height: 44px;
+  }
+  :deep(button) {
+    min-width: 44px;
+  }
+}
+</style>
