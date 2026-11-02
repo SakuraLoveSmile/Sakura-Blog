@@ -1,6 +1,6 @@
 # AI 摘要已生成但前台不显示
 
-任务编号：BLG-20261102-08。状态：实现中（本地修复与验证中，未提交、未发布）。
+任务编号：BLG-20261102-08。状态：待体验（beta03 已修复并部署；beta04 补齐 HeTi 排版修复，待生产部署后复验）。
 
 ## 现象与根因
 
@@ -37,6 +37,24 @@
 - 隔离真实服务（worktree `.tmp/ai-summary-display/runtime`，`127.0.0.1:18089`，`scripts/e2e/prepare.go` 空站与本地合成数据）：Console API 创建文章并保存摘要后，数据库列与 `blog_extensions.content.ai_summary` 同时写入，其它扩展键保留；`GET /post/...` 返回 `<div class="body"><p>摘要…</p></div>`。把扩展改回线上同形 `{"status":"draft"}`、保留列后页面仍回退显示；清空端点后两处均移除且页面不输出；再次保存后恢复。
 - 证据：`docs/baselines/ai-summary-display/verification.json`；截图 `reference-before.png`（线上问题状态）、`after-desktop.png`、`after-legacy-column.png`。
 - 未验证：生产部署与生产数据写入未执行（需授权）；README 已说明未逐项跑 appearance/移动端截图，因为本次不改 CSS/模板结构。
+
+## 后续修复：HeTi 环境摘要词内空隙（beta04）
+
+- 现象：beta03 部署后摘要已显示，但在启用 HeTi 的页面（生产默认启用）出现 `He xo`、`Gi t`、`N ode.js` 等词内空隙；`reference` 为 `production-before-heti-fix.png`。
+- 根因：`ai-summary.js` 的页面加载打字机把 SSR 摘要拆成 2 字一段的多个文本节点；HeTi 扩展（CDN 脚本晚于打字机运行）按文本节点处理 `.heti` 内容，把 `Hexo`、`Git` 等西文单词按片段包进 `<heti-spacing>`，相邻片段各带间距形成词内空隙。DOM 实测：`innerHTML` 被拆成 `<heti-spacing>He</heti-spacing><heti-spacing>xo</heti-spacing>`。
+- 决定：启用 HeTi 时保留服务端完整摘要文本、交给 HeTi 正常排版，不播放打字机；未启用 HeTi 的站点保留原打字机动画。打字机结束（读者自助生成路径）额外 `normalize()` 合并文本节点，避免任何后置排版脚本按片段拆词。
+- 变更：`modules/stellar/web/assets/js/ai-summary.js`；回归用例 `modules/stellar/tests/stellar-v2-native-lifecycle.test.mjs`「已有 AI 摘要启用 HeTi 时不播放打字机，保留服务端完整文本」。
+- 验证：`make assets-test` 241 项通过；隔离服务（HeTi 开启）实测 `heti-spacing` 包裹完整单词（`Hexo`/`Git`/`Node.js v12`/`hexo-cli`/`GitHub Pages`），无词内拆分；HeTi 关闭时打字机仍运行（中途 20 个文本节点与光标，结束后合并为 1 个文本节点）。截图 `after-heti-desktop.png`。
+
+## 发布记录（v2.0.7-beta03，2026-11-03）
+
+- 用户授权「发布修复并部署」。提交：`e51ff549` fix: 修复已生成的 AI 摘要在前台不显示（10 files，含计划与验收基线）；经 `make merge-check` 合入 dev 为 `d8c385dd`（含 `origin/main` 历史同步），推送后 PR #39 `dev → main` 合并 `b1ac9421`。
+- 晋级：PR #40（`chore: 同步 release 分支历史到 main`，内容零差异）合并 `30800e09`；PR #41 `main → release` 合并 `0796ac76`。三 PR 的必需 CI（go/lint/security/console/e2e/build，发布 PR 另含 release-source/image）全部通过。
+- tag：`v2.0.7-beta03`（GPG 签名）打在 `0796ac76`；Docker Release run `41479377596` success（`0796ac76`，约 4m45s）。
+- 镜像：`ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta03` digest `sha256:fd65dba9e2f861a5a99ea542532ab53c712685385d47c76ce9e8d21c608d67cd`；`sha-0796ac7` 同 digest；label `version=2.0.7-beta03`、`revision=0796ac76…`。
+- 稳定标签未移动：`latest` / `2` / `2.0` / `2.0.6` 仍为 `sha256:944df8d8…a734392`；GitHub Release `v2.0.7-beta03` 为 Pre-release。
+- 生产升级：升级前 `2.0.7-beta02`（image ID `e49df5be…`）、running、restarts 0。备份 `/home/ubuntu/blog-release-v2.0.7-beta03/`（0700）保存 `blog.db` 三件套与 compose 副本，db md5 源与副本一致；compose 仅 image 一行改为 `:2.0.7-beta03` 后 `pull && up -d`。升级后容器 `2.0.7-beta03`（image ID `fd65dba9…` = GHCR digest）、running、restarts 0；宿主 `/readyz` 200、公网 `/readyz` 200、公网 `/settings` 显示 `Blog v2.0.7-beta03`。
+- 生产验收：`/post/hexo-blog-setup-guide` 的 `#ai-summary .body` 首次出现完整摘要 `<p>这篇教程…</p>`（回退路径生效）；但同页 HeTi 造成词内空隙，随后在 beta04 修复。回退方案：compose image 改回 `:2.0.7-beta02` 并 `up -d`；本次无数据库 schema 迁移。
 
 ## 剩余问题
 

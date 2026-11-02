@@ -80,5 +80,29 @@
     "未部署生产、未发布新版本（发布与生产数据写入均需用户明确授权）",
     "未使用浏览器逐项检查四种 appearance 与移动端：本次不改 CSS/模板结构，仅让已有摘要卡在正文为空时输出已存摘要文本",
     "未在 Console 编辑器界面内实测 AI 生成按钮的完整点击链路；写库端点与页面渲染已由真实服务和 API 覆盖"
-  ]
+  ],
+  "followUp": {
+    "issue": "beta03 部署后摘要已显示，但 HeTi 页面出现词内空隙（He xo / Gi t / N ode.js）。",
+    "rootCause": "页面加载打字机把 SSR 摘要拆成 2 字一段的多个文本节点；HeTi 扩展脚本晚于打字机运行，按文本节点把 Hexo、Git 等西文单词按片段包进 heti-spacing，相邻片段各带间距形成词内空隙。",
+    "fix": "启用 HeTi 时保留服务端完整文本不播放打字机；打字机结束（读者自助生成路径）normalize() 合并文本节点。文件 modules/stellar/web/assets/js/ai-summary.js。",
+    "checks": [
+      {
+        "name": "HeTi 开启：摘要排版",
+        "observed": "heti-spacing 只包裹完整单词（Hexo / Git / Node.js v12 / npm / cnpm / hexo-cli / GitHub Pages），无词内拆分",
+        "pass": true,
+        "evidence": "after-heti-desktop.png"
+      },
+      {
+        "name": "HeTi 关闭：打字机保持",
+        "observed": "加载 600ms 时 20 个文本节点与 .ai-cursor；结束后合并为 1 个文本节点、全文正确",
+        "pass": true
+      },
+      {
+        "name": "JS 回归测试",
+        "observed": "make assets-test 241 项通过（新增 HeTi 分支用例）",
+        "pass": true
+      }
+    ],
+    "productionBeforeFix": "production-before-heti-fix.png（beta03 线上页面，词内空隙）"
+  }
 }
