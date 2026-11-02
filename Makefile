@@ -20,7 +20,7 @@ go-build:
 
 ## test: 静态检查 + 全部测试（Go vet + staticcheck + test + 前端 vue-tsc 类型检查 + assets/js 与 console 行为面机械校验）
 ## Go 命令统一从根 module 执行。
-test: dist-bootstrap console-test assets-test deploy-test release-source-test module-check
+test: dist-bootstrap console-test assets-test release-source-test module-check
 	go vet ./...
 	go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
 	go test ./...
@@ -36,11 +36,6 @@ release-secret-history-check:
 ## generate: 从 Go API structs 生成 Console TypeScript 声明。
 generate:
 	go generate ./modules/console/api
-
-## deploy-test: update.sh / update-docker.sh 手动更新脚本的本地部署/回滚测试，不访问网络或真实 systemd/docker。
-deploy-test:
-	bash deploy/update_test.sh
-	bash deploy/update-docker_test.sh
 
 ## release-source-test: release 晋级来源策略的本地回归测试。
 release-source-test:

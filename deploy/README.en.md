@@ -1,44 +1,40 @@
 # Deployment guide
 
-The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary. `update.sh` verifies the downloaded binary with SHA256 before deployment.
+The production artifact is a Docker image. `.github/workflows/docker-release.yml` builds and pushes `ghcr.io/sakuralovesmile/sakura-blog` on tag pushes; servers run it through Docker Compose with a pinned version tag. The repository no longer builds or ships a standalone binary, and the host-binary `update.sh` / `update-docker.sh` scripts and systemd update units have been removed.
 
-`update.sh` requires `curl`, `sha256sum`, `systemctl`, and `python3`. It supports public and private GitHub repositories; a private repository uses a `contents:read` PAT in `/opt/blog/.token` to read Release assets.
-
-Every new Release must include `blog-linux-amd64`, `blog-linux-amd64.sha256`, and `blog-linux-amd64.spdx.json`. The updater downloads the binary and checksum, verifies the checksum, and only then performs the replacement, health check, and automatic rollback flow. The SBOM remains available for release review and dependency analysis.
+To migrate a 1.x installation to Stellar 2.0, follow [Docker / Compose migration](upgrade-v1-to-v2.md) first: preview against the old database, rehearse in isolation, then migrate during a maintenance window. Regular image upgrades and `-seed` are not a substitute for the data migration.
 
 ## Configuration
 
 Create the runtime configuration outside Git:
 
 ```bash
-mkdir -p /opt/blog/{config,data,content/posts,update}
-chown -R blog:blog /opt/blog
-cp config/app.example.yml /opt/blog/config/app.yml
-cp config/site.example.yml /opt/blog/config/site.yml
-chmod 600 /opt/blog/config/app.yml /opt/blog/config/site.yml
+mkdir -p /opt/1panel/docker/compose/blog/{config,data,content/posts}
+cp config/app.example.yml  /opt/1panel/docker/compose/blog/config/app.yml
+cp config/site.example.yml /opt/1panel/docker/compose/blog/config/site.yml
+chmod 600 /opt/1panel/docker/compose/blog/config/app.yml /opt/1panel/docker/compose/blog/config/site.yml
 ```
 
-Prefer environment injection for tokens and passwords. Do not commit `config/app.yml`, `config/site.yml`, or a systemd `EnvironmentFile` containing secrets.
+Prefer environment injection for tokens and passwords. Do not commit `config/app.yml`, `config/site.yml`, or an environment file containing secrets.
 
-## systemd and nginx
+## Docker Compose
 
-The files in this directory are examples:
-
-- `blog.service` runs the binary as the unprivileged `blog` user (`ReadWritePaths` includes `/opt/blog/data`).
-- `blog.service.d/10-secrets.conf.example` shows how to load secrets from a root-owned environment file.
-- `nginx.conf.example` terminates TLS and forwards requests to the local service.
-- `blog-update.service` is a manual update entry point (`sudo systemctl start blog-update`, equivalent to `sudo update.sh`). Console update triggers were removed in v1.7.3; the Console only checks for new versions.
-
-Copy and review each file for the target host before enabling it. Set `BLOG_TRUSTED_PROXY` or the matching YAML setting only to the actual reverse-proxy address range.
-
-## Build and health check
-
-From the repository worktree:
+`deploy/docker-compose.image.yml` is a reference compose file. It mounts only runtime subdirectories (`config/`, `data/`, `content/`) and must pin a concrete `X.Y.Z` image tag in production; `latest` is not valid version evidence.
 
 ```bash
-pnpm install --frozen-lockfile
-make build
-./blog -root /opt/blog
+docker compose pull
+docker compose up -d
+curl -fsS http://127.0.0.1:8081/readyz
 ```
 
-Run `bash deploy/update_test.sh` to exercise update, request consumption, and rollback logic without contacting GitHub or systemd.
+Upgrade and rollback both work by changing the pinned `image` tag and running `docker compose up -d`. If the target version includes data migrations, restore the pre-upgrade backup before switching back.
+
+## nginx, Console and operations
+
+- `nginx.conf.example` terminates TLS and forwards requests to the container's host port.
+- The Console "System Update" page (`/console/system-update`) reads public GHCR image tags and only reports whether a newer version exists; it does not trigger upgrades.
+- Automatic full backups are written to `data/backups/` every 24h (database, uploads and site.yml), retention is controlled by `backup_keep`.
+- Logs: `docker logs -f blog`.
+- Site restore runs inside the application; keep `data/` writable and `config/site.yml` as a single writable file, and do not delete unfinished restore journals.
+
+See `deploy/README.md` (Chinese) for the full deployment checklist, upgrade/rollback and restore guidance.

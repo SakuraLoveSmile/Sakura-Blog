@@ -100,10 +100,9 @@ import type { SystemVersionResponse, UpdateCheckResponse } from "../generated";
 export const systemApi = {
   /** 系统构建版本信息（管理员专属） */
   version: () => http.get<SystemVersionResponse>("/system/version"),
-  /** 检查更新（refresh=1 绕过缓存直连 GitHub；token 为可选 GitHub Token，经 X-GitHub-Token 头携带以鉴权私有仓库） */
-  check: (refresh?: boolean, token?: string) =>
+  /** 检查更新（refresh=1 绕过缓存直连 GHCR；版本来源为镜像标签） */
+  check: (refresh?: boolean) =>
     http.get<UpdateCheckResponse>("/system/update/check", {
       params: refresh ? { refresh: "1" } : {},
-      ...(token ? { headers: { "X-GitHub-Token": token } } : {}),
     }),
 };

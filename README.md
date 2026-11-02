@@ -29,7 +29,7 @@
 | `config/` | 运行时配置 | 保留 `app.yml`/`site.yml`，与部署目录 `/opt/blog/config/` 对齐 |
 | `content/` | 内容 | Markdown 文章与笔记（git 跟踪）：`posts/*.md`（-seed 导入源 + 前台文件回退）、`notes.md`（/notes 正文） |
 | `data/` | 运行时数据 | DB/上传/备份/缓存（gitignored）：`blog.db`、`uploads/`、`backups/`、`ogcache/`、`ghcache/` |
-| 根级 | 构建与运维 | `go.mod`/`go.sum`、`deploy/`（systemd + update.sh）、`Makefile`（构建入口） |
+| 根级 | 构建与运维 | `go.mod`/`go.sum`、`deploy/`（Docker Compose 部署与 1.x 迁移指南）、`Makefile`（构建入口） |
 
 前后台渲染机制不变：前台 Go html/template SSR（动态渲染，文章发布即时可见），后台 Vue SPA 经 `/api/v1` 与后端通信。
 
@@ -80,7 +80,7 @@ make css   # 依赖 resource/ 主题源 + modules/stellar/web/node_modules（sty
 
 > 构建顺序必须是**先 `pnpm --filter console run build` 再 `go build`**，否则 `modules/console/web/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败（`make build` 已固化该顺序）。
 
-生产部署走 `deploy/` 目录：systemd 服务单元（`blog.service`）+ 自动更新脚本（`update.sh`，从 GitHub Release 拉取单二进制）。旧 1.x 站点升级 2.0 并导入 Markdown，请先阅读 [Docker / Compose 升级迁移指南](deploy/upgrade-v1-to-v2.md)。
+生产部署统一使用 Docker 镜像：tag 推送后由 `docker-release.yml` 构建 `ghcr.io/sakuralovesmile/sakura-blog`，服务器用 Compose 固定版本运行并执行 `docker compose pull && docker compose up -d` 升级；部署细节见 [deploy/README.md](deploy/README.md)。旧 1.x 站点升级 2.0 并导入 Markdown，请先阅读 [Docker / Compose 升级迁移指南](deploy/upgrade-v1-to-v2.md)。
 
 详见 [Demo 验证阶段计划](../.claude/plans/stellar-toasty-panda.md)。
 

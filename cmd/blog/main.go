@@ -119,6 +119,7 @@ func main() {
 				Root:           services.App.Root,
 				AppVersion:     app.Version,
 				UpdateRepo:     services.App.UpdateRepo,
+				Registry:       services.Registry,
 			},
 			GH: services.GitHub, DevMode: devMode, Root: services.App.Root, Fallback: stellarServer.NoRoute(nil),
 		})
