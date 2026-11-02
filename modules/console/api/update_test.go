@@ -35,7 +35,7 @@ func newUpdateEnvWithCookie(t *testing.T, ghHandler http.HandlerFunc) (*gin.Engi
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"tag_name":"v1.4.2","html_url":"https://github.com/SakuraLoveSmile/Sakura-Blog-Release/releases/tag/v1.4.2","body":"Bug fixes.","published_at":"2026-08-15T10:00:00Z"}`))
+		w.Write([]byte(`{"tag_name":"v1.4.2","html_url":"https://github.com/SakuraLoveSmile/Sakura-Blog/releases/tag/v1.4.2","body":"Bug fixes.","published_at":"2026-08-15T10:00:00Z"}`))
 	}))
 	t.Cleanup(srv.Close)
 
@@ -47,7 +47,7 @@ func newUpdateEnvWithCookie(t *testing.T, ghHandler http.HandlerFunc) (*gin.Engi
 			Store:      st,
 			Site:       sitePtr(site),
 			AppVersion: "v1.4.1",
-			UpdateRepo: "SakuraLoveSmile/Sakura-Blog-Release",
+			UpdateRepo: "SakuraLoveSmile/Sakura-Blog",
 			Root:       t.TempDir(),
 		},
 		GH: gh,
@@ -241,7 +241,7 @@ func TestSplitOwnerRepo(t *testing.T) {
 		owner string
 		repo  string
 	}{
-		{"SakuraLoveSmile/Sakura-Blog-Release", "SakuraLoveSmile", "Sakura-Blog-Release"},
+		{"SakuraLoveSmile/Sakura-Blog", "SakuraLoveSmile", "Sakura-Blog"},
 		{"a/b/c", "a", "b/c"},
 		{"justrepo", "", "justrepo"},
 	}

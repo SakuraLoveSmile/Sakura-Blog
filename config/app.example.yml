@@ -44,4 +44,4 @@ github_token:
 # Console 检查更新（GET /api/v1/system/update/check；v1.7.3 起只检测、不再触发执行）
 # 留空走代码默认值。
 # 检查更新的 GitHub 仓库（owner/repo），对齐 update.sh 的 BLOG_REPO 默认值。
-# update_repo: SakuraLoveSmile/Sakura-Blog-Release
+# update_repo: SakuraLoveSmile/Sakura-Blog

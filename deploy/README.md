@@ -111,13 +111,13 @@ sudo /opt/blog/update.sh                 # 二进制部署
 
 ### GitHub PAT
 
-检查更新需要读取仓库 release 信息。默认仓库 `Sakura-Blog-Release` 为公开仓库，可匿名访问（60 req/h 限流），无需配置 Token；改用私有仓库时需配置 PAT（`github_token`），权限只需 `contents:read`，复用部署时已有的 `.token` 文件即可。
+检查更新需要读取仓库 release 信息。默认仓库 `Sakura-Blog`（本项目仓库，公开）可匿名访问（60 req/h 限流），无需配置 Token；改用私有仓库时需配置 PAT（`github_token`），权限只需 `contents:read`，复用部署时已有的 `.token` 文件即可。
 
 ### app.yml 配置
 
 ```yaml
 # 系统更新配置（缺省值，多数部署无需修改）
-update_repo: "SakuraLoveSmile/Sakura-Blog-Release"  # 公开二进制发布仓库（owner/repo）
+update_repo: "SakuraLoveSmile/Sakura-Blog"  # 本仓库 Release 即二进制发布来源（owner/repo）
 ```
 
 ### 工作流程

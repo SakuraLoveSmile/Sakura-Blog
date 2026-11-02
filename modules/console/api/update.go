@@ -15,7 +15,7 @@ import (
 )
 
 // updateRepoDefault 为 api 层兜底常量，与 config.DefaultApp 对齐；Config 缺省时由 New() 填入。
-const updateRepoDefault = "SakuraLoveSmile/Sakura-Blog-Release"
+const updateRepoDefault = "SakuraLoveSmile/Sakura-Blog"
 
 // releaseNotesMaxBytes 截断 release body 的上限，防止超长正文撑爆响应。
 const releaseNotesMaxBytes = 32 * 1024

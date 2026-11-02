@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # ---------- 配置 ----------
-REPO="${BLOG_REPO:-SakuraLoveSmile/Sakura-Blog-Release}"
+REPO="${BLOG_REPO:-SakuraLoveSmile/Sakura-Blog}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/blog}"
 BINARY_NAME="${BINARY_NAME:-blog}"
 # 容器名（docker ps 的 Names 列）
@@ -23,9 +23,9 @@ CONTROL_DIR="${BLOG_CONTROL_DIR:-${INSTALL_DIR}/update}"
 REQUESTS_DIR="${BLOG_REQUESTS_DIR:-${CONTROL_DIR}/requests}"
 STATUS_FILE="${BLOG_STATUS_FILE:-${CONTROL_DIR}/status.json}"
 LOCK_FILE="${BLOG_LOCK_FILE:-${CONTROL_DIR}/update.lock}"
-# GitHub API（私有仓库需 Token 认证）
+# GitHub API（本项目仓库公开，可匿名访问；如仓库改为私有则需 Token）
 API_BASE="${BLOG_API_BASE:-https://api.github.com}"
-# 私有仓库 Release 下载需要 PAT（权限 repo），写入 /opt/blog/.token（chmod 600）
+# 可选 PAT（权限 repo），写入 /opt/blog/.token（chmod 600）；匿名访问时留空
 TOKEN_FILE="${TOKEN_FILE:-${INSTALL_DIR}/.token}"
 # 日志文件
 LOG_FILE="${LOG_FILE:-${INSTALL_DIR}/data/update.log}"

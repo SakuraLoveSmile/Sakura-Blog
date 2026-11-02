@@ -73,11 +73,11 @@ make pre-commit-check
 2. **dev → main（需授权）**：开 PR，CI 全部通过后合并。
 3. **main → release（需授权）**：开 PR。`release-source` 校验来源必须是本仓库的 `main`；`ci.yml` 的 `image` 作业预构建 Dockerfile（不推送）。两者都通过才能合并。推送 `release` 分支只产生 Actions 构建产物，不创建 Release，也不推送镜像。
 4. **打 tag（需授权）**：在 `release` 的合并提交上打 `vX.Y.Z` 并推送。tag 同时触发两个 workflow：
-   - `release.yml`：构建 `blog-linux-amd64`、`.sha256` 与 SPDX SBOM，发布到 `SakuraLoveSmile/Sakura-Blog-Release`。
+   - `release.yml`：构建 `blog-linux-amd64`、`.sha256` 与 SPDX SBOM，发布到本仓库 `SakuraLoveSmile/Sakura-Blog` 的 Release（公开仓库，使用内置 `GITHUB_TOKEN`）。
    - `docker-release.yml`：推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像标签不带 `v`，为 `X.Y.Z`、`X.Y`、`X`、`latest` 与 `sha-<短哈希>`。
 5. **完成判定**（缺任一项即未完成，不得宣布发布）：
    - 该 tag 上 `Release Build` 与 `Docker Release` 均为 `success`（`gh run list --workflow=release.yml` 与 `--workflow=docker-release.yml`）。
-   - 公开 Release 含 `blog-linux-amd64`、`blog-linux-amd64.sha256`、`blog-linux-amd64.spdx.json` 三个资产。
+   - 本项目 Release 含 `blog-linux-amd64`、`blog-linux-amd64.sha256`、`blog-linux-amd64.spdx.json` 三个资产。
    - `docker run --rm ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z -h` 退出码为 0，证明镜像内二进制可启动。
 6. **服务器升级（需授权，且第 5 步已完成）**：compose 的 `image` 固定为 `ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z`，执行 `docker compose pull && docker compose up -d`，再探测宿主映射端口的 `/readyz`，并在 Console 核对版本。不要以 `latest` 是否变化作为版本证据。
    - 回退：把 `image` 改回上一个已验证的版本标签并 `up -d`。若该版本含数据迁移，回退前必须先恢复停服前的完整数据备份，只切回镜像不足以回退（见 `deploy/README.md`「整站恢复与维护窗口」）。
