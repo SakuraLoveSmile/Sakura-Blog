@@ -77,13 +77,13 @@ func (h *Handler) aiGenerate(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if cfg.BaseURL == "" || cfg.Model == "" {
-		Fail(c, http.StatusBadRequest, "AI 未配置，请到 设置 → AI 中填写接口地址与模型")
+	if !cfg.Chat.Configured() {
+		Fail(c, http.StatusBadRequest, "AI 未配置，请到 设置 → AI 的「对话模型」中填写接口地址与模型")
 		return
 	}
 
 	system, user := buildAIPrompt(req)
-	content, err := callChatCompletion(cfg, system, user, nil)
+	content, err := callChatCompletion(cfg.Chat, system, user, nil)
 	if err != nil {
 		Fail(c, http.StatusBadGateway, "AI 调用失败: "+err.Error())
 		return
@@ -151,9 +151,9 @@ func contains(list []string, v string) bool {
 // client 为空时使用统一的 safefetch 客户端；调用方传入 client 仅用于
 // guest 场景和测试注入。配置地址在建请求前校验 scheme/host，最终拨号时
 // 再解析并校验每个 IP，封堵 DNS rebinding 与重定向绕过。
-func callChatCompletion(cfg config.AIConfig, system, user string, client *http.Client) (string, error) {
+func callChatCompletion(endpoint config.AIEndpoint, system, user string, client *http.Client) (string, error) {
 	return llm.New(client).ChatCompletion(context.Background(), llm.Config{
-		BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, Model: cfg.Model,
+		BaseURL: endpoint.BaseURL, APIKey: endpoint.APIKey, Model: endpoint.Model,
 	}, []llm.Message{{Role: "system", Content: system}, {Role: "user", Content: user}})
 }
 
@@ -235,7 +235,7 @@ func (h *Handler) aiSummaryGuest(c *gin.Context) {
 	if runes := []rune(content); len(runes) > aiGuestContentLimit {
 		content = string(runes[:aiGuestContentLimit])
 	}
-	guest := config.AIConfig{BaseURL: req.Endpoint, APIKey: req.APIKey, Model: req.Model}
+	guest := config.AIEndpoint{BaseURL: req.Endpoint, APIKey: req.APIKey, Model: req.Model}
 	// 统一 safefetch 客户端在最终拨号时重新解析/校验 IP，并拒绝重定向。
 	client := safefetch.New(safefetch.Options{Timeout: 30 * time.Second})
 	text, err := callChatCompletion(guest,

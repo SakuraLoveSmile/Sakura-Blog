@@ -49,11 +49,33 @@ const widgetFields = (region: string): StellarFormField => ({
 });
 export const pageFields: StellarFormField[] = [
   { form: "title", path: "title", host: true },
-  { form: "banner", path: "content.banner_image", blog: true },
+  // 页面横幅背景的官方字段是 front matter cover；历史 Blog 扩展 content.banner_image
+  // 仍会在渲染时覆盖 cover，因此按渲染优先级读取，写入 cover 后清理同义旧值。
+  {
+    form: "banner",
+    path: "cover",
+    readFrom: [
+      { path: "content.banner_image", blog: true },
+      { path: "cover" },
+    ],
+    migrate: { path: "content.banner_image", blog: true },
+    write: (value) => value || undefined,
+  },
   { form: "banner_info.title", path: "banner.headline", write: (value) => value || undefined },
   { form: "banner_info.subtitle", path: "banner.tagline" },
   { form: "banner_info.avatar", path: "banner.avatar" },
-  { form: "banner_info.icon", path: "leftbar.brand.image.src" },
+  // 侧栏品牌图官方字段是 leftbar.brand.image.src；迁移后的旧 icon 留在 Blog 扩展
+  // content.banner_icon，2.0 不消费，需要在回填时读取并在编辑后清理。
+  {
+    form: "banner_info.icon",
+    path: "leftbar.brand.image.src",
+    readFrom: [
+      { path: "content.banner_icon", blog: true },
+      { path: "leftbar.brand.image.src" },
+    ],
+    migrate: { path: "content.banner_icon", blog: true },
+    write: (value) => value || undefined,
+  },
   { form: "breadcrumb", path: "breadcrumb", fallback: true },
   { form: "author", path: "article.author" },
   { form: "date", path: "date", host: true },

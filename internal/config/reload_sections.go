@@ -203,7 +203,8 @@ func sectionTarget(section string) (any, error) {
 	case SectionWidgets:
 		return &tmpl.WidgetsConfig{}, nil
 	case SectionAI:
-		return &AIConfig{}, nil
+		// 旧分段仍按平铺结构校验/回存，不受 canonical AIConfig 嵌套改造影响。
+		return &legacyAISectionConfig{}, nil
 	case SectionCover:
 		return &tmpl.CoverConfig{}, nil
 	case SectionNavTabs:

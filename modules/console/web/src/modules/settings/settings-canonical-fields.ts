@@ -421,19 +421,43 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
   ],
   ai: [
     {
-      title: "本地 AI 服务",
-      description: "用于文章属性生成与知识库问答的 OpenAI 兼容接口。密钥只保存在服务端，表单中显示为 ****。",
+      title: "对话模型",
+      description:
+        "用于文章属性生成、AI 摘要和知识库问答的回答，与向量模型相互独立，可分别使用不同的 OpenAI 兼容接口。留空时沿用旧版单接口配置中的接口地址、密钥与对话模型。",
       fields: [
         text(
-          `${ai}.base_url`,
+          `${ai}.chat.base_url`,
           "接口地址",
-          "OpenAI 兼容服务的根地址，例如 https://api.openai.com/v1；系统会追加 /chat/completions 与 /embeddings。",
+          "OpenAI 兼容服务的根地址，例如 https://api.openai.com/v1；系统会追加 /chat/completions。留空时沿用旧版接口地址。",
         ),
-        field(`${ai}.api_key`, "API Key", "password", {
-          help: "保留 **** 表示不修改原密钥；清空输入可清除密钥。",
+        field(`${ai}.chat.api_key`, "API Key", "password", {
+          help: "保留 **** 表示不修改已保存的新密钥；留空时沿用旧版 API Key；如需彻底移除旧字段，请编辑 Stellar 2 完整配置。",
         }),
-        text(`${ai}.model`, "对话模型", "文章属性生成与知识库问答使用的模型名称。"),
-        text(`${ai}.embedding_model`, "向量模型", "知识库向量化与检索使用的 Embedding 模型名称；留空时知识库不可用。"),
+        text(
+          `${ai}.chat.model`,
+          "对话模型",
+          "文章属性生成、AI 摘要与知识库问答使用的模型名称。留空时沿用旧版对话模型。",
+        ),
+      ],
+    },
+    {
+      title: "向量模型",
+      description:
+        "仅用于知识库的向量化与检索，与对话模型相互独立，可指向不同的 OpenAI 兼容接口。留空时沿用旧版单接口配置中的接口地址、密钥与向量模型；更换向量接口或向量模型后需重建知识库。",
+      fields: [
+        text(
+          `${ai}.embedding.base_url`,
+          "接口地址",
+          "OpenAI 兼容服务的根地址，例如 https://api.openai.com/v1；系统会追加 /embeddings。留空时沿用旧版接口地址。",
+        ),
+        field(`${ai}.embedding.api_key`, "API Key", "password", {
+          help: "保留 **** 表示不修改已保存的新密钥；留空时沿用旧版 API Key；如需彻底移除旧字段，请编辑 Stellar 2 完整配置。",
+        }),
+        text(
+          `${ai}.embedding.model`,
+          "向量模型",
+          "知识库向量化与检索使用的 Embedding 模型名称；留空时沿用旧版向量模型，旧值也为空时知识库不可用。",
+        ),
       ],
     },
     {

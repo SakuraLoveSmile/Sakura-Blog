@@ -58,18 +58,23 @@ onBeforeRouteLeave((to, from, next) => {
           >打开 Stellar 2 配置</VButton
         >
       </div>
-      <CanonicalSettingsForm
-        v-else
-        :key="loadRevision"
-        tab="ai"
-        :document="draft"
-        :saving="busy ? 'stellar2' : ''"
-        save-label="保存 AI 设置"
-        save-help="保存后，之后发起的请求将使用新配置；更换接口地址或向量模型后，请在「知识库」中点击「重建知识库」。"
-        invalid-help="请先修正上方输入问题，再保存 AI 设置。"
-        @change="stellar.updateField"
-        @save="save"
-      />
+      <template v-else>
+        <p class="ai-settings-note">
+          旧版单接口配置仍受支持：对话模型或向量模型留空时，会分别沿用旧版配置中的接口地址、密钥与模型；本表单不会删除或改写旧字段，如需彻底移除旧字段，请编辑
+          Stellar 2 完整配置。
+        </p>
+        <CanonicalSettingsForm
+          :key="loadRevision"
+          tab="ai"
+          :document="draft"
+          :saving="busy ? 'stellar2' : ''"
+          save-label="保存 AI 设置"
+          save-help="保存后，之后发起的请求将使用新配置；对话模型与向量模型独立生效，更换向量接口或向量模型后，请在「知识库」中点击「重建知识库」。"
+          invalid-help="请先修正上方输入问题，再保存 AI 设置。"
+          @change="stellar.updateField"
+          @save="save"
+        />
+      </template>
     </VCard>
   </div>
 </template>
@@ -87,6 +92,12 @@ onBeforeRouteLeave((to, from, next) => {
   gap: 12px;
   padding: 24px 28px;
   color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+.ai-settings-note {
+  margin: 0 0 16px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
   line-height: 1.6;
 }
 </style>

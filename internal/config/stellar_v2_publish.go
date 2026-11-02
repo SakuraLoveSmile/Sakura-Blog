@@ -11,11 +11,14 @@ import (
 const StellarV2SecretMask = "****"
 
 // 只屏蔽本地功能的已知私密参数，不能按字段名扫描上游或开放参数袋。
+// ai.api_key 是旧版共用 key；chat/embedding 两组独立 key 一并脱敏并逐路径恢复。
 var stellarV2SecretPaths = [][]string{
 	{"native_comments", "notify", "password"},
 	{"comments", "notify", "password"},
 	{"notify", "password"},
 	{"ai", "api_key"},
+	{"ai", "chat", "api_key"},
+	{"ai", "embedding", "api_key"},
 }
 
 // MaskStellarV2Blog 返回脱敏的独立副本，不修改前台正在读取的配置。

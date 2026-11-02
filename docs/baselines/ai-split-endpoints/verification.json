@@ -1,0 +1,112 @@
+{
+  "generatedAt": "2026-11-02T12:38:37.090Z",
+  "baseURL": "http://127.0.0.1:8097",
+  "worktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261102-feat-blg-20261102-07-ai-split-endpoints",
+  "distFiles": {
+    "indexHtml": "modules/console/web/dist/index.html",
+    "indexHtmlSha256": "c08152cb7f0126c77ebbdc3b7959858c937d37ebba3893939b1cfffd3f3f5f7b",
+    "indexHtmlMtime": "2026-11-02T12:36:58.053Z",
+    "entry": "/console/assets/index-nox47CgV.js",
+    "entrySha256": "c0a883e0b32c7ee69a0022ae2d5b8c45af8853d042c0adc8d64a1eba105ed7c3",
+    "entrySize": 246810
+  },
+  "browserLoadedEntry": {
+    "documentScriptEntry": "/console/assets/index-nox47CgV.js",
+    "entrySeenInPerformanceResources": true,
+    "servedEntrySha256": "c0a883e0b32c7ee69a0022ae2d5b8c45af8853d042c0adc8d64a1eba105ed7c3",
+    "servedEqualsDisk": true,
+    "loadedScriptPaths": [
+      "/console/assets/index-nox47CgV.js"
+    ]
+  },
+  "form": {
+    "groupTitles": [
+      "对话模型",
+      "向量模型",
+      "AI 摘要",
+      "AI 问答"
+    ],
+    "groupLabels": [
+      [
+        "接口地址",
+        "API Key",
+        "对话模型"
+      ],
+      [
+        "接口地址",
+        "API Key",
+        "向量模型"
+      ]
+    ],
+    "saveLabel": "保存 AI 设置"
+  },
+  "saved": {
+    "submittedChat": {
+      "api_key": "fixture-chat-key-20261102",
+      "base_url": "https://chat.fixture.test/v1",
+      "model": "fixture-chat-model"
+    },
+    "submittedEmbedding": {
+      "api_key": "fixture-embedding-key-20261102",
+      "base_url": "https://embedding.fixture.test/v1",
+      "model": "fixture-embedding-model"
+    },
+    "storedMasked": {
+      "oldAIKey": "****",
+      "chatAPIKey": "****",
+      "embeddingAPIKey": "****"
+    },
+    "storedLegacy": {
+      "base_url": "https://legacy.fixture.test/v1",
+      "model": "legacy-chat-model",
+      "embedding_model": "legacy-embedding-model"
+    },
+    "storedNested": {
+      "chat": {
+        "api_key": "****",
+        "base_url": "https://chat.fixture.test/v1",
+        "model": "fixture-chat-model"
+      },
+      "embedding": {
+        "api_key": "****",
+        "base_url": "https://embedding.fixture.test/v1",
+        "model": "fixture-embedding-model"
+      }
+    },
+    "unrelated": {
+      "flag": false,
+      "large": 9007199254740992,
+      "nil": null
+    },
+    "largeIntegerPreservedInRawGet": true
+  },
+  "assertions": {
+    "allPassed": true
+  },
+  "overflow": {
+    "desktop1280": {
+      "documentScrollWidth": 1280,
+      "documentClientWidth": 1280,
+      "bodyScrollWidth": 1280,
+      "innerWidth": 1280,
+      "horizontalScrollers": []
+    },
+    "mobile390": {
+      "documentScrollWidth": 390,
+      "documentClientWidth": 390,
+      "bodyScrollWidth": 390,
+      "innerWidth": 390,
+      "horizontalScrollers": []
+    }
+  },
+  "screenshots": [
+    "after-settings-desktop.png",
+    "after-settings-desktop-chat.png",
+    "after-settings-desktop-embedding.png",
+    "after-saved.png",
+    "after-refresh-desktop.png",
+    "after-settings-mobile-390.png",
+    "after-settings-mobile-390-chat.png",
+    "after-settings-mobile-390-embedding.png"
+  ]
+}
