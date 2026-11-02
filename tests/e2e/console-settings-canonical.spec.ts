@@ -150,35 +150,71 @@ test("保存期间继续编辑，响应只更新提交基线；失败保留草�
   }
 });
 
-test("AI 设置写入独立 Blog 扩展，密钥占位与无关字段保持不变", async ({ page }) => {
+test("AI 设置写入独立 Blog 扩展，对话与向量接口分别保存且密钥占位保持", async ({ page }) => {
   const original = await (await page.request.get(endpoint)).text();
   try {
-    await put(page, '{"version":2,"theme":{},"blog_extensions":{"ai":{"base_url":"https://ai.e2e.test/v1","api_key":"e2e-only-key","model":"e2e-chat","embedding_model":"e2e-embedding","summary":{"enabled":false,"allow_user_api":false},"ask":{"enabled":false,"allow_user_llm":false}},"unrelated":{"large":9007199254740993}}}');
+    await put(
+      page,
+      '{"version":2,"theme":{},"blog_extensions":{"ai":{' +
+        '"base_url":"https://ai.e2e.test/v1","api_key":"e2e-only-key","model":"e2e-chat","embedding_model":"e2e-embedding",' +
+        '"chat":{"base_url":"https://chat.e2e.test/v1","api_key":"e2e-chat-only-key","model":"e2e-chat-model"},' +
+        '"embedding":{"base_url":"https://embedding.e2e.test/v1","api_key":"e2e-embedding-only-key","model":"e2e-embedding-model"},' +
+        '"summary":{"enabled":false,"allow_user_api":false},"ask":{"enabled":false,"allow_user_llm":false}},' +
+        '"unrelated":{"large":9007199254740993}}}',
+    );
+    // 脱敏后的读取原文就是表单基线；保存时除被编辑的叶子外必须逐字保留。
+    const baseline = JSON.parse(await (await page.request.get(endpoint)).text());
     await page.goto("/console/assistant?tab=settings");
-    await expect(input(page, "blog_extensions.ai.api_key")).toHaveValue("****");
+    // 两组接口分别读取自己的地址、模型与占位密钥。
+    await expect(input(page, "blog_extensions.ai.chat.api_key")).toHaveValue("****");
+    await expect(input(page, "blog_extensions.ai.embedding.api_key")).toHaveValue("****");
+    await expect(input(page, "blog_extensions.ai.chat.base_url")).toHaveValue("https://chat.e2e.test/v1");
+    await expect(input(page, "blog_extensions.ai.chat.model")).toHaveValue("e2e-chat-model");
+    await expect(input(page, "blog_extensions.ai.embedding.base_url")).toHaveValue("https://embedding.e2e.test/v1");
+    await expect(input(page, "blog_extensions.ai.embedding.model")).toHaveValue("e2e-embedding-model");
+    // 旧平铺字段只作为留空回退，不再渲染为表单控件，避免覆盖未迁移的旧配置。
+    for (const key of ["base_url", "api_key", "model", "embedding_model"])
+      await expect(field(page, `blog_extensions.ai.${key}`)).toHaveCount(0);
+
     await toggle(page, "blog_extensions.ai.summary.enabled", true);
-    await input(page, "blog_extensions.ai.model").fill("e2e-chat-next");
+    await input(page, "blog_extensions.ai.chat.base_url").fill("https://chat-next.e2e.test/v1");
+    await input(page, "blog_extensions.ai.chat.model").fill("e2e-chat-next");
+    await input(page, "blog_extensions.ai.embedding.base_url").fill("https://embedding-next.e2e.test/v1");
+    await input(page, "blog_extensions.ai.embedding.model").fill("e2e-embedding-next");
     const request = page.waitForRequest((r) => r.url().endsWith(endpoint) && r.method() === "PUT");
     const response = page.waitForResponse((r) => r.url().endsWith(endpoint) && r.request().method() === "PUT");
     await aiSave(page).click();
-    // 未改动的密钥必须以占位原样提交，由服务端恢复原值；其余字段不因 AI 表单被重排或丢失。
-    expect((await request).postDataJSON().blog_extensions).toMatchObject({
-      ai: { api_key: "****", model: "e2e-chat-next", summary: { enabled: true } },
-      unrelated: { large: 9007199254740993 },
-    });
+    // 两组 api_key 仍以 **** 占位提交，由服务端各自恢复；旧平铺字段、无关字段与大整数原样透传。
+    const submittedRequest = await request;
+    const payload = submittedRequest.postData() || "";
+    // 旧平铺字段按原文留在原位置：AI 表单只替换被编辑的叶子，不删除也不重建 ai 对象。
+    for (const raw of [
+      '"base_url": "https://ai.e2e.test/v1"',
+      '"model": "e2e-chat"',
+      '"embedding_model": "e2e-embedding"',
+    ])
+      expect(payload).toContain(raw);
+    expect(payload.indexOf('"embedding_model": "e2e-embedding"')).toBeLessThan(payload.indexOf('"summary"'));
+    const expected = structuredClone(baseline.blog_extensions);
+    expected.ai.chat.base_url = "https://chat-next.e2e.test/v1";
+    expected.ai.chat.model = "e2e-chat-next";
+    expected.ai.embedding.base_url = "https://embedding-next.e2e.test/v1";
+    expected.ai.embedding.model = "e2e-embedding-next";
+    expected.ai.summary.enabled = true;
+    expect(submittedRequest.postDataJSON().blog_extensions).toEqual(expected);
     expect((await response).ok()).toBeTruthy();
     const stored = await (await page.request.get(endpoint)).text();
     expect(stored).toMatch(/9007199254740993/);
-    expect(JSON.parse(stored).blog_extensions.ai).toMatchObject({
-      base_url: "https://ai.e2e.test/v1",
-      api_key: "****",
-      model: "e2e-chat-next",
-      summary: { enabled: true, allow_user_api: false },
-    });
+    expect(JSON.parse(stored).blog_extensions).toEqual(expected);
     await page.reload();
-    await expect(input(page, "blog_extensions.ai.model")).toHaveValue("e2e-chat-next");
-    await expect(input(page, "blog_extensions.ai.api_key")).toHaveValue("****");
-    await expect(field(page, "blog_extensions.ai.summary.enabled").getByRole("switch")).toHaveAttribute("aria-checked", "true");
+    await expect(input(page, "blog_extensions.ai.chat.api_key")).toHaveValue("****");
+    await expect(input(page, "blog_extensions.ai.embedding.api_key")).toHaveValue("****");
+    await expect(input(page, "blog_extensions.ai.chat.base_url")).toHaveValue("https://chat-next.e2e.test/v1");
+    await expect(input(page, "blog_extensions.ai.embedding.model")).toHaveValue("e2e-embedding-next");
+    await expect(field(page, "blog_extensions.ai.summary.enabled").getByRole("switch")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   } finally {
     await put(page, original);
   }

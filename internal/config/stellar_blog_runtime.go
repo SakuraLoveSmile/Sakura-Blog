@@ -33,7 +33,17 @@ type stellarBlogSEO struct {
 	BaiduVerification  string `json:"baidu_verification"`
 }
 
+// stellarBlogAIEndpoint 是新的嵌套对话/向量接口；nil 或空字段都回退旧平铺字段。
+type stellarBlogAIEndpoint struct {
+	BaseURL string `json:"base_url"`
+	APIKey  string `json:"api_key"`
+	Model   string `json:"model"`
+}
+
 type stellarBlogAI struct {
+	Chat      *stellarBlogAIEndpoint `json:"chat"`
+	Embedding *stellarBlogAIEndpoint `json:"embedding"`
+	// 旧版共用的平铺字段，保留为逐字段回退；不删除、不迁移。
 	BaseURL        string `json:"base_url"`
 	APIKey         string `json:"api_key"`
 	Model          string `json:"model"`
@@ -119,26 +129,61 @@ func ParseStellarBlogRuntime(blog map[string]any) (StellarBlogRuntime, error) {
 	}
 	// 开关控制实际公开副作用；只设置 allow_user_api 不能跳过摘要总开关。
 	allowUserAPI := ai.Summary.Enabled && ai.Summary.AllowUserAPI
-	runtime.AI = AIConfig{BaseURL: ai.BaseURL, APIKey: ai.APIKey, Model: ai.Model, EmbeddingModel: ai.EmbeddingModel,
-		SummaryEnabled: &ai.Summary.Enabled, AllowUserAPI: &allowUserAPI, QAEnabled: &ai.Ask.Enabled, QAAllowUserLLM: &ai.Ask.AllowUserLLM}
+	runtime.AI = AIConfig{
+		Chat:           applyAIEndpointFallback(AIEndpoint{BaseURL: ai.BaseURL, APIKey: ai.APIKey, Model: ai.Model}, ai.Chat),
+		Embedding:      applyAIEndpointFallback(AIEndpoint{BaseURL: ai.BaseURL, APIKey: ai.APIKey, Model: ai.EmbeddingModel}, ai.Embedding),
+		SummaryEnabled: &ai.Summary.Enabled, AllowUserAPI: &allowUserAPI, QAEnabled: &ai.Ask.Enabled, QAAllowUserLLM: &ai.Ask.AllowUserLLM,
+	}
 	return runtime, nil
+}
+
+// applyAIEndpointFallback 逐字段合并新嵌套接口与旧平铺回退值：
+// 新字段非空白时优先，空白或缺失时保留旧字段；两者都空即视为未配置。
+func applyAIEndpointFallback(fallback AIEndpoint, nested *stellarBlogAIEndpoint) AIEndpoint {
+	if nested == nil {
+		return fallback
+	}
+	out := fallback
+	if strings.TrimSpace(nested.BaseURL) != "" {
+		out.BaseURL = nested.BaseURL
+	}
+	if strings.TrimSpace(nested.APIKey) != "" {
+		out.APIKey = nested.APIKey
+	}
+	if strings.TrimSpace(nested.Model) != "" {
+		out.Model = nested.Model
+	}
+	return out
 }
 
 func blogRuntimeIssue(path, expected, actual string) error {
 	return &stellarv2.SchemaError{Issues: []stellarv2.Issue{{Code: "invalid_type", Source: "settings.blog_extensions", Path: path, Expected: expected, ActualType: actual, Severity: "error"}}}
 }
 
+// isNullableSecretPath 列出允许 null 清空的秘密字段：旧共用 key 与新的两组独立 key。
+func isNullableSecretPath(path string) bool {
+	switch path {
+	case "ai.api_key", "ai.chat.api_key", "ai.embedding.api_key", "native_comments.notify.password":
+		return true
+	default:
+		return false
+	}
+}
+
 // 已知 typed 字段必须有正确类型，本地可空布尔按实际服务结构读为关闭。
 // 可空指针保留 nil，由消费者决定默认/继承语义，不强制转换成 false。
-// 只有两处明确秘密支持 null 清空；未知公开数据仍由各扩展消费。
+// 只有明确秘密和可空接口对象支持 null 清空；未知公开数据仍由各扩展消费。
 func validateBlogTypedValue(value any, kind reflect.Type, path string) error {
 	if value == nil {
-		if kind.Kind() == reflect.Bool || kind.Kind() == reflect.Pointer || path == "ai.api_key" || path == "native_comments.notify.password" {
+		if kind.Kind() == reflect.Bool || kind.Kind() == reflect.Pointer || isNullableSecretPath(path) {
 			return nil
 		}
 		return blogRuntimeIssue(path, kind.String(), "null")
 	}
 	switch kind.Kind() {
+	case reflect.Pointer:
+		// ai.chat / ai.embedding 等可空对象：null 已在上方放行，非空则按元素类型校验。
+		return validateBlogTypedValue(value, kind.Elem(), path)
 	case reflect.Struct:
 		obj, ok := value.(map[string]any)
 		if !ok {

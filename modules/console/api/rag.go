@@ -81,7 +81,7 @@ func (h *Handler) ragRebuild(c *gin.Context) {
 		return
 	}
 	if !h.rag.EmbeddingConfigured() {
-		Fail(c, http.StatusBadRequest, "Embedding Model 未配置，请先到设置 → AI 中填写接口地址与 Embedding Model")
+		Fail(c, http.StatusBadRequest, "向量模型未配置，请先到 设置 → AI 的「向量模型」中填写接口地址与模型")
 		return
 	}
 	if !h.rag.QueueRebuild() {
@@ -205,7 +205,7 @@ func (h *Handler) askRAG(c *gin.Context, req RAGAskRequest) (RAGAskResponse, err
 func (h *Handler) respondRAGError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, rag.ErrNotConfigured):
-		Fail(c, http.StatusServiceUnavailable, "RAG 尚未配置 Embedding Model 或 Chat Model")
+		Fail(c, http.StatusServiceUnavailable, "RAG 尚未配置：请先在 设置 → AI 中填写「向量模型」与「对话模型」")
 	case errors.Is(err, rag.ErrEmptyKnowledge):
 		Fail(c, http.StatusUnprocessableEntity, "当前知识库没有足够资料回答这个问题")
 	case errors.Is(err, rag.ErrInvalidQuestion):

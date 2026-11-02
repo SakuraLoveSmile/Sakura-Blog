@@ -43,7 +43,7 @@ func TestRAGConsoleRoutesAreAdminOnly(t *testing.T) {
 		t.Fatalf("authenticated status code = %d body=%s", response.Code, response.Body.String())
 	}
 	response = do2FA(r, http.MethodPost, "/api/v1/rag/rebuild", "{}", authCookie(admin))
-	if response.Code != http.StatusBadRequest {
+	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "向量模型") {
 		t.Fatalf("unconfigured rebuild code = %d body=%s", response.Code, response.Body.String())
 	}
 }
@@ -78,6 +78,15 @@ func TestRAGPublicGateQuestionLimitAndBYOKPolicy(t *testing.T) {
 		t.Fatal(err)
 	}
 	config.InvalidateLoadAI()
+	response = do2FA(r, http.MethodPost, "/api/v1/rag/ask/public", `{"question":"hello"}`, "")
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unconfigured QA code = %d body=%s", response.Code, response.Body.String())
+	}
+	for _, want := range []string{"向量模型", "对话模型"} {
+		if !strings.Contains(response.Body.String(), want) {
+			t.Fatalf("unconfigured QA message should distinguish %s: %s", want, response.Body.String())
+		}
+	}
 	response = do2FA(r, http.MethodPost, "/api/v1/rag/ask/public", `{"question":"`+strings.Repeat("问", 1001)+`"}`, "")
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("question limit code = %d body=%s", response.Code, response.Body.String())
