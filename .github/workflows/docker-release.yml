@@ -3,7 +3,9 @@ name: Docker Release
 # 打 tag 或手动触发构建并推送 GHCR 镜像。镜像把二进制打进镜像层，
 # 是本仓库唯一的发布产物；服务器通过 compose 拉取固定版本标签升级（详见 deploy/README.md）。
 # tag 推送后额外创建一个不带资产的 GitHub Release（自动生成更新日志），供 Console「检查更新」展示。
-# latest 只由 tag 推送更新：手动触发（无论在哪个 ref 上）不得改写生产 compose 使用的 :latest。
+# latest 只由正式版 tag 推送更新：手动触发（无论在哪个 ref 上）不得改写生产 compose 使用的 :latest。
+# 预发布（版本串含 '-'，如 v2.0.7-beta01）只发布自身完整版本标签，不生成 X.Y / X 别名、
+# 不移动 latest，GitHub Release 标记 prerelease，避免 beta 顶替正式版镜像标签。
 on:
   push:
     tags: ['v*']
@@ -35,6 +37,13 @@ jobs:
           ver="${{ inputs.version }}"
           [ -n "$ver" ] || ver="${{ github.ref_name }}"
           echo "version=$ver" >> "$GITHUB_OUTPUT"
+          # 预发布判定：版本串含 '-'（2.0.7-beta01、2.0.7-rc1 等）。
+          # 该标记决定是否生成 X.Y / X 别名、是否移动 latest、是否把 Release 标为 prerelease。
+          case "$ver" in
+            *-*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
@@ -45,7 +54,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # latest 仅随 tag 推送移动；workflow_dispatch 即使选中 tag ref 也不移动它。
+      # latest 仅随正式版 tag 推送移动；workflow_dispatch 即使选中 tag ref 也不移动它。
+      # 预发布只保留完整版本标签与 sha 标签：不生成 X.Y / X 别名，避免 beta 覆盖稳定镜像标签。
       - name: Extract image tags
         id: tags
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
@@ -53,10 +63,10 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.meta.outputs.prerelease != 'true' }}
+            type=semver,pattern={{major}},enable=${{ steps.meta.outputs.prerelease != 'true' }}
             type=raw,value=${{ steps.meta.outputs.version }},enable=${{ github.event_name == 'workflow_dispatch' && steps.meta.outputs.version != '' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && steps.meta.outputs.prerelease != 'true' }}
             type=ref,event=branch
             type=sha,prefix=sha-
 
@@ -77,11 +87,16 @@ jobs:
           cache-to: type=gha,mode=max
 
       # 仅补充更新日志的 Release：不附加任何二进制资产，镜像仍是唯一发布产物。
-      # 已存在时跳过，避免重跑 tag 工作流失败。
+      # 已存在时跳过，避免重跑 tag 工作流失败；预发布版本标记 prerelease（不会成为 Latest）。
       - name: Create GitHub Release (notes only)
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ steps.meta.outputs.prerelease }}
         run: |
+          args=(--title "$GITHUB_REF_NAME" --generate-notes --verify-tag)
+          if [ "$PRERELEASE" = "true" ]; then
+            args+=(--prerelease)
+          fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
-            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
+            gh release create "$GITHUB_REF_NAME" "${args[@]}"

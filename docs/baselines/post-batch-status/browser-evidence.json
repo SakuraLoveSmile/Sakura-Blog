@@ -1,0 +1,289 @@
+{
+  "generatedAt": "2026-11-02T10:13:13.464Z",
+  "tests": {
+    "disabled-and-target-filter": {
+      "recordedAt": "2026-11-02T10:13:06.646Z",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "publishedFixture": {
+        "slug": "pw-batch-disabled-1793614384459-published",
+        "title": "批量状态验收 pw-batch-disabled-1793614384459-published"
+      },
+      "draftFixture": {
+        "slug": "pw-batch-disabled-1793614384459-draft",
+        "title": "批量状态验收 pw-batch-disabled-1793614384459-draft"
+      },
+      "publishedOnlySelection": {
+        "publishDisabled": true,
+        "publishTitle": "所选文章均已发布",
+        "draftEnabled": true
+      },
+      "mixedSelection": {
+        "publishEnabled": true,
+        "publishTitle": null,
+        "dialogTitle": "将选中的 1 篇文章设为已发布？",
+        "dialogDescription": "这 1 篇文章将设为已发布。另有 1 篇已发布，将跳过处理。",
+        "countPill": "2"
+      }
+    },
+    "trashed-selection-disabled": {
+      "recordedAt": "2026-11-02T10:13:07.276Z",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "fixture": {
+        "slug": "pw-batch-trashed-1793614387064-trashed",
+        "title": "批量状态验收 pw-batch-trashed-1793614387064-trashed"
+      },
+      "statusLabel": "回收站",
+      "publishDisabled": true,
+      "draftDisabled": true,
+      "publishTitle": "回收站文章需先恢复再设置状态",
+      "draftTitle": "回收站文章需先恢复再设置状态",
+      "trashButtonEnabled": true
+    },
+    "cancel-keeps-selection": {
+      "recordedAt": "2026-11-02T10:13:09.955Z",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "fixture": {
+        "slug": "pw-batch-cancel-1793614387680-draft",
+        "title": "批量状态验收 pw-batch-cancel-1793614387680-draft"
+      },
+      "requestsAfterCancel": 0,
+      "selectionAfterCancel": {
+        "dockVisible": true,
+        "countPill": "1",
+        "checkboxChecked": true,
+        "statusLabel": "草稿"
+      },
+      "requestsAfterConfirm": 1,
+      "confirmResponse": {
+        "status": 200,
+        "body": {
+          "succeeded": 1,
+          "skipped": 0,
+          "failed": 0
+        }
+      },
+      "statusLabelAfterConfirm": "已发布"
+    },
+    "console-assets": {
+      "recordedAt": "2026-11-02T10:13:13.464Z",
+      "browserVersion": "151.0.7922.34",
+      "browserName": "chromium",
+      "baseURL": "http://127.0.0.1:8096",
+      "entry": {
+        "documentUrl": "http://127.0.0.1:8096/console/posts",
+        "scriptSources": [
+          "/console/assets/index-D8q4ecF8.js"
+        ],
+        "modulePreloads": [
+          "/console/assets/api-A7kJ8ncB.js",
+          "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+          "/console/assets/pinia-CXeiBUD1.js",
+          "/console/assets/preload-helper-l0U7FUPx.js"
+        ],
+        "sha256": "f7e474f0f0a6cdf793a5a8c7707d9259fce2457d598d96cebdd7d48a61e6a183",
+        "documentSha256": "f7e474f0f0a6cdf793a5a8c7707d9259fce2457d598d96cebdd7d48a61e6a183",
+        "diskSha256": "f7e474f0f0a6cdf793a5a8c7707d9259fce2457d598d96cebdd7d48a61e6a183",
+        "matchesDisk": true
+      },
+      "featureChunks": [
+        {
+          "url": "http://127.0.0.1:8096/console/assets/api-A7kJ8ncB.js",
+          "sha256": "078ce9a31f2a3ee47c56f5c1d85e603e6b2c6bcfcb97ab345aca15e502e58627",
+          "diskPath": "modules/console/web/dist/assets/api-A7kJ8ncB.js",
+          "diskSha256": "078ce9a31f2a3ee47c56f5c1d85e603e6b2c6bcfcb97ab345aca15e502e58627",
+          "matchesDisk": true,
+          "containsBatchEndpoint": true,
+          "containsBatchPublishText": false
+        }
+      ],
+      "uiChunk": {
+        "url": "http://127.0.0.1:8096/console/assets/PostList-DKf4voRC.js",
+        "sha256": "3afc164ba73cfb1cf6015e489a941180af4ec05c6e1942f27578d521a77ae856",
+        "diskPath": "modules/console/web/dist/assets/PostList-DKf4voRC.js",
+        "diskSha256": "3afc164ba73cfb1cf6015e489a941180af4ec05c6e1942f27578d521a77ae856",
+        "matchesDisk": true,
+        "containsBatchEndpoint": false,
+        "containsBatchPublishText": true
+      },
+      "loadedScriptCount": 19
+    },
+    "desktop-roundtrip-1280x800": {
+      "recordedAt": "2026-11-02T10:13:04.038Z",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "fixtures": [
+        {
+          "slug": "pw-batch-desktop-1793614382412-draft-a",
+          "title": "批量状态验收 pw-batch-desktop-1793614382412-draft-a"
+        },
+        {
+          "slug": "pw-batch-desktop-1793614382412-draft-b",
+          "title": "批量状态验收 pw-batch-desktop-1793614382412-draft-b"
+        }
+      ],
+      "dock": {
+        "box": {
+          "x": 376.448486328125,
+          "y": 720.1126708984375,
+          "width": 479.07904052734375,
+          "height": 57.76837158203125
+        },
+        "countPill": "2",
+        "buttons": [
+          "批量发布",
+          "批量设为草稿",
+          "批量移入回收站"
+        ],
+        "publishEnabled": true,
+        "draftEnabled": false,
+        "draftDisabledTitle": "所选文章均已是草稿",
+        "trashEnabled": true,
+        "screenshot": {
+          "file": "docs/baselines/post-batch-status/dock-desktop-1280.png",
+          "width": 1280,
+          "height": 800,
+          "bytes": 100028,
+          "sha256": "1048e787e2a4a43ea2065125fd0c8b412c8f35f5c4d38956d148fe10dd4bc22b"
+        }
+      },
+      "publish": {
+        "dialogRole": "dialog",
+        "dialogTitle": "将选中的 2 篇文章设为已发布？",
+        "dialogDescription": "这 2 篇文章将设为已发布。",
+        "confirmBackground": "rgb(232, 232, 236)",
+        "response": {
+          "status": 200,
+          "body": {
+            "succeeded": 2,
+            "skipped": 0,
+            "failed": 0
+          }
+        },
+        "toast": "已发布 2 篇文章",
+        "statusLabelsAfter": [
+          "已发布",
+          "已发布"
+        ],
+        "selectionCleared": true,
+        "screenshot": {
+          "file": "docs/baselines/post-batch-status/after-published.png",
+          "width": 1280,
+          "height": 800,
+          "bytes": 92346,
+          "sha256": "84c4b0ae9b88458f55cf3e2b111586fb282178783bce7785f9e77f848c847372"
+        }
+      },
+      "draft": {
+        "dialogRole": "alertdialog",
+        "dialogTitle": "将选中的 1 篇文章设为草稿？",
+        "dialogDescription": "这 1 篇文章将设为草稿，前台将不再展示；已保存的内容仍会保留。",
+        "confirmBackground": "rgb(20, 20, 22)",
+        "response": {
+          "status": 200,
+          "body": {
+            "succeeded": 1,
+            "skipped": 0,
+            "failed": 0
+          }
+        },
+        "toast": "已设为草稿 1 篇",
+        "statusLabelsAfter": {
+          "批量状态验收 pw-batch-desktop-1793614382412-draft-a": "草稿",
+          "批量状态验收 pw-batch-desktop-1793614382412-draft-b": "已发布"
+        },
+        "selectionCleared": true,
+        "screenshot": {
+          "file": "docs/baselines/post-batch-status/after-draft.png",
+          "width": 1280,
+          "height": 800,
+          "bytes": 96906,
+          "sha256": "7bcabb0d6d712d18490d8299f6c89ddaa54307d1c4fd64f8b14da34572c099fd"
+        }
+      }
+    },
+    "mobile-390x844": {
+      "recordedAt": "2026-11-02T10:13:12.085Z",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fixtures": [
+        {
+          "slug": "pw-batch-mobile-1793614390361-mobile-a",
+          "title": "批量状态验收 pw-batch-mobile-1793614390361-mobile-a"
+        },
+        {
+          "slug": "pw-batch-mobile-1793614390361-mobile-b",
+          "title": "批量状态验收 pw-batch-mobile-1793614390361-mobile-b"
+        }
+      ],
+      "dock": {
+        "box": {
+          "x": 24.099761962890625,
+          "y": 622.7072143554688,
+          "width": 331.5916442871094,
+          "height": 149.81549072265625
+        },
+        "buttonBoxes": {
+          "批量发布": {
+            "x": 42.12743377685547,
+            "y": 669.5110473632812,
+            "width": 73.92837524414062,
+            "height": 43.9573974609375
+          },
+          "批量设为草稿": {
+            "x": 124.04806518554688,
+            "y": 669.5110473632812,
+            "width": 97.9051513671875,
+            "height": 43.9573974609375
+          },
+          "批量移入回收站": {
+            "x": 229.94546508789062,
+            "y": 669.5110473632812,
+            "width": 109.89352416992188,
+            "height": 43.9573974609375
+          }
+        },
+        "flexWrap": "wrap",
+        "countPill": "2",
+        "heightGreaterThanSingleDesktopRow": true,
+        "screenshot": {
+          "file": "docs/baselines/post-batch-status/dock-mobile-390.png",
+          "width": 390,
+          "height": 844,
+          "bytes": 62890,
+          "sha256": "c48382858f81fa7bbcc9d31b99f9e94158abbbf34474ecb9c8fc79f272299eea"
+        }
+      },
+      "overflow": {
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "bodyScrollWidth": 390
+      },
+      "publishResponse": {
+        "status": 200,
+        "body": {
+          "succeeded": 1,
+          "skipped": 0,
+          "failed": 0
+        }
+      },
+      "toast": "已发布 1 篇文章",
+      "statusLabelsAfter": {
+        "批量状态验收 pw-batch-mobile-1793614390361-mobile-a": "已发布",
+        "批量状态验收 pw-batch-mobile-1793614390361-mobile-b": "已发布"
+      }
+    }
+  }
+}
