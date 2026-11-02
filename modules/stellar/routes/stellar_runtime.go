@@ -878,7 +878,13 @@ func (s *webServer) stellarView(snap *stellarSnapshot, r *stellarRecord) *tmpl.V
 	if r.post != nil {
 		data.Page.Views = r.post.Views
 		data.Page.AuthorLinks = stellarRecordAuthors(snap, r)
-		data.Page.AISummary = stellarString(stellarBlogContent(stellarRecordBlogRaw(r))["ai_summary"])
+		summary := stellarString(stellarBlogContent(stellarRecordBlogRaw(r))["ai_summary"])
+		if strings.TrimSpace(summary) == "" {
+			// Spec 53 的旧写入只保存在 posts.ai_summary 列；canonical 扩展缺失时回退，
+			// 避免已生成摘要因存储位置不同而在前台不可见。
+			summary = r.post.AISummary
+		}
+		data.Page.AISummary = summary
 	}
 	return data
 }

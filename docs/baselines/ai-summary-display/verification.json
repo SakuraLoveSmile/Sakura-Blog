@@ -1,0 +1,84 @@
+{
+  "task": "BLG-20261102-08",
+  "title": "AI 摘要已生成但前台不显示",
+  "generatedAt": "2026-11-02T23:22:00+08:00",
+  "codeVersion": {
+    "base": "dev 460354bd（rebase 前 0fb7aadf）",
+    "branch": "codex/fix/20261102-blg-20261102-08-ai-summary-display",
+    "worktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261102-fix-blg-20261102-08-ai-summary-display"
+  },
+  "productionReadOnly": {
+    "host": "blog-prod（ssh 别名）",
+    "method": "sudo python3 以 sqlite3 mode=ro 只读打开 /opt/1panel/docker/compose/blog/data/blog.db",
+    "deployedVersion": "Blog v2.0.7-beta02",
+    "finding": {
+      "slug": "hexo-blog-setup-guide",
+      "status": "published",
+      "aiSummaryColumnLength": 299,
+      "blogExtensions": "{\"status\":\"draft\"}",
+      "canonicalContentAISummary": null,
+      "postsWithColumnSummary": 1,
+      "postsWithAnySummary": 1,
+      "interpretation": "摘要只写进了 posts.ai_summary 列；前台严格快照只读 blog_extensions.content.ai_summary，因此摘要正文为空。"
+    }
+  },
+  "isolatedService": {
+    "root": ".tmp/ai-summary-display/runtime（worktree 内，已清理）",
+    "listen": "127.0.0.1:18089",
+    "build": "make build（真实 Console / User Center 产物 + Go 二进制）",
+    "database": "scripts/e2e/prepare.go 生成的隔离空站；仅本地合成数据，不连接生产库",
+    "checks": [
+      {
+        "name": "Console API 保存摘要写双存储",
+        "action": "PUT /api/v1/posts/hexo-summary-repro/ai-summary {\"summary\":\"这是已生成的 AI 摘要，用于验证前台可见性。\"}",
+        "observed": "posts.ai_summary 与 blog_extensions.content.ai_summary 均为该摘要，blog_extensions 其它键保留",
+        "pass": true
+      },
+      {
+        "name": "公开页渲染已存摘要",
+        "action": "GET /post/hexo-summary-repro",
+        "observed": "HTTP 200，<div class=\"body\"><p>这是已生成的 AI 摘要，用于验证前台可见性。</p></div>",
+        "pass": true
+      },
+      {
+        "name": "生产同形数据（仅旧列）回退显示",
+        "action": "将 blog_extensions 置为 {\"status\":\"draft\"}、保留 ai_summary 列后 GET /post/hexo-summary-repro",
+        "observed": "HTTP 200，摘要正文仍渲染；见 after-legacy-column.png",
+        "pass": true
+      },
+      {
+        "name": "清空摘要",
+        "action": "PUT /api/v1/posts/hexo-summary-repro/ai-summary {\"summary\":\"\"}",
+        "observed": "ai_summary 为空，blog_extensions 不残留 ai_summary；页面不再输出摘要文本",
+        "pass": true
+      },
+      {
+        "name": "重新生成后恢复可见",
+        "action": "再次 PUT 摘要后 GET 页面",
+        "observed": "blog_extensions 重新写入 content.ai_summary，页面显示新摘要",
+        "pass": true
+      }
+    ],
+    "screenshots": {
+      "after-desktop.png": "canonical 写入后 1280×900 页面，摘要卡显示正文",
+      "after-legacy-column.png": "模拟生产同形数据（仅 posts.ai_summary 列）的 1280×900 页面，回退显示摘要"
+    }
+  },
+  "automated": {
+    "make test": "exit 0（Console 类型/行为、Stellar assets、部署/来源/模块边界、go vet、Staticcheck、go test ./... 全部通过）",
+    "targeted": [
+      "go test ./internal/store/ -run 'AISummary|MergeAISummary'",
+      "go test ./modules/stellar/routes/ -run 'AISummary|BlogProjection'"
+    ],
+    "newTests": [
+      "TestPostAISummaryProjectsToStellarExtensions",
+      "TestMergeAISummaryExtension",
+      "TestStellarAISummaryFallsBackToLegacyColumn"
+    ]
+  },
+  "notVerified": [
+    "未部署生产、未发布新版本（发布与生产数据写入均需用户明确授权）",
+    "未使用浏览器逐项检查四种 appearance 与移动端：本次不改 CSS/模板结构，仅让已有摘要卡在正文为空时输出已存摘要文本",
+    "未在 Console 编辑器界面内实测 AI 生成按钮的完整点击链路；写库端点与页面渲染已由真实服务和 API 覆盖"
+  ]
+}

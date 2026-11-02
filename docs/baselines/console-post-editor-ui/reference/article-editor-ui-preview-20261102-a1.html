@@ -1,0 +1,873 @@
+<div id="article-editor-preview-20261102-a1">
+  <style>
+    #article-editor-preview-20261102-a1 {
+      width: 100%;
+      color: var(--seed-fg);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 400;
+    }
+    #article-editor-preview-20261102-a1 * { box-sizing: border-box; }
+    #article-editor-preview-20261102-a1 [hidden] { display: none !important; }
+    #article-editor-preview-20261102-a1 button { font: inherit; }
+    #article-editor-preview-20261102-a1 .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    #article-editor-preview-20261102-a1 .preview-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+    #article-editor-preview-20261102-a1 .preview-heading strong {
+      font-size: 15px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    #article-editor-preview-20261102-a1 .preview-heading span {
+      color: var(--seed-muted);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .preview-switch {
+      display: inline-flex;
+      flex: 0 0 auto;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      background: var(--inset-bg);
+    }
+    #article-editor-preview-20261102-a1 .preview-switch button {
+      min-width: 56px;
+      min-height: 32px;
+      padding: 4px 12px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--seed-muted);
+      cursor: pointer;
+    }
+    #article-editor-preview-20261102-a1 .preview-switch button.is-active {
+      background: var(--card-bg);
+      color: var(--seed-fg);
+    }
+    #article-editor-preview-20261102-a1 .preview-description {
+      margin: 0 0 16px;
+      color: var(--seed-muted);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .product {
+      --p-bg: #0a0a0b;
+      --p-surface: #121214;
+      --p-raised: #19191c;
+      --p-hover: #242428;
+      --p-line: #29292e;
+      --p-line-soft: #202024;
+      --p-text: #f4f4f6;
+      --p-secondary: #b9b9bf;
+      --p-muted: #85858c;
+      --p-faint: #68686f;
+      --p-primary: #e8e8ec;
+      --p-primary-text: #09090a;
+      --p-success: #30d158;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--p-line);
+      border-radius: 12px;
+      background: var(--p-bg);
+      color: var(--p-text);
+      font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    }
+    #article-editor-preview-20261102-a1 .product button {
+      color: inherit;
+      cursor: default;
+    }
+    #article-editor-preview-20261102-a1 .p-icon {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    #article-editor-preview-20261102-a1 .p-icon-small { width: 14px; height: 14px; }
+    #article-editor-preview-20261102-a1 .app-shell {
+      display: grid;
+      grid-template-columns: 176px minmax(0, 1fr);
+      min-height: 720px;
+    }
+    #article-editor-preview-20261102-a1 .app-sidebar {
+      display: flex;
+      flex-direction: column;
+      padding: 18px 12px 14px;
+      border-right: 1px solid var(--p-line-soft);
+      background: var(--p-bg);
+    }
+    #article-editor-preview-20261102-a1 .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 8px 20px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    #article-editor-preview-20261102-a1 .brand-mark {
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border: 1px solid var(--p-line);
+      border-radius: 7px;
+      background: var(--p-raised);
+      color: var(--p-text);
+    }
+    #article-editor-preview-20261102-a1 .new-post {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 36px;
+      margin: 0 2px 14px;
+      border: 1px solid var(--p-line);
+      border-radius: 6px;
+      background: transparent;
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .search {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 7px 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--p-line-soft);
+      color: var(--p-muted);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .nav-caption {
+      margin: 0 10px 7px;
+      color: var(--p-faint);
+      font-size: 11px;
+    }
+    #article-editor-preview-20261102-a1 .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 36px;
+      margin-bottom: 2px;
+      padding: 0 10px;
+      border-radius: 6px;
+      color: var(--p-secondary);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .nav-item.active {
+      background: var(--p-raised);
+      color: var(--p-text);
+    }
+    #article-editor-preview-20261102-a1 .sidebar-spacer { flex: 1; }
+    #article-editor-preview-20261102-a1 .account {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 14px 8px 0;
+      border-top: 1px solid var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .avatar {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--p-hover);
+      color: var(--p-secondary);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .account-text { min-width: 0; }
+    #article-editor-preview-20261102-a1 .account-name { font-size: 12px; }
+    #article-editor-preview-20261102-a1 .account-role { margin-top: 2px; color: var(--p-muted); font-size: 11px; }
+    #article-editor-preview-20261102-a1 .editor-shell { min-width: 0; }
+    #article-editor-preview-20261102-a1 .editor-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 72px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .editor-identity {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    #article-editor-preview-20261102-a1 .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--p-secondary);
+    }
+    #article-editor-preview-20261102-a1 .page-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    #article-editor-preview-20261102-a1 .page-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    #article-editor-preview-20261102-a1 .draft-label {
+      color: var(--p-muted);
+      font-size: 11px;
+    }
+    #article-editor-preview-20261102-a1 .save-state {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      color: var(--p-muted);
+      font-size: 11px;
+    }
+    #article-editor-preview-20261102-a1 .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--p-success);
+    }
+    #article-editor-preview-20261102-a1 .editor-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    #article-editor-preview-20261102-a1 .action-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--p-line);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--p-secondary);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .action-button.primary {
+      border-color: var(--p-primary);
+      background: var(--p-primary);
+      color: var(--p-primary-text);
+    }
+    #article-editor-preview-20261102-a1 .action-button.quiet { border-color: transparent; }
+    #article-editor-preview-20261102-a1 .editor-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 272px;
+      min-width: 0;
+    }
+    #article-editor-preview-20261102-a1 .writing-surface {
+      min-width: 0;
+      padding: 34px 36px 40px;
+    }
+    #article-editor-preview-20261102-a1 .document-title {
+      margin: 0;
+      color: var(--p-text);
+      font-size: 29px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+    #article-editor-preview-20261102-a1 .document-subline {
+      margin: 10px 0 24px;
+      color: var(--p-muted);
+      font-family: var(--font-code);
+      font-size: 11px;
+    }
+    #article-editor-preview-20261102-a1 .format-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 46px;
+      margin: 0 -8px;
+      padding: 5px 8px;
+      border-top: 1px solid var(--p-line-soft);
+      border-bottom: 1px solid var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .format-group {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      min-width: 0;
+    }
+    #article-editor-preview-20261102-a1 .format-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--p-secondary);
+      font-size: 13px;
+    }
+    #article-editor-preview-20261102-a1 .format-button.active {
+      background: var(--p-raised);
+      color: var(--p-text);
+    }
+    #article-editor-preview-20261102-a1 .format-divider {
+      width: 1px;
+      height: 18px;
+      margin: 0 5px;
+      background: var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .editor-kind {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 32px;
+      padding: 0 7px;
+      border: 0;
+      background: transparent;
+      color: var(--p-muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    #article-editor-preview-20261102-a1 .document-body {
+      max-width: 700px;
+      padding-top: 26px;
+      color: var(--p-secondary);
+      font-size: 14px;
+      line-height: 1.85;
+    }
+    #article-editor-preview-20261102-a1 .document-body h3 {
+      margin: 0 0 12px;
+      color: var(--p-text);
+      font-size: 19px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    #article-editor-preview-20261102-a1 .document-body p { margin: 0 0 22px; }
+    #article-editor-preview-20261102-a1 .document-body .section-gap { margin-top: 30px; }
+    #article-editor-preview-20261102-a1 .code-line {
+      margin: 20px 0 24px;
+      padding: 12px 14px;
+      border-left: 2px solid var(--p-line);
+      background: var(--p-surface);
+      color: var(--p-secondary);
+      font-family: var(--font-code);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    #article-editor-preview-20261102-a1 .settings-panel {
+      min-width: 0;
+      padding: 0 20px 28px;
+      border-left: 1px solid var(--p-line-soft);
+      background: var(--p-bg);
+    }
+    #article-editor-preview-20261102-a1 .panel-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 54px;
+      margin: 0 -4px 2px;
+      border-bottom: 1px solid var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .panel-tab {
+      position: relative;
+      border: 0;
+      background: transparent;
+      color: var(--p-muted);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .panel-tab.active { color: var(--p-text); }
+    #article-editor-preview-20261102-a1 .panel-tab.active::after {
+      position: absolute;
+      right: 18px;
+      bottom: -1px;
+      left: 18px;
+      height: 1px;
+      background: var(--p-text);
+      content: "";
+    }
+    #article-editor-preview-20261102-a1 .setting-section {
+      padding: 22px 0;
+      border-bottom: 1px solid var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .setting-section:last-child { border-bottom: 0; }
+    #article-editor-preview-20261102-a1 .setting-title {
+      margin: 0 0 16px;
+      color: var(--p-text);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    #article-editor-preview-20261102-a1 .field { margin-top: 14px; }
+    #article-editor-preview-20261102-a1 .field:first-of-type { margin-top: 0; }
+    #article-editor-preview-20261102-a1 .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--p-muted);
+      font-size: 11px;
+    }
+    #article-editor-preview-20261102-a1 .field-control {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 10px;
+      border: 1px solid var(--p-line);
+      border-radius: 6px;
+      background: var(--p-surface);
+      color: var(--p-secondary);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 34px;
+      color: var(--p-secondary);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .switch {
+      position: relative;
+      width: 32px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--p-hover);
+    }
+    #article-editor-preview-20261102-a1 .switch::after {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--p-secondary);
+      content: "";
+    }
+    #article-editor-preview-20261102-a1 .tag-line {
+      color: var(--p-secondary);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    #article-editor-preview-20261102-a1 .cover-box {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+    #article-editor-preview-20261102-a1 .cover-placeholder {
+      display: grid;
+      width: 64px;
+      height: 44px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 1px solid var(--p-line);
+      border-radius: 6px;
+      background: var(--p-surface);
+      color: var(--p-muted);
+    }
+    #article-editor-preview-20261102-a1 .cover-actions {
+      color: var(--p-secondary);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    #article-editor-preview-20261102-a1 .cover-actions span {
+      display: block;
+      color: var(--p-muted);
+      font-size: 11px;
+    }
+    #article-editor-preview-20261102-a1 .preview-footnotes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin-top: 12px;
+      color: var(--seed-muted);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .preview-footnotes span { white-space: nowrap; }
+    #article-editor-preview-20261102-a1 .mobile-stage {
+      display: flex;
+      justify-content: center;
+      padding: 8px 0;
+    }
+    #article-editor-preview-20261102-a1 .phone-shell {
+      width: 100%;
+      max-width: 390px;
+      min-height: 730px;
+    }
+    #article-editor-preview-20261102-a1 .mobile-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 64px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .mobile-heading { min-width: 0; }
+    #article-editor-preview-20261102-a1 .mobile-heading .page-title { font-size: 14px; }
+    #article-editor-preview-20261102-a1 .mobile-heading .save-state { white-space: nowrap; }
+    #article-editor-preview-20261102-a1 .mobile-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #article-editor-preview-20261102-a1 .mobile-actions .icon-button { width: 40px; height: 40px; }
+    /* 比 `.product button` 高一级，避免通用按钮 color 覆盖近白底深字。 */
+    #article-editor-preview-20261102-a1 .mobile-actions .mobile-publish {
+      min-width: 64px;
+      min-height: 40px;
+      padding: 0 13px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--p-primary);
+      color: var(--p-primary-text);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .mobile-contextbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 48px;
+      padding: 4px 16px;
+      border-bottom: 1px solid var(--p-line-soft);
+      color: var(--p-muted);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .mobile-settings-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 40px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--p-secondary);
+      font-size: 12px;
+    }
+    #article-editor-preview-20261102-a1 .mobile-document { padding: 24px 20px 28px; }
+    #article-editor-preview-20261102-a1 .mobile-document .document-title { font-size: 25px; line-height: 1.3; }
+    #article-editor-preview-20261102-a1 .mobile-document .document-subline { margin-bottom: 18px; }
+    #article-editor-preview-20261102-a1 .mobile-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      min-height: 48px;
+      margin: 0 -4px;
+      padding: 4px;
+      border-top: 1px solid var(--p-line-soft);
+      border-bottom: 1px solid var(--p-line-soft);
+    }
+    #article-editor-preview-20261102-a1 .mobile-toolbar .format-button { width: 40px; height: 40px; }
+    #article-editor-preview-20261102-a1 .mobile-toolbar-spacer { flex: 1; }
+    #article-editor-preview-20261102-a1 .mobile-body {
+      padding-top: 22px;
+      color: var(--p-secondary);
+      font-size: 14px;
+      line-height: 1.85;
+    }
+    #article-editor-preview-20261102-a1 .mobile-body h3 {
+      margin: 0 0 10px;
+      color: var(--p-text);
+      font-size: 18px;
+      font-weight: 500;
+    }
+    #article-editor-preview-20261102-a1 .mobile-body p { margin: 0 0 22px; }
+    #article-editor-preview-20261102-a1 .mobile-tabbar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      padding: 7px 6px 10px;
+      border-top: 1px solid var(--p-line-soft);
+      background: var(--p-surface);
+    }
+    #article-editor-preview-20261102-a1 .mobile-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 48px;
+      color: var(--p-faint);
+      font-size: 11px;
+    }
+    #article-editor-preview-20261102-a1 .mobile-tab.active { color: var(--p-text); }
+    @media (max-width: 920px) {
+      #article-editor-preview-20261102-a1 .app-shell { grid-template-columns: 64px minmax(0, 1fr); }
+      #article-editor-preview-20261102-a1 .app-sidebar { padding-right: 8px; padding-left: 8px; }
+      #article-editor-preview-20261102-a1 .brand { justify-content: center; padding-right: 0; padding-left: 0; }
+      #article-editor-preview-20261102-a1 .brand-text,
+      #article-editor-preview-20261102-a1 .new-post span,
+      #article-editor-preview-20261102-a1 .search span,
+      #article-editor-preview-20261102-a1 .nav-caption,
+      #article-editor-preview-20261102-a1 .nav-item span,
+      #article-editor-preview-20261102-a1 .account-text { display: none; }
+      #article-editor-preview-20261102-a1 .new-post { width: 40px; margin-right: auto; margin-left: auto; }
+      #article-editor-preview-20261102-a1 .search { justify-content: center; margin-right: 0; margin-left: 0; }
+      #article-editor-preview-20261102-a1 .nav-item { justify-content: center; padding: 0; }
+      #article-editor-preview-20261102-a1 .account { justify-content: center; padding-right: 0; padding-left: 0; }
+      #article-editor-preview-20261102-a1 .writing-surface { padding-right: 24px; padding-left: 24px; }
+      #article-editor-preview-20261102-a1 .editor-workspace { grid-template-columns: minmax(0, 1fr) 244px; }
+      #article-editor-preview-20261102-a1 .settings-panel { padding-right: 16px; padding-left: 16px; }
+      #article-editor-preview-20261102-a1 .editor-kind span { display: none; }
+    }
+    @media (max-width: 700px) {
+      #article-editor-preview-20261102-a1 .preview-head { align-items: flex-start; }
+      #article-editor-preview-20261102-a1 .preview-heading { display: block; }
+      #article-editor-preview-20261102-a1 .preview-heading span { display: block; margin-top: 3px; }
+      #article-editor-preview-20261102-a1 .app-shell { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+      #article-editor-preview-20261102-a1 .app-sidebar { display: none; }
+      #article-editor-preview-20261102-a1 .editor-workspace { grid-template-columns: minmax(0, 1fr); }
+      #article-editor-preview-20261102-a1 .settings-panel { display: none; }
+      #article-editor-preview-20261102-a1 .editor-topbar { padding-right: 12px; padding-left: 12px; }
+      #article-editor-preview-20261102-a1 .editor-actions .action-label { display: none; }
+      #article-editor-preview-20261102-a1 .editor-actions .action-button { width: 36px; padding: 0; }
+      #article-editor-preview-20261102-a1 .editor-actions .action-button.primary { width: auto; padding: 0 10px; }
+      #article-editor-preview-20261102-a1 .editor-actions .action-button.primary .action-label { display: inline; }
+      #article-editor-preview-20261102-a1 .save-state { display: none; }
+      #article-editor-preview-20261102-a1 .writing-surface { padding: 26px 18px 32px; }
+      #article-editor-preview-20261102-a1 .document-title { font-size: 25px; }
+      #article-editor-preview-20261102-a1 .format-group .optional-tool { display: none; }
+      #article-editor-preview-20261102-a1 .preview-footnotes span { white-space: normal; }
+    }
+    @media (max-width: 390px) {
+      #article-editor-preview-20261102-a1 .preview-description { margin-bottom: 12px; }
+      #article-editor-preview-20261102-a1 .preview-switch button { min-width: 48px; padding-right: 9px; padding-left: 9px; }
+      #article-editor-preview-20261102-a1 .mobile-document { padding-right: 16px; padding-left: 16px; }
+      #article-editor-preview-20261102-a1 .mobile-toolbar .optional-tool { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #article-editor-preview-20261102-a1 * { transition: none !important; }
+    }
+  </style>
+
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <defs>
+      <symbol id="aep-arrow-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+      <symbol id="aep-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="aep-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+      <symbol id="aep-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+      <symbol id="aep-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h6"/></symbol>
+      <symbol id="aep-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22ZM20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22Z"/></symbol>
+      <symbol id="aep-note" viewBox="0 0 24 24"><path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/></symbol>
+      <symbol id="aep-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M16 5a3 3 0 0 1 0 6M18 14a4 4 0 0 1 3 4v2"/></symbol>
+      <symbol id="aep-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+      <symbol id="aep-save" viewBox="0 0 24 24"><path d="M5 3h12l2 2v16H5zM8 3v6h8V3M8 21v-8h8v8"/></symbol>
+      <symbol id="aep-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4ZM22 2 11 13"/></symbol>
+      <symbol id="aep-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></symbol>
+      <symbol id="aep-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 20"/></symbol>
+      <symbol id="aep-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6M16 6l6 6-6 6M14 3l-4 18"/></symbol>
+      <symbol id="aep-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+      <symbol id="aep-chevron" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+      <symbol id="aep-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+      <symbol id="aep-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+      <symbol id="aep-comment" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5Z"/></symbol>
+      <symbol id="aep-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="preview-head">
+    <div class="preview-heading">
+      <strong>文章编辑页</strong>
+      <span>内容优先 · 少卡片 · 单色强调</span>
+    </div>
+    <div class="preview-switch" role="group" aria-label="切换预览视口">
+      <button id="aep-desktop-trigger" type="button" class="is-active" aria-pressed="true">桌面</button>
+      <button id="aep-mobile-trigger" type="button" aria-pressed="false">移动</button>
+    </div>
+  </div>
+  <p class="preview-description">功能与信息不减少，只重新组织保存状态、写作区、工具栏和文章设置的层级。</p>
+
+  <div id="aep-desktop-view">
+    <div class="product app-shell" aria-label="桌面端文章编辑页优化预览">
+      <aside class="app-sidebar" aria-label="Console 导航">
+        <div class="brand">
+          <span class="brand-mark"><svg class="p-icon p-icon-small"><use href="#aep-file"/></svg></span>
+          <span class="brand-text">Console</span>
+        </div>
+        <button class="new-post" type="button"><svg class="p-icon p-icon-small"><use href="#aep-plus"/></svg><span>开始写作</span></button>
+        <div class="search"><svg class="p-icon p-icon-small"><use href="#aep-search"/></svg><span>搜索</span></div>
+        <p class="nav-caption">内容</p>
+        <div class="nav-item"><svg class="p-icon"><use href="#aep-grid"/></svg><span>仪表盘</span></div>
+        <div class="nav-item active"><svg class="p-icon"><use href="#aep-file"/></svg><span>文章</span></div>
+        <div class="nav-item"><svg class="p-icon"><use href="#aep-book"/></svg><span>专栏</span></div>
+        <div class="nav-item"><svg class="p-icon"><use href="#aep-note"/></svg><span>页面</span></div>
+        <div class="nav-item"><svg class="p-icon"><use href="#aep-users"/></svg><span>作者</span></div>
+        <div class="sidebar-spacer"></div>
+        <div class="account">
+          <div class="avatar">九</div>
+          <div class="account-text"><div class="account-name">上杉九月</div><div class="account-role">admin</div></div>
+        </div>
+      </aside>
+
+      <main class="editor-shell">
+        <header class="editor-topbar">
+          <div class="editor-identity">
+            <button class="icon-button" type="button" aria-label="返回文章列表"><svg class="p-icon"><use href="#aep-arrow-left"/></svg></button>
+            <div>
+              <div class="page-title-row"><h2 class="page-title">编辑文章</h2><span class="draft-label">草稿</span></div>
+              <div class="save-state"><span class="status-dot"></span><span>所有修改已保存 · 14:32</span></div>
+            </div>
+          </div>
+          <div class="editor-actions">
+            <button class="action-button quiet" type="button"><svg class="p-icon p-icon-small"><use href="#aep-eye"/></svg><span class="action-label">预览</span></button>
+            <button class="action-button" type="button"><svg class="p-icon p-icon-small"><use href="#aep-save"/></svg><span class="action-label">保存草稿</span></button>
+            <button class="action-button primary" type="button"><svg class="p-icon p-icon-small"><use href="#aep-send"/></svg><span class="action-label">发布</span></button>
+          </div>
+        </header>
+
+        <div class="editor-workspace">
+          <section class="writing-surface" aria-label="正文编辑区">
+            <h1 class="document-title">EmbyBot 使用指南</h1>
+            <p class="document-subline">/emby-bot-guide</p>
+            <div class="format-toolbar" aria-label="正文格式工具栏">
+              <div class="format-group">
+                <button class="format-button" type="button" aria-label="插入"><svg class="p-icon"><use href="#aep-plus"/></svg></button>
+                <span class="format-divider"></span>
+                <button class="format-button active" type="button" aria-label="加粗"><strong>B</strong></button>
+                <button class="format-button" type="button" aria-label="斜体"><em>I</em></button>
+                <button class="format-button optional-tool" type="button" aria-label="标题">H</button>
+                <button class="format-button" type="button" aria-label="链接"><svg class="p-icon"><use href="#aep-link"/></svg></button>
+                <button class="format-button optional-tool" type="button" aria-label="代码"><svg class="p-icon"><use href="#aep-code"/></svg></button>
+                <button class="format-button" type="button" aria-label="图片"><svg class="p-icon"><use href="#aep-image"/></svg></button>
+                <button class="format-button optional-tool" type="button" aria-label="列表"><svg class="p-icon"><use href="#aep-list"/></svg></button>
+              </div>
+              <div class="format-group">
+                <button class="editor-kind" type="button"><svg class="p-icon p-icon-small"><use href="#aep-file"/></svg><span>默认编辑器</span><svg class="p-icon p-icon-small"><use href="#aep-chevron"/></svg></button>
+                <button class="format-button" type="button" aria-label="收起文章设置"><svg class="p-icon"><use href="#aep-panel"/></svg></button>
+              </div>
+            </div>
+            <article class="document-body">
+              <h3>正文编辑区</h3>
+              <p>文章高级设置已经归到右侧，正文区域保持专注写作。减少外层卡片和重复分隔，让内容本身成为页面的视觉中心。</p>
+              <h3 class="section-gap">公式和正文验证</h3>
+              <p>编辑器继续支持富文本、Markdown、Stellar 标签与媒体插入，交互能力不变。</p>
+              <div class="code-line">$$ x^2 + y^2 = z^2 $$</div>
+              <h3 class="section-gap">下一段内容</h3>
+              <p>工具栏只保留一条细分隔线，选中态使用中性底色；蓝色不再承担装饰性强调。</p>
+            </article>
+          </section>
+
+          <aside class="settings-panel" aria-label="文章设置">
+            <div class="panel-tabs" role="tablist" aria-label="辅助面板">
+              <button class="panel-tab" type="button" role="tab" aria-selected="false">大纲</button>
+              <button class="panel-tab active" type="button" role="tab" aria-selected="true">设置</button>
+            </div>
+            <section class="setting-section">
+              <h3 class="setting-title">发布设置</h3>
+              <div class="field"><label class="field-label">别名（Slug）</label><div class="field-control">emby-bot-guide</div></div>
+              <div class="field"><label class="field-label">作者</label><div class="field-control"><span>上杉九月</span><svg class="p-icon p-icon-small"><use href="#aep-chevron"/></svg></div></div>
+              <div class="setting-row"><span>置顶文章</span><span class="switch" aria-hidden="true"></span></div>
+            </section>
+            <section class="setting-section">
+              <h3 class="setting-title">分类与标签</h3>
+              <div class="field"><label class="field-label">分类</label><div class="field-control"><span>技术 / 工具</span><svg class="p-icon p-icon-small"><use href="#aep-chevron"/></svg></div></div>
+              <div class="field"><label class="field-label">标签</label><div class="tag-line">Emby&nbsp;&nbsp; Bot&nbsp;&nbsp; 自动化</div></div>
+            </section>
+            <section class="setting-section">
+              <h3 class="setting-title">文章封面</h3>
+              <div class="cover-box">
+                <div class="cover-placeholder"><svg class="p-icon"><use href="#aep-image"/></svg></div>
+                <div class="cover-actions">从媒体库选择<span>或粘贴图片 URL</span></div>
+              </div>
+            </section>
+            <section class="setting-section">
+              <h3 class="setting-title">文章显示</h3>
+              <div class="field"><label class="field-label">文章风格</label><div class="field-control"><span>技术文章</span><svg class="p-icon p-icon-small"><use href="#aep-chevron"/></svg></div></div>
+              <div class="field"><label class="field-label">段落缩进</label><div class="field-control"><span>跟随全站设置</span><svg class="p-icon p-icon-small"><use href="#aep-chevron"/></svg></div></div>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="aep-mobile-view" class="mobile-stage" hidden>
+    <div class="product phone-shell" aria-label="移动端文章编辑页优化预览">
+      <header class="mobile-topbar">
+        <button class="icon-button" type="button" aria-label="返回文章列表"><svg class="p-icon"><use href="#aep-arrow-left"/></svg></button>
+        <div class="mobile-heading">
+          <h2 class="page-title">编辑文章</h2>
+          <div class="save-state"><span class="status-dot"></span><span>已保存</span></div>
+        </div>
+        <div class="mobile-actions">
+          <button class="icon-button" type="button" aria-label="预览文章"><svg class="p-icon"><use href="#aep-eye"/></svg></button>
+          <button class="icon-button" type="button" aria-label="保存草稿"><svg class="p-icon"><use href="#aep-save"/></svg></button>
+          <button class="mobile-publish" type="button">发布</button>
+        </div>
+      </header>
+      <div class="mobile-contextbar"><span>默认编辑器</span><button class="mobile-settings-button" type="button"><svg class="p-icon p-icon-small"><use href="#aep-settings"/></svg>文章设置</button></div>
+      <main class="mobile-document">
+        <h1 class="document-title">EmbyBot 使用指南</h1>
+        <p class="document-subline">/emby-bot-guide</p>
+        <div class="mobile-toolbar" aria-label="移动端正文格式工具栏">
+          <button class="format-button" type="button" aria-label="插入"><svg class="p-icon"><use href="#aep-plus"/></svg></button>
+          <button class="format-button active" type="button" aria-label="加粗"><strong>B</strong></button>
+          <button class="format-button" type="button" aria-label="斜体"><em>I</em></button>
+          <button class="format-button optional-tool" type="button" aria-label="标题">H</button>
+          <button class="format-button" type="button" aria-label="链接"><svg class="p-icon"><use href="#aep-link"/></svg></button>
+          <button class="format-button" type="button" aria-label="图片"><svg class="p-icon"><use href="#aep-image"/></svg></button>
+          <span class="mobile-toolbar-spacer"></span>
+          <button class="format-button" type="button" aria-label="更多工具"><svg class="p-icon"><use href="#aep-more"/></svg></button>
+        </div>
+        <article class="mobile-body">
+          <h3>正文编辑区</h3>
+          <p>高级设置收纳到底部抽屉，正文默认占满首屏。保存状态与页头合并，不再单独占用一整行。</p>
+          <h3>保持完整编辑能力</h3>
+          <p>常用格式保持直接可达，其余工具进入更多菜单；所有触控目标保留足够尺寸。</p>
+          <h3>下一段内容</h3>
+          <p>页面继续使用中性色和细分隔线，减少卡片嵌套与重复说明。</p>
+        </article>
+      </main>
+      <nav class="mobile-tabbar" aria-label="移动端主导航">
+        <div class="mobile-tab"><svg class="p-icon"><use href="#aep-grid"/></svg><span>仪表盘</span></div>
+        <div class="mobile-tab active"><svg class="p-icon"><use href="#aep-file"/></svg><span>文章</span></div>
+        <div class="mobile-tab"><svg class="p-icon"><use href="#aep-comment"/></svg><span>评论</span></div>
+        <div class="mobile-tab"><svg class="p-icon"><use href="#aep-image"/></svg><span>媒体库</span></div>
+        <div class="mobile-tab"><svg class="p-icon"><use href="#aep-more"/></svg><span>更多</span></div>
+      </nav>
+    </div>
+  </div>
+
+  <div class="preview-footnotes" aria-label="预览优化重点">
+    <span>01&nbsp; 页头合并保存状态</span>
+    <span>02&nbsp; 正文减少卡片边界</span>
+    <span>03&nbsp; 设置改为单层分组</span>
+    <span>04&nbsp; 主操作使用近白强调</span>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('article-editor-preview-20261102-a1');
+      const desktopView = root.querySelector('#aep-desktop-view');
+      const mobileView = root.querySelector('#aep-mobile-view');
+      const desktopTrigger = root.querySelector('#aep-desktop-trigger');
+      const mobileTrigger = root.querySelector('#aep-mobile-trigger');
+      const selectView = (view) => {
+        const desktop = view === 'desktop';
+        desktopView.hidden = !desktop;
+        mobileView.hidden = desktop;
+        desktopTrigger.classList.toggle('is-active', desktop);
+        mobileTrigger.classList.toggle('is-active', !desktop);
+        desktopTrigger.setAttribute('aria-pressed', String(desktop));
+        mobileTrigger.setAttribute('aria-pressed', String(!desktop));
+      };
+      desktopTrigger.addEventListener('click', () => selectView('desktop'));
+      mobileTrigger.addEventListener('click', () => selectView('mobile'));
+    })();
+  </script>
+</div>
