@@ -5,11 +5,35 @@ export interface StellarFormField {
   form: string;
   path: string;
   blog?: boolean;
+  /** 读取来源链：按顺序取第一个存在的值；缺省只读 { path, blog }。 */
+  readFrom?: { path: string; blog?: boolean }[];
+  /** 写入官方字段后删除的历史同义字段，避免旧值继续覆盖渲染。 */
+  migrate?: { path: string; blog?: boolean };
   fallback?: unknown;
   read?: (value: any) => unknown;
   write?: (value: any, current: any) => unknown;
   raw?: boolean;
   host?: boolean;
+}
+function fieldSources(field: StellarFormField): { path: string; blog?: boolean }[] {
+  return field.readFrom?.length ? field.readFrom : [{ path: field.path, blog: field.blog }];
+}
+function readField(field: StellarFormField, form: any, configKey: string, blogKey: string): unknown {
+  for (const source of fieldSources(field)) {
+    const raw = form[source.blog ? blogKey : configKey];
+    const value = field.raw ? readJSONFieldRaw(raw, source.path) : readJSONField(raw, source.path);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+function fieldSourceChanged(field: StellarFormField, configChanged: boolean, blogChanged: boolean): boolean {
+  return fieldSources(field).some((source) => (source.blog ? blogChanged : configChanged));
+}
+function clearMigratedField(field: StellarFormField, form: any, configKey: string, blogKey: string) {
+  if (!field.migrate) return;
+  const rawKey = field.migrate.blog ? blogKey : configKey;
+  if (readJSONFieldRaw(form[rawKey], field.migrate.path) === undefined) return;
+  form[rawKey] = patchJSONField(form[rawKey], field.migrate.path, undefined);
 }
 function get(object: any, path: string): any {
   return path.split(".").reduce((value, key) => value?.[key], object);
@@ -61,11 +85,9 @@ export function useStellarForm(
         readJSONField(form[blogKey], "");
         fields.forEach((field, index) => {
           const rawKey = field.blog ? blogKey : configKey;
-          if (field.blog ? blogChanged : configChanged) {
+          if (fieldSourceChanged(field, configChanged, blogChanged)) {
             rawDraftErrors.delete(field.form);
-            const value = field.raw
-              ? readJSONFieldRaw(form[rawKey], field.path)
-              : readJSONField(form[rawKey], field.path);
+            const value = readField(field, form, configKey, blogKey);
             if (value === undefined && field.host) return;
             set(form, field.form, field.read ? field.read(value) : (value ?? field.fallback ?? ""));
           } else if (baseline[index] !== fingerprint(get(form, field.form))) {
@@ -77,6 +99,7 @@ export function useStellarForm(
                 field.write ? field.write(value, readJSONField(form[rawKey], field.path)) : value,
                 field.raw ? value || "{}" : undefined,
               );
+              clearMigratedField(field, form, configKey, blogKey);
               rawDraftErrors.delete(field.form);
             } catch (problem) {
               if (!field.raw) throw problem;
@@ -90,10 +113,7 @@ export function useStellarForm(
         // 多个旧控件消费同一个上游字段时同步回显（例如 Hero 与集合 headline）。
         fields.forEach((field) => {
           if (rawDraftErrors.has(field.form)) return;
-          const rawKey = field.blog ? blogKey : configKey;
-          const value = field.raw
-            ? readJSONFieldRaw(form[rawKey], field.path)
-            : readJSONField(form[rawKey], field.path);
+          const value = readField(field, form, configKey, blogKey);
           if (value === undefined && field.host) return;
           set(form, field.form, field.read ? field.read(value) : (value ?? field.fallback ?? ""));
         });

@@ -13,19 +13,36 @@ import { patchJSONField, readJSONFieldRaw } from "../web/src/components/editor/s
 const schema = JSON.parse(readFileSync(new URL("../../../internal/stellarv2/schema.json", import.meta.url), "utf8"));
 const tabs = Object.keys(canonicalSettingsGroups) as CanonicalSettingsTab[];
 
-test("AI 设置只编辑独立 Blog 扩展 blog_extensions.ai，开关默认关闭且与运行时缺省一致", () => {
+test("AI 设置只编辑独立 Blog 扩展 blog_extensions.ai，对话与向量接口各自独立且开关默认关闭", () => {
   assert.deepEqual(canonicalSettingsPaths("ai"), [
-    "blog_extensions.ai.base_url",
-    "blog_extensions.ai.api_key",
-    "blog_extensions.ai.model",
-    "blog_extensions.ai.embedding_model",
+    "blog_extensions.ai.chat.base_url",
+    "blog_extensions.ai.chat.api_key",
+    "blog_extensions.ai.chat.model",
+    "blog_extensions.ai.embedding.base_url",
+    "blog_extensions.ai.embedding.api_key",
+    "blog_extensions.ai.embedding.model",
     "blog_extensions.ai.summary.enabled",
     "blog_extensions.ai.summary.allow_user_api",
     "blog_extensions.ai.ask.enabled",
     "blog_extensions.ai.ask.allow_user_llm",
   ]);
+  assert.deepEqual(
+    canonicalSettingsGroups.ai.map((group) => group.title),
+    ["对话模型", "向量模型", "AI 摘要", "AI 问答"],
+  );
+  const endpointGroups = canonicalSettingsGroups.ai.slice(0, 2);
+  for (const group of endpointGroups) {
+    assert.deepEqual(
+      group.fields.map((item) => item.path.split(".").slice(-1)[0]),
+      ["base_url", "api_key", "model"],
+    );
+  }
   const fields = canonicalSettingsGroups.ai.flatMap((group) => group.fields);
-  assert.equal(fields.find((field) => field.path === "blog_extensions.ai.api_key")?.kind, "password");
+  for (const path of ["blog_extensions.ai.chat.api_key", "blog_extensions.ai.embedding.api_key"])
+    assert.equal(fields.find((item) => item.path === path)?.kind, "password", path);
+  // 旧平铺字段只在留空时逐字段回退，不能作为表单控件，否则会覆盖未迁移的旧配置。
+  const legacyPaths = ["base_url", "api_key", "model", "embedding_model"].map((key) => `blog_extensions.ai.${key}`);
+  for (const path of legacyPaths) assert.ok(!fields.some((item) => item.path === path), path);
   for (const field of fields) if (field.kind === "switch") assert.equal(field.default, false, field.path);
 });
 

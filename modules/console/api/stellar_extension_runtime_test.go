@@ -80,14 +80,16 @@ func TestStellarSettingsPublishUpdatesRealLocalConsumers(t *testing.T) {
 	}()
 	callbackCount := 0
 	h.onLinksChanged = func() { callbackCount++ }
-	document := fmt.Sprintf(`{"version":2,"theme":{},"blog_extensions":{"native_comments":{"enabled":false,"admin_email":"owner@example.test","notify":{"smtp_host":"127.0.0.1","smtp_port":%d,"username":"fixture-user","from":"sender@example.test","password":"fixture-mail-secret"}},"friends":{"posts_per_link":4,"check_interval":0},"ai":{"api_key":"fixture-model-secret","summary":{"enabled":false,"allow_user_api":false},"ask":{"enabled":false,"allow_user_llm":false}}}}`, port)
+	document := fmt.Sprintf(`{"version":2,"theme":{},"blog_extensions":{"native_comments":{"enabled":false,"admin_email":"owner@example.test","notify":{"smtp_host":"127.0.0.1","smtp_port":%d,"username":"fixture-user","from":"sender@example.test","password":"fixture-mail-secret"}},"friends":{"posts_per_link":4,"check_interval":0},"ai":{"api_key":"fixture-model-secret","chat":{"base_url":"https://chat.example.test/v1","api_key":"fixture-chat-secret","model":"fixture-chat-model"},"embedding":{"base_url":"https://embedding.example.test/v1","api_key":"fixture-embedding-secret","model":"fixture-embedding-model"},"summary":{"enabled":false,"allow_user_api":false},"ask":{"enabled":false,"allow_user_llm":false}}}}`, port)
 	cookie := authCookie(user)
 	response := do2FA(r, http.MethodPut, "/api/v1/settings/stellar", document, cookie)
 	if response.Code != http.StatusOK {
 		t.Fatalf("canonical save: %d %s", response.Code, response.Body.String())
 	}
-	if strings.Contains(response.Body.String(), "fixture-mail-secret") || strings.Contains(response.Body.String(), "fixture-model-secret") {
-		t.Fatal("private credentials leaked in API response")
+	for _, secret := range []string{"fixture-mail-secret", "fixture-model-secret", "fixture-chat-secret", "fixture-embedding-secret"} {
+		if strings.Contains(response.Body.String(), secret) {
+			t.Fatalf("private credential %s leaked in API response", secret)
+		}
 	}
 	if callbackCount != 1 || h.site.Load().Friends.MaxPostsPerFeed != 4 || h.site.Load().Comments.Enabled {
 		t.Fatal("local runtime or friends refresh was not published")
@@ -112,17 +114,44 @@ func TestStellarSettingsPublishUpdatesRealLocalConsumers(t *testing.T) {
 		t.Fatalf("saved reader AI policy not applied: %d", response.Code)
 	}
 	cfg, err := config.LoadAI(st)
-	if err != nil || cfg.APIKey != "fixture-model-secret" || cfg.SummaryOn() || cfg.UserAPIOn() || cfg.QAOn() || cfg.QAUserLLMOn() {
-		t.Fatal("backend AI settings did not use canonical document")
+	if err != nil || cfg.Chat.APIKey != "fixture-chat-secret" || cfg.Chat.Model != "fixture-chat-model" ||
+		cfg.Embedding.APIKey != "fixture-embedding-secret" || cfg.Embedding.Model != "fixture-embedding-model" ||
+		cfg.SummaryOn() || cfg.UserAPIOn() || cfg.QAOn() || cfg.QAUserLLMOn() {
+		t.Fatal("backend AI settings did not use canonical nested endpoints")
+	}
+	// GET 返回脱敏文档；把 **** 原样提交回去必须恢复对应路径的已存密钥。
+	response = do2FA(r, http.MethodGet, "/api/v1/settings/stellar", "", cookie)
+	if response.Code != http.StatusOK || strings.Contains(response.Body.String(), "fixture-chat-secret") {
+		t.Fatalf("masked document read: %d %s", response.Code, response.Body.String())
+	}
+	maskedBody := append([]byte(nil), response.Body.Bytes()...)
+	var maskedDocument map[string]any
+	if err := json.Unmarshal(maskedBody, &maskedDocument); err != nil {
+		t.Fatal(err)
+	}
+	maskedAI := maskedDocument["blog_extensions"].(map[string]any)["ai"].(map[string]any)
+	if maskedAI["api_key"] != config.StellarV2SecretMask ||
+		maskedAI["chat"].(map[string]any)["api_key"] != config.StellarV2SecretMask ||
+		maskedAI["embedding"].(map[string]any)["api_key"] != config.StellarV2SecretMask {
+		t.Fatalf("masked document did not redact AI keys: %v", maskedAI)
+	}
+	response = do2FA(r, http.MethodPut, "/api/v1/settings/stellar", string(maskedBody), cookie)
+	if response.Code != http.StatusOK {
+		t.Fatalf("masked round-trip save: %d %s", response.Code, response.Body.String())
+	}
+	cfg, err = config.LoadAI(st)
+	if err != nil || cfg.Chat.APIKey != "fixture-chat-secret" || cfg.Embedding.APIKey != "fixture-embedding-secret" {
+		t.Fatal("masked round-trip discarded nested AI secrets")
 	}
 	before, _ := st.ReadSettingsSnapshot()
 	old := h.site.Load()
+	callbacks := callbackCount
 	response = do2FA(r, http.MethodPut, "/api/v1/settings/stellar", `{"version":2,"theme":{},"blog_extensions":{"native_comments":{"notify":{"smtp_port":"secret-text"}}}}`, cookie)
 	if response.Code != http.StatusBadRequest || strings.Contains(response.Body.String(), "secret-text") {
 		t.Fatal("invalid service config accepted or reflected raw data")
 	}
 	after, _ := st.ReadSettingsSnapshot()
-	if len(before) != len(after) || before[config.SectionBlogExtensions] != after[config.SectionBlogExtensions] || h.site.Load() != old || callbackCount != 1 {
+	if len(before) != len(after) || before[config.SectionBlogExtensions] != after[config.SectionBlogExtensions] || h.site.Load() != old || callbackCount != callbacks {
 		t.Fatal("failed save changed service state or refreshed friends")
 	}
 }

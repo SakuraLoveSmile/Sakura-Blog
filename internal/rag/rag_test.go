@@ -3,11 +3,13 @@ package rag
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -253,26 +255,60 @@ func mustCreatePost(t *testing.T, st *store.Store, post *store.Post) {
 	}
 }
 
+type aiCall struct {
+	Path   string
+	Host   string
+	Model  string
+	APIKey string
+}
+
 type ragTransport struct {
 	failEmbeddings atomic.Bool
+	mu             sync.Mutex
+	calls          []aiCall
+}
+
+func (t *ragTransport) record(req *http.Request, model string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.calls = append(t.calls, aiCall{Path: req.URL.Path, Host: req.URL.Host, Model: model, APIKey: req.Header.Get("Authorization")})
+}
+
+func (t *ragTransport) snapshot() []aiCall {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return append([]aiCall(nil), t.calls...)
+}
+
+func (t *ragTransport) resetCalls() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.calls = nil
 }
 
 func (t *ragTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	body, _ := io.ReadAll(req.Body)
 	if req.URL.Path == "/v1/embeddings" {
+		var payload struct {
+			Model string   `json:"model"`
+			Input []string `json:"input"`
+		}
+		_ = json.Unmarshal(body, &payload)
+		t.record(req, payload.Model)
 		if t.failEmbeddings.Load() {
 			return response(req, http.StatusBadGateway, `{"error":{"message":"embedding down"}}`), nil
 		}
-		var payload struct {
-			Input []string `json:"input"`
-		}
-		body, _ := io.ReadAll(req.Body)
-		_ = json.Unmarshal(body, &payload)
 		data := make([]map[string]any, len(payload.Input))
 		for i := range payload.Input {
 			data[i] = map[string]any{"index": i, "embedding": []float32{1, 0}}
 		}
 		return response(req, http.StatusOK, marshalJSON(map[string]any{"data": data})), nil
 	}
+	var chat struct {
+		Model string `json:"model"`
+	}
+	_ = json.Unmarshal(body, &chat)
+	t.record(req, chat.Model)
 	return response(req, http.StatusOK, `{"choices":[{"message":{"content":"回答 [S1]"}}]}`), nil
 }
 
@@ -283,4 +319,173 @@ func response(req *http.Request, status int, body string) *http.Response {
 func marshalJSON(value any) string {
 	data, _ := json.Marshal(value)
 	return string(data)
+}
+
+// 建库/检索只打向量接口，问答回答只打对话接口；旧平铺地址不应再被使用。
+func TestRebuildAndAskUseSeparateAIEndpoints(t *testing.T) {
+	st := newRAGStore(t)
+	putAIConfig(t, st, `{
+		"base_url":"https://legacy.example/v1","api_key":"legacy-key","model":"legacy-chat","embedding_model":"legacy-embed",
+		"chat":{"base_url":"https://chat.example/v1","api_key":"chat-key","model":"chat-model"},
+		"embedding":{"base_url":"https://embedding.example/v1","api_key":"embedding-key","model":"embedding-model"}
+	}`)
+	mustCreatePost(t, st, &store.Post{Slug: "split", Title: "双接口", Status: store.StatusPublished, ContentHTML: "<p>双接口正文</p>"})
+	transport := &ragTransport{}
+	service, err := NewWithClient(st, nil, llm.New(&http.Client{Transport: transport}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close(context.Background())
+	if err := service.RebuildNow(context.Background()); err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
+	calls := transport.snapshot()
+	if len(calls) == 0 {
+		t.Fatal("rebuild made no embedding request")
+	}
+	for _, call := range calls {
+		if call.Path != "/v1/embeddings" || call.Host != "embedding.example" || call.Model != "embedding-model" || call.APIKey != "Bearer embedding-key" {
+			t.Fatalf("rebuild hit wrong endpoint: %+v", call)
+		}
+	}
+	status, err := service.Status()
+	if err != nil || status.EmbeddingModel != "embedding-model" {
+		t.Fatalf("status embedding model = %q err=%v", status.EmbeddingModel, err)
+	}
+
+	// 增量更新同样只使用向量接口。
+	transport.resetCalls()
+	if err := st.Update("split", &store.Post{Slug: "split", Title: "双接口", Status: store.StatusPublished, ContentHTML: "<p>增量正文</p>"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.updateDocument(context.Background(), TypePost, "split"); err != nil {
+		t.Fatalf("incremental update: %v", err)
+	}
+	incremental := transport.snapshot()
+	if len(incremental) == 0 {
+		t.Fatal("incremental update made no embedding request")
+	}
+	for _, call := range incremental {
+		if call.Path != "/v1/embeddings" || call.Host != "embedding.example" || call.Model != "embedding-model" || call.APIKey != "Bearer embedding-key" {
+			t.Fatalf("incremental update hit wrong endpoint: %+v", call)
+		}
+	}
+
+	transport.resetCalls()
+	answer, err := service.Ask(context.Background(), "双接口", nil)
+	if err != nil {
+		t.Fatalf("ask: %v", err)
+	}
+	if !strings.Contains(answer.Answer, "回答") {
+		t.Fatalf("unexpected answer: %+v", answer)
+	}
+	calls = transport.snapshot()
+	var embedded, answered int
+	for _, call := range calls {
+		switch call.Path {
+		case "/v1/embeddings":
+			embedded++
+			if call.Host != "embedding.example" || call.Model != "embedding-model" || call.APIKey != "Bearer embedding-key" {
+				t.Fatalf("ask embedded on wrong endpoint: %+v", call)
+			}
+		case "/v1/chat/completions":
+			answered++
+			if call.Host != "chat.example" || call.Model != "chat-model" || call.APIKey != "Bearer chat-key" {
+				t.Fatalf("ask answered on wrong endpoint: %+v", call)
+			}
+		default:
+			t.Fatalf("ask called unexpected path: %+v", call)
+		}
+	}
+	if embedded != 1 || answered != 1 {
+		t.Fatalf("ask calls = embeddings:%d chat:%d, want 1/1: %+v", embedded, answered, calls)
+	}
+}
+
+// Ask 需要向量接口与对话接口都配置；缺任一组都不发起请求。
+func TestAskRequiresBothEmbeddingAndChat(t *testing.T) {
+	st := newRAGStore(t)
+	putAIConfig(t, st, `{"embedding":{"base_url":"https://embedding.example/v1","api_key":"embedding-key","model":"embedding-model"}}`)
+	transport := &ragTransport{}
+	service, err := NewWithClient(st, nil, llm.New(&http.Client{Transport: transport}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close(context.Background())
+	if !service.EmbeddingConfigured() {
+		t.Fatal("embedding-only config should still allow rebuild")
+	}
+	if _, err := service.Ask(context.Background(), "问题", nil); !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("ask without chat model = %v, want ErrNotConfigured", err)
+	}
+	if calls := transport.snapshot(); len(calls) != 0 {
+		t.Fatalf("unconfigured ask made requests: %+v", calls)
+	}
+	if _, err := config.SaveStellarV2(st, map[string]any{}, map[string]any{"ai": map[string]any{
+		"embedding": map[string]any{"base_url": "https://embedding.example/v1", "api_key": "embedding-key", "model": "embedding-model"},
+		"chat":      map[string]any{"base_url": "https://chat.example/v1", "api_key": "chat-key", "model": "chat-model"},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	config.InvalidateLoadAI()
+	if _, err := service.Ask(context.Background(), "问题", nil); !errors.Is(err, ErrEmptyKnowledge) {
+		t.Fatalf("configured ask = %v, want ErrEmptyKnowledge on empty index", err)
+	}
+}
+
+func TestEmbeddingFingerprintTracksEmbeddingEndpointAndModel(t *testing.T) {
+	base := embeddingFingerprint("https://embedding.example/v1", "embedding-model")
+	if got := embeddingFingerprint("https://embedding.example/v1/", "embedding-model"); got != base {
+		t.Fatal("trailing slash should not change the fingerprint")
+	}
+	if embeddingFingerprint("https://other.example/v1", "embedding-model") == base {
+		t.Fatal("embedding address change should change the fingerprint")
+	}
+	if embeddingFingerprint("https://embedding.example/v1", "other-model") == base {
+		t.Fatal("embedding model change should change the fingerprint")
+	}
+}
+
+func TestNeedsRebuildTracksEmbeddingEndpointChangesOnly(t *testing.T) {
+	st := newRAGStore(t)
+	embedding := func(baseURL, model string) map[string]any {
+		return map[string]any{"base_url": baseURL, "api_key": "embedding-key", "model": model}
+	}
+	chat := func(model string) map[string]any {
+		return map[string]any{"base_url": "https://chat.example/v1", "api_key": "chat-key", "model": model}
+	}
+	save := func(chatModel, embeddingURL, embeddingModel string) {
+		t.Helper()
+		if _, err := config.SaveStellarV2(st, map[string]any{}, map[string]any{"ai": map[string]any{
+			"chat": chat(chatModel), "embedding": embedding(embeddingURL, embeddingModel),
+		}}); err != nil {
+			t.Fatal(err)
+		}
+		config.InvalidateLoadAI()
+	}
+	putAIConfig(t, st, `{"chat":{"base_url":"https://chat.example/v1","api_key":"chat-key","model":"chat-model"},"embedding":{"base_url":"https://embedding.example/v1","api_key":"embedding-key","model":"embedding-model"}}`)
+	mustCreatePost(t, st, &store.Post{Slug: "rebuild", Title: "重建", Status: store.StatusPublished, ContentHTML: "<p>重建正文</p>"})
+	service, err := NewWithClient(st, nil, llm.New(&http.Client{Transport: &ragTransport{}}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close(context.Background())
+	if err := service.RebuildNow(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if service.needsRebuild() {
+		t.Fatal("fresh index should not need a rebuild")
+	}
+	save("other-chat-model", "https://embedding.example/v1", "embedding-model")
+	if service.needsRebuild() {
+		t.Fatal("chat model change alone must not fingerprint the embedding index")
+	}
+	save("other-chat-model", "https://embedding.example/v1", "other-embedding-model")
+	if !service.needsRebuild() {
+		t.Fatal("embedding model change should request a rebuild")
+	}
+	save("other-chat-model", "https://embedding2.example/v1", "other-embedding-model")
+	if !service.needsRebuild() {
+		t.Fatal("embedding address change should request a rebuild")
+	}
 }

@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-11-02T20:39:10.572773+08:00",
+  "dbPath": ".tmp/e2e-server.geTi9T/data/blog.db",
+  "serverRoot": ".tmp/e2e-server.geTi9T",
+  "chat": {
+    "api_key": "fixture-chat-key-20261102",
+    "base_url": "https://chat.fixture.test/v1",
+    "model": "fixture-chat-model"
+  },
+  "embedding": {
+    "api_key": "fixture-embedding-key-20261102",
+    "base_url": "https://embedding.fixture.test/v1",
+    "model": "fixture-embedding-model"
+  },
+  "legacy": {
+    "base_url": "https://legacy.fixture.test/v1",
+    "api_key": "legacy-fixture-key",
+    "model": "legacy-chat-model",
+    "embedding_model": "legacy-embedding-model"
+  },
+  "summary": {
+    "allow_user_api": false,
+    "enabled": false
+  },
+  "ask": {
+    "allow_user_llm": false,
+    "enabled": false
+  },
+  "unrelated": {
+    "flag": false,
+    "large": 9007199254740993,
+    "nil": null
+  },
+  "rawContainsLargeInteger": true,
+  "distinctAPIKeys": true,
+  "chatKeyMatchesTyped": true,
+  "embeddingKeyMatchesTyped": true
+}
