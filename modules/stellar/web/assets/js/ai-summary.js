@@ -82,6 +82,9 @@
         } else {
           clearInterval(_typewriterTimer);
           _typewriterTimer = null;
+          // 合并打字机产生的文本片段：后置排版脚本（如 HeTi）按文本节点拆分会把
+          // Hexo、Git 等西文单词切成片段并产生词内空隙。
+          if (p.normalize) p.normalize();
           // 输出完成，光标淡出移除
           cursor.style.transition = 'opacity 0.5s';
           cursor.style.opacity = '0';
@@ -125,6 +128,7 @@
       } else {
         clearInterval(_typewriterTimer);
         _typewriterTimer = null;
+        if (p.normalize) p.normalize();
         cursor.style.transition = 'opacity 0.5s';
         cursor.style.opacity = '0';
         setTimeout(function () { cursor.remove(); }, 500);
@@ -134,12 +138,14 @@
 
   function initTypewriter() {
     var root = document.getElementById('ai-summary');
-    if (root) {
-      var body = root.querySelector('.body');
-      if (body && body.querySelector('p') && body.querySelector('p').textContent.trim()) {
-        playTypewriter(root);
-      }
-    }
+    if (!root) return;
+    var body = root.querySelector('.body');
+    var p = body && body.querySelector('p');
+    if (!p || !p.textContent.trim()) return;
+    // HeTi 会为 .heti 内的中文/西文边界补间距；打字机会把摘要拆成多个文本节点，
+    // HeTi 若在其后运行，会把 Hexo、Git 等西文单词按片段包成 heti-spacing 而产生
+    // 词内空隙。启用 HeTi 时保留服务端完整文本交给 HeTi 排版，不播放打字机。
+    if (!document.querySelector('.heti')) playTypewriter(root);
   }
 
   function generate(root) {

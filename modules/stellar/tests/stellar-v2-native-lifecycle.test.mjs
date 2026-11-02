@@ -72,6 +72,16 @@ test('AI摘要生成离页后不渲染迟到成功、不报网络错、不回写
   f.requests[0].resolve({ ok: true, json: async () => ({ summary: '迟到摘要' }) }); await flush(); await flush();
   assert.equal(button.disabled, true); assert.equal(f.timers.size, 0);
 });
+test('已有 AI 摘要启用 HeTi 时不播放打字机，保留服务端完整文本', () => {
+  const f = fixture(); f.load('ai-summary.js');
+  const panel = new Element(), body = new Element(), p = new Element(), article = new Element();
+  p.textContent = '摘要 Hexo Git';
+  body.map['p'] = p; panel.map['.body'] = body;
+  const root = f.region({ '#ai-summary': panel, '.heti': article });
+  f.window.blogAISummary.mount(root, f.context());
+  assert.equal(f.timers.size, 0, '启用 HeTi 时不应创建打字机定时器');
+  assert.equal(p.textContent, '摘要 Hexo Git', '摘要文本应保持服务端完整输出');
+});
 test('原生评论旧身份请求取消，新页身份只更新自己的region；卸载移除初始化标记', async () => {
   const f = fixture(); f.load('comments.js');
   function commentRegion() {

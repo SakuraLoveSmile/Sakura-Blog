@@ -20,14 +20,19 @@
 - [x] 清空摘要后列与扩展均不残留，页面不再输出摘要文本；再次生成后恢复可见。
 - [x] `make test` 全量通过；新增 stella store/route 回归用例。
 - [x] 无摘要时页面结构与问题图一致（仅正文不存在），不影响其它页面。
+- [x] 启用 HeTi 的页面摘要无词内空隙（`after-heti-desktop.png`）；HeTi 关闭时保留原打字机动画。
+- [x] 生产部署后文章页摘要完整可见（`after-production.png`）。
 
 ## 截图
 
-- `after-desktop.png`：canonical + 列均写入后，隔离服务 1280×900，摘要正文正常显示。
+- `after-desktop.png`：canonical + 列均写入后，隔离服务（未启用 HeTi）1280×900，摘要正文正常显示。
 - `after-legacy-column.png`：模拟线上同形数据（仅 `posts.ai_summary` 列），隔离服务 1280×900，回退显示摘要正文。
+- `production-before-heti-fix.png`：beta03 生产页面，摘要已显示但 HeTi 造成 `He xo`、`Gi t` 等词内空隙（beta04 修复前状态）。
+- `after-heti-desktop.png`：启用 HeTi 的隔离服务（beta04 代码）1280×900，`heti-spacing` 只包裹完整单词，摘要排版正常。
+- `after-production.png`：beta04 生产页面 1280×900，摘要完整、排版正常（最终效果）。
 
 ## 边界
 
-- 截图来自隔离合成站点（`scripts/e2e/prepare.go` 空站 + 合成文章），不连接生产数据库；生产只做了只读查询。
-- 未部署生产、未发布版本；发布与生产数据写入均需用户明确授权。
-- 未逐项检查四种 appearance 与移动端：本次不改 CSS 或模板结构，仅补全既有摘要卡的正文输出。
+- 隔离截图来自 `scripts/e2e/prepare.go` 空站 + 合成文章，不连接生产数据库；生产只做了只读查询与已授权的升级操作。
+- HeTi 词内空隙的根因是页面加载打字机与 HeTi（CDN 脚本）的时序竞争；修复后 HeTi 页面不播放打字机，非 HeTi 页面行为不变。
+- 未逐项检查四种 appearance 与移动端：本次不改 CSS 或模板结构，仅补全既有摘要卡的正文输出与 HeTi 时序处理。
