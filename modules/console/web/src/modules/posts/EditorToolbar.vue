@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, useSlots } from "vue";
 import { Icon } from "@iconify/vue";
 import { VModal, VButton } from "@/components/ui";
 import { type PluginMeta, previewInfoFor } from "@/modules/plugins/plugin-types";
@@ -23,6 +23,8 @@ const props = defineProps<{
   fullscreen: boolean;
   activeStates?: Record<string, boolean>;
 }>();
+
+const slots = useSlots();
 
 const emit = defineEmits<{
   (e: "format", id: string): void;
@@ -214,7 +216,10 @@ const btnActive = "btn-active";
           <Icon icon="ri:add-line" class="text-lg" />
         </button>
 
-        <div v-if="insertOpen" class="absolute left-0 top-full z-30 insert-popover mt-1 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-0">
+        <div
+          v-if="insertOpen"
+          class="absolute left-0 top-full z-30 insert-popover mt-1 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-0"
+        >
           <div class="insert-menu max-h-96 w-52 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg">
             <template v-for="group in groupedPlugins" :key="group.cat">
               <div class="flex items-center gap-1.5 px-3 pb-1 pt-2 text-[11px] text-text-quaternary">
@@ -248,9 +253,7 @@ const btnActive = "btn-active";
               <span v-if="bubblePreview.status.value === 'loading'" class="text-[10px] text-text-quaternary"
                 >渲染中…</span
               >
-              <span
-                v-else-if="bubblePreview.status.value === 'updating'"
-                class="text-[10px] text-text-quaternary"
+              <span v-else-if="bubblePreview.status.value === 'updating'" class="text-[10px] text-text-quaternary"
                 >更新中…</span
               >
               <button
@@ -401,8 +404,8 @@ const btnActive = "btn-active";
         </button>
       </div>
 
-      <!-- 右侧面板开关 -->
-      <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+      <!-- 右侧面板开关（宿主提供 #end 时由宿主接管） -->
+      <div v-if="!slots.end" class="flex items-center gap-0.5 border-l border-border px-1.5">
         <button
           type="button"
           :title="props.sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
@@ -412,6 +415,11 @@ const btnActive = "btn-active";
           <Icon icon="ri:layout-right-line" class="text-lg" />
         </button>
       </div>
+    </div>
+
+    <!-- 宿主专属右侧控件：不参与中间横向滚动，也不受 overflow-x-auto 裁切。 -->
+    <div v-if="slots.end" class="editor-toolbar-end relative z-20 flex shrink-0 items-center gap-0.5 pl-1">
+      <slot name="end" />
     </div>
   </div>
   <VModal v-model:visible="importFormatOpen" title="选择 Markdown 格式" :width="480">

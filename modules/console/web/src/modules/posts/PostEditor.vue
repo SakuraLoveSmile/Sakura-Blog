@@ -497,7 +497,12 @@ async function onImport(file: File, legacy = false) {
   importing.value = true;
   const session = editorSession;
   try {
-    const { data } = await editorImportApi.stellar({ filename: file.name, content: await file.text(), kind: "post", legacy });
+    const { data } = await editorImportApi.stellar({
+      filename: file.name,
+      content: await file.text(),
+      kind: "post",
+      legacy,
+    });
     if (session !== editorSession) return;
     importSession = session;
     pendingImport.value = data;
@@ -816,7 +821,7 @@ function handleDiscardDraft() {
     <header
       class="editor-header sticky top-0 z-50 flex items-center gap-2 px-4 py-2.5 sm:gap-4 sm:px-7 sm:py-3"
       style="
-        background: color-mix(in srgb, #000 75%, transparent);
+        background: color-mix(in srgb, var(--color-background) 75%, transparent);
         backdrop-filter: saturate(180%) blur(20px);
         -webkit-backdrop-filter: saturate(180%) blur(20px);
         border-bottom: 1px solid var(--color-border);
@@ -831,10 +836,20 @@ function handleDiscardDraft() {
       >
         <Icon icon="ri:arrow-left-s-line" class="text-2xl" />
       </button>
-      <h1 class="shrink-0 whitespace-nowrap text-base font-semibold tracking-tight text-foreground sm:text-[17px]">
-        {{ isEdit ? "编辑文章" : "新建文章" }}
-      </h1>
-      <div class="flex-1"></div>
+      <div class="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-4">
+        <h1 class="shrink-0 whitespace-nowrap text-base font-semibold tracking-tight text-foreground sm:text-[17px]">
+          {{ isEdit ? "编辑文章" : "新建文章" }}
+        </h1>
+        <p
+          role="status"
+          aria-live="polite"
+          :title="saveStatus"
+          class="editor-save-status min-w-0 truncate text-xs text-text-secondary"
+          :class="{ 'text-state-warning': isDirty || saveFailed }"
+        >
+          {{ saveStatus }}
+        </p>
+      </div>
       <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <!-- Markdown 模式下的视图三态切换（与工具栏同步，桌面端显示） -->
         <div
@@ -898,93 +913,6 @@ function handleDiscardDraft() {
       </div>
     </header>
 
-    <div
-      class="editor-status-bar flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2 sm:px-7"
-    >
-      <p
-        role="status"
-        aria-live="polite"
-        class="text-xs text-text-secondary"
-        :class="{ 'text-state-warning': isDirty || saveFailed }"
-      >
-        {{ saveStatus }}
-      </p>
-      <div class="flex items-center gap-2">
-        <!-- 编辑器选择（富文本/Markdown） -->
-        <div class="editor-kind-picker relative">
-          <button
-            ref="editorKindTrigger"
-            type="button"
-            class="editor-kind-trigger"
-            :class="{ 'is-open': editorKindOpen }"
-            title="切换编辑器"
-            aria-label="切换编辑器"
-            aria-haspopup="listbox"
-            :aria-expanded="editorKindOpen"
-            :aria-controls="editorKindOpen ? 'post-editor-kind-menu' : undefined"
-            :aria-activedescendant="editorKindOpen ? `post-editor-kind-${editorKindHighlight}` : undefined"
-            @click="toggleEditorKindMenu"
-            @keydown="onEditorKindKeydown"
-          >
-            <span class="editor-kind-trigger-icon" :class="`editor-kind-icon--${editorKind}`">
-              <Icon :icon="currentEditorKind.icon" />
-            </span>
-            <span class="editor-kind-trigger-label">{{ currentEditorKind.label }}</span>
-            <Icon icon="ri:arrow-down-s-line" class="editor-kind-chevron" aria-hidden="true" />
-          </button>
-
-          <Transition name="editor-kind-menu">
-            <div
-              v-if="editorKindOpen"
-              id="post-editor-kind-menu"
-              ref="editorKindMenu"
-              class="editor-kind-menu"
-              role="listbox"
-              aria-label="编辑器类型"
-            >
-              <button
-                v-for="item in editorKindItems"
-                :id="`post-editor-kind-${item.value}`"
-                :key="item.value"
-                type="button"
-                role="option"
-                class="editor-kind-option"
-                :class="{
-                  'is-selected': editorKind === item.value,
-                  'is-highlighted': editorKindHighlight === item.value,
-                }"
-                :aria-selected="editorKind === item.value"
-                @mouseenter="editorKindHighlight = item.value"
-                @focus="editorKindHighlight = item.value"
-                @click="onEditorKindSelect(item.value)"
-              >
-                <span class="editor-kind-option-icon" :class="`editor-kind-icon--${item.value}`">
-                  <Icon :icon="item.icon" />
-                </span>
-                <span class="editor-kind-option-label">{{ item.label }}</span>
-                <Icon
-                  v-if="editorKind === item.value"
-                  icon="ri:check-line"
-                  class="editor-kind-option-check"
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-          </Transition>
-        </div>
-        <button
-          ref="mobileSidebarTrigger"
-          type="button"
-          class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-text-secondary hover:bg-secondary sm:hidden"
-          :aria-expanded="mobileSidebarOpen"
-          aria-controls="post-settings-drawer"
-          @click="toggleSidebar"
-        >
-          <Icon icon="ri:settings-3-line" />文章设置
-        </button>
-      </div>
-    </div>
-
     <!-- 草稿头条幅：令牌化绿色提示条 -->
     <div
       v-if="hasDraft && isPublishedPost"
@@ -1014,11 +942,9 @@ function handleDiscardDraft() {
     <!-- 编辑区：<640 单列+底部抽屉；640–1024 单列、设置面板下置；≥1024 左右两栏 -->
     <div class="editor-wrap flex flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-7 sm:py-6 lg:flex-row">
       <!-- 左侧自适应编辑区 -->
-      <div class="flex min-w-0 flex-1 flex-col">
+      <div class="post-writing-surface flex min-w-0 flex-1 flex-col">
         <!-- 标题区 -->
-        <div
-          class="rounded-t-xl border border-b-0 border-border bg-card px-5 pb-4 pt-5 sm:rounded-t-[14px] sm:px-9 sm:pb-5 sm:pt-7"
-        >
+        <div class="post-title-block px-1 pb-4 pt-1 sm:px-2 sm:pb-5 sm:pt-2">
           <label for="post-title" class="sr-only">文章标题</label>
           <input
             id="post-title"
@@ -1029,8 +955,8 @@ function handleDiscardDraft() {
           />
         </div>
 
-        <!-- 工具栏（独立卡片条） -->
-        <div class="border border-b-0 border-border bg-card">
+        <!-- 工具栏：仅保留上下 hairline，右侧入口固定在滚动区之外 -->
+        <div class="post-toolbar-shell border-y border-border">
           <EditorToolbar
             :kind="editorKind"
             :mode="editorMode"
@@ -1049,11 +975,96 @@ function handleDiscardDraft() {
             @preview="handlePreview"
             @toggle-fullscreen="toggleFullscreen"
             @open-revision="revisionOpen = true"
-          />
+          >
+            <template #end>
+              <!-- 编辑器选择（富文本/Markdown） -->
+              <div class="editor-kind-picker relative">
+                <button
+                  ref="editorKindTrigger"
+                  type="button"
+                  class="editor-kind-trigger"
+                  :class="{ 'is-open': editorKindOpen }"
+                  title="切换编辑器"
+                  aria-label="切换编辑器"
+                  aria-haspopup="listbox"
+                  :aria-expanded="editorKindOpen"
+                  :aria-controls="editorKindOpen ? 'post-editor-kind-menu' : undefined"
+                  :aria-activedescendant="editorKindOpen ? `post-editor-kind-${editorKindHighlight}` : undefined"
+                  @click="toggleEditorKindMenu"
+                  @keydown="onEditorKindKeydown"
+                >
+                  <span class="editor-kind-trigger-icon">
+                    <Icon :icon="currentEditorKind.icon" />
+                  </span>
+                  <span class="editor-kind-trigger-label">{{ currentEditorKind.label }}</span>
+                  <Icon icon="ri:arrow-down-s-line" class="editor-kind-chevron" aria-hidden="true" />
+                </button>
+
+                <Transition name="editor-kind-menu">
+                  <div
+                    v-if="editorKindOpen"
+                    id="post-editor-kind-menu"
+                    ref="editorKindMenu"
+                    class="editor-kind-menu"
+                    role="listbox"
+                    aria-label="编辑器类型"
+                  >
+                    <button
+                      v-for="item in editorKindItems"
+                      :id="`post-editor-kind-${item.value}`"
+                      :key="item.value"
+                      type="button"
+                      role="option"
+                      class="editor-kind-option"
+                      :class="{
+                        'is-selected': editorKind === item.value,
+                        'is-highlighted': editorKindHighlight === item.value,
+                      }"
+                      :aria-selected="editorKind === item.value"
+                      @mouseenter="editorKindHighlight = item.value"
+                      @focus="editorKindHighlight = item.value"
+                      @click="onEditorKindSelect(item.value)"
+                    >
+                      <span class="editor-kind-option-icon">
+                        <Icon :icon="item.icon" />
+                      </span>
+                      <span class="editor-kind-option-label">{{ item.label }}</span>
+                      <Icon
+                        v-if="editorKind === item.value"
+                        icon="ri:check-line"
+                        class="editor-kind-option-check"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                </Transition>
+              </div>
+              <button
+                type="button"
+                class="editor-sidebar-toggle hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-secondary hover:text-foreground sm:inline-flex"
+                :title="sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
+                :aria-expanded="sidebarOpen"
+                aria-controls="post-settings-panel"
+                @click="toggleSidebar"
+              >
+                <Icon icon="ri:layout-right-line" class="text-lg" />
+              </button>
+              <button
+                ref="mobileSidebarTrigger"
+                type="button"
+                class="editor-mobile-settings flex min-h-11 items-center gap-1.5 rounded-md px-2 text-[13px] text-text-secondary hover:bg-secondary sm:hidden"
+                :aria-expanded="mobileSidebarOpen"
+                aria-controls="post-settings-drawer"
+                @click="toggleSidebar"
+              >
+                <Icon icon="ri:settings-3-line" />文章设置
+              </button>
+            </template>
+          </EditorToolbar>
         </div>
 
         <!-- 编辑器内核 -->
-        <div class="rounded-b-xl border border-border bg-card sm:rounded-b-[14px]">
+        <div class="post-editor-body">
           <RichTextEditor
             v-if="editorKind === 'rich'"
             :key="'rich:' + editorInstanceKey"
@@ -1061,7 +1072,7 @@ function handleDiscardDraft() {
             v-model="form.content_md"
             :storage-key="draftStorageKey"
             :follow-storage-key="true"
-            class="!border-0"
+            class="post-editor-instance !border-0"
             @save="handleSave"
             @pending-change="richPending = $event"
           />
@@ -1073,7 +1084,7 @@ function handleDiscardDraft() {
             :toolbar="false"
             :storage-key="draftStorageKey"
             :follow-storage-key="true"
-            class="!border-0"
+            class="post-editor-instance !border-0"
             @save="handleSave"
             @mode-change="(m: any) => (editorMode = m)"
           />
@@ -1083,6 +1094,7 @@ function handleDiscardDraft() {
       <!-- 右侧设置面板：≥1024 固定 320px 右栏；640–1024 全宽下置于编辑区 -->
       <div
         v-show="sidebarOpen"
+        id="post-settings-panel"
         class="sidebar-desktop hidden w-full shrink-0 sm:block lg:sticky lg:top-[72px] lg:w-80"
         style="max-height: calc(100vh - 88px); overflow-y: auto"
       >
@@ -1195,48 +1207,50 @@ function handleDiscardDraft() {
 </template>
 
 <style scoped>
-/* ===== 编辑器类型浮层选择器 ===== */
+/* ===== 开放写作面：只保留必要 hairline，不用卡片包三层 ===== */
+.post-toolbar-shell :deep(.editor-toolbar) {
+  min-width: 0;
+  padding: 4px 6px;
+}
+
+/* 编辑器内核仍由组件自身承载，文章页只去掉外层卡片皮肤。 */
+.post-editor-body :deep(.post-editor-instance) {
+  border-radius: 0;
+  background: transparent;
+}
+
+/* ===== 编辑器类型浮层选择器（单色强调） ===== */
 .editor-kind-picker {
   z-index: 70;
 }
 
 .editor-kind-trigger {
   display: inline-flex;
-  min-width: 176px;
-  min-height: 44px;
+  min-height: 36px;
   align-items: center;
-  gap: 7px;
-  padding: 4px 8px;
-  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--color-card) 78%, transparent);
+  gap: 6px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--color-text-secondary);
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent),
-    0 1px 2px color-mix(in srgb, #000 28%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  backdrop-filter: blur(18px) saturate(160%);
   transition:
-    border-color var(--duration-fast) var(--ease-standard),
     background-color var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard);
+    color var(--duration-fast) var(--ease-standard);
 }
 
 .editor-kind-trigger:hover,
 .editor-kind-trigger.is-open {
-  border-color: color-mix(in srgb, #fff 21%, transparent);
-  background: color-mix(in srgb, var(--color-accent) 78%, transparent);
+  background: var(--color-accent);
+  color: var(--color-foreground);
 }
 
 .editor-kind-trigger:focus-visible {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--color-ring) 18%, transparent),
-    inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
 }
 
 .editor-kind-trigger-icon,
@@ -1245,38 +1259,21 @@ function handleDiscardDraft() {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-text-tertiary);
 }
 
 .editor-kind-trigger-icon {
-  width: 25px;
-  height: 25px;
-  border-radius: 8px;
   font-size: 16px;
 }
 
 .editor-kind-option-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  font-size: 19px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent),
-    inset 0 -1px 1px color-mix(in srgb, #000 18%, transparent);
-}
-
-.editor-kind-icon--rich {
-  background: #0a84ff;
-}
-
-.editor-kind-icon--markdown {
-  background: #64d2ff;
+  font-size: 18px;
 }
 
 .editor-kind-trigger-label {
   overflow: hidden;
-  flex: 1;
-  color: var(--color-foreground);
+  flex: 0 1 auto;
+  color: inherit;
   text-align: left;
   text-overflow: ellipsis;
 }
@@ -1284,7 +1281,7 @@ function handleDiscardDraft() {
 .editor-kind-chevron {
   flex: 0 0 auto;
   color: var(--color-text-tertiary);
-  font-size: 17px;
+  font-size: 16px;
   transition:
     transform var(--duration-fast) var(--ease-standard),
     color var(--duration-fast) var(--ease-standard);
@@ -1297,74 +1294,42 @@ function handleDiscardDraft() {
 
 .editor-kind-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 6px);
   right: 0;
-  width: min(304px, calc(100vw - 24px));
-  padding: 6px;
-  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--color-popover) 86%, transparent);
-  box-shadow:
-    0 20px 44px color-mix(in srgb, #000 52%, transparent),
-    0 3px 10px color-mix(in srgb, #000 24%, transparent),
-    inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  backdrop-filter: blur(24px) saturate(150%);
-}
-
-.editor-kind-menu::before {
-  position: absolute;
-  top: -6px;
-  right: 78px;
-  width: 11px;
-  height: 11px;
-  border-top: 1px solid color-mix(in srgb, #fff 14%, transparent);
-  border-left: 1px solid color-mix(in srgb, #fff 14%, transparent);
-  background: color-mix(in srgb, var(--color-popover) 86%, transparent);
-  content: "";
-  transform: rotate(45deg);
-}
-
-.editor-kind-menu::after {
-  position: absolute;
-  top: 0;
-  right: 14px;
-  left: 14px;
-  height: 1px;
-  background: color-mix(in srgb, #fff 7%, transparent);
-  content: "";
-  pointer-events: none;
+  width: min(288px, calc(100vw - 24px));
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-popover);
+  box-shadow: var(--shadow-xl);
 }
 
 .editor-kind-option {
   display: flex;
   width: 100%;
-  min-height: 52px;
+  min-height: 44px;
   align-items: center;
-  gap: 11px;
-  padding: 8px 9px;
-  border-radius: 10px;
-  color: var(--color-text-tertiary);
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
   text-align: left;
   transition:
     background-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
+    color var(--duration-fast) var(--ease-standard);
 }
 
 .editor-kind-option:hover,
-.editor-kind-option.is-highlighted {
-  background: color-mix(in srgb, #fff 8%, transparent);
-  color: var(--color-foreground);
-}
-
+.editor-kind-option.is-highlighted,
 .editor-kind-option.is-selected {
-  background: color-mix(in srgb, #fff 10%, transparent);
+  background: var(--color-accent);
   color: var(--color-foreground);
 }
 
-.editor-kind-option:active {
-  transform: scale(0.985);
+.editor-kind-option:hover .editor-kind-option-icon,
+.editor-kind-option.is-highlighted .editor-kind-option-icon,
+.editor-kind-option.is-selected .editor-kind-option-icon {
+  color: var(--color-foreground);
 }
 
 .editor-kind-option:focus-visible {
@@ -1375,7 +1340,7 @@ function handleDiscardDraft() {
 .editor-kind-option-label {
   overflow: hidden;
   flex: 1;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1383,8 +1348,8 @@ function handleDiscardDraft() {
 
 .editor-kind-option-check {
   flex: 0 0 auto;
-  color: var(--color-primary);
-  font-size: 18px;
+  color: var(--color-foreground);
+  font-size: 16px;
 }
 
 .editor-kind-menu-enter-active,
@@ -1420,7 +1385,7 @@ function handleDiscardDraft() {
   opacity: 0;
 }
 
-/* 手机保存/预览操作保持足够触控区域，状态与模式选择独立于操作栏。 */
+/* 手机触控：页头与工具栏入口保持至少 44×44，中间工具由自身横向滚动承接。 */
 @media (max-width: 639px) {
   .editor-header :deep(.btn) {
     min-height: 44px;
@@ -1428,12 +1393,17 @@ function handleDiscardDraft() {
     padding-right: 12px;
     padding-left: 12px;
   }
-  .editor-status-bar > p {
-    flex: 1 0 100%;
+  .post-toolbar-shell :deep(.editor-toolbar button) {
+    min-width: 44px;
+    min-height: 44px;
   }
-  .editor-status-bar > div {
-    width: 100%;
-    justify-content: space-between;
+  .editor-kind-trigger {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
+  }
+  .editor-kind-trigger-label {
+    display: none;
   }
 }
 
