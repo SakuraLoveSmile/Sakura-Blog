@@ -1,0 +1,108 @@
+{
+  "task": "BLG-20261031-03",
+  "date": "2026-10-31",
+  "environment": {
+    "os": "macOS arm64",
+    "playwright": "1.62.1",
+    "browser": "Google Chrome 156.0.8078.74 (Playwright channel: chrome)",
+    "bundledChromium": "不可用：pnpm exec playwright install chromium 单次尝试超时（网络），改系统 Chrome",
+    "port": 8096,
+    "isolatedRoot": ".tmp/e2e-server.*（run-server.sh，隔离 DB/config/content/uploads）",
+    "e2eBuildHash": "assets/index-DjmV8VyV.js",
+    "productionBuildHash": "assets/index-CYhalqKO.js",
+    "servedProcess": "go run ./cmd/blog -dev，console SPA loaded from <isolated>/modules/console/web/dist"
+  },
+  "commands": {
+    "make test": "exit 0（console 行为测试、stellar 资源测试、module-check、go vet、staticcheck、go test ./...）",
+    "pnpm exec vue-tsc -b (modules/console/web)": "exit 0",
+    "make build": "exit 0，产出 ./blog、dist、dist-uc",
+    "new e2e": "pnpm exec playwright test --config .tmp/chrome/playwright.config.ts tests/e2e/tag-live-preview.spec.ts → 7 passed (55.2s)",
+    "baseline e2e": "pnpm exec playwright test --config .tmp/chrome/playwright.config.ts tests/e2e/shortcode-visual-editor.spec.ts tests/e2e/tag-plugin-parity.spec.ts → 26 passed (1.2m)",
+    "engine unit": "tsx --test ../tests/plugin-preview-engine.test.ts → 9 passed",
+    "related unit": "tsx --test plugin-preview/stellar-tag-preview/stellar-tag/markdown-editor-draft/uc-consumer-lifecycle → 38 passed",
+    "cors unit": "go test ./modules/console/api -run 'TestPreviewFixtureCORS|TestPreviewFixturePreflight' → ok"
+  },
+  "measurements": {
+    "nodeviewTitle": {
+      "typedChars": 10,
+      "previewRequests": 1,
+      "propertyPanelExtraRequests": 0
+    },
+    "nodeviewRetention": {
+      "oldHeight": 118,
+      "pendingHeight": 118,
+      "finalHeight": 118,
+      "iframeIdentityPreserved": true,
+      "oldSrcdocKeptWhilePending": true,
+      "finalSrcdocUpdated": true
+    },
+    "insertPanel": {
+      "friendsCards": 4,
+      "oldHeight": 240,
+      "pendingHeight": 240,
+      "finalHeight": 240,
+      "iframeIdentityPreserved": true,
+      "fixture": [
+        { "status": 200, "url": "/api/v1/preview/friends", "cors": "*" },
+        { "status": 200, "url": "/api/v1/preview/friends", "cors": "*" }
+      ]
+    },
+    "studio": {
+      "friendsCards": 4,
+      "sitesCards": 3,
+      "oldHeight": 240,
+      "pendingHeight": 240,
+      "finalHeight": 240,
+      "iframeIdentityPreserved": true,
+      "sitesFixtureCors": "*"
+    },
+    "toolbar390": {
+      "viewport": "390x844",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "overflow": 0,
+      "bubbleWidth": 320,
+      "bubbleRight": 359,
+      "friendsCards": 4,
+      "tabsPanes": 2,
+      "friendsCardsAfterSwitch": 0,
+      "keyboardFocusTriggered": true
+    },
+    "markdownSplit": {
+      "forcedStatus": 500,
+      "errorBarShown": true,
+      "oldSrcdocRetained": true,
+      "iframeIdentityPreserved": true,
+      "retryRecovered": true,
+      "onlyExpectedConsoleError": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    "noRealWrites": {
+      "postToRealRatingOrVote": 0,
+      "voteFixture": { "status": 200, "url": "/api/v1/preview/vote/info", "cors": "*" }
+    },
+    "pageErrors": []
+  },
+  "defect": {
+    "id": "rating-preview-fixture-mismatch",
+    "blocking": false,
+    "summary": "rating 标签预览仍被 CORS 阻断：运行时请求 /api/v1/preview/rating/info，但只注册了 /api/v1/preview/rating；Fixture 响应形状 {avg,count} 也与 rating.js 期望的 {rating:{score:count}} 不一致。",
+    "repro": [
+      "启动隔离服务（8096），登录 Console，进入 /console/plugins/shortcodes，搜索 rating 并选中",
+      "等待预览加载：星级均分显示 (0.0)",
+      "控制台：Access to fetch ... /api/v1/preview/rating/info ... has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present"
+    ],
+    "evidence": [
+      "curl -i '/api/v1/preview/rating?id=x' → 200 + ACAO *",
+      "curl -i '/api/v1/preview/rating/info?id=x' → 404，无 ACAO",
+      "modules/stellar/web/assets/js/services/rating.js:74/118 请求 ${api}/info 与 ${api}/update",
+      "modules/console/api/router.go:268-269 仅注册 /preview/rating GET/POST"
+    ],
+    "impact": "rating 预览无法显示 Fixture 评分数据；不会写真实评分。既有 Spec 63 的路径/形状不匹配，本任务的 CORS 只覆盖了 /preview/rating，未覆盖 /info、/update。",
+    "suggestedFix": "为 GET /preview/rating/info 与 POST /preview/rating/update 注册 CORS+OPTIONS 并复用/对齐 handler，返回 {rating:{\"1\"..\"5\":count}}；或调整 data-api 改写与 Fixture 形状一致。"
+  },
+  "unverified": [
+    "Playwright 自带 Chromium 未安装成功，CI 浏览器结果仍待 CI 复核",
+    "NodeView 迟到响应顺序与缓存命中由单测覆盖，未在浏览器 E2E 中重复",
+    "工具栏 390px 气泡纵向可能超出首屏（横向溢出为 0），验收只要求横向"
+  ]
+}

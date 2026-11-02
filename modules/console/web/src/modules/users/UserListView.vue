@@ -263,9 +263,6 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
   <div class="min-h-full">
     <!-- ===== Page Header ===== -->
     <VPageHeader title="用户管理" subtitle="管理所有用户账户、角色和权限">
-      <template #icon>
-        <Icon icon="ri:user-star-line" class="text-xl text-primary sm:text-2xl" />
-      </template>
       <template #actions>
         <VButton v-permission="'users:manage'" size="sm" @click="openInvitation">
           <template #icon><Icon icon="ri:key-2-line" class="h-4 w-4" /></template>
@@ -335,7 +332,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
               <button
                 type="button"
                 title="刷新"
-                class="hidden h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:inline-flex"
+                class="hidden h-9 items-center gap-1.5 rounded-sm border border-border bg-card px-3.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:inline-flex"
                 @click="refetch()"
               >
                 <Icon icon="ri:refresh-line" />
@@ -344,7 +341,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
               <button
                 type="button"
                 title="刷新"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:hidden"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-sm border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:hidden"
                 @click="refetch()"
               >
                 <Icon icon="ri:refresh-line" class="text-base" />
@@ -424,30 +421,14 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                     </td>
                     <td class="border-b border-border px-5 py-3.5 align-middle">
                       <span
-                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-medium"
-                        :style="
-                          roleTone(u.role) === 'admin'
-                            ? {
-                                backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
-                                color: 'var(--color-primary)',
-                              }
-                            : {
-                                backgroundColor: 'color-mix(in srgb, var(--color-secondary) 80%, transparent)',
-                                color: 'var(--color-text-secondary)',
-                              }
-                        "
+                        class="inline-flex items-center rounded-sm border border-border bg-secondary px-2 py-0.5 text-[11px] font-medium"
+                        :class="roleTone(u.role) === 'admin' ? 'text-foreground' : 'text-text-secondary'"
                       >
                         {{ roleLabel(u.role) }}
                       </span>
                     </td>
                     <td class="border-b border-border px-5 py-3.5 align-middle">
-                      <span
-                        class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium"
-                        style="
-                          background-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
-                          color: var(--color-state-success);
-                        "
-                      >
+                      <span class="inline-flex items-center gap-1.5 text-[12px] text-text-secondary">
                         <VStatusDot state="success" />
                         活跃
                       </span>
@@ -523,18 +504,8 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                       {{ u.display_name || u.username }}
                     </span>
                     <span
-                      class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium"
-                      :style="
-                        roleTone(u.role) === 'admin'
-                          ? {
-                              backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
-                              color: 'var(--color-primary)',
-                            }
-                          : {
-                              backgroundColor: 'color-mix(in srgb, var(--color-secondary) 80%, transparent)',
-                              color: 'var(--color-text-secondary)',
-                            }
-                      "
+                      class="inline-flex items-center rounded-sm border border-border bg-secondary px-1.5 py-0.5 text-[11px] font-medium"
+                      :class="roleTone(u.role) === 'admin' ? 'text-foreground' : 'text-text-secondary'"
                     >
                       {{ roleLabel(u.role) }}
                     </span>
@@ -553,7 +524,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                     <button
                       type="button"
                       title="编辑"
-                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-foreground max-sm:h-11 max-sm:w-11"
                       @click="openEdit(u)"
                     >
                       <Icon icon="ri:pencil-line" class="text-sm" />
@@ -561,7 +532,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                     <button
                       type="button"
                       title="重置密码"
-                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-foreground max-sm:h-11 max-sm:w-11"
                       @click="openResetPwd(u)"
                     >
                       <Icon icon="ri:key-2-line" class="text-sm" />
@@ -569,7 +540,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                     <button
                       type="button"
                       title="删除"
-                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-tertiary transition-colors hover:bg-secondary hover:text-state-error"
+                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-tertiary transition-colors hover:bg-secondary hover:text-state-error max-sm:h-11 max-sm:w-11"
                       @click="confirmDelete(u)"
                     >
                       <Icon icon="ri:delete-bin-line" class="text-sm" />

@@ -1,0 +1,242 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "scenario": "stored-summary-first-paragraph",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "P",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 137.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/post/summary-post",
+      "width": 1280,
+      "summaryBodyVisible": true,
+      "summaryText": "这是一段已生成的摘要，用于检查摘要与首段"
+    },
+    {
+      "scenario": "stored-summary-first-paragraph",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16.0057px",
+      "nextTag": "P",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 163.25,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/post/summary-post",
+      "width": 390,
+      "summaryBodyVisible": true,
+      "summaryText": "这是一段已生成的摘要，用于检查摘要与首段正文之间的间距。"
+    },
+    {
+      "scenario": "expanded-reader-form",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "23.9955px",
+      "nextTag": "P",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 296,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/post/summary-empty",
+      "width": 1280,
+      "form": {
+        "inputs": [
+          {
+            "left": 354,
+            "right": 918,
+            "type": "url",
+            "width": 564
+          },
+          {
+            "left": 354,
+            "right": 631,
+            "type": "text",
+            "width": 277
+          },
+          {
+            "left": 641,
+            "right": 918,
+            "type": "password",
+            "width": 277
+          },
+          {
+            "left": 354,
+            "right": 368,
+            "type": "checkbox",
+            "width": 14
+          }
+        ],
+        "visible": true
+      }
+    },
+    {
+      "scenario": "expanded-reader-form",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16.0032px",
+      "nextTag": "P",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 347.21875,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/post/summary-empty",
+      "width": 390,
+      "form": {
+        "inputs": [
+          {
+            "left": 43,
+            "right": 347,
+            "type": "url",
+            "width": 304
+          },
+          {
+            "left": 43,
+            "right": 347,
+            "type": "text",
+            "width": 304
+          },
+          {
+            "left": 43,
+            "right": 347,
+            "type": "password",
+            "width": 304
+          },
+          {
+            "left": 43,
+            "right": 57,
+            "type": "checkbox",
+            "width": 14
+          }
+        ],
+        "visible": true
+      }
+    },
+    {
+      "scenario": "heti-off-and-breakpoint",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 844,
+      "heti": false,
+      "marginStart": "23.9999px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "scenario": "heti-off-and-breakpoint",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16.0078125,
+      "gapBelow": 16.0078125,
+      "height": 844,
+      "heti": false,
+      "marginStart": "16.009px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "scenario": "heti-off-and-breakpoint",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": false,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 768
+    },
+    {
+      "scenario": "heti-off-and-breakpoint",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 844,
+      "heti": false,
+      "marginStart": "23.9958px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 769
+    }
+  ],
+  "noSummaryCases": [
+    {
+      "scenario": "summary-disabled-layout-unchanged",
+      "firstHeight": 43.1953125,
+      "firstTag": "H2",
+      "firstY": 216,
+      "gap": 0,
+      "overflow": false,
+      "summaryCount": 0,
+      "width": 1280
+    },
+    {
+      "scenario": "summary-disabled-layout-unchanged",
+      "firstHeight": 43.1953125,
+      "firstTag": "H2",
+      "firstY": 200,
+      "gap": 0,
+      "overflow": false,
+      "summaryCount": 0,
+      "width": 390
+    }
+  ],
+  "source": "real isolated server; stored summaries use canonical content.ai_summary; no AI API requests made"
+}

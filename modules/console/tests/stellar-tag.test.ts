@@ -22,9 +22,33 @@ test("Stellar 标签编辑器识别动态 links/moments 并刷新预览", () => 
   assert.match(tagSource.slice(pairedStart, pairedEnd), /"table"/);
   assert.match(tagSource.slice(pairedStart, pairedEnd), /"tip"/);
   assert.match(read("components/editor/stellar-tag.ts"), /wrapShortcodes\(state\.src\)/);
-  assert.match(viewSource, /previewGeneration/);
-  assert.match(viewSource, /data\.document/);
-  assert.match(viewSource, /event\.source\s*!==\s*iframeRef\.value\?\.contentWindow/);
-  assert.match(viewSource, /event\.data\?\.token\s*!==\s*previewToken\.value/);
+  // 预览改走共享调度器：raw/context 分别防抖，迟到响应与缓存由引擎统一处理。
+  assert.match(viewSource, /usePluginPreview/);
+  assert.match(viewSource, /preview\.scheduleRender/);
+  assert.match(viewSource, /profile:\s*null/);
+  assert.match(viewSource, /preview\.srcdoc/);
+  // 高度校验统一交给 composable，NodeView 不再维护第二套 iframeH 规则。
+  assert.match(viewSource, /preview\.onMessage\(event,\s*iframeRef\.value\)/);
+  assert.match(viewSource, /preview\.frameHeight\.value/);
+  assert.doesNotMatch(viewSource, /iframeH/);
   assert.doesNotMatch(viewSource, /window\.utils\s*=/);
+  // 计划要求的平滑高度过渡（150ms）覆盖四处预览。
+  for (const path of [
+    "components/editor/StellarTagView.vue",
+    "modules/plugins/ShortcodeInsertPanel.vue",
+    "modules/plugins/ShortcodeStudioView.vue",
+    "modules/posts/EditorToolbar.vue",
+  ]) {
+    const source = read(path);
+    assert.ok(
+      source.includes("transition-[height] duration-150") || source.includes("transition: height 0.15s"),
+      `${path} 缺少 150ms 高度过渡`,
+    );
+  }
+  // 无效参数保留旧预览时必须说明它没有更新。
+  for (const path of ["modules/plugins/ShortcodeInsertPanel.vue", "modules/plugins/ShortcodeStudioView.vue"]) {
+    const source = read(path);
+    assert.match(source, /previewInvalidNoticeVisible/);
+    assert.match(source, /参数无效，预览未更新/);
+  }
 });

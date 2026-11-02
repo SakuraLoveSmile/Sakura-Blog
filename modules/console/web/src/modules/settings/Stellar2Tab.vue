@@ -18,7 +18,7 @@ async function submit(action: "save" | "validate") {
   <div class="stellar2-form space-y-4">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div class="space-y-1">
-        <h2 class="text-base font-semibold text-text-primary">Stellar 2 完整配置</h2>
+        <h2 class="text-sm font-semibold text-text-primary">Stellar 2 完整配置</h2>
         <p id="stellar2-help" class="text-xs text-text-tertiary">
           theme 使用上游配置键名；blog_extensions 保存原生评论等本地功能。直接编辑完整 JSON，保存后前台即时生效。
         </p>
@@ -62,12 +62,6 @@ async function submit(action: "save" | "validate") {
 <style scoped>
 /* 与现有 BasicSettings 的 section 对齐，外层 VCard body 本身没有 padding。 */
 .stellar2-form {
-  padding: 24px 28px 28px;
-}
-@media (max-width: 767px) {
-  .stellar2-form {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
+  padding: 24px 0 28px;
 }
 </style>

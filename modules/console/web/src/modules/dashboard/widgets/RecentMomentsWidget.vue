@@ -59,7 +59,7 @@ onMounted(load);
         <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
         <div class="min-w-0 flex-1">
           <p class="line-clamp-2 text-xs leading-relaxed text-text-secondary">{{ excerpt(item) }}</p>
-          <time class="mt-1 block text-[10px] text-text-tertiary">{{ dateLabel(item.created_at) }}</time>
+          <time class="mt-1 block text-[11px] text-text-tertiary">{{ dateLabel(item.created_at) }}</time>
         </div>
       </li>
     </ul>

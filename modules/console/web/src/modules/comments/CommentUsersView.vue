@@ -187,9 +187,6 @@ async function doBulk(action: "spam" | "delete") {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="评论用户">
-      <template #icon>
-        <Icon icon="ri:user-shared-line" class="text-primary" />
-      </template>
       <template #subtitle>管理注册读者账户、评论活跃度画像、封禁控制与按用户批量清理</template>
       <template #actions>
         <div class="apple-search min-w-[200px] max-w-[280px]">
@@ -317,9 +314,10 @@ async function doBulk(action: "spam" | "delete") {
                 </td>
                 <td class="px-4 py-3.5 text-xs">
                   <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    :class="u.status === 'banned' ? 'bg-[#FF453A]/10 text-[#FF453A]' : 'bg-[#30D158]/10 text-[#30D158]'"
+                    class="inline-flex items-center gap-1 text-[12px] font-medium"
+                    :class="u.status === 'banned' ? 'text-state-error' : 'text-state-success'"
                   >
+                    <span class="h-[5px] w-[5px] rounded-full bg-current"></span>
                     {{ u.status === "banned" ? "已封禁" : "正常" }}
                   </span>
                 </td>
@@ -333,7 +331,7 @@ async function doBulk(action: "spam" | "delete") {
                     <button
                       v-if="u.status !== 'banned'"
                       type="button"
-                      class="action-btn text-[#FF9500] hover:bg-[#FF9500]/10"
+                      class="action-btn text-state-warning hover:bg-state-warning/10"
                       :disabled="banBusy === u.id"
                       @click="confirmBan(u)"
                     >
@@ -343,7 +341,7 @@ async function doBulk(action: "spam" | "delete") {
                     <button
                       v-else
                       type="button"
-                      class="action-btn text-[#30D158] hover:bg-[#30D158]/10"
+                      class="action-btn text-state-success hover:bg-state-success/10"
                       :disabled="banBusy === u.id"
                       @click="setStatus(u, 'active')"
                     >

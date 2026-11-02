@@ -34,6 +34,10 @@ article.md-text.content p>img:not([class]) {
    _plugins/tianli_gpt.styl 结论）：轻量卡片 + 标题行徽章 + 小圆角按钮。
    变量映射层：所有颜色经 --ai-* 映射主题变量，深色/浅色自动适配。
    #ai-summary id 特异性覆盖 tag-plugin colorful note 的主题色块样式。*/
+article.md-text.content {
+  --ai-summary-gap: calc(var(--gap-base) * 1.5);
+}
+
 #ai-summary {
   --ai-font-color: var(--text-p2);
   --ai-post-bg: var(--block);
@@ -48,10 +52,20 @@ article.md-text.content p>img:not([class]) {
   border-radius: 12px;
   padding: 10px 12px 11px;
   margin-top: 10px;
-  margin-bottom: 6px;
+  margin-bottom: var(--ai-summary-gap);
   box-shadow: none;
   color: var(--ai-font-color);
   transition: all .3s;
+}
+
+/* HeTi 会清零正文首块的上距；摘要紧跟标题横幅时保留两张卡片的间隔。
+   与下一块正文统一节奏，避免标题自己的外边距让摘要下方过松。 */
+.article-banner-wrap + article.md-text.content > #ai-summary:first-child {
+  margin-block-start: var(--ai-summary-gap) !important;
+}
+
+article.md-text.content > #ai-summary + * {
+  margin-block-start: var(--ai-summary-gap);
 }
 
 /* 纯深色模式项目（html[data-theme="dark"] 始终生效）：覆写 colorful[color='blue'] 的蓝色色调变量，
@@ -234,6 +248,10 @@ article.md-text.content p>img:not([class]) {
 }
 
 @media screen and (max-width: 768px) {
+  article.md-text.content {
+    --ai-summary-gap: var(--gap-base);
+  }
+
   .ai-summary .ai-summary-panel {
     display: flex;
     flex-direction: column;

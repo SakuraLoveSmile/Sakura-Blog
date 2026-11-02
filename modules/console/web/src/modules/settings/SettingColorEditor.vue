@@ -148,6 +148,8 @@ function choose(value: string) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-background);
+  color: var(--color-text-tertiary);
+  font-size: 12px;
   overflow: hidden;
 }
 .color-current > span {
@@ -240,6 +242,7 @@ function choose(value: string) {
 .color-opacity-row output {
   min-width: 36px;
   text-align: right;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 .color-help {

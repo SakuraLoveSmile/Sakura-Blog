@@ -96,7 +96,7 @@ onMounted(() => {
   min-height: 34px;
   padding: 0 14px;
   border-radius: var(--radius-full);
-  color: var(--color-foreground);
+  color: var(--color-primary-foreground);
   background: var(--color-primary);
   font-size: 13px;
   font-weight: 600;

@@ -79,9 +79,6 @@ onMounted(() => {
   <div>
     <!-- 顶部固定吸顶导航栏 -->
     <VPageHeader title="系统更新">
-      <template #icon>
-        <Icon icon="ri:rocket-2-line" class="text-primary" />
-      </template>
       <template #subtitle> 检查 Blog 新版本并查看更新日志 </template>
       <template #actions>
         <VButton size="sm" type="default" :loading="checking" @click="checkUpdate(false)">
@@ -103,13 +100,13 @@ onMounted(() => {
       <!-- 1. 版本概览卡片 -->
       <VCard>
         <template #header>
-          <div class="flex items-center gap-2 text-base font-semibold text-foreground">
+          <div class="flex items-center gap-2 text-[14px] font-semibold text-foreground">
             <Icon icon="ri:shield-check-line" class="text-lg text-primary" />
             <span>版本概览</span>
           </div>
           <div class="flex items-center gap-2">
             <span
-              class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+              class="flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 text-xs font-medium"
               :class="versionStatusClass"
             >
               <Icon
@@ -203,7 +200,7 @@ onMounted(() => {
       <!-- 3. 更新日志卡片（有新版本或已获取 Release Notes 时展示） -->
       <VCard v-if="checkData?.release_notes || hasUpdate">
         <template #header>
-          <div class="flex items-center gap-2 text-base font-semibold text-foreground">
+          <div class="flex items-center gap-2 text-[14px] font-semibold text-foreground">
             <Icon icon="ri:file-list-3-line" class="text-lg text-primary" />
             <span>版本更新日志</span>
             <VTag v-if="checkData?.latest_version" theme="primary" rounded>
@@ -250,7 +247,7 @@ onMounted(() => {
           </span>
         </div>
 
-        <div v-if="checkData?.release_notes" class="rounded-base border border-border bg-[#0f0f10] p-4">
+        <div v-if="checkData?.release_notes" class="rounded-base border border-border bg-secondary p-4">
           <div
             class="custom-scrollbar max-h-72 overflow-y-auto font-mono text-xs leading-relaxed text-text-secondary whitespace-pre-wrap"
           >
@@ -263,7 +260,7 @@ onMounted(() => {
       <!-- 4. GitHub Token 配置卡片 -->
       <VCard>
         <template #header>
-          <div class="flex items-center gap-2 text-base font-semibold text-foreground">
+          <div class="flex items-center gap-2 text-[14px] font-semibold text-foreground">
             <Icon icon="ri:key-2-line" class="text-lg text-primary" />
             <span>GitHub Token（可选鉴权）</span>
           </div>
@@ -291,11 +288,11 @@ onMounted(() => {
               :value="githubToken"
               @input="onTokenInput"
               placeholder="ghp_xxx…（留空则使用服务端已配置的 github_token / 匿名）"
-              class="w-full rounded-base border border-border bg-card py-2 pl-9 pr-10 text-xs font-mono text-foreground outline-none transition-colors placeholder:font-sans placeholder:text-text-quaternary focus:border-primary"
+              class="w-full rounded-base border border-border bg-card py-2 pl-9 pr-10 text-xs font-mono text-foreground outline-none transition-colors placeholder:font-sans placeholder:text-text-quaternary focus:border-primary max-sm:min-h-11"
             />
             <button
               type="button"
-              class="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded text-text-quaternary transition-colors hover:bg-accent hover:text-foreground"
+              class="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded-sm text-text-quaternary transition-colors hover:bg-accent hover:text-foreground max-sm:h-11 max-sm:w-11"
               :title="showToken ? '隐藏 Token' : '显示 Token'"
               @click="showToken = !showToken"
             >
@@ -335,7 +332,7 @@ onMounted(() => {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--color-accent);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-strong);

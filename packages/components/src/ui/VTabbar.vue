@@ -230,10 +230,10 @@ function onKeydown(e: KeyboardEvent, index: number) {
 }
 .tabbar-default .tabbar-item.active {
   color: var(--color-foreground);
-  border-bottom-color: var(--color-primary);
+  border-bottom-color: var(--color-foreground);
 }
 .tabbar-default .tabbar-item.active .tabbar-item-icon {
-  color: var(--color-primary);
+  color: var(--color-foreground);
 }
 
 /* outline 风格：Apple 胶囊分段控件 */
@@ -272,26 +272,26 @@ function onKeydown(e: KeyboardEvent, index: number) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 5px;
-  background: color-mix(in srgb, var(--color-background) 55%, var(--color-card));
+  padding: 4px;
+  background: var(--color-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl, 14px);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: none;
 }
 
 .tabbar-segmented .tabbar-item {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 38px;
+  gap: 6px;
+  min-height: 36px;
   padding: 0 16px;
-  font-size: 13.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--color-text-secondary);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: calc(var(--radius-xl, 14px) - 3px);
+  border-radius: var(--radius-sm, 6px);
   cursor: pointer;
   user-select: none;
   transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
@@ -299,25 +299,24 @@ function onKeydown(e: KeyboardEvent, index: number) {
 
 .tabbar-segmented .tabbar-item:hover {
   color: var(--color-foreground);
-  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
+  background: var(--color-accent);
 }
 
 .tabbar-segmented .tabbar-item.active {
   color: var(--color-foreground);
-  background: var(--color-card);
-  border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.16);
+  background: var(--color-accent);
+  border-color: var(--color-border-strong);
+  box-shadow: none;
 }
 
 .tabbar-item-icon {
-  font-size: 15px;
+  font-size: 14px;
   flex-shrink: 0;
   transition: transform var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 
 .tabbar-segmented .tabbar-item.active .tabbar-item-icon {
-  color: var(--color-primary);
-  transform: scale(1.06);
+  color: var(--color-foreground);
 }
 
 .tabbar-item-dot {
@@ -331,5 +330,13 @@ function onKeydown(e: KeyboardEvent, index: number) {
 .tabbar-item:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* 手机上标签仍是独立触控目标，保持 44px 高度（置于各风格之后覆盖 min-height）。 */
+@media (max-width: 767px) {
+  .tabbar-default .tabbar-item,
+  .tabbar-segmented .tabbar-item {
+    min-height: 44px;
+  }
 }
 </style>

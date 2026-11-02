@@ -236,8 +236,8 @@ function openContentResult(item: SearchResultItem) {
 }
 
 const statusBadges: Record<string, { label: string; cls: string }> = {
-  draft: { label: "草稿", cls: "bg-state-warning/15 text-state-warning" },
-  trashed: { label: "回收站", cls: "bg-state-error/15 text-state-error" },
+  draft: { label: "草稿", cls: "text-state-warning" },
+  trashed: { label: "回收站", cls: "text-state-error" },
 };
 
 function navigateTo(path: string) {
@@ -337,7 +337,7 @@ function closeProfileDropdown() {
       </div>
 
       <div class="flex-1 overflow-y-auto">
-        <!-- 搜索框（对齐 Halo：bg-secondary rounded p-2；收起时仅图标） -->
+        <!-- 搜索框（对齐 Halo：bg-secondary rounded-sm p-2；收起时仅图标） -->
         <div class="px-3">
           <button
             type="button"
@@ -434,13 +434,13 @@ function closeProfileDropdown() {
             <button
               type="button"
               aria-label="未读通知"
-              class="cursor-pointer rounded p-1 transition-colors duration-150 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              class="cursor-pointer rounded-sm p-1 transition-colors duration-150 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               @click="router.push('/notifications')"
             >
               <Icon icon="ri:notification-3-line" class="text-text-tertiary" />
               <span
                 v-if="unreadCount > 0"
-                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-foreground"
+                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[11px] font-bold text-foreground"
                 >{{ unreadCount > 99 ? "99+" : unreadCount }}</span
               >
             </button>
@@ -459,7 +459,7 @@ function closeProfileDropdown() {
           <!-- 收起时：未读徽标叠在头像右上角，保持通知入口可见 -->
           <div
             v-if="sidebarCollapsed && unreadCount > 0"
-            class="pointer-events-none absolute left-1/2 top-1/2 ml-4 -mt-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-foreground"
+            class="pointer-events-none absolute left-1/2 top-1/2 ml-4 -mt-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[11px] font-bold text-foreground"
           >
             {{ unreadCount > 99 ? "99+" : unreadCount }}
           </div>
@@ -473,7 +473,7 @@ function closeProfileDropdown() {
               aria-label="更多操作"
               aria-haspopup="menu"
               :aria-expanded="profileDropdownOpen"
-              class="cursor-pointer rounded p-1 transition-colors duration-150 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              class="cursor-pointer rounded-sm p-1 transition-colors duration-150 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               @click.stop="profileDropdownOpen = !profileDropdownOpen"
             >
               <Icon icon="ri:more-fill" class="text-text-tertiary" />
@@ -485,14 +485,14 @@ function closeProfileDropdown() {
                 @click.stop
               >
                 <button
-                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-accent"
+                  class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-accent"
                   @click="navigateTo('/profile')"
                 >
                   <Icon icon="ri:user-settings-line" />
                   个人资料
                 </button>
                 <button
-                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-accent"
+                  class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-accent"
                   @click="handleLogout"
                 >
                   <Icon icon="ri:logout-box-r-line" />
@@ -588,11 +588,11 @@ function closeProfileDropdown() {
           >
             <!-- 抽屉头部：标题与显式关闭按钮 -->
             <div class="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
-              <h2 id="mobile-more-drawer-title" class="text-base font-semibold text-foreground">全部菜单</h2>
+              <h2 id="mobile-more-drawer-title" class="text-[14px] font-semibold text-foreground">全部菜单</h2>
               <button
                 ref="drawerCloseButtonRef"
                 type="button"
-                class="flex h-8 w-8 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                class="flex h-8 w-8 items-center justify-center rounded-sm text-text-tertiary transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 aria-label="关闭抽屉"
                 @click="closeMoreMenu"
               >
@@ -659,11 +659,11 @@ function closeProfileDropdown() {
       >
         <div
           class="absolute inset-0 bg-black/70"
-          style="background: color-mix(in srgb, #000 65%, transparent)"
+          style="background: color-mix(in srgb, var(--color-background) 72%, transparent)"
           @click="closeSearch"
         />
         <div
-          class="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl transition-opacity duration-150"
+          class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl transition-opacity duration-150"
           style="box-shadow: var(--shadow-2xl)"
         >
           <!-- 搜索输入头 -->
@@ -676,7 +676,7 @@ function closeProfileDropdown() {
               class="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-text-quaternary"
               autofocus
             />
-            <kbd class="rounded border border-border bg-secondary px-2 py-0.5 text-[10px] font-mono text-text-tertiary"
+            <kbd class="rounded-sm border border-border bg-secondary px-2 py-0.5 text-[11px] font-mono text-text-tertiary"
               >ESC</kbd
             >
           </div>
@@ -698,12 +698,12 @@ function closeProfileDropdown() {
                 @mouseenter="activeIndex = i"
               >
                 <div
-                  class="flex h-6 w-6 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary"
+                  class="flex h-6 w-6 items-center justify-center rounded-sm bg-secondary text-text-tertiary group-hover:text-primary"
                 >
                   <Icon :icon="item.icon" class="text-sm" />
                 </div>
                 <span class="font-medium">{{ item.label }}</span>
-                <span class="ml-auto rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] text-text-tertiary">{{
+                <span class="ml-auto rounded-sm bg-secondary/80 px-2 py-0.5 text-[11px] text-text-tertiary">{{
                   item.group || "概览"
                 }}</span>
               </button>
@@ -725,7 +725,7 @@ function closeProfileDropdown() {
                   @mouseenter="activeIndex = postOffset + i"
                 >
                   <div
-                    class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary"
+                    class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-secondary text-text-tertiary group-hover:text-primary"
                   >
                     <Icon icon="ri:book-read-line" class="text-sm" />
                   </div>
@@ -735,7 +735,7 @@ function closeProfileDropdown() {
                       <span
                         v-if="statusBadges[item.status]"
                         :class="statusBadges[item.status].cls"
-                        class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        class="shrink-0 text-[11px] font-medium"
                         >{{ statusBadges[item.status].label }}</span
                       >
                     </span>
@@ -761,7 +761,7 @@ function closeProfileDropdown() {
                   @mouseenter="activeIndex = pageOffset + i"
                 >
                   <div
-                    class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary"
+                    class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-secondary text-text-tertiary group-hover:text-primary"
                   >
                     <Icon icon="ri:pages-line" class="text-sm" />
                   </div>
@@ -771,7 +771,7 @@ function closeProfileDropdown() {
                       <span
                         v-if="statusBadges[item.status]"
                         :class="statusBadges[item.status].cls"
-                        class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        class="shrink-0 text-[11px] font-medium"
                         >{{ statusBadges[item.status].label }}</span
                       >
                     </span>
@@ -811,15 +811,15 @@ function closeProfileDropdown() {
           >
             <div class="flex items-center gap-3">
               <span class="flex items-center gap-1.5"
-                ><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">↑↓</kbd>
+                ><kbd class="rounded-sm border border-border bg-card px-1.5 py-0.5 text-[11px] font-mono">↑↓</kbd>
                 导航</span
               >
               <span class="flex items-center gap-1.5"
-                ><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">↵</kbd> 打开</span
+                ><kbd class="rounded-sm border border-border bg-card px-1.5 py-0.5 text-[11px] font-mono">↵</kbd> 打开</span
               >
             </div>
             <span class="flex items-center gap-1.5"
-              ><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">ESC</kbd> 关闭</span
+              ><kbd class="rounded-sm border border-border bg-card px-1.5 py-0.5 text-[11px] font-mono">ESC</kbd> 关闭</span
             >
           </div>
         </div>
@@ -866,7 +866,7 @@ function closeProfileDropdown() {
 
 .menu-item-title:focus-visible,
 .menu-subitem:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
 
@@ -879,7 +879,7 @@ function closeProfileDropdown() {
 /* 缩进子菜单项 */
 .menu-subitem {
   transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
-  font-size: 0.85rem;
+  font-size: 13px;
   display: flex;
   user-select: none;
   position: relative;
@@ -932,7 +932,7 @@ function closeProfileDropdown() {
 /* 搜索 snippet 命中词高亮 */
 .search-snippet :deep(mark) {
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-foreground);
   font-weight: 600;
 }
 

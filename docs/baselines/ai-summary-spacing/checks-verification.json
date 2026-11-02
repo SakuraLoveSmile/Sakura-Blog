@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "mode": "embedded binary; fresh independent fixture schema initialized in dev mode before embed startup",
+  "readyz": 200,
+  "reading_css_sha256": "9a790d8102de51abe66c37b1be499ec72b36992ee62364f464f62798589283de",
+  "binary_sha256": "10e8865c03a2783f61639ea02c9583cfc64ce9c18ba989d2ab81c084a2611b37",
+  "console_assets": [
+    {
+      "path": "/console/assets/index-C1Fo-hM1.js",
+      "sha256": "b54dd198c18b95c55ed2456faff6c2dc61d5b979d5e76c5f18d9b1c1a1e12068"
+    },
+    {
+      "path": "/console/assets/api-C-H7IBEY.js",
+      "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80"
+    },
+    {
+      "path": "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+      "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c"
+    },
+    {
+      "path": "/console/assets/pinia-CXeiBUD1.js",
+      "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888"
+    },
+    {
+      "path": "/console/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+    },
+    {
+      "path": "/console/assets/index-CfvuPiHM.css",
+      "sha256": "b430ed50780208253a91f2991e56761bb85112405c403b3f625dd2047ed85da9"
+    }
+  ],
+  "build_log": ".tmp/summary-spacing/build.log",
+  "test_log": ".tmp/summary-spacing/test.log"
+}

@@ -1,0 +1,699 @@
+{
+  "base": "http://127.0.0.1:8140",
+  "viewports": {
+    "posts1280": {
+      "overflowX": 0,
+      "pageHeight": 900,
+      "rows": 7,
+      "titles": [
+        "写作流水线草稿：短代码与图床",
+        "关于离线优先的一点思考",
+        "设计系统不是组件库",
+        "从 Stellar 聊聊前端性能取舍",
+        "十月书单与电影清单",
+        "SQLite 在个人项目里的正确打开方式",
+        "用 Go 重写博客的这一年"
+      ]
+    }
+  },
+  "dashboard": {
+    "desktop": {
+      "stats": [
+        {
+          "gsW": "3",
+          "gsH": "12",
+          "height": 96,
+          "width": 253
+        },
+        {
+          "gsW": "3",
+          "gsH": "12",
+          "height": 96,
+          "width": 253
+        },
+        {
+          "gsW": "3",
+          "gsH": "12",
+          "height": 96,
+          "width": 253
+        },
+        {
+          "gsW": "3",
+          "gsH": "12",
+          "height": 96,
+          "width": 253
+        }
+      ],
+      "trend": {
+        "gsW": "12",
+        "gsH": "44",
+        "height": 352,
+        "width": 1012
+      },
+      "recent": {
+        "gsW": "6",
+        "gsH": "36",
+        "height": 288,
+        "width": 506
+      },
+      "quick": [
+        {
+          "label": "写文章",
+          "width": 39,
+          "height": 20
+        },
+        {
+          "label": "评论",
+          "width": 26,
+          "height": 20
+        },
+        {
+          "label": "分类",
+          "width": 26,
+          "height": 20
+        },
+        {
+          "label": "设置",
+          "width": 26,
+          "height": 20
+        }
+      ],
+      "h1": "仪表盘",
+      "overflow": 0
+    },
+    "mobile": {
+      "stats": [
+        {
+          "gsX": "0",
+          "gsW": "2",
+          "gsH": "12",
+          "height": 96,
+          "top": 288
+        },
+        {
+          "gsX": "2",
+          "gsW": "2",
+          "gsH": "12",
+          "height": 96,
+          "top": 288
+        },
+        {
+          "gsX": "0",
+          "gsW": "2",
+          "gsH": "12",
+          "height": 96,
+          "top": 384
+        },
+        {
+          "gsX": "2",
+          "gsW": "2",
+          "gsH": "12",
+          "height": 96,
+          "top": 384
+        }
+      ],
+      "quick": [
+        {
+          "label": "写文章",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "评论",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "分类",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "设置",
+          "width": 44,
+          "height": 44
+        }
+      ],
+      "overflow": 0
+    }
+  },
+  "comments390": {
+    "desktop": {
+      "overflowX": 0,
+      "pageHeight": 900,
+      "rows": 6
+    },
+    "mobile": [
+      {
+        "rowWidth": 358,
+        "infoWidth": 358,
+        "status": {
+          "width": 59,
+          "height": 18,
+          "whiteSpace": "nowrap",
+          "text": "垃圾评论"
+        },
+        "emailWidth": 130,
+        "actionsTop": 618,
+        "infoBottom": 606,
+        "actionButtons": [
+          {
+            "width": 44,
+            "height": 44,
+            "title": "批准通过 (A)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "拒绝显示 (D)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "快捷回复 (R)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "删除评论"
+          }
+        ],
+        "select": {
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "rowWidth": 358,
+        "infoWidth": 357,
+        "status": {
+          "width": 47,
+          "height": 18,
+          "whiteSpace": "nowrap",
+          "text": "待审核"
+        },
+        "emailWidth": 144,
+        "actionsTop": 772,
+        "infoBottom": 760,
+        "actionButtons": [
+          {
+            "width": 44,
+            "height": 44,
+            "title": "批准通过 (A)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "拒绝显示 (D)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "标为垃圾 (S)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "快捷回复 (R)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "删除评论"
+          }
+        ],
+        "select": {
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "rowWidth": 358,
+        "infoWidth": 315,
+        "status": {
+          "width": 47,
+          "height": 18,
+          "whiteSpace": "nowrap",
+          "text": "待审核"
+        },
+        "emailWidth": 130,
+        "actionsTop": 926,
+        "infoBottom": 914,
+        "actionButtons": [
+          {
+            "width": 44,
+            "height": 44,
+            "title": "批准通过 (A)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "拒绝显示 (D)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "标为垃圾 (S)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "快捷回复 (R)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "删除评论"
+          }
+        ],
+        "select": {
+          "width": 44,
+          "height": 44
+        }
+      },
+      {
+        "rowWidth": 358,
+        "infoWidth": 358,
+        "status": {
+          "width": 47,
+          "height": 18,
+          "whiteSpace": "nowrap",
+          "text": "已批准"
+        },
+        "emailWidth": 137,
+        "actionsTop": 1091,
+        "infoBottom": 1079,
+        "actionButtons": [
+          {
+            "width": 44,
+            "height": 44,
+            "title": "拒绝显示 (D)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "标为垃圾 (S)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "快捷回复 (R)"
+          },
+          {
+            "width": 44,
+            "height": 44,
+            "title": "删除评论"
+          }
+        ],
+        "select": {
+          "width": 44,
+          "height": 44
+        }
+      }
+    ],
+    "overflow": 0
+  },
+  "settings": {
+    "desktop": {
+      "saveBar": {
+        "background": "rgb(10, 10, 11)",
+        "borderTop": "rgb(36, 36, 40)",
+        "paddingTop": "16px",
+        "paddingBottom": "16px",
+        "paddingLeft": "0px",
+        "paddingRight": "0px",
+        "sticky": "sticky"
+      },
+      "container": {
+        "paddingLeft": "32px",
+        "paddingRight": "32px"
+      },
+      "guideTitleVisible": false,
+      "summaryHeight": 32,
+      "summaryColor": "rgb(126, 126, 133)",
+      "resultColor": "rgb(126, 126, 133)",
+      "saveColor": "rgb(126, 126, 133)",
+      "background": "#0a0a0b",
+      "avatarRadius": "50%",
+      "avatarWidth": 128,
+      "saveContrast": 4.909892963151799
+    },
+    "mobile": {
+      "summaryHeight": 44,
+      "overflow": 0
+    }
+  },
+  "poster": {
+    "selected": true,
+    "background": "rgb(27, 27, 30)",
+    "actionsOpacity": "1",
+    "selectWidth": 28,
+    "selectHeight": 28,
+    "pinnedText": "置顶",
+    "pinnedPosition": "static",
+    "overflow": 0,
+    "mobile": {
+      "selectWidth": 44,
+      "selectHeight": 44,
+      "overflow": 0
+    }
+  },
+  "fonts": {
+    "dashboard": {
+      "sizes": {
+        "11": 11,
+        "12": 31,
+        "13": 16,
+        "14": 15,
+        "20": 7,
+        "24": 5
+      },
+      "bad": []
+    },
+    "settings-basic": {
+      "sizes": {
+        "11": 5,
+        "12": 19,
+        "13": 23,
+        "14": 4,
+        "24": 1
+      },
+      "bad": []
+    },
+    "settings-appearance": {
+      "sizes": {
+        "11": 75,
+        "12": 239,
+        "13": 53,
+        "24": 1
+      },
+      "bad": []
+    },
+    "appearance": {
+      "sizes": {
+        "12": 1,
+        "13": 3,
+        "14": 1,
+        "24": 1
+      },
+      "bad": []
+    },
+    "comments": {
+      "sizes": {
+        "12": 27,
+        "13": 18,
+        "14": 6,
+        "20": 4,
+        "24": 1
+      },
+      "bad": []
+    },
+    "posts": {
+      "sizes": {
+        "12": 57,
+        "13": 6,
+        "14": 7,
+        "20": 4,
+        "24": 1
+      },
+      "bad": []
+    }
+  },
+  "modal": {
+    "trend-chart-1-sm": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 36 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "6 列 × 44 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 52 行"
+      }
+    ],
+    "recent-posts-1-sm": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 26 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "6 列 × 32 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 44 行"
+      }
+    ],
+    "recent-comments-1-sm": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 26 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "6 列 × 32 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 44 行"
+      }
+    ],
+    "category-donut-1-sm": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "3 列 × 28 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "3 列 × 32 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 32 行"
+      }
+    ],
+    "stellar-version-1-sm": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "3 列 × 18 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "3 列 × 23 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "6 列 × 23 行"
+      }
+    ],
+    "trend-chart-1-xxs": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 32 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "4 列 × 42 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 50 行"
+      }
+    ],
+    "recent-posts-1-xxs": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 22 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "4 列 × 27 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 36 行"
+      }
+    ],
+    "recent-comments-1-xxs": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 22 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "4 列 × 27 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 36 行"
+      }
+    ],
+    "category-donut-1-xxs": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 22 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "4 列 × 29 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 36 行"
+      }
+    ],
+    "stellar-version-1-xxs": [
+      {
+        "preset": "small",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 16 行"
+      },
+      {
+        "preset": "medium",
+        "pressed": "true",
+        "selected": true,
+        "size": "4 列 × 22 行"
+      },
+      {
+        "preset": "large",
+        "pressed": "false",
+        "selected": false,
+        "size": "4 列 × 28 行"
+      }
+    ]
+  },
+  "shortcuts": {
+    "mobile": {
+      "trigger": {
+        "width": 44,
+        "height": 44
+      },
+      "dialogWidth": 232,
+      "text": "评论快捷键J / K上下翻选评论A批准通过D拒绝显示S标为垃圾R快捷回复X勾选 / 取消"
+    },
+    "desktop": {
+      "trigger": {
+        "width": 80,
+        "height": 44
+      }
+    }
+  },
+  "files": [
+    {
+      "name": "after-dashboard-1280.png",
+      "sha256": "2a01d8ffd99d3284130589d1ab31fd6cc2a9882afbbda07072136fc5c2719bb4"
+    },
+    {
+      "name": "after-dashboard-390.png",
+      "sha256": "1d2a27b233257405bdcb3b4489c8fa8467702b1da11c7ac2cf46b368f5fc8e87"
+    },
+    {
+      "name": "after-posts-1280.png",
+      "sha256": "ce1649967b5d951089b4b8eba7998bad6308b104a51ef187697b49ffaed3b32b"
+    },
+    {
+      "name": "after-posts-poster-1280.png",
+      "sha256": "2a98948a0baa76660ace4e903501c7822c8dba4678123f71f4148587c79fd99b"
+    },
+    {
+      "name": "after-posts-poster-390.png",
+      "sha256": "d199d7e6d7067cabd07e8d4983d831341024ccd3a1f9d3dd8be6667c56f5fe75"
+    },
+    {
+      "name": "after-posts-390.png",
+      "sha256": "9ae8629c7af6a973a1ef63d85b4632067ad0b91c362a5ba7f61a125d860bdd81"
+    },
+    {
+      "name": "after-settings-1280.png",
+      "sha256": "27520bb5f38c8e28b26dad508d9d653a709df2f79915101133756948df4e7035"
+    },
+    {
+      "name": "after-settings-390.png",
+      "sha256": "fd34a4bc7cc947d6dec44ff262a7909bb199fe54a4a1cc189e342021bc412ab9"
+    },
+    {
+      "name": "after-comments-1280.png",
+      "sha256": "c3c1001b3d6fe8bfe2f738060a61a127370622aacc167196aaaf8ae4fbf13008"
+    },
+    {
+      "name": "after-comments-390.png",
+      "sha256": "6ca563ca0d59cac9b165e05e2a4b25ef36011241e2d14701307bfe6c9808b8ec"
+    },
+    {
+      "name": "after-comments-shortcuts-390.png",
+      "sha256": "fded187982ce9ca26e4d9871b91f49ef9b5e69d3b10a82cad3503b1d6a5a156a"
+    },
+    {
+      "name": "after-comments-shortcuts-1280.png",
+      "sha256": "15c48a018411495993a42c0e218498c8677001d74f0a4d2490723756fbf08a45"
+    },
+    {
+      "name": "after-size-modal-sm-1280.png",
+      "sha256": "e6ce0e290d2a85b915c0ecdaded02352281faf6315c25ac31fabfbc422de4b19"
+    },
+    {
+      "name": "after-size-modal-xxs-1280.png",
+      "sha256": "0f8d72b578d868d51bff667572b859e24803d0a3c1350807662f34ac19ae68a3"
+    }
+  ],
+  "errors": []
+}

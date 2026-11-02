@@ -92,7 +92,12 @@ test("全部分类说明与选项在桌面及手机可读，开关与依赖解�
     await expect(page.locator('[data-setting-path="blog_extensions.content.reward.text"] .settings-dependency')).toContainText("文章扩展尚未启用");
     await page.locator("#tab-comments").click();
     const moderation = page.locator('[data-setting-path="blog_extensions.native_comments.moderation"]');
+    // 隔离夹具为公开评论用例预先开启审核；先恢复默认（关闭）再验证开关与效果文案，避免依赖夹具初始值。
+    await moderation.getByRole("button", { name: "评论需要审核恢复默认", exact: true }).click();
+    await expect(moderation.getByRole("switch")).toHaveAttribute("aria-checked", "false");
+    await expect(moderation.locator(".settings-field-effect")).toContainText("无需经过这项审核开关");
     await moderation.getByRole("switch").click();
+    await expect(moderation.getByRole("switch")).toHaveAttribute("aria-checked", "true");
     await expect(moderation.locator(".settings-field-effect")).toContainText("经审核后才公开");
     await page.screenshot({ path: screenshot(`after-comments-${width}`) });
     await moderation.getByRole("button", { name: "评论需要审核恢复默认", exact: true }).click();

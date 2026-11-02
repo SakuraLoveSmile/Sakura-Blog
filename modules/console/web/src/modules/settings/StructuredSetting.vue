@@ -377,7 +377,7 @@ function updateNumber(event: Event) {
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--color-text-tertiary) 10%, transparent);
   color: var(--color-text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 400;
   line-height: 1.5;
   vertical-align: middle;

@@ -183,9 +183,6 @@ onMounted(load);
 <template>
   <div class="min-h-full">
     <VPageHeader title="专栏">
-      <template #icon>
-        <Icon icon="ri:book-shelf-line" class="text-primary" />
-      </template>
       <template #subtitle>维护文章聚合专栏与海报展示信息，支持自定义封面与前台图标</template>
       <template #actions>
         <div class="apple-search min-w-[200px] max-w-[280px]">
@@ -277,6 +274,7 @@ onMounted(load);
             <div class="apple-segmented">
               <button
                 type="button"
+                class="segmented-icon-btn"
                 :class="{ active: viewMode === 'grid' }"
                 title="海报卡片视图"
                 @click="viewMode = 'grid'"
@@ -285,6 +283,7 @@ onMounted(load);
               </button>
               <button
                 type="button"
+                class="segmented-icon-btn"
                 :class="{ active: viewMode === 'table' }"
                 title="表格列表视图"
                 @click="viewMode = 'table'"
@@ -322,17 +321,17 @@ onMounted(load);
               />
               <div
                 v-else
-                class="flex h-full w-full items-center justify-center bg-secondary/80 text-4xl text-text-quaternary"
+                class="flex h-full w-full items-center justify-center bg-secondary/80 text-2xl text-text-quaternary"
               >
                 <Icon :icon="topic.icon || 'ri:book-shelf-line'" />
               </div>
 
               <!-- 顶部浮层：文章数 Badge + 排序值 -->
               <div class="absolute inset-x-3 top-3 flex items-center justify-between">
-                <span class="rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white">
+                <span class="rounded-sm bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white">
                   {{ topic.post_count }} 篇收录
                 </span>
-                <span v-if="topic.sort" class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-white/80">
+                <span v-if="topic.sort" class="rounded-sm bg-black/50 px-2 py-0.5 font-mono text-[11px] text-white/80">
                   权重 {{ topic.sort }}
                 </span>
               </div>
@@ -353,7 +352,7 @@ onMounted(load);
                   >
                     <Icon :icon="topic.icon" />
                   </div>
-                  <h3 class="truncate text-base font-bold text-foreground">{{ topic.name }}</h3>
+                  <h3 class="truncate text-[14px] font-bold text-foreground">{{ topic.name }}</h3>
                 </div>
 
                 <div class="mt-1 flex items-center gap-2 font-mono text-xs text-text-quaternary">
@@ -418,7 +417,7 @@ onMounted(load);
                     <span class="line-clamp-2">{{ topic.description || "未填写描述" }}</span>
                   </td>
                   <td class="px-4 py-3 text-right font-mono text-xs">
-                    <span class="rounded bg-secondary px-2 py-0.5 font-bold text-foreground">
+                    <span class="rounded-sm bg-secondary px-2 py-0.5 font-bold text-foreground">
                       {{ topic.post_count }}
                     </span>
                   </td>
@@ -523,7 +522,7 @@ onMounted(load);
   padding: 0 12px;
   background: var(--color-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
@@ -536,6 +535,9 @@ onMounted(load);
 .apple-sort-btn:hover {
   color: var(--color-foreground);
   border-color: var(--color-border-strong);
+}
+@media (max-width: 767px) {
+  .apple-sort-btn { height: 44px; }
 }
 
 /* 操作小按钮 */

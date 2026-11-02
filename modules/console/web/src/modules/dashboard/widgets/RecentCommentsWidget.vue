@@ -169,22 +169,22 @@ const displayedItems = computed(() => {
       <button
         v-for="item in displayedItems"
         :key="item.id"
-        class="w-full flex items-start gap-2 p-1.5 rounded-xl border border-transparent hover:border-white/5 hover:bg-white/5 text-left transition-colors duration-150"
+        class="w-full flex items-start gap-2 py-1.5 border-t border-border text-left transition-colors duration-150"
         type="button"
         @click="openComment(item)"
       >
         <div v-if="item.avatar && !avatarFailed.has(item.id)" class="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
           <img :src="item.avatar" :alt="item.nick" class="w-full h-full object-cover" loading="lazy" @error="handleAvatarError(item)" />
         </div>
-        <div v-else :class="['w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-foreground flex-shrink-0', avatarClass(item.nick)]">
+        <div v-else :class="['w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-foreground flex-shrink-0', avatarClass(item.nick)]">
           {{ getInitials(item.nick) }}
         </div>
         <div class="min-w-0 flex-1">
           <div class="flex items-center justify-between text-xs">
             <span class="font-medium text-foreground truncate">{{ item.nick }}</span>
-            <span class="text-[10px] text-muted-foreground ml-1">{{ item.date }}</span>
+            <span class="text-[12px] text-muted-foreground ml-1">{{ item.date }}</span>
           </div>
-          <p class="text-[11px] text-muted-foreground truncate mt-0.5">{{ item.content }}</p>
+          <p class="text-[12px] text-muted-foreground truncate mt-0.5">{{ item.content }}</p>
         </div>
       </button>
     </div>
@@ -233,7 +233,7 @@ const displayedItems = computed(() => {
         <div v-if="replyingId === item.id" class="comment-reply-popover" @click.stop>
           <div class="flex items-center justify-between gap-2 mb-1.5">
             <span class="text-xs font-medium text-foreground">回复 {{ item.nick }}</span>
-            <span class="text-[10px] text-text-quaternary tabular-nums">{{ replyText.length }}/500</span>
+            <span class="text-[11px] text-text-quaternary tabular-nums">{{ replyText.length }}/500</span>
           </div>
           <textarea
             v-model="replyText"
@@ -305,24 +305,24 @@ const displayedItems = computed(() => {
 }
 
 .comment-content-bubble {
-  padding: 7px 9px;
-  border: 1px solid color-mix(in srgb, #fff 6%, transparent);
-  border-radius: 0 10px 10px 10px;
-  background: color-mix(in srgb, #fff 3%, transparent);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .comment-inline-actions {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   flex-shrink: 0;
-  opacity: 0;
   transition: opacity 150ms var(--ease-standard);
 }
 
-.apple-comment-item:hover .comment-inline-actions,
-.apple-comment-item:focus-within .comment-inline-actions {
-  opacity: 1;
+@media (hover: hover) and (min-width: 1024px) {
+  .comment-inline-actions { opacity: 0; }
+  .apple-comment-item:hover .comment-inline-actions,
+  .apple-comment-item:focus-within .comment-inline-actions { opacity: 1; }
 }
 
 .comment-inline-actions button {
@@ -331,17 +331,17 @@ const displayedItems = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   color: var(--color-muted-foreground);
   background: transparent;
   cursor: pointer;
 }
 
 .comment-inline-actions button:hover:not(:disabled) {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-foreground);
+  border-color: var(--color-border);
+  background: var(--color-accent);
 }
 
 .comment-inline-actions button.action-approve:hover:not(:disabled) {
@@ -375,10 +375,10 @@ const displayedItems = computed(() => {
 .comment-delete-popover {
   margin: 8px 0 2px 44px;
   padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-popover) 92%, transparent);
-  box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-2xl);
+  background: var(--color-popover);
+  box-shadow: var(--shadow-lg);
 }
 
 .comment-delete-popover {
@@ -396,7 +396,7 @@ const displayedItems = computed(() => {
   min-height: 48px;
   padding: 8px 9px;
   border: 1px solid var(--color-border);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   outline: none;
   background: color-mix(in srgb, var(--color-background) 70%, transparent);
   color: var(--color-foreground);
@@ -415,7 +415,7 @@ const displayedItems = computed(() => {
   min-height: 26px;
   padding: 0 8px;
   border: 1px solid var(--color-border);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-foreground);
   font: inherit;

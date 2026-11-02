@@ -3,6 +3,7 @@ import { inject, ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { stellarEditorContextKey } from "./editor/stellar-context";
 import { Icon } from "@iconify/vue";
 import { previewApi, attachmentApi, ucApi } from "@/api";
+import { preparePreviewDocument, previewFailureMessage } from "@/modules/plugins/preview/preview-document";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { useLocalDraft } from "@/composables/useLocalDraft";
 
@@ -52,7 +53,23 @@ const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, chec
 // 完整预览文档由前台组装，opaque iframe通过token消息同步滚动。
 const previewSrcdoc = ref("");
 const previewToken = ref("");
+const previewError = ref("");
+// 仅预览模式重渲染后恢复滚动比例：iframe 是 opaque origin，父窗口读不到 contentDocument，
+// 因此只记录子文档主动回传的最后一个比例，加载完成后按 token 发回。
+let lastPreviewRatio = 0;
+let pendingScrollRatio: number | null = null;
 function onIframeLoad() {
+  if (pendingScrollRatio !== null) {
+    const ratio = pendingScrollRatio;
+    pendingScrollRatio = null;
+    if (mode.value === "preview" && previewToken.value) {
+      iframeRef.value?.contentWindow?.postMessage(
+        { type: "stellar-preview-scroll-to", token: previewToken.value, ratio },
+        "*",
+      );
+      return;
+    }
+  }
   onEditorScroll();
 }
 
@@ -67,6 +84,8 @@ onMounted(() => {
 // ---------- 实时预览（防抖 400ms，走后端 goldmark 管线，Stellar 标签插件真实呈现） ----------
 
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
+// 卸载后 nextTick 里的补调度不得再发请求。
+let previewActive = true;
 
 // Spec 62：预览请求序号守卫——连续输入时先发出的慢响应不得覆盖新内容；
 // 仅当请求发起时是最新一版（序号匹配）才应用渲染结果。
@@ -78,15 +97,23 @@ const PREVIEW_LARGE_DOC_BYTES = 50 * 1024;
 
 async function refreshPreview() {
   const seq = ++previewSeq;
+  // 文档身份：请求期间若 storageKey 已切换（A→B），A 的正文不得渲染到 B 的身份下。
+  const identity = props.storageKey;
+  const markdown = props.modelValue;
   rendering.value = true;
+  previewError.value = "";
   try {
-    const { data } = await previewApi.render(props.modelValue, undefined, stellarContext?.value);
-    if (seq !== previewSeq) return; // 过期响应丢弃（已有更新的输入在途）
+    const { data } = await previewApi.render(markdown, undefined, stellarContext?.value);
+    if (seq !== previewSeq || identity !== props.storageKey) return; // 过期响应丢弃（输入或身份已变）
+    // 仅预览模式重渲染：保留滚动比例，避免 iframe 回顶
+    if (mode.value === "preview" && previewSrcdoc.value) pendingScrollRatio = lastPreviewRatio;
     previewToken.value = data.preview_token;
-    previewSrcdoc.value = data.document;
+    // 真实站上下文只注入写守卫与不透明表面，不注入内存 Storage（rating/vote 保持不可交互）。
+    previewSrcdoc.value = preparePreviewDocument(data.document, null);
   } catch {
-    if (seq !== previewSeq) return;
-    previewSrcdoc.value = "";
+    if (seq !== previewSeq || identity !== props.storageKey) return;
+    // 失败不清空已有文档：有历史预览时保留并提示，首次失败不谎称“仍显示上一次结果”。
+    previewError.value = previewFailureMessage(Boolean(previewSrcdoc.value));
   } finally {
     if (seq === previewSeq) rendering.value = false;
   }
@@ -98,7 +125,7 @@ function previewDebounceMs() {
 }
 
 function schedulePreview(immediate = false) {
-  if (mode.value === "edit") return;
+  if (!previewActive || mode.value === "edit") return;
   clearTimeout(previewTimer);
   previewTimer = setTimeout(refreshPreview, immediate ? 0 : previewDebounceMs());
 }
@@ -143,8 +170,10 @@ function onPreviewMessage(event: MessageEvent) {
     event.data?.type !== "stellar-preview-scroll"
   )
     return;
-  if (mode.value !== "split" || syncingScroll) return;
   const ratio = event.data.ratio;
+  // 编辑区不在分屏时不回写 textarea，但仍记录预览滚动比例供下次重渲染恢复。
+  if (typeof ratio === "number" && Number.isFinite(ratio)) lastPreviewRatio = Math.max(0, Math.min(1, ratio));
+  if (mode.value !== "split" || syncingScroll) return;
   const ta = textareaRef.value;
   if (!ta || typeof ratio !== "number" || !Number.isFinite(ratio)) return;
   syncingScroll = true;
@@ -158,9 +187,36 @@ watch([() => props.modelValue, () => stellarContext?.value], () => {
   schedulePreview();
 });
 
+/** 文档身份切换（A→B）时清空旧预览，避免 B 首次失败仍显示 A 的内容。 */
+function clearPreviewIdentity() {
+  previewSeq++;
+  clearTimeout(previewTimer);
+  previewSrcdoc.value = "";
+  previewToken.value = "";
+  previewError.value = "";
+  rendering.value = false;
+  lastPreviewRatio = 0;
+  pendingScrollRatio = null;
+  if (mode.value === "edit") return;
+  // 身份切换后必须重建预览：
+  // - 正文也换了时，这里先清空再立即渲染，B 首次失败不会残留 A；
+  // - 正文未变时（如新建文章保存拿到 slug，storageKey 从 post:new 变成 post:<slug>）
+  //   没有任何 modelValue watcher 会再触发，只清空会让预览长期空白；
+  //   上面的 clearTimeout 也可能取消同 tick 内 context watcher 排好的调度。
+  // 统一放到 nextTick：合并同 tick 的 modelValue/context watcher，只发一次请求。
+  nextTick(() => schedulePreview(true));
+}
+watch(
+  () => props.storageKey,
+  (next, previous) => {
+    if (next !== previous) clearPreviewIdentity();
+  },
+);
+
 // ---------- 本地草稿保护（逻辑已抽到 useLocalDraft composable） ----------
 
 onBeforeUnmount(() => {
+  previewActive = false;
   clearTimeout(previewTimer);
   clearTimeout(syncReleaseTimer);
 });
@@ -485,6 +541,13 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
 
       <div v-show="mode !== 'edit'" class="relative min-h-[560px]">
         <span v-if="rendering" class="absolute top-2 right-3 z-10 text-[11px] text-text-quaternary">渲染中...</span>
+        <div
+          v-if="previewError"
+          class="absolute inset-x-3 top-2 z-10 flex items-center justify-between gap-2 rounded-md border border-state-error/30 bg-card/95 px-2.5 py-1.5 text-[11px] text-state-error"
+        >
+          <span>{{ previewError }}</span>
+          <button type="button" class="shrink-0 text-primary" @click="schedulePreview(true)">重试</button>
+        </div>
         <iframe
           ref="iframeRef"
           :srcdoc="previewSrcdoc"

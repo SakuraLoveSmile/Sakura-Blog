@@ -416,9 +416,6 @@ async function batchMoveGroup() {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="友链">
-      <template #icon>
-        <Icon icon="ri:links-line" class="text-primary" />
-      </template>
       <template #subtitle>维护博客友链与外部网站，支持健康度自动检测、网站截图与 RSS 订阅</template>
       <template #actions>
         <template v-if="activeTab === 'list'">
@@ -541,6 +538,7 @@ async function batchMoveGroup() {
             <div class="apple-segmented">
               <button
                 type="button"
+                class="segmented-icon-btn"
                 :class="{ active: viewMode === 'grid' }"
                 title="卡片网格视图"
                 @click="viewMode = 'grid'"
@@ -549,6 +547,7 @@ async function batchMoveGroup() {
               </button>
               <button
                 type="button"
+                class="segmented-icon-btn"
                 :class="{ active: viewMode === 'table' }"
                 title="表格列表视图"
                 @click="viewMode = 'table'"
@@ -576,8 +575,8 @@ async function batchMoveGroup() {
           <div v-for="g in grouped" :key="g.title" class="rounded-2xl border border-border bg-card p-5">
             <div class="mb-4 flex items-center justify-between">
               <div class="flex items-center gap-2.5">
-                <span class="text-[15px] font-semibold text-foreground">{{ g.title }}</span>
-                <span class="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs text-text-tertiary">
+                <span class="text-[14px] font-semibold text-foreground">{{ g.title }}</span>
+                <span class="rounded-sm border border-border bg-secondary px-2.5 py-0.5 text-xs text-text-tertiary">
                   {{ g.items.length }} 条
                 </span>
               </div>
@@ -605,7 +604,7 @@ async function batchMoveGroup() {
                       <input
                         type="checkbox"
                         :checked="selectedIds.has(l.id)"
-                        class="h-4 w-4 rounded border-border-strong text-primary"
+                        class="h-4 w-4 rounded-sm border-border-strong text-primary"
                         @change="toggleSelect(l.id)"
                       />
 
@@ -618,7 +617,7 @@ async function batchMoveGroup() {
                       />
                       <div
                         v-else
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-base text-text-tertiary avatar-gradient-1"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-[14px] text-text-tertiary avatar-gradient-1"
                       >
                         {{ l.name ? l.name.charAt(0).toUpperCase() : "🔗" }}
                       </div>
@@ -628,7 +627,7 @@ async function batchMoveGroup() {
                           <span class="truncate text-sm font-semibold text-foreground">{{ l.name }}</span>
                           <span
                             v-if="l.label"
-                            class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+                            class="shrink-0 rounded-sm px-2 py-0.5 text-[11px] font-semibold text-white"
                             :style="{ backgroundColor: normalizeColor(l.color) }"
                           >
                             {{ l.label }}
@@ -674,23 +673,21 @@ async function batchMoveGroup() {
                   <div class="flex items-center gap-2">
                     <span
                       v-if="linkState(l) === 'ok'"
-                      class="inline-flex items-center gap-1 rounded-full bg-[#30D158]/10 px-2 py-0.5 text-[11px] font-medium text-[#30D158]"
+                      class="inline-flex items-center gap-1 text-[11px] font-medium text-state-success"
                     >
-                      <span class="h-1.5 w-1.5 rounded-full bg-[#30D158]"></span>
+                      <span class="h-[5px] w-[5px] rounded-full bg-state-success"></span>
                       正常
                     </span>
                     <span
                       v-else-if="linkState(l) === 'error'"
                       :title="errorReason(l)"
-                      class="inline-flex items-center gap-1 rounded-full bg-[#FF453A]/10 px-2 py-0.5 text-[11px] font-medium text-[#FF453A]"
+                      class="inline-flex items-center gap-1 text-[11px] font-medium text-state-error"
                     >
-                      <span class="h-1.5 w-1.5 rounded-full bg-[#FF453A]"></span>
+                      <span class="h-[5px] w-[5px] rounded-full bg-state-error"></span>
                       {{ errorReason(l) }}
                     </span>
-                    <span
-                      v-else
-                      class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-text-quaternary"
-                    >
+                    <span v-else class="inline-flex items-center gap-1 text-[11px] text-text-tertiary">
+                      <span class="h-[5px] w-[5px] rounded-full bg-text-quaternary"></span>
                       未检测
                     </span>
 
@@ -729,7 +726,7 @@ async function batchMoveGroup() {
                       v-if="filteredLinks.length > 0"
                       type="checkbox"
                       :checked="selectedIds.size === filteredLinks.length"
-                      class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                      class="h-4 w-4 rounded-sm border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
                       @change="selectedIds.size === filteredLinks.length ? clearSelection() : selectAll()"
                     />
                   </th>
@@ -752,7 +749,7 @@ async function batchMoveGroup() {
                     <input
                       type="checkbox"
                       :checked="selectedIds.has(l.id)"
-                      class="h-4 w-4 rounded border-border text-primary"
+                      class="h-4 w-4 rounded-sm border-border text-primary"
                       @change="toggleSelect(l.id)"
                     />
                   </td>
@@ -766,7 +763,7 @@ async function batchMoveGroup() {
                       />
                       <div
                         v-else
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs"
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-secondary text-xs"
                       >
                         🔗
                       </div>
@@ -783,14 +780,14 @@ async function batchMoveGroup() {
                     </div>
                   </td>
                   <td class="px-4 py-3 text-xs text-text-secondary">
-                    <span class="rounded bg-secondary px-2 py-0.5 font-medium">
+                    <span class="rounded-sm bg-secondary px-2 py-0.5 font-medium">
                       {{ l.group_title || "未分组" }}
                     </span>
                   </td>
                   <td class="px-4 py-3 text-xs">
                     <span
                       v-if="l.label"
-                      class="rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+                      class="rounded-sm px-2 py-0.5 text-[11px] font-semibold text-white"
                       :style="{ backgroundColor: normalizeColor(l.color) }"
                     >
                       {{ l.label }}

@@ -21,9 +21,7 @@ const active = computed(() => route.path);
 
 <template>
   <div>
-    <VPageHeader title="SEO 工具集">
-      <template #icon><Icon icon="ri:search-eye-line" class="text-primary" /></template>
-    </VPageHeader>
+    <VPageHeader title="SEO 工具集" />
 
     <div class="m-0 flex flex-col gap-4 p-4 md:m-4 md:p-0 md:flex-row">
       <!-- 二级导航 -->

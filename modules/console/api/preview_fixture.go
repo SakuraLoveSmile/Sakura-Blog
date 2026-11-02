@@ -18,6 +18,31 @@ const (
 	fixtureStateError  = "error"
 )
 
+// setPreviewFixtureCORS 只为公开、只读、无凭据的预览 Fixture 端点补跨源头。
+// 预览 iframe 使用 sandbox="allow-scripts"（opaque origin），其 fetch 与 Console 页面跨源；
+// 不加这些头时 friends/sites/rating/vote 的本地 Fixture 数据会被浏览器拦截。
+// 这里不放宽 sandbox，也不允许凭据（不使用通配时携带 cookie 的请求需 allow-credentials，未设置）。
+func setPreviewFixtureCORS(c *gin.Context) {
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	c.Header("Access-Control-Allow-Headers", "Content-Type")
+	c.Header("Access-Control-Max-Age", "600")
+}
+
+// previewFixtureCORS 给 Fixture 响应补 CORS 头。
+func previewFixtureCORS() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		setPreviewFixtureCORS(c)
+		c.Next()
+	}
+}
+
+// previewFixturePreflight 处理 Fixture 端点的 CORS 预检（rating/vote 的 POST 会先 OPTIONS）。
+func previewFixturePreflight(c *gin.Context) {
+	setPreviewFixtureCORS(c)
+	c.AbortWithStatus(http.StatusNoContent)
+}
+
 func fixtureState(c *gin.Context) string {
 	switch c.Query("state") {
 	case fixtureStateEmpty, fixtureStateError:
@@ -35,7 +60,7 @@ func fixtureAvatar(letter string) string {
 
 // ---------- rating ----------
 
-// previewRatingFixture GET /api/v1/preview/rating?id=xxx：返回确定性评分摘要，不写库。
+// previewRatingFixture GET /api/v1/preview/rating?id=xxx：旧版摘要端点，保留兼容。
 func (h *Handler) previewRatingFixture(c *gin.Context) {
 	switch fixtureState(c) {
 	case fixtureStateError:
@@ -47,8 +72,26 @@ func (h *Handler) previewRatingFixture(c *gin.Context) {
 	}
 }
 
-// previewRatingFixtureSubmit POST /api/v1/preview/rating：接受评分动作但不落库。
+// previewRatingFixtureSubmit POST /api/v1/preview/rating：旧版提交端点，接受动作但不落库。
 func (h *Handler) previewRatingFixtureSubmit(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// previewRatingInfoFixture GET /api/v1/preview/rating/info?id=xxx：rating.js 实际契约。
+// 形状为 {rating: {"5": count, ...}}，由前台 calculateAverage 计算均分，不写库。
+func (h *Handler) previewRatingInfoFixture(c *gin.Context) {
+	switch fixtureState(c) {
+	case fixtureStateError:
+		Fail(c, http.StatusInternalServerError, "fixture error")
+	case fixtureStateEmpty:
+		c.JSON(http.StatusOK, gin.H{"rating": gin.H{}})
+	default:
+		c.JSON(http.StatusOK, gin.H{"rating": gin.H{"5": 86, "4": 30, "3": 8, "2": 4, "1": 2}})
+	}
+}
+
+// previewRatingUpdateFixture POST /api/v1/preview/rating/update?id=xxx&value=n：rating.js 实际契约，不落库。
+func (h *Handler) previewRatingUpdateFixture(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 

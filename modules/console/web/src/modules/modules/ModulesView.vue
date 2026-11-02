@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onMounted, computed, reactive, ref } from "vue";
-import { Icon } from "@iconify/vue";
 import { moduleApi } from "@/api";
 import { SchemaForm, type SchemaField, type SchemaValues } from "@/components/forms";
-import { VPageHeader, VCard, VSwitch, VTag, VEmpty, VLoading, Toast } from "@/components/ui";
+import { VButton, VPageHeader, VSwitch, VTag, VEmpty, VLoading, Toast } from "@/components/ui";
 import { useModulesStore, type ModuleItem } from "@/stores/modules";
 
 const store = useModulesStore();
@@ -72,87 +71,136 @@ function updateConfig(id: string, value: SchemaValues) {
 </script>
 
 <template>
-  <div>
-    <VPageHeader title="功能模块">
-      <template #icon><Icon icon="ri:apps-2-line" class="text-primary" /></template>
-    </VPageHeader>
+  <div class="modules-page">
+    <VPageHeader title="功能模块" />
 
-    <div class="m-0 p-4 md:m-4 md:p-0">
-      <VCard>
-        <!-- 说明条 -->
-        <div
-          class="mb-4 flex items-center gap-2 rounded-base border border-primary bg-primary/10 px-4 py-3 text-sm text-primary border-primary/30 bg-primary/10 text-primary"
-        >
-          <Icon icon="ri:information-line" class="text-base" />
-          功能模块以内置形式随程序编译，可在此启用/停用。停用后其菜单入口隐藏、后台接口关闭。
-        </div>
+    <div class="modules-container">
+      <p class="modules-note">功能模块以内置形式随程序编译，可在此启用/停用。停用后其菜单入口隐藏、后台接口关闭。</p>
 
-        <VLoading v-if="!store.loaded && !items.length" />
+      <VLoading v-if="!store.loaded && !items.length" />
 
-        <VEmpty v-else-if="!items.length" title="暂无功能模块" message="尚未注册任何功能模块" />
+      <VEmpty v-else-if="!items.length" title="暂无功能模块" message="尚未注册任何功能模块" />
 
-        <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div
-            v-for="m in items"
-            :key="m.id"
-            class="rounded-base border border-border bg-card p-4 transition-shadow hover:shadow-sm"
-          >
-            <div class="flex items-start gap-3">
-              <span
-                class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-base bg-primary/10 text-primary"
-              >
-                <Icon :icon="m.nav?.[0]?.icon || 'ri:puzzle-line'" class="text-xl" />
-              </span>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <span class="truncate text-sm font-medium text-foreground">{{ m.title }}</span>
-                  <VTag>{{ m.category || "模块" }}</VTag>
-                  <VTag v-if="m.locked" theme="secondary">核心</VTag>
-                </div>
-                <p class="mt-1 line-clamp-2 text-xs text-text-tertiary">{{ m.description }}</p>
-              </div>
-              <div class="flex shrink-0 items-center gap-3">
-                <button
-                  v-if="hasConfig(m)"
-                  type="button"
-                  class="rounded-full border border-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
-                  @click="toggleConfig(m)"
-                >
-                  {{ expandedID === m.id ? "收起配置" : "配置" }}
-                </button>
-                <VSwitch
-                  :model-value="m.enabled"
-                  :disabled="m.locked"
-                  :aria-label="`${m.title || m.id} 开关`"
-                  class="mt-1"
-                  @change="(v: boolean) => onToggle(m, v)"
-                />
-              </div>
+      <ul v-else class="module-records">
+        <li v-for="m in items" :key="m.id" class="module-record">
+          <div class="module-main">
+            <div class="module-title-line">
+              <span class="module-title">{{ m.title }}</span>
+              <VTag>{{ m.category || "模块" }}</VTag>
+              <VTag v-if="m.locked" theme="secondary">核心</VTag>
             </div>
-
-            <div v-if="expandedID === m.id" class="mt-4 border-t border-border pt-4">
-              <VLoading v-if="configLoading[m.id]" />
-              <template v-else>
-                <SchemaForm
-                  :fields="configFields(m)"
-                  :model-value="configs[m.id] || {}"
-                  @update:model-value="(value) => updateConfig(m.id, value)"
-                />
-                <div class="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    class="rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-50"
-                    :disabled="configSaving[m.id]"
-                    @click="saveConfig(m)"
-                  >
-                    {{ configSaving[m.id] ? "保存中…" : "保存配置" }}
-                  </button>
-                </div>
-              </template>
-            </div>
+            <p class="module-description">{{ m.description }}</p>
           </div>
-        </div>
-      </VCard>
+          <div class="module-actions">
+            <VButton v-if="hasConfig(m)" size="sm" @click="toggleConfig(m)">
+              {{ expandedID === m.id ? "收起配置" : "配置" }}
+            </VButton>
+            <VSwitch
+              :model-value="m.enabled"
+              :disabled="m.locked"
+              :aria-label="`${m.title || m.id} 开关`"
+              @change="(v: boolean) => onToggle(m, v)"
+            />
+          </div>
+
+          <div v-if="expandedID === m.id" class="module-config">
+            <VLoading v-if="configLoading[m.id]" />
+            <template v-else>
+              <SchemaForm
+                :fields="configFields(m)"
+                :model-value="configs[m.id] || {}"
+                @update:model-value="(value) => updateConfig(m.id, value)"
+              />
+              <div class="module-config-actions">
+                <VButton type="primary" size="sm" :disabled="configSaving[m.id]" @click="saveConfig(m)">
+                  {{ configSaving[m.id] ? "保存中…" : "保存配置" }}
+                </VButton>
+              </div>
+            </template>
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
+
+<style scoped>
+.modules-page {
+  min-height: 100%;
+  background: var(--color-background);
+}
+.modules-container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0;
+  padding: 8px 32px 40px;
+  box-sizing: border-box;
+}
+.modules-note {
+  margin: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.module-records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.module-record {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.module-main {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.module-title-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.module-title {
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 500;
+}
+.module-description {
+  margin: 4px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.module-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.module-config {
+  flex-basis: 100%;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+.module-config-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+@media (max-width: 767px) {
+  .modules-container {
+    padding: 0 16px 32px;
+  }
+  .module-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+</style>

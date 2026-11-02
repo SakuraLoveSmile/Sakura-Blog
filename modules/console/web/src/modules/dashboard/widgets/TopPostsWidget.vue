@@ -99,27 +99,27 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 
 <style scoped>
 .top-posts-subtitle { margin-top: 3px; color: var(--color-muted-foreground); font-size: 11px; }
-.top-posts-range .seg-btn { padding-inline: 7px; font-size: 10px; }
+.top-posts-range .seg-btn { padding-inline: 7px; font-size: 11px; }
 .top-posts-list { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; }
-.top-post-row { display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; padding: 8px 5px; border: 1px solid transparent; border-radius: 11px; color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
+.top-post-row { display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; padding: 8px 5px; border: 1px solid transparent; border-radius: var(--radius-md); color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
 .top-post-row:hover { border-color: color-mix(in srgb, var(--color-primary) 16%, transparent); background: color-mix(in srgb, var(--color-primary) 6%, transparent); transform: translateX(2px); }
-.top-post-rank { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; flex: 0 0 auto; border-radius: 7px; color: var(--color-muted-foreground); background: color-mix(in srgb, var(--color-muted-foreground) 10%, transparent); font: 700 11px var(--font-mono); }
+.top-post-rank { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; flex: 0 0 auto; border-radius: var(--radius-sm); color: var(--color-muted-foreground); background: color-mix(in srgb, var(--color-muted-foreground) 10%, transparent); font: 700 11px var(--font-mono); }
 .top-post-rank.rank-1 { color: var(--color-state-warning); background: color-mix(in srgb, var(--color-state-warning) 13%, transparent); }
 .top-post-rank.rank-2 { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
 .top-post-rank.rank-3 { color: var(--color-chart-5); background: color-mix(in srgb, var(--color-chart-5) 12%, transparent); }
 .top-post-copy { display: flex; flex: 1; flex-direction: column; gap: 6px; min-width: 0; }
 .top-post-title { overflow: hidden; color: var(--color-foreground); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.top-post-track { display: block; width: 100%; height: 4px; overflow: hidden; border-radius: 99px; background: color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); }
+.top-post-track { display: block; width: 100%; height: 4px; overflow: hidden; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); }
 .top-post-track i { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); transition: width 350ms var(--ease-standard); }
 .top-post-metrics { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--color-foreground); font-size: 12px; }
-.top-post-metrics small { color: var(--color-muted-foreground); font-size: 9px; }
+.top-post-metrics small { color: var(--color-muted-foreground); font-size: 11px; }
 .top-post-arrow { flex: 0 0 auto; color: var(--color-muted-foreground); opacity: 0; transition: opacity var(--duration-fast) var(--ease-standard); }
 .top-post-row:hover .top-post-arrow { opacity: 1; }
 .top-posts-empty { display: flex; align-items: center; justify-content: center; min-height: 110px; color: var(--color-muted-foreground); font-size: 12px; }
-.top-posts-footnote { display: flex; align-items: center; gap: 5px; margin-top: 9px; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); color: var(--color-muted-foreground); font-size: 10px; }
+.top-posts-footnote { display: flex; align-items: center; gap: 5px; margin-top: 9px; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); color: var(--color-muted-foreground); font-size: 11px; }
 .top-posts-small .top-posts-range { display: none; }
 .top-posts-small .top-post-row { padding-block: 6px; }
 .top-posts-small .top-post-copy { gap: 4px; }
 .top-posts-small .top-post-title { font-size: 11px; }
-.top-posts-small .top-post-metrics { font-size: 10px; }
+.top-posts-small .top-post-metrics { font-size: 11px; }
 </style>

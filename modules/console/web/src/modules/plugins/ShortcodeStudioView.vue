@@ -12,6 +12,7 @@ import {
 } from "./plugin-types";
 import { CAPABILITY_LABELS, FIXTURE_LABELS } from "./preview/resources";
 import { usePluginPreview } from "./preview/usePluginPreview";
+import { previewInvalidNoticeVisible } from "./preview/preview-document";
 import PluginParamForm from "./PluginParamForm.vue";
 import { useShortcodeDraft } from "./useShortcodeDraft";
 import { catalogError, catalogStatus, loadPluginCatalog, retryLoadCatalog, runtimePlugins } from "./usePluginCatalog";
@@ -63,8 +64,10 @@ function typeBadge(type: PluginMeta["type"]): string {
 
 function selectPlugin(p: PluginMeta) {
   selected.value = p;
-  draft.updateSource(p.example, true);
+  // 切换插件属于显式清空：先移除上一个插件的文档，再应用推荐高度并重新渲染。
+  preview.clearPreview();
   preview.resetHeight();
+  draft.updateSource(p.example, true);
 }
 
 // ---------- 实时预览（Spec 63：共享预览运行时） ----------
@@ -73,6 +76,10 @@ function selectPlugin(p: PluginMeta) {
 
 const previewFrame = ref<HTMLIFrameElement | null>(null);
 const preview = usePluginPreview(() => (selected.value ? previewInfoFor(selected.value) : emptyPreview));
+// 参数无效/校验中时保留旧预览，但必须说明它没有更新。
+const stalePreview = computed(() =>
+  previewInvalidNoticeVisible(draft.canApply.value, draft.parsing.value, Boolean(preview.srcdoc.value)),
+);
 
 const selectedPreview = computed<PluginPreviewInfo>(() =>
   selected.value ? previewInfoFor(selected.value) : emptyPreview,
@@ -84,9 +91,18 @@ const fixtureLabel = computed(() =>
   selectedPreview.value.fixture ? FIXTURE_LABELS[selectedPreview.value.fixture] : "",
 );
 
-watch([example, draft.canApply], ([raw, valid]) => {
-  if (valid) preview.scheduleRender(raw);
-  else preview.clearPreview();
+// 输入过程中保留旧预览：raw 为空才清空；参数解析完成（canApply）后再调度渲染。
+watch(example, (raw) => {
+  if (!raw.trim()) {
+    preview.clearPreview();
+    return;
+  }
+  // 输入已变化：新文档 ready 前冻结高度，避免旧文档兜底回传先收缩。
+  preview.holdHeight();
+  if (draft.canApply.value) preview.scheduleRender(raw);
+});
+watch(draft.canApply, (valid) => {
+  if (valid) preview.scheduleRender(example.value);
 });
 
 function onPreviewMessage(event: MessageEvent) {
@@ -398,30 +414,45 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                         title="重新渲染"
                         class="canvas-refresh-btn"
                         :disabled="!draft.canApply.value"
-                        @click="preview.scheduleRender(example, true)"
+                        @click="preview.scheduleRender(example, { immediate: true, bypassCache: true })"
                       >
                         <Icon
                           icon="ri:refresh-line"
                           :class="{ 'animate-spin': preview.rendering.value }"
                         />
-                        <span>{{ preview.rendering.value ? "渲染中..." : "重新渲染" }}</span>
+                        <span>{{
+                          preview.status.value === "updating"
+                            ? "更新中..."
+                            : preview.status.value === "loading"
+                              ? "渲染中..."
+                              : "重新渲染"
+                        }}</span>
                       </button>
                     </div>
                   </div>
 
-                  <!-- Iframe Canvas Body -->
-                  <div class="studio-canvas-body">
-                    <div v-if="preview.rendering.value" class="canvas-state canvas-empty"><p>正在生成预览…</p></div>
-                    <div v-else-if="preview.previewError.value" class="canvas-state canvas-error">
+                  <!-- Iframe Canvas Body：刷新期间 iframe 不卸载，旧文档保持可见 -->
+                  <div class="studio-canvas-body relative">
+                    <div
+                      v-if="!preview.srcdoc.value && preview.status.value === 'loading'"
+                      class="canvas-state canvas-empty"
+                    >
+                      <p>正在生成预览…</p>
+                    </div>
+                    <div
+                      v-else-if="!preview.srcdoc.value && preview.status.value === 'error'"
+                      class="canvas-state canvas-error"
+                    >
                       <Icon icon="ri:error-warning-line" width="28" height="28" />
                       <p>{{ preview.previewError.value }}</p>
+                      <button type="button" class="canvas-retry-btn" @click="preview.retry()">重试</button>
                     </div>
-                    <div v-else-if="!preview.previewHtml.value" class="canvas-state canvas-empty">
+                    <div v-else-if="!preview.srcdoc.value" class="canvas-state canvas-empty">
                       <Icon icon="ri:inbox-line" width="28" height="28" />
                       <p>预览为空：该插件示例未产生可见输出，请检查参数是否齐全。</p>
                     </div>
                     <iframe
-                      v-else
+                      v-if="preview.srcdoc.value"
                       ref="previewFrame"
                       :srcdoc="preview.srcdoc.value"
                       class="studio-preview-iframe"
@@ -429,6 +460,20 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                       :style="{ height: preview.frameHeight.value + 'px' }"
                       sandbox="allow-scripts"
                     ></iframe>
+                    <p
+                      v-if="preview.srcdoc.value && preview.status.value === 'updating' && !stalePreview"
+                      class="canvas-updating"
+                    >
+                      更新中…
+                    </p>
+                    <p v-if="stalePreview" class="canvas-updating">参数无效，预览未更新</p>
+                    <div
+                      v-if="preview.srcdoc.value && preview.status.value === 'error'"
+                      class="canvas-error-bar"
+                    >
+                      <span>预览更新失败，仍显示上一次结果</span>
+                      <button type="button" @click="preview.retry()">重试</button>
+                    </div>
                   </div>
 
                   <!-- Fallback hint footer -->
@@ -483,7 +528,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   position: absolute;
   left: 10px;
   color: var(--color-text-quaternary);
-  font-size: 15px;
+  font-size: 14px;
   pointer-events: none;
 }
 
@@ -527,8 +572,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-cat-pill {
   padding: 3px 8px;
-  font-size: 11.5px;
-  border-radius: 9999px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
   color: var(--color-text-tertiary);
@@ -546,13 +591,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-cat-pill.active {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-foreground);
   font-weight: 550;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .studio-cat-pill .cat-count {
-  font-size: 10px;
+  font-size: 11px;
   opacity: 0.85;
 }
 
@@ -586,9 +631,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-type-badge {
   font-family: var(--font-mono, monospace);
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -661,8 +706,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   gap: 6px;
   min-height: 34px;
   padding: 0 14px;
-  border-radius: var(--radius-full);
-  color: var(--color-foreground);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-foreground);
   background: var(--color-primary);
   font-size: 13px;
   font-weight: 600;
@@ -670,6 +715,12 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .retry-button:hover {
   opacity: 0.9;
+}
+
+@media (max-width: 767px) {
+  .retry-button {
+    min-height: 44px;
+  }
 }
 
 /* 顶部 Hero 概览卡片 */
@@ -705,7 +756,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   display: inline-block;
   width: 3.5px;
   height: 18px;
-  border-radius: 2px;
+  border-radius: 6px;
   background: var(--color-primary);
 }
 
@@ -738,14 +789,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 .studio-pill-badge {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
 }
 
 .studio-hero-desc {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -764,7 +815,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-section-heading h2 {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 14px;
   font-weight: 650;
   color: var(--color-foreground);
   display: flex;
@@ -777,7 +828,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   display: inline-block;
   width: 3.5px;
   height: 15px;
-  border-radius: 2px;
+  border-radius: 6px;
   background: var(--color-primary);
 }
 
@@ -885,7 +936,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .studio-table th {
   padding: 10px 16px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text-tertiary);
   border-bottom: 1px solid var(--color-border);
@@ -906,7 +957,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   font-family: var(--font-mono, monospace);
   font-size: 12px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
   color: var(--color-foreground);
   font-weight: 550;
@@ -914,7 +965,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .default-code {
   font-family: var(--font-mono, monospace);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-tertiary);
 }
 
@@ -1026,19 +1077,19 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 .canvas-services-tag {
   font-family: var(--font-mono, monospace);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--color-text-tertiary);
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
 }
 
 .canvas-fixture-badge {
-  font-size: 10.5px;
+  font-size: 11px;
   padding: 2px 7px;
-  border-radius: 9999px;
-  background: rgba(48, 209, 88, 0.15);
-  color: #30d158;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-state-success) 15%, transparent);
+  color: var(--color-state-success);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1050,7 +1101,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   gap: 5px;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
   color: var(--color-text-secondary);
@@ -1074,7 +1125,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   display: block;
   width: 100%;
   border: none;
-  transition: height 0.2s ease;
+  transition: height 0.15s ease;
 }
 
 .canvas-state {
@@ -1095,6 +1146,44 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   color: var(--color-text-quaternary);
 }
 
+/* 刷新期间只叠加轻量状态，不遮挡旧预览 */
+.canvas-updating {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  margin: 0;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-card) 90%, transparent);
+  color: var(--color-text-quaternary);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.canvas-error-bar {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-top: 1px solid color-mix(in srgb, var(--color-state-error) 30%, transparent);
+  background: color-mix(in srgb, var(--color-card) 95%, transparent);
+  color: var(--color-state-error);
+  font-size: 11px;
+}
+
+.canvas-error-bar button,
+.canvas-retry-btn {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
 .studio-canvas-footer {
   padding: 8px 16px;
   border-top: 1px solid var(--color-border);
@@ -1110,6 +1199,11 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   .studio-workbench {
     padding: 16px;
     gap: 16px;
+  }
+  .studio-hero-shortcode-tag,
+  .studio-copy-action,
+  .canvas-refresh-btn {
+    min-height: 44px;
   }
 }
 </style>

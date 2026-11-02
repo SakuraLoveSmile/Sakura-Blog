@@ -81,7 +81,7 @@ function goToUpdate() {
       </div>
       <div class="min-w-0">
         <div class="text-xs font-semibold text-foreground truncate">Blog {{ data?.current_version || "未知" }}</div>
-        <div class="text-[10px] text-muted-foreground truncate">最新: {{ data?.latest_version || "--" }}</div>
+        <div class="text-[11px] text-muted-foreground truncate">最新: {{ data?.latest_version || "--" }}</div>
       </div>
     </div>
     <span v-if="!loading" class="version-card-state text-xs ml-2 flex-shrink-0" :class="stateClass">
@@ -146,7 +146,7 @@ function goToUpdate() {
         <Icon
           v-if="hasUpdate"
           icon="ri:arrow-right-line"
-          class="w-4 h-4 text-primary"
+          class="w-4 h-4 text-text-tertiary"
           aria-hidden="true"
         />
       </div>

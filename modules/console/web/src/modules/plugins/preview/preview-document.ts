@@ -1,8 +1,9 @@
-// 组件库预览 iframe 文档构建（Spec 63 + Spec 64 暗色单模式）：标签插件库与侧边栏组件库共用
+// 组件库预览 iframe 文档构建（Spec 63 + Spec 64）：标签插件库与侧边栏组件库共用
 // 同一套「CSS 注入 + 前台运行时 shim + 按能力脚本注入 + 降级检测 + 高度回传」逻辑，
 // 避免两套预览行为继续分叉。纯 TS，可脱离 Vue 单测。
 //
-// 预览统一为暗色单模式（Spec 64）：不接收主题参数，固定输出 data-theme="dark"。
+// buildPreviewDoc 仍是组件库的暗色单模式文档；服务端整页预览（preparePreviewDocument）
+// 跟随文档自身主题，只补不透明表面，不强行改成 Console 配色。
 // iframe 内注入的 ctx/def/deps/utils 为 base.html 前台运行时的等价最小版：
 // - ctx：main.js / services 依赖的全局对象（data_cache 关闭，保证预览每次拿最新 Fixture）；
 // - def：friends.js/sites.js 读取的占位素材；
@@ -38,6 +39,383 @@ export interface PreviewDocOptions {
   inlineScripts?: string[];
   /** 自定义 Mock Fixtures 数据与状态覆盖表 */
   mockFixtures?: Record<string, MockFixtureConfig>;
+}
+
+/**
+ * preview 专属存储回退：sandbox="allow-scripts" 的 srcdoc iframe 是 opaque origin，
+ * 访问 localStorage/sessionStorage 会直接抛 SecurityError（rating/vote 的 hasRated 在初始化时同步读取）。
+ * 这里只在预览文档内把不可用的 Storage 换成内存实现，公开站脚本与行为保持不变。
+ */
+const PREVIEW_STORAGE_SHIM = `<script data-preview-storage="1">
+(function () {
+  function memoryStorage() {
+    var data = {};
+    return {
+      get length() { return Object.keys(data).length; },
+      key: function (index) { var keys = Object.keys(data); return index >= 0 && index < keys.length ? keys[index] : null; },
+      getItem: function (key) { key = String(key); return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : null; },
+      setItem: function (key, value) { data[String(key)] = String(value); },
+      removeItem: function (key) { delete data[String(key)]; },
+      clear: function () { data = {}; }
+    };
+  }
+  function install(name) {
+    try {
+      var existing = window[name];
+      existing.setItem('__preview_probe__', '1');
+      existing.removeItem('__preview_probe__');
+      return;
+    } catch (error) {
+      // opaque origin：继续安装内存回退
+    }
+    var fallback = memoryStorage();
+    try {
+      Object.defineProperty(window, name, { configurable: true, get: function () { return fallback; } });
+    } catch (error) {
+      // 极老浏览器不允许重定义：保持原行为并让脚本自行降级
+    }
+  }
+  install('localStorage');
+  install('sessionStorage');
+})();
+</script>`;
+
+/**
+ * 把内联脚本放在 charset 之后、其余脚本之前：
+ * - 不把 <meta charset> 推出前 1024 字节；
+ * - 保证守卫/存储回退早于站点脚本执行。
+ */
+function insertAfterCharset(document: string, fragment: string): string {
+  const charset = document.match(/<meta[^>]+charset=[^>]*>/i);
+  if (charset && charset.index !== undefined) {
+    const at = charset.index + charset[0].length;
+    return document.slice(0, at) + fragment + document.slice(at);
+  }
+  const head = document.match(/<head[^>]*>/i);
+  if (head && head.index !== undefined) {
+    const at = head.index + head[0].length;
+    return document.slice(0, at) + fragment + document.slice(at);
+  }
+  const body = document.match(/<body[^>]*>/i);
+  if (body && body.index !== undefined) {
+    const at = body.index + body[0].length;
+    return document.slice(0, at) + fragment + document.slice(at);
+  }
+  return fragment + document;
+}
+
+// ---------- 预览表面：深色 Console 中的不透明可读背景（BLG-20261031-03 V1） ----------
+
+/** 无主题变量或变量透明时的表面回退色；使用中性色，不复用 Console 的深色面板色。 */
+export const PREVIEW_SURFACE_LIGHT = "#ffffff";
+export const PREVIEW_SURFACE_DARK = "#1c1c1e";
+
+/**
+ * 按文档主题（data-theme）或系统偏好选择回退表面；auto/缺失时跟随 prefers-color-scheme。
+ * 返回值直接写死为字面量，保证 .toString() 注入 iframe 后不依赖模块常量。
+ */
+export function previewSurfaceFallback(theme: string | null | undefined, prefersDark: boolean): string {
+  const normalized = String(theme || "").trim().toLowerCase();
+  const dark = normalized === "dark" || (normalized !== "light" && prefersDark);
+  return dark ? "#1c1c1e" : "#ffffff";
+}
+
+/**
+ * 从已解析的 CSS 颜色候选中取第一个可见表面色；半透明色与不透明回退底色合成，
+ * 保证最终背景真正不透明。候选为空/全透明时返回回退色。
+ * 解析逻辑内嵌在函数内（函数声明，不使用外层变量），.toString() 注入 iframe 后可独立运行。
+ */
+export function previewSurfaceColor(
+  candidates: readonly (string | null | undefined)[],
+  fallback: string,
+): string {
+  function parseColor(value: string | null | undefined): [number, number, number, number] | null {
+    const text = String(value || "").trim();
+    const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(text);
+    if (hex) {
+      let digits = hex[1];
+      if (digits.length === 3) digits = digits[0] + digits[0] + digits[1] + digits[1] + digits[2] + digits[2];
+      return [parseInt(digits.slice(0, 2), 16), parseInt(digits.slice(2, 4), 16), parseInt(digits.slice(4, 6), 16), 1];
+    }
+    const match = /^rgba?\(\s*([^)]+)\)$/i.exec(text);
+    if (!match) return null;
+    const tokens = match[1]
+      .replace(/\//g, " ")
+      .split(/[\s,]+/)
+      .filter(Boolean);
+    if (tokens.length < 3 || tokens.length > 4) return null;
+    const values = [Number(tokens[0]), Number(tokens[1]), Number(tokens[2]), tokens.length === 4 ? Number(tokens[3]) : 1];
+    for (const item of values) {
+      if (!Number.isFinite(item)) return null;
+    }
+    return [
+      Math.min(255, Math.max(0, values[0])),
+      Math.min(255, Math.max(0, values[1])),
+      Math.min(255, Math.max(0, values[2])),
+      Math.min(1, Math.max(0, values[3])),
+    ];
+  }
+  const base = parseColor(fallback) ?? [255, 255, 255, 1];
+  for (const candidate of candidates) {
+    const color = parseColor(candidate);
+    if (!color || color[3] <= 0) continue;
+    const alpha = color[3];
+    const red = Math.round(color[0] * alpha + base[0] * (1 - alpha));
+    const green = Math.round(color[1] * alpha + base[1] * (1 - alpha));
+    const blue = Math.round(color[2] * alpha + base[2] * (1 - alpha));
+    return `rgb(${red}, ${green}, ${blue})`;
+  }
+  return `rgb(${Math.round(base[0])}, ${Math.round(base[1])}, ${Math.round(base[2])})`;
+}
+
+/** 首屏 CSS 兜底：即使运行时脚本尚未执行，html/body 也不会透出 Console 深色。 */
+function previewSurfaceStyle(): string {
+  return `<style data-preview-surface="1">
+html, body { background-color: var(--background, ${PREVIEW_SURFACE_LIGHT}) !important; }
+html[data-theme="dark"], html[data-theme="dark"] body { background-color: var(--background, ${PREVIEW_SURFACE_DARK}) !important; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]), html:not([data-theme="light"]) body { background-color: var(--background, ${PREVIEW_SURFACE_DARK}) !important; }
+}
+</style>`;
+}
+
+/** 运行时读取文档主题变量并落成不透明 rgb；变量透明/缺失时按主题回退。 */
+function previewSurfaceScript(): string {
+  return `<script data-preview-surface-script="1">
+(function () {
+  // 源码经 esbuild keepNames 时会插入 __name(fn, "name")；iframe 里没有该辅助，提供空实现。
+  var __name = function (fn) { return fn; };
+  var fallbackFor = ${previewSurfaceFallback.toString()};
+  var colorFor = ${previewSurfaceColor.toString()};
+  function resolveColor(value) {
+    if (!value) return '';
+    try {
+      var probe = document.createElement('span');
+      probe.style.display = 'none';
+      probe.style.color = 'rgb(1, 2, 3)';
+      probe.style.color = value;
+      (document.body || document.documentElement).appendChild(probe);
+      var resolved = window.getComputedStyle(probe).color;
+      probe.remove();
+      if (resolved === 'rgb(1, 2, 3)' && String(value).replace(/\s+/g, '') !== 'rgb(1,2,3)') return '';
+      return resolved;
+    } catch (error) {
+      return '';
+    }
+  }
+  function candidates() {
+    var result = [];
+    [document.documentElement, document.body].forEach(function (el) {
+      if (!el) return;
+      var style = window.getComputedStyle(el);
+      result.push(resolveColor(style.getPropertyValue('--background')));
+      result.push(resolveColor(style.getPropertyValue('--bg')));
+      result.push(style.backgroundColor);
+    });
+    return result;
+  }
+  function apply() {
+    if (!document.documentElement) return;
+    var theme = document.documentElement.getAttribute('data-theme');
+    var media = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    var fallback = fallbackFor(theme, Boolean(media && media.matches));
+    var color = colorFor(candidates(), fallback);
+    [document.documentElement, document.body].forEach(function (el) {
+      if (!el || !el.style) return;
+      try { el.style.setProperty('background-color', color, 'important'); } catch (error) {}
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+  window.addEventListener('load', apply);
+  if (window.matchMedia) {
+    var media = window.matchMedia('(prefers-color-scheme: dark)');
+    if (media && media.addEventListener) media.addEventListener('change', apply);
+  }
+  if (window.MutationObserver) {
+    try {
+      new MutationObserver(apply).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    } catch (error) {}
+  }
+  setTimeout(apply, 50);
+  setTimeout(apply, 300);
+  // 样式表可能稍后完成（预览文档由服务端整页返回）；在前 2 秒内周期性复核，
+  // 变量可用后把半透明/透明主题色合成为真正不透明背景。
+  var attempts = 0;
+  var refine = setInterval(function () {
+    apply();
+    attempts += 1;
+    if (attempts >= 20) clearInterval(refine);
+  }, 100);
+})();
+</script>`;
+}
+
+function insertBeforeClosingTag(document: string, tag: string, fragment: string): string {
+  const closing = document.match(new RegExp(`</${tag}\\s*>`, "i"));
+  if (closing && closing.index !== undefined) {
+    return document.slice(0, closing.index) + fragment + document.slice(closing.index);
+  }
+  return tag === "head" ? insertAfterCharset(document, fragment) : document + fragment;
+}
+
+/**
+ * 注入预览表面（不透明背景）。放在 </head> 前以确保晚于站点样式表，
+ * 运行时脚本放在 </body> 前读取已计算的主题变量。幂等，纯函数。
+ */
+export function injectPreviewSurface(document: string): string {
+  if (!document || document.includes('data-preview-surface="1"')) return document;
+  const withStyle = insertBeforeClosingTag(document, "head", previewSurfaceStyle());
+  return insertBeforeClosingTag(withStyle, "body", previewSurfaceScript());
+}
+
+/**
+ * 服务端整页预览文档不是由 buildPreviewDoc 组装的，需在 <head> 最前面注入同一份存储回退，
+ * 确保 rating/vote 等运行时脚本在 opaque origin 下读取 localStorage 不抛错。
+ * 仅在 component-library 预览使用；真实站上下文保持旧行为（不注入）。
+ * 幂等：已注入时原样返回。纯函数，可单测。
+ */
+export function injectPreviewStorageFallback(document: string): string {
+  if (!document || document.includes('data-preview-storage="1"')) return document;
+  return insertAfterCharset(document, PREVIEW_STORAGE_SHIM);
+}
+
+/**
+ * 预览写守卫允许的精确 fixture 路径（query 允许，pathname 必须完全相等）。
+ * 不再使用 /api/v1/preview/* 前缀，避免未来新增的鉴权/写端点被误放行。
+ */
+export const PREVIEW_WRITE_PATHS: readonly string[] = [
+  "/api/v1/preview/rating",
+  "/api/v1/preview/rating/info",
+  "/api/v1/preview/rating/update",
+  "/api/v1/preview/vote/info",
+  "/api/v1/preview/vote/update",
+  "/api/v1/preview/friends",
+  "/api/v1/preview/sites",
+  "/api/v1/preview/md",
+];
+
+/**
+ * 写入守卫：sandbox srcdoc 是 opaque origin，浏览器 CORS 只会拦住“响应”，
+ * 真实 POST 仍可能已经到达服务端（例如 /api/vote/update）。这里在预览文档内、
+ * 站点脚本之前包装 fetch / XHR / sendBeacon：
+ * - GET/HEAD/OPTIONS 放行；
+ * - 非幂等方法只允许精确 fixture 路径集合中的相对 URL（query 允许）；
+ * - 反斜杠在 WHATWG URL 中与 `/` 等价（`\\evil.example/...`、`/\evil.example/...`
+ *   会被解析成外域协议相对 URL），写请求一律拒绝；
+ * - //host 协议相对 URL、带 scheme 的绝对 URL、解析失败一律拒绝；
+ * - 请求时读取实时 document.baseURI 解析，同时要求该 base 与守卫安装时的 base
+ *   快照同源，防止站点动态插入 <base> 把 Fixture 相对路径导向外域；
+ * - 解析出的实际 origin 必须与当前 base 的 origin 一致（不拿同一字符串重解析做恒真比较）；
+ * - 被拒绝时在 window.__stellarPreviewWriteBlocked 留下诊断信息。
+ * 纯 URL 判断抽成 previewWriteAllowed，便于单测并与内联脚本共用同一份实现。
+ */
+export function previewWriteAllowed(
+  method: string,
+  raw: string,
+  baseURI: string,
+  trustedBaseURI: string = baseURI,
+  allowedPaths: readonly string[] = PREVIEW_WRITE_PATHS,
+): boolean {
+  const upper = String(method || "GET").toUpperCase();
+  if (upper === "GET" || upper === "HEAD" || upper === "OPTIONS") return true;
+  const value = String(raw || "").trim();
+  if (!value) return false;
+  // 反斜杠会被 URL 解析器当作 `/`，可把相对路径变成外域协议相对 URL，写请求直接拒绝。
+  if (value.indexOf("\\") !== -1) return false;
+  // 协议相对（//host/...）与带 scheme 的绝对 URL 一律视为跨文档请求，不允许写。
+  if (value.indexOf("//") === 0 || /^[a-z][a-z0-9+.-]*:/i.test(value)) return false;
+  // 不抽嵌套函数：保证 .toString() 注入 iframe 后不依赖打包器的 __name 辅助。
+  let actualBase = String(baseURI || "");
+  if (!actualBase || actualBase.indexOf("about:") === 0) actualBase = "http://preview.invalid/";
+  let expectedBase = String(trustedBaseURI || "");
+  if (!expectedBase || expectedBase.indexOf("about:") === 0) expectedBase = "http://preview.invalid/";
+  let actual: URL;
+  let actualBaseUrl: URL;
+  let trustedBaseUrl: URL;
+  try {
+    actual = new URL(value, actualBase);
+    actualBaseUrl = new URL(actualBase);
+    trustedBaseUrl = new URL(expectedBase);
+  } catch {
+    return false;
+  }
+  if (!allowedPaths.includes(actual.pathname)) return false;
+  // 当前 base 已被改到别的源（动态 <base>）时拒绝。
+  if (actualBaseUrl.origin !== trustedBaseUrl.origin) return false;
+  // 解析结果必须落在当前 base 的源内；相对路径不得被解析器带到外域。
+  return actual.origin === actualBaseUrl.origin;
+}
+
+const PREVIEW_WRITE_GUARD = `<script data-preview-write-guard="1">
+(function () {
+  var allowed = ${previewWriteAllowed.toString()};
+  var allowedPaths = ${JSON.stringify(PREVIEW_WRITE_PATHS)};
+  var trustedBase = '';
+  try { trustedBase = document.baseURI || ''; } catch (error) {}
+  function currentBase() {
+    try { return document.baseURI || ''; } catch (error) { return ''; }
+  }
+  function requestInfo(input, init) {
+    var method = init && init.method ? init.method : (input && input.method ? input.method : 'GET');
+    var url = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
+    return { method: String(method).toUpperCase(), url: String(url) };
+  }
+  function blocked(method, url) {
+    var info = { method: String(method), url: String(url), at: Date.now() };
+    try { window.__stellarPreviewWriteBlocked = info; } catch (error) {}
+    var failure = new Error('preview write blocked: ' + info.method + ' ' + info.url);
+    failure.name = 'PreviewWriteBlockedError';
+    return failure;
+  }
+  var rawFetch = window.fetch;
+  if (typeof rawFetch === 'function') {
+    window.fetch = function (input, init) {
+      var info = requestInfo(input, init);
+      if (!allowed(info.method, info.url, currentBase(), trustedBase, allowedPaths)) return Promise.reject(blocked(info.method, info.url));
+      return rawFetch.apply(this, arguments);
+    };
+  }
+  if (window.XMLHttpRequest && window.XMLHttpRequest.prototype) {
+    var xhrProto = window.XMLHttpRequest.prototype;
+    var rawOpen = xhrProto.open;
+    var rawSend = xhrProto.send;
+    xhrProto.open = function (method, url) {
+      this.__previewRequest = { method: String(method || 'GET').toUpperCase(), url: String(url) };
+      return rawOpen.apply(this, arguments);
+    };
+    xhrProto.send = function () {
+      var info = this.__previewRequest;
+      if (info && !allowed(info.method, info.url, currentBase(), trustedBase, allowedPaths)) throw blocked(info.method, info.url);
+      return rawSend.apply(this, arguments);
+    };
+  }
+  if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+    var rawBeacon = navigator.sendBeacon;
+    navigator.sendBeacon = function (url) {
+      if (!allowed('POST', String(url), currentBase(), trustedBase, allowedPaths)) {
+        blocked('POST', String(url));
+        return false;
+      }
+      return rawBeacon.apply(navigator, arguments);
+    };
+  }
+})();
+</script>`;
+
+export function injectPreviewWriteGuard(document: string): string {
+  if (!document || document.includes('data-preview-write-guard="1"')) return document;
+  return insertAfterCharset(document, PREVIEW_WRITE_GUARD);
+}
+
+/**
+ * 预览文档统一预处理：写守卫始终注入；内存 Storage 仅 component-library 预览注入。
+ * 真实站上下文（NodeView/Markdown）不注入 Storage，rating/vote 保持不可交互的旧行为。
+ */
+export function preparePreviewDocument(document: string, profile?: string | null): string {
+  // 五处预览都经过这里：先补不透明、跟随文档主题的表面，再注入写守卫与可选存储回退。
+  const surfaced = injectPreviewSurface(document);
+  const guarded = injectPreviewWriteGuard(surfaced);
+  return profile === "component-library" ? injectPreviewStorageFallback(guarded) : guarded;
 }
 
 /** 前台运行时等价最小 shim（对齐 base.html 的 ctx/def/deps/utils，data_cache 关闭）。 */
@@ -298,6 +676,28 @@ export function clampPreviewHeight(reported: number, minHeight: number): number 
   return Math.min(MAX_PREVIEW_HEIGHT, Math.max(minHeight, Math.ceil(reported) + 24));
 }
 
+/** 旧文档存在但当前参数无效时，画布叠加“参数无效，预览未更新”，不隐藏旧预览。 */
+export function previewInvalidNoticeVisible(canApply: boolean, parsing: boolean, hasDocument: boolean): boolean {
+  return !canApply && !parsing && hasDocument;
+}
+
+/** Markdown 分屏失败文案：没有历史文档时不能声称“仍显示上一次结果”。 */
+export function previewFailureMessage(hasDocument: boolean): string {
+  return hasDocument ? "预览渲染失败，仍显示上一次结果" : "预览渲染失败";
+}
+
+/**
+ * 校验 component-preview-resize 消息并返回有效高度。
+ * token 必须是当前文档的 token；其他窗口、旧文档或非法尺寸一律返回 null。
+ */
+export function previewHeightFromMessage(data: unknown, token: string): number | null {
+  if (!data || typeof data !== "object") return null;
+  const message = data as { type?: unknown; token?: unknown; height?: unknown };
+  if (message.type !== "component-preview-resize" || message.token !== token) return null;
+  const height = message.height;
+  return typeof height === "number" && Number.isFinite(height) && height > 0 ? height : null;
+}
+
 /**
  * 构建预览 iframe 文档（srcdoc）。标签插件库与侧边栏组件库共用：
  * 样式注入（main.css/tag-plugins.css/highlight.css + 字体）、固定暗色主题、
@@ -344,6 +744,7 @@ ${extraHead}
 <body${bodyClass ? ` class="${bodyClass}"` : ""}>
 ${body}
 ${fixtureScript}
+${PREVIEW_STORAGE_SHIM}
 ${PREVIEW_SHIM}
 ${scriptTags}
 ${inlineTags}

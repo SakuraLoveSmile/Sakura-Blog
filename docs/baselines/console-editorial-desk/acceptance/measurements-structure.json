@@ -1,0 +1,422 @@
+{
+  "result": {
+    "dashboard": {
+      "fontSizes": [
+        [
+          "11px",
+          11
+        ],
+        [
+          "12px",
+          29
+        ],
+        [
+          "13px",
+          16
+        ],
+        [
+          "14px",
+          17
+        ],
+        [
+          "16px",
+          47
+        ],
+        [
+          "20px",
+          7
+        ],
+        [
+          "24px",
+          5
+        ]
+      ],
+      "radii": [
+        [
+          "6px",
+          8
+        ],
+        [
+          "8px",
+          10
+        ],
+        [
+          "50%",
+          15
+        ],
+        [
+          "9999px",
+          3
+        ]
+      ],
+      "nestedCards": [
+        {
+          "child": "span.apple-status-dot published",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "span.apple-status-dot draft",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "span.apple-status-dot published",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "span.apple-status-dot published",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "span.apple-status-dot draft",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "span.apple-status-dot draft",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "span.apple-status-dot published",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "div.apple-avatar",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "div.apple-avatar",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "div.apple-avatar",
+          "parent": "div.apple-card h-full flex flex-col justify-between re"
+        },
+        {
+          "child": "span.donut-dot",
+          "parent": "div.apple-card h-full flex flex-col justify-between do"
+        },
+        {
+          "child": "span.donut-dot",
+          "parent": "div.apple-card h-full flex flex-col justify-between do"
+        }
+      ],
+      "nestedCount": 16,
+      "statusWithBg": [
+        {
+          "cls": "apple-status-dot published",
+          "bg": "rgb(48, 209, 88)",
+          "w": 5,
+          "h": 5
+        },
+        {
+          "cls": "apple-status-dot draft",
+          "bg": "rgb(255, 159, 10)",
+          "w": 5,
+          "h": 5
+        },
+        {
+          "cls": "apple-status-dot published",
+          "bg": "rgb(48, 209, 88)",
+          "w": 5,
+          "h": 5
+        },
+        {
+          "cls": "apple-status-dot published",
+          "bg": "rgb(48, 209, 88)",
+          "w": 5,
+          "h": 5
+        },
+        {
+          "cls": "apple-status-dot draft",
+          "bg": "rgb(255, 159, 10)",
+          "w": 5,
+          "h": 5
+        },
+        {
+          "cls": "apple-status-dot draft",
+          "bg": "rgb(255, 159, 10)",
+          "w": 5,
+          "h": 5
+        },
+        {
+          "cls": "apple-status-dot published",
+          "bg": "rgb(48, 209, 88)",
+          "w": 5,
+          "h": 5
+        }
+      ],
+      "h1": {
+        "text": "仪表盘",
+        "hasIcon": false
+      }
+    },
+    "posts": {
+      "fontSizes": [
+        [
+          "12px",
+          65
+        ],
+        [
+          "13px",
+          6
+        ],
+        [
+          "14px",
+          9
+        ],
+        [
+          "20px",
+          4
+        ],
+        [
+          "24px",
+          1
+        ]
+      ],
+      "radii": [
+        [
+          "6px",
+          40
+        ],
+        [
+          "8px",
+          1
+        ]
+      ],
+      "nestedCards": [],
+      "nestedCount": 0,
+      "statusWithBg": [],
+      "h1": {
+        "text": "文章管理",
+        "hasIcon": false
+      }
+    },
+    "settings-basic": {
+      "fontSizes": [
+        [
+          "11px",
+          4
+        ],
+        [
+          "12px",
+          19
+        ],
+        [
+          "13px",
+          23
+        ],
+        [
+          "14px",
+          4
+        ],
+        [
+          "24px",
+          1
+        ]
+      ],
+      "radii": [
+        [
+          "6px",
+          6
+        ],
+        [
+          "8px",
+          4
+        ]
+      ],
+      "nestedCards": [],
+      "nestedCount": 0,
+      "statusWithBg": [],
+      "h1": {
+        "text": "系统设置",
+        "hasIcon": false
+      }
+    },
+    "settings-appearance": {
+      "fontSizes": [
+        [
+          "11px",
+          75
+        ],
+        [
+          "12px",
+          237
+        ],
+        [
+          "13px",
+          53
+        ],
+        [
+          "16px",
+          3
+        ],
+        [
+          "24px",
+          1
+        ]
+      ],
+      "radii": [
+        [
+          "6px",
+          179
+        ],
+        [
+          "8px",
+          131
+        ],
+        [
+          "50%",
+          4
+        ],
+        [
+          "9999px",
+          96
+        ]
+      ],
+      "nestedCards": [
+        {
+          "child": "span.preset-example example-card",
+          "parent": "label.visual-choice selected"
+        },
+        {
+          "child": "i.",
+          "parent": "span.preset-example example-card"
+        },
+        {
+          "child": "i.",
+          "parent": "span.preset-example example-card"
+        },
+        {
+          "child": "i.",
+          "parent": "span.preset-example example-card"
+        },
+        {
+          "child": "span.example-article",
+          "parent": "span.preset-example example-card"
+        },
+        {
+          "child": "i.",
+          "parent": "span.example-article"
+        },
+        {
+          "child": "i.",
+          "parent": "span.example-article"
+        },
+        {
+          "child": "i.",
+          "parent": "span.example-article"
+        },
+        {
+          "child": "span.example-article",
+          "parent": "span.preset-example example-card"
+        },
+        {
+          "child": "i.",
+          "parent": "span.example-article"
+        },
+        {
+          "child": "i.",
+          "parent": "span.example-article"
+        },
+        {
+          "child": "span.preset-example example-glass",
+          "parent": "label.visual-choice"
+        }
+      ],
+      "nestedCount": 141,
+      "statusWithBg": [],
+      "h1": {
+        "text": "系统设置",
+        "hasIcon": false
+      }
+    },
+    "comments": {
+      "fontSizes": [
+        [
+          "12px",
+          31
+        ],
+        [
+          "13px",
+          16
+        ],
+        [
+          "14px",
+          6
+        ],
+        [
+          "20px",
+          4
+        ],
+        [
+          "24px",
+          1
+        ]
+      ],
+      "radii": [
+        [
+          "6px",
+          26
+        ],
+        [
+          "8px",
+          1
+        ],
+        [
+          "9999px",
+          6
+        ]
+      ],
+      "nestedCards": [],
+      "nestedCount": 0,
+      "statusWithBg": [],
+      "h1": {
+        "text": "评论管理",
+        "hasIcon": false
+      }
+    },
+    "appearance": {
+      "fontSizes": [
+        [
+          "12px",
+          1
+        ],
+        [
+          "13px",
+          1
+        ],
+        [
+          "14px",
+          1
+        ],
+        [
+          "16px",
+          2
+        ],
+        [
+          "24px",
+          1
+        ]
+      ],
+      "radii": [
+        [
+          "6px",
+          1
+        ]
+      ],
+      "nestedCards": [],
+      "nestedCount": 0,
+      "statusWithBg": [],
+      "h1": {
+        "text": "主题设置",
+        "hasIcon": false
+      }
+    }
+  },
+  "tokens": {
+    "--color-primary": "#e8e8ec",
+    "--color-primary-foreground": "#000",
+    "--color-ring": "#2e8dff",
+    "--color-background": "#0a0a0b",
+    "--color-border": "#242428"
+  }
+}

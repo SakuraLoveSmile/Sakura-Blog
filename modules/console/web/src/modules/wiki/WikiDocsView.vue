@@ -416,9 +416,6 @@ onMounted(loadProjects);
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="文库管理">
-      <template #icon>
-        <Icon icon="ri:book-2-line" class="text-primary" />
-      </template>
       <template #subtitle>编排多级技术文档与知识库大纲，支持树形导轨与 Markdown 沉浸写作</template>
       <template #actions>
         <!-- 项目选择器 -->
@@ -518,7 +515,7 @@ onMounted(loadProjects);
                   <Icon icon="ri:book-open-line" class="text-base text-primary" />
                   <span>全部文档</span>
                 </div>
-                <span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] text-text-tertiary">
+                <span class="rounded-sm bg-secondary px-2 py-0.5 font-mono text-[11px] text-text-tertiary">
                   {{ docs.length }} 篇
                 </span>
               </button>
@@ -557,7 +554,7 @@ onMounted(loadProjects);
                   <div class="flex items-center gap-1">
                     <span
                       v-if="childCountMap[node.doc.id]"
-                      class="rounded bg-secondary px-1.5 py-0.2 font-mono text-[10px] text-text-quaternary"
+                      class="rounded-sm bg-secondary px-1.5 py-0.2 font-mono text-[11px] text-text-quaternary"
                     >
                       {{ childCountMap[node.doc.id] }}
                     </span>
@@ -578,7 +575,7 @@ onMounted(loadProjects);
                   class="group flex items-center justify-between rounded-xl px-2 py-1.5 text-xs font-medium transition-colors duration-150 cursor-pointer"
                   :class="[
                     selectedSlug === node.doc.slug
-                      ? 'bg-primary text-white font-semibold'
+                      ? 'bg-primary text-primary-foreground font-semibold'
                       : 'text-text-secondary hover:bg-secondary hover:text-foreground',
                   ]"
                   :style="{ paddingLeft: `${18 + node.depth * 14}px` }"
@@ -588,7 +585,7 @@ onMounted(loadProjects);
                     <Icon
                       :icon="node.doc.status === 'draft' ? 'ri:file-text-line' : 'ri:article-line'"
                       class="shrink-0"
-                      :class="selectedSlug === node.doc.slug ? 'text-white' : 'text-text-tertiary'"
+                      :class="selectedSlug === node.doc.slug ? 'text-primary-foreground' : 'text-text-tertiary'"
                     />
                     <span class="truncate">{{ node.doc.title || node.doc.slug }}</span>
                   </div>
@@ -613,11 +610,11 @@ onMounted(loadProjects);
             <!-- 未选择文档状态 -->
             <VCard v-else-if="!hasCurrent" class="py-16 text-center">
               <div
-                class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-3xl text-text-tertiary"
+                class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-2xl text-text-tertiary"
               >
                 <Icon icon="ri:file-edit-line" />
               </div>
-              <h3 class="mt-4 text-base font-semibold text-foreground">选择左侧文档开始编排</h3>
+              <h3 class="mt-4 text-[14px] font-semibold text-foreground">选择左侧文档开始编排</h3>
               <p class="mt-1 text-xs text-text-quaternary">可在左侧树形大纲中点击任意文档，或点击右上角「新建文档」</p>
               <div class="mt-5 flex justify-center gap-3">
                 <VButton type="primary" @click="openCreate(0)">

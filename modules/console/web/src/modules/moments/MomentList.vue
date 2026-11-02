@@ -423,9 +423,6 @@ function formatTime(s: string): string {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="瞬间">
-      <template #icon>
-        <Icon icon="ri:chat-smile-2-line" class="text-primary" />
-      </template>
       <template #subtitle>记录生活碎片、灵感微动态与短想法，支持九宫格图文与 Markdown 表情</template>
       <template #actions>
         <VButton type="primary" @click="focusComposer">
@@ -485,7 +482,7 @@ function formatTime(s: string): string {
             />
             <div
               v-else
-              class="avatar-gradient-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
+              class="avatar-gradient-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold text-white"
             >
               <Icon icon="ri:quill-pen-line" class="text-base" />
             </div>
@@ -518,7 +515,7 @@ function formatTime(s: string): string {
                   <img :src="url" alt="" class="h-full w-full object-cover" />
                   <button
                     type="button"
-                    class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-sm bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
                     title="移除此图"
                     @click.stop="removeImage('new', idx)"
                   >
@@ -687,9 +684,10 @@ function formatTime(s: string): string {
                           {{ m.author_name || "站长" }}
                         </span>
                         <span
-                          class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                          :class="m.visibility === 'private' ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#30D158]/10 text-[#30D158]'"
+                          class="inline-flex items-center gap-1 text-[12px] font-medium"
+                          :class="m.visibility === 'private' ? 'text-state-warning' : 'text-state-success'"
                         >
+                          <span class="h-[5px] w-[5px] rounded-full bg-current"></span>
                           {{ m.visibility === "private" ? "私密" : "公开" }}
                         </span>
                       </div>
@@ -799,7 +797,7 @@ function formatTime(s: string): string {
             <img :src="url" alt="" class="h-full w-full object-cover" />
             <button
               type="button"
-              class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-sm bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
               @click="removeImage('edit', idx)"
             >
               <Icon icon="ri:close-line" class="text-xs" />
@@ -939,6 +937,9 @@ function formatTime(s: string): string {
   background: var(--color-secondary);
   color: var(--color-foreground);
 }
+@media (max-width: 767px) {
+  .action-tool-btn { width: 44px; height: 44px; }
+}
 
 /* 操作小按钮 */
 .action-icon-btn {
@@ -1011,7 +1012,7 @@ function formatTime(s: string): string {
 :deep(.moment-preview code) {
   background: var(--color-secondary);
   padding: 2px 5px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.85em;
   font-family: monospace;
 }

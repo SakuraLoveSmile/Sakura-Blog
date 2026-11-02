@@ -1,0 +1,42 @@
+{
+  "colorScheme": "light",
+  "viewport": {
+    "desktop": "1280x720",
+    "mobile": "390x844"
+  },
+  "results": [
+    {
+      "label": "nodeview",
+      "textColor": "rgba(0, 0, 0, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(249, 250, 251)",
+      "html": "rgb(249, 250, 251)",
+      "background": "rgb(249, 250, 251)",
+      "backgroundLuminance": 0.9547598590513481,
+      "ratio": 12.273733720720593
+    },
+    {
+      "label": "markdown",
+      "textColor": "rgba(0, 0, 0, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(249, 250, 251)",
+      "html": "rgb(249, 250, 251)",
+      "background": "rgb(249, 250, 251)",
+      "backgroundLuminance": 0.9547598590513481,
+      "ratio": 12.273733720720593
+    },
+    {
+      "label": "toolbar-390",
+      "textColor": "rgba(0, 0, 0, 0.8)",
+      "theme": null,
+      "article": "rgba(0, 0, 0, 0)",
+      "body": "rgb(249, 250, 251)",
+      "html": "rgb(249, 250, 251)",
+      "background": "rgb(249, 250, 251)",
+      "backgroundLuminance": 0.9547598590513481,
+      "ratio": 12.273733720720593
+    }
+  ]
+}
