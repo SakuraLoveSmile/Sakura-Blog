@@ -95,7 +95,7 @@ function close() {
 <template>
   <VModal v-model:visible="modalVisible" title="组件大小" :width="600">
     <div class="size-modal-header flex items-center gap-3 mb-5 p-3 rounded-xl">
-      <div class="size-modal-icon w-10 h-10 rounded-lg flex items-center justify-center text-primary">
+      <div class="size-modal-icon w-8 h-8 flex items-center justify-center text-text-tertiary">
         <Icon :icon="widgetIcon" class="w-5 h-5" />
       </div>
       <div class="flex-1 min-w-0">
@@ -116,8 +116,8 @@ function close() {
         :class="[
           'size-preset-option flex min-h-40 flex-col items-center justify-start gap-2 rounded-xl border p-3 text-center transition-colors',
           selectedPreset === option.key
-            ? 'is-selected border-primary bg-primary/10 text-primary'
-            : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-primary/50 hover:bg-white/[0.06]',
+            ? 'is-selected border-foreground text-foreground'
+            : 'border-border text-text-tertiary hover:border-border-strong hover:bg-accent',
         ]"
         @click="selectedPreset = option.key"
       >
@@ -135,7 +135,7 @@ function close() {
       </button>
     </div>
 
-    <div class="size-modal-note mt-5 p-3 rounded-lg text-xs text-primary flex items-start gap-2">
+    <div class="size-modal-note mt-5 p-3 rounded-md border border-border text-[12px] text-text-secondary flex items-start gap-2">
       <Icon icon="ri:information-line" class="w-4 h-4 flex-shrink-0 mt-0.5" />
       <span>组件只能使用这三个预设大小；如果新尺寸放不下，组件会自动移动到当前布局的空位。</span>
     </div>
@@ -148,7 +148,7 @@ function close() {
         取消
       </button>
       <button
-        class="px-4 py-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+        class="px-4 py-2 rounded-sm bg-primary text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
         @click="save"
       >
         保存
@@ -174,7 +174,7 @@ function close() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: var(--radius-2xl);
   background:
     var(--color-card);
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
@@ -218,7 +218,7 @@ function close() {
   margin-top: auto;
   color: var(--color-muted-foreground);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.02em;
 }
 

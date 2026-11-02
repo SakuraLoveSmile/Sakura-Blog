@@ -310,9 +310,6 @@ const btnClsDanger =
 <template>
   <div>
     <VPageHeader title="个人资料">
-      <template #icon>
-        <Icon icon="ri:user-settings-line" class="mr-2 self-center text-xl" />
-      </template>
     </VPageHeader>
 
     <div class="mx-auto max-w-2xl space-y-8 p-6">

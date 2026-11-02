@@ -205,9 +205,6 @@ function sourceLabel(type: string): string {
 <template>
   <div class="notifications-page">
     <VPageHeader title="通知中心">
-      <template #icon>
-        <Icon icon="ri:notification-3-line" class="mr-2 self-center text-xl" />
-      </template>
       <template #subtitle> 管理你收到的所有通知与提醒 </template>
       <template #actions>
         <VButton
@@ -223,7 +220,7 @@ function sourceLabel(type: string): string {
         </VButton>
         <button
           type="button"
-          class="flex h-8 w-8 items-center justify-center rounded-[10px] border border-border bg-card text-text-tertiary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground"
+          class="flex h-8 w-8 items-center justify-center rounded-[10px] border border-border bg-card text-text-tertiary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground max-sm:h-11 max-sm:w-11"
           title="刷新"
           @click="refetch()"
         >
@@ -240,7 +237,7 @@ function sourceLabel(type: string): string {
       <!-- 未读摘要横幅 -->
       <div
         v-if="unreadCount > 0"
-        class="mb-5 flex items-center gap-3 rounded-[14px] border border-primary/18 bg-primary/8 px-4 py-3.5"
+        class="mb-5 flex items-center gap-3 rounded-2xl border border-primary/18 bg-primary/8 px-4 py-3.5"
       >
         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-primary/18 text-primary">
           <Icon icon="ri:notification-3-line" class="h-[18px] w-[18px]" />
@@ -292,7 +289,7 @@ function sourceLabel(type: string): string {
               <article
                 v-for="n in group.items"
                 :key="n.id"
-                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-colors duration-150 duration-150 last:mb-0  hover:border-border-strong"
+                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-2xl border border-border bg-card p-4 transition-colors duration-150 last:mb-0  hover:border-border-strong"
                 :class="{
                   'notif-card--unread': !n.read,
                   'notif-card--read': n.read,
@@ -301,7 +298,7 @@ function sourceLabel(type: string): string {
               >
                 <!-- 图标：按类型取色 -->
                 <div
-                  class="notif-icon flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[11px] text-foreground"
+                  class="notif-icon flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-foreground"
                   :class="[`notif-icon--${typeVariant(n.type)}`, typeGradient(n.type)]"
                 >
                   <Icon :icon="typeIcon(n.type)" class="h-[22px] w-[22px]" />

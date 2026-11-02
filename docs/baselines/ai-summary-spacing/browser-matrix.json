@@ -1,0 +1,646 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "preset": "minimal",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "23.9967px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "minimal",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "minimal",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "minimal",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "minimal",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16.0078125,
+      "gapBelow": 16.0078125,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16.0097px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "minimal",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "minimal",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "minimal",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-minimal.css?v=db804e0a",
+        "http://127.0.0.1:19832/assets/css/main-appearance-minimal.css?v=dfa57057"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "card",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "23.9994px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "card",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "card",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "card",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "card",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16.003px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "card",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "card",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "card",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-card.css?v=aa6b222e",
+        "http://127.0.0.1:19832/assets/css/main-appearance-card.css?v=3c0edfe1"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "glass",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "23.9961px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "glass",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "glass",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "glass",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "glass",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "glass",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "glass",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "glass",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-glass.css?v=36102bda",
+        "http://127.0.0.1:19832/assets/css/main-appearance-glass.css?v=316b61b2"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "flat",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 23.9921875,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "23.998px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "flat",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "flat",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "flat",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 24,
+      "gapBelow": 24,
+      "height": 800,
+      "heti": true,
+      "marginStart": "24px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 88.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 1280
+    },
+    {
+      "preset": "flat",
+      "mode": "light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 16.015625,
+      "gapBelow": 16.015625,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16.0214px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "light",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "flat",
+      "mode": "dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": "dark",
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "flat",
+      "mode": "auto-light",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    },
+    {
+      "preset": "flat",
+      "mode": "auto-dark",
+      "appearance": [
+        "http://127.0.0.1:19832/assets/css/main-flat.css?v=5cc07d11",
+        "http://127.0.0.1:19832/assets/css/main-appearance-flat.css?v=e23beb98"
+      ],
+      "gapAbove": 16,
+      "gapBelow": 16,
+      "height": 844,
+      "heti": true,
+      "marginStart": "16px",
+      "nextTag": "H2",
+      "overflow": false,
+      "summaryCount": 1,
+      "summaryHeight": 89.5,
+      "theme": null,
+      "url": "http://127.0.0.1:19832/friends",
+      "width": 390
+    }
+  ],
+  "scope": "isolated synthetic page; explicit themes and auto media simulated through CDP; each preset saved through local API; CSS transitions allowed to settle"
+}

@@ -420,9 +420,6 @@ onBeforeUnmount(() => {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="备份与导出">
-      <template #icon>
-        <Icon icon="ri:archive-line" class="text-primary" />
-      </template>
       <template #subtitle>打包全站数据快照、Markdown 文章导入导出及一键灾备还原</template>
       <template #actions>
         <VButton @click="loadStatus">

@@ -151,8 +151,11 @@ test("新增设置在移动与桌面宽度保持可达、单层卡片及当前�
       await tab(page, key);
       await expect(form(page)).toHaveAttribute("data-settings-tab", key);
       await expect(save(page)).toBeEnabled();
+      // 方向 A：横向页边距由 .settings-container 提供，分区自身横向 padding 为 0。
       const padding = await form(page).locator(".settings-section").first().evaluate(el => getComputedStyle(el).paddingLeft);
-      expect(padding).toBe(width < 768 ? "16px" : "28px");
+      expect(padding).toBe("0px");
+      const containerPadding = await page.locator(".settings-container").evaluate(el => getComputedStyle(el).paddingLeft);
+      expect(containerPadding).toBe(width < 768 ? "16px" : "32px");
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     }
     if (width === 390 || width === 1280) {

@@ -28,7 +28,13 @@ func main() {
 	if err := st.EnsureSettingsTable(); err != nil {
 		panic(err)
 	}
-	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{}); err != nil {
+	// 公开评论接口只在启动时按 native_comments.enabled 挂载；E2E 夹具预先开启评论，
+	// 并用固定博主邮箱让评论行可读性用例豁免同 IP 60 秒 1 条的公开限流。
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{
+		"native_comments": map[string]any{
+			"enabled": true, "moderation": true, "admin_email": "admin@e2e.test",
+		},
+	}); err != nil {
 		panic(err)
 	}
 	if err := st.PutSetting(config.SectionSite, `{"title":"E2E Blog","url":"http://127.0.0.1:8096"}`); err != nil {

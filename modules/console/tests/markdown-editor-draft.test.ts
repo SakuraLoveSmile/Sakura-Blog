@@ -6,6 +6,7 @@ import { parse, compileScript } from "../web/node_modules/vue/compiler-sfc/index
 import ts from "../web/node_modules/typescript/lib/typescript.js";
 import { useLocalDraft } from "../../../packages/shared/src/composables/useLocalDraft.ts";
 import { stellarEditorContextKey } from "../web/src/components/editor/stellar-context.ts";
+import * as previewDocument from "../web/src/modules/plugins/preview/preview-document.ts";
 
 // 编译并挂载真实 SFC，以实际 Vue props/watch/事件顺序验证；不复制草稿逻辑。
 const { descriptor } = parse(
@@ -57,7 +58,12 @@ function textContent(root: HostNode): string {
   return root.text + root.children.map(textContent).join("");
 }
 
-function mountEditor(t: any, saved?: string, initial = "") {
+type EditorHarnessOptions = {
+  storageKey?: string;
+  render?: (markdown: string, profile: any, metadata: any) => Promise<any>;
+};
+
+function mountEditor(t: any, saved?: string, initial = "", options: EditorHarnessOptions = {}) {
   const store = new Map<string, string>();
   if (saved !== undefined) store.set("draft:post:test", saved);
   const storage = globalThis.localStorage,
@@ -81,17 +87,20 @@ function mountEditor(t: any, saved?: string, initial = "") {
           previewApi: {
             render: async (...args: any[]) => {
               previews.push(args);
+              if (options.render) return options.render(args[0], args[1], args[2]);
               return { data: { preview_token: "token", document: "preview" } };
             },
           },
           attachmentApi: { upload: async () => ({ data: { url: "/uploaded.png" } }) },
         };
+      if (name === "@/modules/plugins/preview/preview-document") return previewDocument;
       if (name === "@iconify/vue") return { Icon: { render: () => null } };
       if (name === "@/components/AttachmentPickerModal.vue")
         return { __esModule: true, default: { render: () => null } };
       throw new Error(`Unexpected SFC dependency: ${name}`);
     }, exports) || (exports as any).default;
   const value = Vue.ref(initial),
+    storageKey = Vue.ref(options.storageKey ?? "post:test"),
     context = Vue.ref<any>({ stellar_version: 2, stellar_config: "{}", blog_extensions: "{}" });
   const root = node("root"),
     editor = Vue.ref<any>();
@@ -102,7 +111,7 @@ function mountEditor(t: any, saved?: string, initial = "") {
         Vue.h(component, {
           ref: editor,
           modelValue: value.value,
-          storageKey: "post:test",
+          storageKey: storageKey.value,
           "onUpdate:modelValue": (next: string) => {
             value.value = next;
           },
@@ -132,7 +141,7 @@ function mountEditor(t: any, saved?: string, initial = "") {
     button.props.onClick();
     await Vue.nextTick();
   };
-  return { store, value, context, previews, root, editor, flush, input, click, unmount: () => app.unmount() };
+  return { store, value, storageKey, context, previews, root, editor, flush, input, click, unmount: () => app.unmount() };
 }
 
 test("首次 API 水合不会覆盖等待恢复的真实草稿，恢复后真实输入继续备份", async (t) => {
@@ -215,4 +224,99 @@ test("用户上传图片后备份最终链接，不把上传占位符留为草�
   await e.flush();
   await e.flush(2000);
   assert.equal(e.store.get("draft:post:test"), "正文![fixture.png](/uploaded.png)");
+});
+
+test("storageKey 变化但正文不变时，仍重新请求并重建非空预览", async (t) => {
+  // 新建文章保存拿到 slug：post:new → post:<slug>，正文不变、编辑器实例不重建。
+  let label = "A";
+  const e = mountEditor(t, undefined, "同一正文", {
+    render: async (markdown: string) => ({
+      data: {
+        preview_token: `token-${label}`,
+        document: `<!doctype html><html><head><meta charset="utf-8"></head><body>${label}:${markdown}</body></html>`,
+      },
+    }),
+  });
+  const iframe = () => walk(e.root).find((el) => el.type === "iframe")!;
+  await e.flush(0);
+  await e.flush(0);
+  assert.equal(e.previews.length, 1, "挂载后先渲染一次");
+  assert.ok(String(iframe().props.srcdoc).includes("A:同一正文"));
+
+  label = "B";
+  e.storageKey.value = "post:slug";
+  await Vue.nextTick();
+  assert.equal(iframe().props.srcdoc, "", "身份切换后先清空旧预览");
+  await e.flush(0);
+  await e.flush(0);
+  assert.equal(e.previews.length, 2, "正文不变也必须重新请求预览");
+  assert.equal(e.previews.at(-1)[0], "同一正文");
+  assert.ok(String(iframe().props.srcdoc).includes("B:同一正文"), "必须重建预览而不是长期空白");
+  assert.equal(String(iframe().props.srcdoc).includes("A:"), false, "不得残留旧身份的文档");
+});
+
+test("身份切换后迟到的 A 响应被丢弃，B 失败不残留 A", async (t) => {
+  let resolveA!: (value: any) => void;
+  const e = mountEditor(t, undefined, "A", {
+    render: async (markdown: string) => {
+      if (markdown === "A") {
+        return await new Promise((resolve) => {
+          resolveA = resolve;
+        });
+      }
+      throw new Error("boom");
+    },
+  });
+  const iframe = () => walk(e.root).find((el) => el.type === "iframe")!;
+  await e.flush(0);
+  assert.equal(e.previews.length, 1, "A 的请求已发起并挂起");
+
+  e.value.value = "B";
+  e.storageKey.value = "post:other";
+  await Vue.nextTick();
+  assert.equal(iframe().props.srcdoc, "", "切换文档后旧预览必须立即清空");
+  await e.flush(0);
+  await e.flush(0);
+  assert.equal(e.previews.length, 2, "B 只发一次请求");
+  assert.equal(iframe().props.srcdoc, "", "B 首次失败不得残留 A 的预览");
+  assert.ok(textContent(e.root).includes("预览渲染失败"));
+
+  // A 的慢响应此刻才回来：身份与序号都已变化，不得落到 B 的身份下。
+  resolveA({
+    data: {
+      preview_token: "token-a",
+      document: '<!doctype html><html><head><meta charset="utf-8"></head><body>A-stale</body></html>',
+    },
+  });
+  await e.flush(0);
+  assert.equal(iframe().props.srcdoc, "", "迟到 A 响应必须被丢弃");
+});
+
+test("切换文档身份时清空旧预览，B 首次失败不残留 A", async (t) => {
+  let failB = false;
+  const e = mountEditor(t, undefined, "A", {
+    render: async (markdown: string) => {
+      if (failB) throw new Error("boom");
+      return {
+        data: {
+          preview_token: `token-${markdown}`,
+          document: `<!doctype html><html><head><meta charset="utf-8"></head><body>${markdown}</body></html>`,
+        },
+      };
+    },
+  });
+  const iframe = () => walk(e.root).find((el) => el.type === "iframe")!;
+  await e.flush(0);
+  await e.flush(0);
+  assert.ok(String(iframe().props.srcdoc).includes("A"), "先展示 A 的预览");
+
+  failB = true;
+  e.value.value = "B";
+  e.storageKey.value = "post:other";
+  await Vue.nextTick();
+  assert.equal(iframe().props.srcdoc, "", "切换文档后旧预览必须立即清空");
+  await e.flush(0);
+  await e.flush(0);
+  assert.equal(iframe().props.srcdoc, "", "B 首次失败不得残留 A 的预览");
+  assert.ok(textContent(e.root).includes("预览渲染失败"));
 });

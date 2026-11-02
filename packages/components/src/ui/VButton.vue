@@ -82,18 +82,18 @@ function handleClick(e: MouseEvent) {
   user-select: none;
   text-align: center;
   text-decoration: none;
-  font-weight: 550;
+  font-weight: 500;
   letter-spacing: 0;
   height: 36px;
   padding: 0 16px;
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1;
   border: 1px solid transparent;
   outline: 0;
   appearance: none;
   vertical-align: middle;
-  border-radius: var(--radius-sm, 8px);
-  transition: background-color var(--duration-fast, 150ms) var(--ease-standard), border-color var(--duration-fast, 150ms) var(--ease-standard), color var(--duration-fast, 150ms) var(--ease-standard), opacity var(--duration-fast, 150ms) var(--ease-standard), transform var(--duration-fast, 150ms) var(--ease-standard);
+  border-radius: var(--radius-sm, 6px);
+  transition: background-color var(--duration-fast, 150ms) var(--ease-standard), border-color var(--duration-fast, 150ms) var(--ease-standard), color var(--duration-fast, 150ms) var(--ease-standard), opacity var(--duration-fast, 150ms) var(--ease-standard);
   background: transparent;
   white-space: nowrap;
   box-sizing: border-box;
@@ -109,66 +109,66 @@ function handleClick(e: MouseEvent) {
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--color-ring, var(--color-primary, #2e8dff));
+  outline: 2px solid var(--color-ring, #2e8dff);
   outline-offset: 2px;
 }
 
-/* 默认按钮：Apple 深色卡片微描边风格 */
+/* 默认按钮：透明底 + 细边，工具型控件 */
 .btn-default {
-  border-color: color-mix(in srgb, #fff 12%, transparent);
-  color: var(--color-foreground, #f5f5f7);
-  background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 8%, var(--color-card, #1c1c1e));
+  border-color: var(--color-border);
+  color: var(--color-foreground, #f4f4f6);
+  background: transparent;
   box-shadow: none;
 }
 .btn-default:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 16%, var(--color-card, #1c1c1e));
-  border-color: color-mix(in srgb, #fff 20%, transparent);
+  background: var(--color-accent);
+  border-color: var(--color-border-strong);
 }
 .btn-default:active:not(:disabled) {
-  background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 22%, var(--color-card, #1c1c1e));
+  background: var(--color-secondary);
 }
 
-/* 主按钮：品牌蓝底 + 黑色高对比前景色 + 无外发光 */
+/* 主按钮：白底黑字，无外发光 */
 .btn-primary {
   color: var(--color-primary-foreground, #000000);
-  background: var(--color-primary, #2e8dff);
+  background: var(--color-primary, #e8e8ec);
   border-color: transparent;
   box-shadow: none;
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #66abff);
+  background: var(--color-primary-hover, #ffffff);
   box-shadow: none;
 }
 .btn-primary:active:not(:disabled) {
-  background: var(--color-primary-active, #007aff);
+  background: var(--color-primary-active, #d6d6dc);
 }
 
-/* 次要按钮：深色半透明胶囊 */
+/* 次要按钮：与默认按钮同层级，仅底色略深 */
 .btn-secondary {
-  color: var(--color-foreground, #f5f5f7);
-  background: color-mix(in srgb, #fff 8%, transparent);
-  border-color: color-mix(in srgb, #fff 8%, transparent);
+  color: var(--color-foreground, #f4f4f6);
+  background: var(--color-secondary);
+  border-color: var(--color-border);
 }
 .btn-secondary:hover:not(:disabled) {
-  background: color-mix(in srgb, #fff 14%, transparent);
-  border-color: color-mix(in srgb, #fff 14%, transparent);
+  background: var(--color-accent);
+  border-color: var(--color-border-strong);
 }
 .btn-secondary:active:not(:disabled) {
-  background: color-mix(in srgb, #fff 20%, transparent);
+  background: var(--color-secondary-700, #242428);
 }
 
 /* 幽灵按钮：透明底 */
 .btn-ghost {
-  color: var(--color-muted-foreground, #8e8e93);
+  color: var(--color-muted-foreground, #8b8b91);
   background: transparent;
   border-color: transparent;
 }
 .btn-ghost:hover:not(:disabled) {
-  color: var(--color-foreground, #f5f5f7);
-  background: color-mix(in srgb, #fff 8%, transparent);
+  color: var(--color-foreground, #f4f4f6);
+  background: var(--color-accent);
 }
 
-/* 危险按钮：Apple 红色 + 黑色高对比前景色（与主按钮「蓝底黑字」策略一致）+ 无外发光 */
+/* 危险按钮：Apple 红 + 黑色高对比前景色（与主按钮「白底黑字」策略一致）+ 无外发光 */
 .btn-danger {
   color: var(--color-primary-foreground, #000000);
   background: var(--color-state-error, #ff453a);
@@ -216,8 +216,8 @@ function handleClick(e: MouseEvent) {
 /* 尺寸阶梯：xs 24 / sm 28 / md 36 / lg 40px */
 .btn-lg {
   height: 40px;
-  padding: 0 18px;
-  font-size: 14.5px;
+  padding: 0 16px;
+  font-size: 14px;
 }
 .btn-lg .btn-spinner {
   width: 16px;
@@ -227,7 +227,7 @@ function handleClick(e: MouseEvent) {
 .btn-md {
   height: 36px;
   padding: 0 16px;
-  font-size: 13.5px;
+  font-size: 13px;
 }
 .btn-md .btn-spinner {
   width: 14px;
@@ -236,7 +236,7 @@ function handleClick(e: MouseEvent) {
 
 .btn-sm {
   height: 28px;
-  padding: 0 11px;
+  padding: 0 12px;
   font-size: 12px;
   gap: 4px;
 }
@@ -248,7 +248,7 @@ function handleClick(e: MouseEvent) {
 .btn-xs {
   height: 24px;
   padding: 0 8px;
-  font-size: 11.5px;
+  font-size: 11px;
   gap: 4px;
 }
 .btn-xs .btn-spinner {

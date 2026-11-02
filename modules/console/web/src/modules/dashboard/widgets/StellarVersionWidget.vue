@@ -87,7 +87,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadVersio
       </div>
       <div class="min-w-0">
         <div class="text-xs font-semibold text-foreground truncate">Stellar {{ data?.local_version || "未知" }}</div>
-        <div class="text-[10px] text-muted-foreground truncate">最新: {{ data?.upstream_version || "--" }}</div>
+        <div class="text-[11px] text-muted-foreground truncate">最新: {{ data?.upstream_version || "--" }}</div>
       </div>
     </div>
     <span v-if="!loading" class="version-card-state text-xs ml-2 flex-shrink-0" :class="`is-${state}`">

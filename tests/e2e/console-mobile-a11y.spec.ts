@@ -631,27 +631,32 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         const sectionCount = sectionStylesList.length;
         expect(sectionCount, `${tab.url} 在 ${vp.width}px 必须存在表单分区容器`).toBeGreaterThan(0);
 
+        // 方向 A：页面左右边距上移到 .settings-container（手机 16px / 平板桌面 32px），
+        // 分区只负责纵向留白与分隔线，不再重复承担横向内边距。
+        const containerPadding = await page.locator(".settings-container").evaluate((el) => {
+          const cs = window.getComputedStyle(el);
+          return { left: parseFloat(cs.paddingLeft), right: parseFloat(cs.paddingRight) };
+        });
+        const expectedContainerPadding = vp.width < 768 ? 16 : 32;
+        expect(
+          containerPadding.left,
+          `${tab.url} ${vp.width}px 设置容器左边距必须为${expectedContainerPadding}px（实测 ${containerPadding.left}px）`,
+        ).toBe(expectedContainerPadding);
+        expect(
+          containerPadding.right,
+          `${tab.url} ${vp.width}px 设置容器右边距必须为${expectedContainerPadding}px（实测 ${containerPadding.right}px）`,
+        ).toBe(expectedContainerPadding);
+
         for (let s = 0; s < sectionCount; s++) {
           const sectionStyles = sectionStylesList[s];
-          if (vp.width < 768) {
-            expect(
-              parseFloat(sectionStyles.paddingLeft),
-              `${tab.url} ${vp.width}px 表单分区[${s}] 左边距在手机端必须为16px（实测 ${sectionStyles.paddingLeft}）`,
-            ).toBe(16);
-            expect(
-              parseFloat(sectionStyles.paddingRight),
-              `${tab.url} ${vp.width}px 表单分区[${s}] 右边距在手机端必须为16px（实测 ${sectionStyles.paddingRight}）`,
-            ).toBe(16);
-          } else {
-            expect(
-              parseFloat(sectionStyles.paddingLeft),
-              `${tab.url} ${vp.width}px 表单分区[${s}] 左边距在平板/桌面必须为28px（实测 ${sectionStyles.paddingLeft}）`,
-            ).toBe(28);
-            expect(
-              parseFloat(sectionStyles.paddingRight),
-              `${tab.url} ${vp.width}px 表单分区[${s}] 右边距在平板/桌面必须为28px（实测 ${sectionStyles.paddingRight}）`,
-            ).toBe(28);
-          }
+          expect(
+            parseFloat(sectionStyles.paddingLeft),
+            `${tab.url} ${vp.width}px 表单分区[${s}] 不再承担横向边距，左边距必须为0（实测 ${sectionStyles.paddingLeft}）`,
+          ).toBe(0);
+          expect(
+            parseFloat(sectionStyles.paddingRight),
+            `${tab.url} ${vp.width}px 表单分区[${s}] 不再承担横向边距，右边距必须为0（实测 ${sectionStyles.paddingRight}）`,
+          ).toBe(0);
         }
 
         // 针对包含 .settings-section-body 的表单页，明确遍历断言背景透明、无重复边框、内边距为0
@@ -762,7 +767,8 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     const readAll = page.getByRole("button", { name: /全部已读/ });
     await expect(readAll).toBeVisible();
     const radius = await readAll.evaluate((el) => parseFloat(window.getComputedStyle(el).borderRadius));
-    expect(radius, "UC 共享按钮应使用同一工具型圆角").toBe(8);
+    // 方向 A 将共享 VButton 圆角从 8px 收紧到 6px，UC 与 Console 同步生效。
+    expect(radius, "UC 共享按钮应使用同一工具型圆角").toBe(6);
 
     // 共享弹层：附件选择弹层具备 dialog 语义并可 Esc 关闭
     await page.goto("/uc/profile");
@@ -783,5 +789,68 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(openPicker).toBeFocused();
+  });
+
+  test("390 评论行信息可读、操作换行，快捷链接与评论勾选命中区 ≥44px", async ({ page }, testInfo) => {
+    await login(page);
+    const token = Date.now();
+    const content = `E2E 评论行可读性夹具 ${token}`;
+    for (let i = 0; i < 3; i++) {
+      const created = await page.request.post("/api/comments", {
+        data: {
+          page_key: `/post/e2e-comments-${token}`,
+          nick: `E2E Reader ${i}`,
+          // 与验收站点 native_comments.admin_email 一致，豁免同 IP 60 秒 1 条的公开限流。
+          email: "admin@e2e.test",
+          content: `${content} #${i}`,
+        },
+      });
+      expect(created.ok(), await created.text()).toBeTruthy();
+    }
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/comments");
+    const row = page.locator(".comment-row").filter({ hasText: content }).first();
+    await expect(row).toBeVisible({ timeout: 20_000 });
+    const info = row.locator(".comment-row-main > div").first();
+    const actions = row.locator(".comment-actions");
+    const status = row.locator(".comment-status").first();
+    const email = row.locator("span.font-mono").filter({ hasText: "@" }).first();
+    const infoBox = (await info.boundingBox())!;
+    const actionsBox = (await actions.boundingBox())!;
+    const statusBox = (await status.boundingBox())!;
+    const emailBox = (await email.boundingBox())!;
+    expect(actionsBox.y, "操作按钮必须换到信息行下方").toBeGreaterThanOrEqual(infoBox.y + infoBox.height - 1);
+    expect(statusBox.height, "状态必须单行，不得竖排折行").toBeLessThan(26);
+    expect(await status.evaluate((el) => getComputedStyle(el).whiteSpace)).toBe("nowrap");
+    expect(emailBox.width, "邮箱必须有可辨识宽度").toBeGreaterThanOrEqual(80);
+    const actionButtons = await actions.locator("button").evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }),
+    );
+    expect(actionButtons.length).toBeGreaterThan(0);
+    for (const button of actionButtons) {
+      expect(button.width).toBeGreaterThanOrEqual(44);
+      expect(button.height).toBeGreaterThanOrEqual(44);
+    }
+    const selectBox = (await row.locator(".comment-select").boundingBox())!;
+    expect(selectBox.width, "评论勾选命中区 ≥44px").toBeGreaterThanOrEqual(44);
+    expect(selectBox.height, "评论勾选命中区 ≥44px").toBeGreaterThanOrEqual(44);
+    await page.screenshot({ path: testInfo.outputPath("comments-readable-390.png") });
+
+    await page.goto("/console/dashboard");
+    const links = await page.locator(".dashboard-quick-links a").evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return { width: rect.width, height: rect.height, label: node.textContent?.trim() };
+      }),
+    );
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link.width, `快捷入口「${link.label}」命中区宽度 ≥44px`).toBeGreaterThanOrEqual(44);
+      expect(link.height, `快捷入口「${link.label}」命中区高度 ≥44px`).toBeGreaterThanOrEqual(44);
+    }
   });
 });

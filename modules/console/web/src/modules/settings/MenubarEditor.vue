@@ -106,7 +106,7 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
         :class="[
           'grid grid-cols-12 gap-2 items-start p-3 rounded-lg border transition-colors cursor-grab active:cursor-grabbing',
           errors[i]
-            ? 'border-state-error bg-state-error/10/50 border-state-error/40 bg-state-error/100/5'
+            ? 'border-state-error'
             : 'border-border ',
           dragIndex === i ? 'opacity-50' : '',
         ]"
@@ -138,43 +138,43 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
 
         <!-- id -->
         <div class="col-span-2">
-          <label class="block text-[10px] text-text-quaternary mb-0.5">ID</label>
+          <label class="block text-[11px] text-text-quaternary mb-0.5">ID</label>
           <input v-model="it.id" placeholder="post" :class="inputCls" />
         </div>
 
         <!-- title -->
         <div class="col-span-2">
-          <label class="block text-[10px] text-text-quaternary mb-0.5">标题</label>
+          <label class="block text-[11px] text-text-quaternary mb-0.5">标题</label>
           <input v-model="it.title" placeholder="博客" :class="inputCls" />
         </div>
 
         <!-- url -->
         <div class="col-span-2">
-          <label class="block text-[10px] text-text-quaternary mb-0.5">URL</label>
+          <label class="block text-[11px] text-text-quaternary mb-0.5">URL</label>
           <input v-model="it.url" placeholder="/" :class="inputCls" />
         </div>
 
         <!-- icon + preview -->
         <div class="col-span-3">
-          <label class="block text-[10px] text-text-quaternary mb-0.5">图标 (icons.yml key)</label>
+          <label class="block text-[11px] text-text-quaternary mb-0.5">图标 (icons.yml key)</label>
           <IconPicker v-model="it.icon" compact placeholder="如 default:documents" />
         </div>
 
         <!-- theme color -->
         <div class="col-span-1">
-          <label class="block text-[10px] text-text-quaternary mb-0.5">配色</label>
+          <label class="block text-[11px] text-text-quaternary mb-0.5">配色</label>
           <div class="flex items-center gap-1">
             <input
               type="color"
               :value="it.theme || '#2E8DFF'"
               @input="it.theme = ($event.target as HTMLInputElement).value"
-              class="w-7 h-7 rounded border border-border cursor-pointer p-0.5"
+              class="w-7 h-7 rounded-sm border border-border cursor-pointer p-0.5"
             />
           </div>
           <input
             v-model="it.theme"
             placeholder="#hex"
-            class="mt-1 w-full px-1.5 py-1 text-[10px] border border-border rounded focus:outline-none"
+            class="mt-1 w-full px-1.5 py-1 text-[11px] border border-border rounded-sm focus:outline-none"
           />
         </div>
 

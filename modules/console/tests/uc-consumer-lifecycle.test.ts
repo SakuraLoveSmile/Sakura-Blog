@@ -6,6 +6,7 @@ import { parse, compileScript } from "../web/node_modules/vue/compiler-sfc/index
 import ts from "../web/node_modules/typescript/lib/typescript.js";
 import { useLocalDraft } from "../../../packages/shared/src/composables/useLocalDraft.ts";
 import { stellarEditorContextKey } from "../web/src/components/editor/stellar-context.ts";
+import * as previewDocument from "../web/src/modules/plugins/preview/preview-document.ts";
 
 const compile = (source: string) =>
   ts.transpileModule(source, {
@@ -364,6 +365,7 @@ test("UC Markdown 上传实际调用 /uc/attachments/upload 并透传 Picker；�
   let pickerUC: boolean | undefined;
   const C = component("components/MarkdownEditor.vue", {
     "./editor/stellar-context": { stellarEditorContextKey },
+    "@/modules/plugins/preview/preview-document": previewDocument,
     "@/composables/useLocalDraft": { useLocalDraft },
     "@/api": {
       ucApi: apiExports.ucApi,

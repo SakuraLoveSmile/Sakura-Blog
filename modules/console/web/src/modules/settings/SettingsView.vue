@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { getApiErrorMessage, settingsApi } from "@/api";
-import { Toast, VButton, VCard, VPageHeader, VTabbar } from "@/components/ui";
+import { Toast, VButton, VPageHeader, VTabbar } from "@/components/ui";
 import BasicSettings from "./tabs/BasicSettings.vue";
 import SeoSettings from "./tabs/SeoSettings.vue";
 import FeedbackSettings from "./tabs/FeedbackSettings.vue";
@@ -177,7 +177,6 @@ const tabItems = computed(() =>
   tabs.map((tab) => ({
     id: tab.key,
     label: tab.label,
-    icon: tab.icon,
     dirty: isTabDirty(tab.key),
   })),
 );
@@ -368,10 +367,8 @@ onBeforeRouteLeave((to, from, next) => {
 <template>
   <div class="settings-view" :class="{ 'preview-docked': previewOpen }">
     <VPageHeader title="系统设置">
-      <template #icon><Icon icon="ri:settings-3-line" class="text-primary" /></template>
-      <template #subtitle>
-        <span>站点信息、主题外观、页面布局与各项功能配置</span>
-        <span v-if="isDirty" class="settings-dirty-badge">（有未保存修改）</span>
+      <template #badge>
+        <span v-if="isDirty" class="settings-dirty-badge">未保存修改</span>
       </template>
       <template #actions>
         <VButton
@@ -387,19 +384,17 @@ onBeforeRouteLeave((to, from, next) => {
 
     <div class="settings-container">
       <main class="settings-content">
-        <VCard class="settings-basic-panel">
-          <template #header>
-            <div class="settings-card-tabs settings-tabs">
-              <VTabbar
-                v-model:active-id="active"
-                :items="tabItems"
-                type="default"
-                :auto-reveal="true"
-                class="settings-card-tabbar"
-                @change="navigateToTab"
-              />
-            </div>
-          </template>
+        <div class="settings-basic-panel">
+          <div class="settings-card-tabs settings-tabs">
+            <VTabbar
+              v-model:active-id="active"
+              :items="tabItems"
+              type="default"
+              :auto-reveal="true"
+              class="settings-card-tabbar"
+              @change="navigateToTab"
+            />
+          </div>
 
           <div v-if="loading" class="settings-state">
             <Icon icon="ri:loader-4-line" class="settings-spin" width="22" height="22" /><span>加载中...</span>
@@ -462,7 +457,7 @@ onBeforeRouteLeave((to, from, next) => {
               </template>
             </div>
           </template>
-        </VCard>
+        </div>
       </main>
 
       <aside v-if="previewOpen" class="preview-panel">
@@ -541,17 +536,10 @@ onBeforeRouteLeave((to, from, next) => {
 <style scoped>
 .settings-raw-editor > summary {
   cursor: pointer;
-  padding: 24px 28px;
+  padding: 24px 0;
   color: var(--color-text-secondary);
   font-size: 14px;
 }
-@media (max-width: 767px) {
-  .settings-raw-editor > summary {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-}
-
 .settings-view {
   min-height: 100%;
   background: var(--color-background);
@@ -559,56 +547,25 @@ onBeforeRouteLeave((to, from, next) => {
 .settings-container {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 0;
   width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px;
+  max-width: 1080px;
+  margin: 0;
+  padding: 8px 32px 40px;
   box-sizing: border-box;
 }
 .settings-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
   min-width: 0;
 }
+/* 设置不再套卡片：分区由标题、留白和细分隔线组织。 */
 .settings-basic-panel {
   width: 100%;
   overflow: visible;
-}
-.settings-basic-panel :deep(.card-wrapper) {
-  border-radius: var(--radius-md);
-  overflow: visible;
-}
-.settings-basic-panel :deep(.card-header) {
-  padding: 0 16px;
   background: transparent;
-  border-bottom: 1px solid var(--color-border);
-  border-top-left-radius: calc(var(--radius-md) - 1px);
-  border-top-right-radius: calc(var(--radius-md) - 1px);
-}
-.settings-basic-panel :deep(.card-body) {
-  padding: 0;
-  overflow: visible;
-  border-bottom-left-radius: calc(var(--radius-md) - 1px);
-  border-bottom-right-radius: calc(var(--radius-md) - 1px);
-}
-.settings-basic-panel :deep(.settings-basic-form),
-.settings-basic-panel :deep(.settings-post-form),
-.settings-basic-panel :deep(.settings-comments-form),
-.settings-basic-panel :deep(.settings-seo-form),
-.settings-basic-panel :deep(.settings-search-form),
-.settings-basic-panel :deep(.settings-advanced-form) {
-  border-bottom-left-radius: calc(var(--radius-md) - 1px);
-  border-bottom-right-radius: calc(var(--radius-md) - 1px);
-}
-.settings-basic-panel :deep(.settings-basic-actions),
-.settings-basic-panel :deep(.settings-post-actions),
-.settings-basic-panel :deep(.settings-comments-actions),
-.settings-basic-panel :deep(.settings-seo-actions),
-.settings-basic-panel :deep(.settings-search-actions) {
-  border-bottom-left-radius: calc(var(--radius-md) - 1px);
-  border-bottom-right-radius: calc(var(--radius-md) - 1px);
+  border: 0;
 }
 .settings-dirty-badge {
   display: inline-flex;
@@ -618,34 +575,16 @@ onBeforeRouteLeave((to, from, next) => {
   font-size: 12px;
   font-weight: 500;
 }
-.settings-tab-content :deep(.card-wrapper) {
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
-}
-.settings-tab-content :deep(.card-wrapper::before) {
-  display: none;
-}
-.settings-tab-content :deep(.card-header) {
-  padding: 24px 28px 16px;
-}
-.settings-tab-content :deep(.card-body) {
-  padding: 0 28px 28px;
+.settings-tab-content {
+  min-width: 0;
 }
 .canonical-settings-status {
-  padding: 0 28px;
+  padding: 0;
 }
 .canonical-settings-status:has([role="status"]),
 .canonical-settings-status:has([role="alert"]) {
   padding-top: 24px;
   padding-bottom: 12px;
-}
-@media (max-width: 767px) {
-  .canonical-settings-status {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
 }
 .settings-card-tabs {
   width: 100%;
@@ -695,8 +634,8 @@ onBeforeRouteLeave((to, from, next) => {
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-bottom: none;
-  border-radius: 12px 12px 0 0;
-  background: var(--color-card);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  background: var(--color-background);
   box-shadow: var(--shadow-lg);
 }
 .preview-panel-header {
@@ -706,6 +645,7 @@ onBeforeRouteLeave((to, from, next) => {
   gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
 }
 .preview-focus-label {
   display: flex;
@@ -783,19 +723,16 @@ onBeforeRouteLeave((to, from, next) => {
   color: var(--color-state-error);
 }
 .preview-panel-actions button:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .settings-container {
-    padding: 12px;
-    gap: 12px;
-  }
-  .settings-section-title {
-    font-size: 18px;
+    padding: 0 16px 32px;
+    gap: 0;
   }
   .settings-basic-panel :deep(.tabbar-default .tabbar-item) {
-    padding: 0 16px;
+    padding: 0 12px;
   }
   .preview-panel {
     height: 65vh;

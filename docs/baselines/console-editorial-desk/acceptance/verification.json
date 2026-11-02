@@ -1,0 +1,671 @@
+{
+  "schema": "console-editorial-desk-acceptance/1",
+  "task": "BLG-20261031-01 Console「方向 A 编辑台」视觉重构独立验收",
+  "verdict": "conditional-pass",
+  "verdict_label": "有条件通过",
+  "verdict_reason": "方向 A 的核心目标（去 KPI 卡片墙、去卡片套卡片、去彩色状态底、主操作白底黑字、字号/圆角收敛）在桌面与手机均达成；文章、评论、设置、外观的真实交互全部通过，64 项目标 Playwright 全绿。但 390px 评论行把作者/状态/邮箱压缩到 34px（状态竖排折行），构成可见的手机端可读性缺陷；另有设置导读标题同名重复、仪表盘快捷链接与评论勾选触控目标不足 44px、三处继承 16px 的可见文字（字号白名单未真正闭合）等非阻断问题。",
+  "subject": {
+    "worktree_label": "feature worktree (personal-blog/20261031-refactor-BLG-20261031-01-console-editorial-desk)",
+    "branch": "codex/refactor/20261031-BLG-20261031-01-console-editorial-desk",
+    "head": "bc7e2da1",
+    "change_set": "71 个已修改跟踪文件 + 3 个未跟踪项（docs/baselines/console-editorial-desk/、docs/plans/console-editorial-desk.md、modules/console/tests/theme-colors.test.ts）；未提交、未合并、未推送",
+    "production_files_modified_by_acceptance": false
+  },
+  "environment": {
+    "os": "macOS 27.0.1 (darwin/arm64)",
+    "node": "v22.23.2",
+    "pnpm": "8.15.4",
+    "go": "go1.26.10 darwin/arm64",
+    "browser": "Google Chrome 156.0.8078.74（Playwright bundled browsers 未安装，使用 channel=chrome）",
+    "date": "2026-10-31 (Asia/Shanghai)"
+  },
+  "runtime": {
+    "listen": "127.0.0.1:8137",
+    "isolated_root": ".tmp/acc-server.8137（独立 config/content/data/uploads；不连接生产库）",
+    "db": ".tmp/acc-server.8137/data/blog.db（scripts/e2e/prepare.go + .tmp/seed.go）",
+    "credentials": "admin / e2e-password（隔离夹具账号）",
+    "start_command": "ACCEPTANCE_ROOT=$PWD/.tmp/acc-server.8137 bash .tmp/acceptance-run.sh"
+  },
+  "build": {
+    "command": "make console",
+    "exit_code": 0,
+    "includes": "vue-tsc -b && vite build && strip-legacy-fonts && compress-assets && vite build (UC)",
+    "entry_assets": [
+      {
+        "path": "assets/index-BL0vDRlo.js",
+        "sha256": "7a0d3feb02982a54f4713868e4a56346fe4789d8238b5f2dd73652f3c93bbcc6",
+        "bytes": 246878
+      },
+      {
+        "path": "assets/api-C-H7IBEY.js",
+        "sha256": "28f3d58e9e625d42032958da218c38d5ad16d98cb51346ccaca65fb8a8aabd80"
+      },
+      {
+        "path": "assets/runtime-core.esm-bundler-GmtFT3dp.js",
+        "sha256": "bcd39943a10cb760c9290cd05daf7cf989a3827a5d36d0f0df50e6aaaa1b7c4c"
+      },
+      {
+        "path": "assets/pinia-CXeiBUD1.js",
+        "sha256": "7e7c94b9658d5172280b02267b99bb43980f3e24432def11598bd9e6e82d3888"
+      },
+      {
+        "path": "assets/preload-helper-l0U7FUPx.js",
+        "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+      },
+      {
+        "path": "assets/index-DYZh7cwz.css",
+        "sha256": "cacb82ed72d355a93ba72303ae9f63fe829c40bf2d54edd7592f00ff9777e9ee",
+        "bytes": 101877
+      }
+    ],
+    "served_match": "6/6 入口资源：HTTP 取回字节的 SHA-256 与本机 modules/console/web/dist 完全一致（不是以 HTTP 200 作为证据）",
+    "reproducibility": "同一源码两次独立构建（验收前、目标 Playwright 运行后）产生相同入口文件名与哈希 index-BL0vDRlo.js / index-DYZh7cwz.css",
+    "note": "Playwright 运行会以 VITE_E2E=1 重建 dist；验收结束后已用 make console 重建普通产物并重启 8137，重新核对 6/6 资源哈希。"
+  },
+  "fixtures": {
+    "posts": {
+      "total": 8,
+      "published": 5,
+      "draft": 2,
+      "trashed": 1,
+      "pinned": 1,
+      "categories": [
+        "技术",
+        "技术/Go",
+        "生活",
+        "设计"
+      ],
+      "tags_sample": [
+        "Go",
+        "SQLite",
+        "架构",
+        "前端",
+        "Stellar",
+        "设计",
+        "组件",
+        "阅读",
+        "生活"
+      ]
+    },
+    "pages": {
+      "total": 2,
+      "published": 1,
+      "draft": 1,
+      "slugs": [
+        "about",
+        "guestbook-guide"
+      ]
+    },
+    "comments": {
+      "total": 6,
+      "approved": 2,
+      "pending": 2,
+      "rejected": 1,
+      "spam": 1,
+      "has_admin_reply": true
+    },
+    "attachments": 5,
+    "page_views_7d": {
+      "pv": 427,
+      "uv": 84
+    },
+    "verified_via": "UI 截图 + /api 数据 + 回收站筛选截图；非空态"
+  },
+  "checks": [
+    {
+      "id": "C01",
+      "name": "独立构建 Console 并核对实际加载产物",
+      "category": "build",
+      "status": "passed",
+      "command": "make console; curl /console/; 对 6 个入口资源逐一比对 SHA-256",
+      "result": "构建 exit 0；服务返回的 6 个资源与 dist 逐字节一致；两次构建哈希可复现",
+      "evidence": [
+        "verification.json#/build"
+      ]
+    },
+    {
+      "id": "C02",
+      "name": "隔离环境启动（8137、独立 DB/config/content/upload）",
+      "category": "runtime",
+      "status": "passed",
+      "command": ".tmp/acceptance-run.sh（prepare.go + seed.go + go run ./cmd/blog -dev）",
+      "result": "/readyz 200；/console/ 200；未接触生产库与端口 8080/8096（8096 仅用于目标 Playwright 临时服务）",
+      "evidence": [
+        ".tmp/acceptance-server.log（本地）",
+        "verification.json#/runtime"
+      ]
+    },
+    {
+      "id": "C03",
+      "name": "夹具数据：≥8 篇文章、2 页面、6 评论（四状态）、附件",
+      "category": "fixtures",
+      "status": "passed",
+      "result": "8 篇（5 已发布/2 草稿/1 回收站，1 置顶，含分类与标签）；2 页面；6 评论覆盖 approved/pending/rejected/spam（含管理员回复）；5 附件；7 日 427 PV/84 UV",
+      "evidence": [
+        "after-posts-1280.png",
+        "after-comments-1280.png",
+        "evidence-pages-1280.png",
+        "evidence-posts-trash-seed-1280.png"
+      ]
+    },
+    {
+      "id": "C04",
+      "name": "1280 与 390 五组页面截图 + 设置外观 Tab",
+      "category": "screenshots",
+      "status": "passed",
+      "result": "仪表盘/文章/设置(基本)/评论/外观 × 1280×900、390×844，另加设置-外观 × 2；均为有数据状态",
+      "evidence": [
+        "after-dashboard-1280.png",
+        "after-dashboard-390.png",
+        "after-posts-1280.png",
+        "after-posts-390.png",
+        "after-settings-1280.png",
+        "after-settings-390.png",
+        "after-settings-appearance-1280.png",
+        "after-settings-appearance-390.png",
+        "after-comments-1280.png",
+        "after-comments-390.png",
+        "after-appearance-1280.png",
+        "after-appearance-390.png"
+      ]
+    },
+    {
+      "id": "C05",
+      "name": "与 reference/preview-A-*.png 对照",
+      "category": "screenshots",
+      "status": "passed",
+      "result": "整体方向一致：事实行取代 KPI 卡、整宽趋势、最近文章/评论双列、快捷操作文字链接、列表单层、设置去外框。差异均在任务卡明文范围内：仪表盘按任务卡采用整宽趋势+双列（注入预览仍是 GridStack 旧结构）；快捷入口为文字链接；设置新增单行效果导读。明显非预期偏差另见缺陷 D01/D02。",
+      "evidence": [
+        "docs/baselines/console-editorial-desk/reference/preview-A-dashboard-1280.png",
+        "docs/baselines/console-editorial-desk/reference/preview-A-posts-1280.png",
+        "docs/baselines/console-editorial-desk/reference/preview-A-settings-1280.png"
+      ]
+    },
+    {
+      "id": "C06",
+      "name": "文章列表真实交互（搜索/状态/分类/排序/全选/编辑/发布/保存草稿/回收站/批量）",
+      "category": "interaction",
+      "status": "passed",
+      "result": "19 项交互检查全部通过（其中‘全选/取消’首轮因验收脚本把工具栏与浮栏两个同名‘取消全选’按钮同时命中而中断，改为限定工具栏按钮后复验通过，属脚本选择器问题而非产品缺陷）：搜索 SQLite=1 行；草稿筛选 3 行且 URL=status=draft；分类技术含子分类 5 行；排序最早创建首行改变；全选 9 行出现浮栏并可取消；点击标题进入 /console/posts/edit/acc-batch-1；草稿发布后出现在已发布；已发布文章保存草稿提示“未发布”且线上状态不变；移入回收站→回收站可见→恢复；批量 2 篇移入回收站成功",
+      "evidence": [
+        "interactions-results.json",
+        "evidence-posts-search-1280.png",
+        "evidence-posts-draft-filter-1280.png",
+        "evidence-posts-category-filter-1280.png",
+        "evidence-posts-sort-oldest-1280.png",
+        "evidence-posts-select-all-1280.png",
+        "evidence-posts-batch-select-1280.png",
+        "evidence-posts-batch-trash-1280.png",
+        "evidence-post-editor-1280.png",
+        "evidence-post-published-1280.png",
+        "evidence-post-savedraft-1280.png",
+        "evidence-posts-trash-1280.png"
+      ]
+    },
+    {
+      "id": "C07",
+      "name": "评论审核真实交互",
+      "category": "interaction",
+      "status": "passed",
+      "result": "待审核→批准成功（计数 2→1，已批准 2→3，Toast“已批准该评论”）；拒绝动作后评论出现在已拒绝",
+      "evidence": [
+        "evidence-comments-approve-1280.png",
+        "evidence-comments-reject-1280.png",
+        "interactions-results.json"
+      ]
+    },
+    {
+      "id": "C08",
+      "name": "设置真实交互（Tab/脏标记/保存/草稿预览/未保存提醒）",
+      "category": "interaction",
+      "status": "passed",
+      "result": "修改副标题出现“未保存修改”（页头与导读同时显示）；保存后提示消失；切到外观 Tab 面板可见；查看草稿效果打开预览面板（“预览：整站外观”）；带未保存修改点击仪表盘触发 window.confirm“您有未保存的设置更改…”并停留在设置页",
+      "evidence": [
+        "evidence-settings-dirty-1280.png",
+        "evidence-settings-saved-1280.png",
+        "evidence-settings-preview-1280.png",
+        "interactions-results.json"
+      ]
+    },
+    {
+      "id": "C09",
+      "name": "手机导航与底栏",
+      "category": "interaction",
+      "status": "passed",
+      "result": "390 底栏可见并导航到文章页；滚动到底后末行 bottom=703 < 底栏 top=787；评论/设置/仪表盘同样不被遮挡；设置保存条 bottom 679 亦在底栏之上",
+      "evidence": [
+        "evidence-mobile-nav-390.png",
+        "measurements-dom.json"
+      ]
+    },
+    {
+      "id": "C10",
+      "name": "控制台未捕获异常",
+      "category": "interaction",
+      "status": "passed",
+      "result": "截图与交互两轮独立会话均未捕获 console error / pageerror（0 条）",
+      "evidence": [
+        "verification-metrics.json",
+        "interactions-results.json"
+      ]
+    },
+    {
+      "id": "C11",
+      "name": "方向 A 视觉门禁（仪表盘/列表/设置）",
+      "category": "visual",
+      "status": "passed",
+      "result": "仪表盘无 KPI 卡片墙、无图标标题、无彩色状态底；主操作 computed #e8e8ec/#000000、圆角 6px；状态仅 5px 圆点；页面标题无图标；真实嵌套卡面 0（设置外观中的 example-article/preset-example 是预设风格缩略示意，不是内容卡面嵌套）",
+      "evidence": [
+        "measurements-structure.json",
+        "after-dashboard-1280.png",
+        "after-posts-1280.png",
+        "after-settings-1280.png"
+      ]
+    },
+    {
+      "id": "C12",
+      "name": "字号/圆角收敛",
+      "category": "visual",
+      "status": "failed",
+      "nonBlocking": true,
+      "result": "可见文本字号主体收敛：仪表盘 11/12/13/14/20/24；文章 12/13/14/20/24；设置 11/12/13/14/24；评论 12/13/14/20/24。但未完全闭合：仪表盘两个 .apple-link‘全部’为 16px（dashboard.css 中 font-size:12px 被后面的 font: inherit 重置），设置-外观两个 .settings-help 为 16px（该类样式只在 SearchSettings.vue scoped 中定义），外观页两段说明为 16px（CanonicalSettingsNotice 的 p 未设字号）。圆角仅 6/8/50%/9999px（另 0）；无 2/3/4/5/7/9/11/12/14px。源码级机械门禁只能看到显式 font-size 声明，无法捕获这些浏览器默认继承的 16px。",
+      "evidence": [
+        "measurements-structure.json",
+        "measurements-dom.json",
+        "after-dashboard-1280.png",
+        "after-settings-appearance-1280.png",
+        "after-appearance-1280.png"
+      ],
+      "related_defect": "D06"
+    },
+    {
+      "id": "C13",
+      "name": "390 无整页横向溢出",
+      "category": "accessibility",
+      "status": "passed",
+      "result": "五组页面 + 设置外观的 documentElement.scrollWidth - innerWidth 均为 0；设置 Tab 栏越界元素位于组件自身横向滚动容器内",
+      "evidence": [
+        "verification-metrics.json",
+        "measurements-dom.json"
+      ]
+    },
+    {
+      "id": "C14",
+      "name": "390 主要触控目标 ≥44px",
+      "category": "accessibility",
+      "status": "failed",
+      "nonBlocking": true,
+      "result": "文章页搜索框/状态/筛选/全选/行操作 44px，评论行操作按钮 44px；但仪表盘快捷链接（写文章 39×20、评论/分类/设置 26×20）与评论行勾选框（16×16，且无 label 包裹）低于 44px 指引，且未被现有 mobile-a11y spec 覆盖",
+      "evidence": [
+        "measurements-dom.json",
+        "after-dashboard-390.png"
+      ],
+      "related_defect": "D03"
+    },
+    {
+      "id": "C15",
+      "name": "设置效果导读信息完整性与标题重复",
+      "category": "special",
+      "status": "failed",
+      "nonBlocking": true,
+      "result": "信息完整：单行结论、可展开“影响位置/如何确认/保存说明”、查看草稿效果、未保存提示均在；但基本 Tab 的导读标题“站点身份”与下方分区标题 h2“站点身份”在同一屏内重复；外观 Tab 为“调整整站视觉”/“主题外观”，不重复",
+      "evidence": [
+        "evidence-settings-guide-basic-1280.png",
+        "evidence-settings-guide-expanded-1280.png",
+        "evidence-settings-guide-basic-390.png",
+        "after-settings-390.png"
+      ],
+      "related_defect": "D02"
+    },
+    {
+      "id": "C16",
+      "name": "目标 Playwright 回归（4 个 spec）",
+      "category": "regression",
+      "status": "passed",
+      "result": "64 passed / 0 failed（3.2m），无跳过、无重试；4 个目标 spec 合并运行。运行前记录了 git status；console-settings-canonical 覆写了 10 个受跟踪 docs/baselines/stellar-settings/existing-*.png，已仅恢复该目录，运行前后 git status 完全一致",
+      "evidence": [
+        "git-status-before-playwright.txt"
+      ],
+      "command": "pnpm exec playwright test --config=.tmp/pw-chrome.config.ts tests/e2e/console-ui-consistency.spec.ts tests/e2e/console-mobile-a11y.spec.ts tests/e2e/console-settings-canonical.spec.ts tests/e2e/console-settings-save-race.spec.ts",
+      "environment_note": "仓库未安装 Playwright 自带浏览器；临时配置仅改 use.channel=chrome 与 .tmp 配置所需的 webServer cwd，其余与 playwright.config.ts 一致"
+    },
+    {
+      "id": "C17",
+      "name": "方向 A 机械门禁与主题色单测",
+      "category": "unit",
+      "status": "passed",
+      "command": "cd modules/console/web && pnpm exec tsx --test ../tests/ui-restraint.test.ts ../tests/theme-colors.test.ts",
+      "result": "17 tests / 17 pass / 0 fail。另做规则有效性抽查：在 DIRECTION_A_SCOPE 内临时插入含 font-size:15px 的 .vue 探针，字号规则真实失败并精确指向探针行（13 pass / 1 fail），删除探针后恢复 17/17；同时确认该门禁只扫描显式声明，无法发现继承 16px（见 D06）。"
+    },
+    {
+      "id": "C18",
+      "name": "完整 make test（Go vet/staticcheck/go test 等）",
+      "category": "regression",
+      "status": "not-run",
+      "reason": "本次改动不含 Go 代码；Console 类型检查已由 make console 内的 vue-tsc -b 独立执行，UI 门禁与目标 Playwright 已独立运行。实现记录中的 make test 结果未由本验收复跑，不据此声明通过。"
+    },
+    {
+      "id": "C19",
+      "name": "非 Chrome 浏览器与真机",
+      "category": "regression",
+      "status": "not-run",
+      "reason": "环境中无 Safari/Firefox 与真机；触控与 390 结论来自 Chrome 390×844 视口模拟。"
+    }
+  ],
+  "defects": [
+    {
+      "id": "D01",
+      "severity": "medium",
+      "blocking": false,
+      "title": "390px 评论行信息列被 5 个 44px 操作按钮压到 34px：状态竖排折行、邮箱只剩几个字符",
+      "area": "评论管理移动端",
+      "reproduction": [
+        "以 admin 登录，视口 390×844",
+        "打开 /console/comments，切到“全部”并观察待审核行",
+        "读取信息列宽度；或查看 after-comments-390.png 第二、三行"
+      ],
+      "expected": "手机端评论行保持昵称、单行状态、可辨识的邮箱；操作区不与文本争抢到不可读",
+      "actual": "行内信息列 34px；.comment-status 宽 34 高 36（“待审核”竖排折行）；邮箱可见宽 34px（scrollWidth 144）；5 个操作按钮各 44×44 占去 220px+。本次改动新增的 @media (max-width:1023px) .action-btn{min-width:44px;min-height:44px} 把按钮从旧版小图标放大，但未调整行布局，导致信息列被挤没——属本次改动引入的回归，而非旧问题。",
+      "location": "modules/console/web/src/modules/comments/CommentList.vue:443-512（行布局），758-766（<1024 action-btn 44px）",
+      "evidence": [
+        "after-comments-390.png",
+        "measurements-dom.json#/comments390"
+      ],
+      "impact": "手机端审核评论时作者/状态/邮箱难以辨认；操作按钮仍可用，桌面 1280 不受影响。",
+      "suggested_direction": "窄屏把操作按钮折叠为更多菜单，或让操作区换行到第二行；复选框/头像保持固定，给信息列留出可读宽度。"
+    },
+    {
+      "id": "D02",
+      "severity": "low",
+      "blocking": false,
+      "title": "设置基本 Tab 的效果导读标题与分区标题同名重复（“站点身份”×2）",
+      "area": "系统设置 / 基本",
+      "reproduction": [
+        "打开 /console/settings",
+        "观察导读单行“站点身份 更新站点名称…”与其下分区标题 h2“站点身份”"
+      ],
+      "expected": "导读不再重复分区标题，只保留结果说明",
+      "actual": "同一屏内两次出现“站点身份”，间距约 100px，形成说明书式重复",
+      "location": "modules/console/web/src/modules/settings/SettingsEffectGuide.vue:16（guide-title）+ modules/console/web/src/modules/settings/tabs/BasicSettings.vue:24-25（h2）",
+      "evidence": [
+        "evidence-settings-guide-basic-1280.png",
+        "evidence-settings-guide-basic-390.png",
+        "after-settings-390.png"
+      ],
+      "impact": "纯视觉冗余；信息完整、不影响操作。外观 Tab 不重复，可作为对照。",
+      "suggested_direction": "导读行去掉 guide-title 或在下方面板标题已存在时省略标题，仅保留结果句。"
+    },
+    {
+      "id": "D03",
+      "severity": "low",
+      "blocking": false,
+      "title": "390 触控目标：仪表盘快捷文字链接 20px 高；评论勾选框 16×16 且无 label 包裹",
+      "area": "仪表盘 / 评论移动端可访问性",
+      "reproduction": [
+        "390×844 打开 /console/dashboard，测量“写文章/评论/分类/设置”链接",
+        "390×844 打开 /console/comments，测量行首 checkbox"
+      ],
+      "expected": "主要触控目标 ≥44px（项目既有 mobile-a11y 规格）",
+      "actual": "快捷链接 39×20 与 26×20；评论 checkbox 16×16，closest('label')=false；现有 spec 只覆盖 apple-search/apple-select/apple-segmented/action-icon-btn，未覆盖这两处",
+      "location": "modules/console/web/src/modules/dashboard/DashboardView.vue:66-68（dashboard-quick-links）；modules/console/web/src/modules/comments/CommentList.vue:451-457（裸 input）",
+      "evidence": [
+        "measurements-dom.json#/dashboard1280.quick",
+        "measurements-dom.json#/comments390",
+        "after-dashboard-390.png"
+      ],
+      "impact": "手指准确点击难度增加；不影响鼠标操作。",
+      "suggested_direction": "快捷链接加 44px 命中区（padding/min-height）或改为文字按钮；评论勾选包一层 44px label。"
+    },
+    {
+      "id": "D04",
+      "severity": "low",
+      "blocking": false,
+      "pre_existing": true,
+      "title": "390 外观页页脚“访问网站”被底部导航压住约 6px",
+      "area": "主题设置 / 移动端页脚",
+      "reproduction": [
+        "390×844 打开 /console/appearance",
+        "观察页脚“访问网站”与底栏重叠"
+      ],
+      "expected": "页脚内容完整位于底栏上方",
+      "actual": "链接 rect top 777 / bottom 793，底栏 top 787；before-appearance-390.png 中同样存在",
+      "evidence": [
+        "after-appearance-390.png",
+        "docs/baselines/console-editorial-desk/reference/before-appearance-390.png"
+      ],
+      "impact": "短内容页页脚文字底部被裁切；非本次改动引入，标记为既有问题。"
+    },
+    {
+      "id": "D05",
+      "severity": "info",
+      "blocking": false,
+      "pre_existing": true,
+      "title": "置顶文章未在“最近创建”排序下置顶显示（客户端按 created_at 重排覆盖服务端 pinned 排序）",
+      "area": "文章列表",
+      "reproduction": [
+        "打开 /console/posts（默认本页·最近创建）",
+        "置顶文章“用 Go 重写博客的这一年”排在末行，摘要显示“本页置顶 1”"
+      ],
+      "expected": "若置顶有意义，应优先展示",
+      "actual": "客户端 selectedSort=newest 仅按 created_at 排序；git diff 显示该排序逻辑未被本次改动触及",
+      "evidence": [
+        "after-posts-1280.png"
+      ],
+      "impact": "信息层级小瑕疵；属既有行为，不作为本次验收失败项。"
+    },
+    {
+      "id": "D06",
+      "severity": "low",
+      "blocking": false,
+      "title": "字号白名单未真正闭合：三处可见文字继承浏览器默认 16px（超出 11/12/13/14/20/24）",
+      "area": "仪表盘 / 设置-外观 / 主题设置",
+      "reproduction": [
+        "1280 打开 /console/dashboard：最近文章与最近评论右上角‘全部’链接 computed font-size=16px",
+        "1280 打开 /console/settings?tab=appearance：‘当前为空值；保留继承或关闭状态。’computed=16px",
+        "1280 打开 /console/appearance：‘此处的旧分段已停止保存…’与‘上游：theme.appearance…’computed=16px"
+      ],
+      "expected": "可见文字仅使用 11/12/13/14/20/24 六档；说明文字应 12–13px，弱于正文/标题",
+      "actual": "16px 可见文字：仪表盘 2 个按钮、设置-外观 2 段帮助 + 1 个占位、外观页 2 段说明。原因分别为：dashboard.css 的 .apple-link 先声明 font-size:12px 又被 font:inherit 重置；.settings-help 只存在于 SearchSettings.vue 的 scoped 样式，其他组件复用时无字号；CanonicalSettingsNotice 的 p 未声明字号。源码级字号门禁只检查显式声明，未覆盖继承值。",
+      "location": "modules/console/web/src/modules/dashboard/dashboard.css:926-940；modules/console/web/src/modules/settings/tabs/SearchSettings.vue:163-168（scoped）与 modules/console/web/src/modules/settings/StructuredSetting.vue:325；modules/console/web/src/modules/settings/CanonicalSettingsNotice.vue:21-26",
+      "evidence": [
+        "measurements-structure.json",
+        "measurements-dom.json",
+        "after-dashboard-1280.png",
+        "after-settings-appearance-1280.png",
+        "after-appearance-1280.png"
+      ],
+      "impact": "局部文字比正文/标题更大，破坏字号层级与‘少档位’目标；不影响功能。示例：仪表盘‘全部’比‘最近文章’标题还大。",
+      "suggested_direction": "去掉 .apple-link 中覆盖 font-size 的 font:inherit（或改为分别继承字体族/字重）；把 .settings-help 提升为共享样式；给 CanonicalSettingsNotice 的 p 明确 13px；在 DOM 层断言字号白名单，避免只查源码声明。"
+    }
+  ],
+  "coverage": {
+    "verified": [
+      "独立构建 + 实际加载产物哈希（6/6）",
+      "隔离 8137 运行与夹具数据",
+      "1280/390 五组页面 + 设置外观截图",
+      "文章 19 步交互、评论审核、设置保存/预览/离开提醒、手机导航与底栏",
+      "方向 A 视觉门禁、字号/圆角收敛（含 DOM 层发现的三处 16px 继承泄漏）、状态底色、嵌套卡面、横向溢出、触控抽样",
+      "目标 4 个 Playwright spec：64 passed",
+      "ui-restraint + theme-colors 单测：17 passed"
+    ],
+    "not_verified": [
+      "完整 make test（Go vet/staticcheck/go test）未复跑",
+      "Safari/Firefox 与真机移动端未验证",
+      "未在真实生产数据/生产库上验证",
+      "设置保存条在滚动中与内容的视觉重叠未作为缺陷判定（sticky 设计，滚到底无永久遮挡）"
+    ],
+    "environment_limits": [
+      "Playwright bundled browsers 不可用，使用本机 Chrome 通道；临时配置位于 .tmp，未改仓库配置",
+      "交互验收会改变隔离 DB；after-*.png 均拍摄于破坏性交互之前",
+      "target Playwright 会以 VITE_E2E=1 重建 dist；结束后已重建普通产物并重新核对哈希"
+    ],
+    "subjective_judgments": [
+      "方向 A 的“编辑台”气质达成：数字/标题定层级、细线分隔、蓝色退出主操作",
+      "仪表盘与注入预览的结构差异属任务卡明文调整，不计为偏差",
+      "设置外观的预设缩略图（example-article/preset-example）是风格示意，不视为卡片套卡片"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-appearance-1280.png",
+      "sha256": "204344ad5ab8c938afbbf18055b2fa276075b96ca09952588b601c009cf8c18d"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-appearance-390.png",
+      "sha256": "cfd4c985e130bcb30452abac2eef7fc16dbe25c6132d8a0c20fa373bcaecb1d3"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-comments-1280.png",
+      "sha256": "b97893466f73afad10e7537e3c3c473d6505b2609518cc1aa53b078a3502367b"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-comments-390.png",
+      "sha256": "103b8fc29db8e6eaaedb62952c7b126ed547dbd10fc1c092f53dae02236bd8db"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-dashboard-1280.png",
+      "sha256": "4de60ae7785ceb00bd6be7cf02b4c5520317d5696d59c810b0ce29982e085680"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-dashboard-390.png",
+      "sha256": "58b60fa266d9354ec6b1598b48d35186eddfef5113edad6d845b79cca28f4fd3"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-posts-1280.png",
+      "sha256": "ce1649967b5d951089b4b8eba7998bad6308b104a51ef187697b49ffaed3b32b"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-posts-390.png",
+      "sha256": "9ae8629c7af6a973a1ef63d85b4632067ad0b91c362a5ba7f61a125d860bdd81"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-settings-1280.png",
+      "sha256": "cac8f44c2cdfd630d75a7ce97b64570a288f31cece757b1730cd9a57f78e1cb9"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-settings-390.png",
+      "sha256": "2aadb265edb90dd244cff9035dee0d09fb77693970dff00ccd342853c5389fd1"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-settings-appearance-1280.png",
+      "sha256": "c6a1f147f2880a6409628d4da725dbb29bfc57cbefdd9ed4b8f63db310d9cef9"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/after-settings-appearance-390.png",
+      "sha256": "c8690e69e97cadffa06efd14a7fa01be07df16eb55a922f7a2b62b1d24f123e0"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-comments-approve-1280.png",
+      "sha256": "122d7c1d462362451c049cae1f00d3457b6091e51b7e484f9d3530c8675ae858"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-comments-reject-1280.png",
+      "sha256": "88597c6065e483a04f2b1dbaa0abec6968b31fca225eeded3db511bf51e355bf"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-mobile-nav-390.png",
+      "sha256": "d45ab0e40bde37abe9bf30339728599f2c408b5b061137035a38fe3034b37b66"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-pages-1280.png",
+      "sha256": "0682cb727de8d1f3f2c4de3e4ced8ff65bdd003a3b0f8b887a4d1e239dc04c33"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-post-editor-1280.png",
+      "sha256": "a90cfdbe5215836bc26e005f936f3b639ec6efe5e4ce42658017b31a6a7b8766"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-post-published-1280.png",
+      "sha256": "b6f7e1fafc2ad6772737efa4bb24d96a85d2b76d8134a1003d3f582dcdc584c5"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-post-savedraft-1280.png",
+      "sha256": "c584cb02c5ac5042a0ae7d5d139c627689a4fd40398fb2f0a3eb7318c5612c39"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-batch-select-1280.png",
+      "sha256": "b6b8bcd2988ad1d145a6de9c8187e9df41f9b9be91d95647dcd6c561fc2be13c"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-batch-trash-1280.png",
+      "sha256": "3b95a3185a7cf2a6ea60c0f666d57533e6d52540bc5ee42418bf1c392f7f7b76"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-category-filter-1280.png",
+      "sha256": "1de5da78fe5bdd02b5acac9721f544d06a7acfcf4d451ed37e05a46f813a5c85"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-draft-filter-1280.png",
+      "sha256": "d4d76b7c7e7a080c57166c3643aab59ff7ee693e75a33b64c1b4851cc06b26b4"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-search-1280.png",
+      "sha256": "cac174e1e57db5aea1e848b2095663aaf1bca17c8bc4c270bd338edffe650da8"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-select-all-1280.png",
+      "sha256": "b34c196866ddbfa9837e9c690fc88d18203697650b0fd4d262d4d766d7ed451a"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-sort-oldest-1280.png",
+      "sha256": "83b927c066a389d09f1465007b19481165bd30bd6038d3c8800543f40f3c2323"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-trash-1280.png",
+      "sha256": "98f31ded857ea3f37c19b14f8830ba50a725b1bf7b84180fef22b8d714c47915"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-posts-trash-seed-1280.png",
+      "sha256": "94c4e6889cb3c610521cba4ce934096bfacfd2708c32ebf17f81dd2757d68407"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-settings-dirty-1280.png",
+      "sha256": "8c6f49c1076c3916aaedf261a40456763d863c057fc7524b951f340e5b882bfb"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-settings-guide-appearance-1280.png",
+      "sha256": "c6a1f147f2880a6409628d4da725dbb29bfc57cbefdd9ed4b8f63db310d9cef9"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-settings-guide-basic-1280.png",
+      "sha256": "cac8f44c2cdfd630d75a7ce97b64570a288f31cece757b1730cd9a57f78e1cb9"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-settings-guide-basic-390.png",
+      "sha256": "96b46ad4993a050869011eeb532ce9555a909373b6b23a7ee6af9a0aa0b6fe8a"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-settings-guide-expanded-1280.png",
+      "sha256": "0d81917143f5f1b7f4fbacd8454b517d1f665e21e81eb1e5f912e1d79b09d9f9"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-settings-preview-1280.png",
+      "sha256": "94855581e32e099107b317ebb54cff7a5a4dc91188ad138e847d5a4fcf091c1b"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/evidence-settings-saved-1280.png",
+      "sha256": "f32058d0e0c366d4daa0b8a5ae9146ccfc2194b2d856f51a15398123d12bdeed"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/git-status-before-playwright.txt",
+      "sha256": "8481cdd9ad435eda7d11790de494113da2184265b46559337cbb029ec13e0b94"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/interactions-results.json",
+      "sha256": "6ffd7bbbe69edd77d20f899c5390270ad8ce12ffccc5b50be9370f9f8e9c6b49"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/measurements-dom.json",
+      "sha256": "8d2de1e746008922dc38ad7061025d422ce55d928fa9bfe265f0f7b17687283f"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/measurements-structure.json",
+      "sha256": "a6b4186ee998a1c13fa8f1e51a2e90147128e6d76d74154e1247233888bb26bd"
+    },
+    {
+      "path": "docs/baselines/console-editorial-desk/acceptance/verification-metrics.json",
+      "sha256": "58d47875a1ac70914187af0c26024deb44093ef65cfdf474d8b030880d86bf38"
+    }
+  ],
+  "artifacts_note": "路径相对 feature worktree 根目录；截图均为真实运行界面（有数据），未使用注入 CSS 或空态替代。"
+}

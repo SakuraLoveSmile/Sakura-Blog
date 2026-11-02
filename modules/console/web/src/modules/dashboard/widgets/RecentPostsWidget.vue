@@ -100,7 +100,7 @@ function previewPost(item: PostItem) {
       <button
         v-for="item in displayedItems"
         :key="item.slug"
-        class="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl hover:bg-white/5 text-left transition-colors duration-150 border border-transparent hover:border-white/5"
+        class="w-full flex items-center justify-between py-1.5 border-t border-border text-left transition-colors duration-150"
         @click="editPost(item)"
       >
         <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
@@ -111,7 +111,7 @@ function previewPost(item: PostItem) {
           />
           <span class="text-foreground text-xs font-medium truncate">{{ item.title }}</span>
         </div>
-        <span class="text-[10px] text-muted-foreground whitespace-nowrap">{{ formatRelative(item.updated_at) }}</span>
+        <span class="text-[12px] text-muted-foreground whitespace-nowrap">{{ formatRelative(item.updated_at) }}</span>
       </button>
     </div>
 
@@ -129,11 +129,11 @@ function previewPost(item: PostItem) {
               <span class="text-foreground text-sm font-medium tracking-tight truncate">{{ item.title }}</span>
             </div>
             <div class="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-              <span v-if="item.category" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[11px] text-muted-foreground border border-white/5">
-                <Icon icon="ri:folder-3-line" class="w-3 h-3 text-primary" />
+              <span v-if="item.category" class="inline-flex items-center gap-1 text-[12px] text-muted-foreground">
+                <Icon icon="ri:folder-3-line" class="w-3 h-3" />
                 {{ item.category }}
               </span>
-              <span class="flex items-center gap-1 text-[11px]">
+              <span class="flex items-center gap-1 text-[12px]">
                 <Icon icon="ri:time-line" class="w-3 h-3" />
                 {{ formatRelative(item.updated_at) }}
               </span>
@@ -169,11 +169,11 @@ function previewPost(item: PostItem) {
             <span class="text-foreground text-sm font-medium tracking-tight truncate">{{ item.title }}</span>
           </div>
           <div class="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-            <span v-if="item.category" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[11px] text-muted-foreground border border-white/5">
-              <Icon icon="ri:folder-3-line" class="w-3 h-3 text-primary" />
+            <span v-if="item.category" class="inline-flex items-center gap-1 text-[12px] text-muted-foreground">
+              <Icon icon="ri:folder-3-line" class="w-3 h-3" />
               {{ item.category }}
             </span>
-            <span class="flex items-center gap-1 text-[11px]">
+            <span class="flex items-center gap-1 text-[12px]">
               <Icon icon="ri:time-line" class="w-3 h-3" />
               {{ formatRelative(item.updated_at) }}
             </span>
@@ -235,19 +235,18 @@ function previewPost(item: PostItem) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, #fff 10%, transparent);
-  border-radius: 50%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   color: var(--color-muted-foreground);
-  background: color-mix(in srgb, #fff 4%, transparent);
+  background: transparent;
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 
 .recent-post-actions button:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-  transform: scale(1.05);
+  color: var(--color-foreground);
+  border-color: var(--color-border);
+  background: var(--color-accent);
 }
 
 .recent-post-actions svg {

@@ -94,9 +94,6 @@ function isExpired(expiresAt: string): boolean {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="文章分享链接">
-      <template #icon>
-        <Icon icon="ri:share-forward-line" class="text-primary" />
-      </template>
       <template #subtitle>管理已生成的未发布文章临时预览或公开分享令牌与访问有效期</template>
       <template #actions>
         <VButton :route="{ path: '/posts' }">

@@ -1,0 +1,212 @@
+{
+  "schema": "console-editorial-desk-final/2",
+  "task": "BLG-20261031-01",
+  "status": "round3-final-pending-independent-reverify",
+  "commit": "not committed",
+  "environment": {
+    "server": "isolated 127.0.0.1:8140",
+    "root": ".tmp/rework-server.8140",
+    "browser": "Google Chrome channel",
+    "database": "isolated SQLite"
+  },
+  "fixtures": {
+    "posts": {
+      "total": 8,
+      "published": 5,
+      "draft": 2,
+      "trashed": 1,
+      "pinned": 1,
+      "visibleInList": 7
+    },
+    "comments": {
+      "total": 6,
+      "approved": 2,
+      "pending": 2,
+      "rejected": 1,
+      "spam": 1
+    }
+  },
+  "checks": {
+    "make_test": "exit 0; console 369/369; stellar 238 pass / 2 skipped; go vet/staticcheck/test pass",
+    "make_build": "exit 0",
+    "targeted_gates": "ui-restraint + widget-size-presets + theme-colors + dashboard-quick-links 27/27",
+    "target_playwright": "73/73 passed (3.3m)",
+    "console_errors": 0,
+    "overflow_x": 0
+  },
+  "served_assets": [
+    {
+      "name": "index-Bw6UwQ7A.js",
+      "sha256_prefix": "bae86c9d0ec1af45",
+      "match": true
+    },
+    {
+      "name": "index-D-j-weAu.css",
+      "sha256_prefix": "6b69777047727a69",
+      "match": true
+    },
+    {
+      "name": "api-C-H7IBEY.js",
+      "sha256_prefix": "28f3d58e9e625d42",
+      "match": true
+    },
+    {
+      "name": "pinia-CXeiBUD1.js",
+      "sha256_prefix": "7e7c94b9658d5172",
+      "match": true
+    },
+    {
+      "name": "preload-helper-l0U7FUPx.js",
+      "sha256_prefix": "dbd40ae429a13a3e",
+      "match": true
+    },
+    {
+      "name": "runtime-core.esm-bundler-GmtFT3dp.js",
+      "sha256_prefix": "bcd39943a10cb760",
+      "match": true
+    }
+  ],
+  "metrics": {
+    "dashboard": {
+      "stat_gs_h": "12",
+      "stat_height_px": 96,
+      "trend_gs_h": "44",
+      "trend_height_px": 352,
+      "quick_links_390": [
+        44,
+        44
+      ]
+    },
+    "size_modal": {
+      "sm_trend": "6×36 / 6×44 / 6×52, medium selected",
+      "xxs_trend": "4×32 / 4×42 / 4×50, medium selected",
+      "default_mid_widgets": [
+        "recent-posts",
+        "recent-comments",
+        "category-donut",
+        "stellar-version"
+      ]
+    },
+    "comments_390": {
+      "status": {
+        "width": 47,
+        "height": 18,
+        "whiteSpace": "nowrap"
+      },
+      "emailWidth": [
+        130,
+        144
+      ],
+      "checkbox": [
+        44,
+        44
+      ],
+      "actionsBelowInfo": true
+    },
+    "shortcuts": {
+      "trigger": [
+        44,
+        44
+      ],
+      "dialogWidth": 232
+    },
+    "settings": {
+      "saveBarBackground": "rgb(10, 10, 11)",
+      "saveBarPadding": "16px 0",
+      "containerPadding": "32px|16px",
+      "guideSummaryHeight": [
+        32,
+        44
+      ],
+      "guideTitleVisible": false,
+      "guideSaveContrast": 4.91,
+      "avatarRadius": "50%"
+    },
+    "poster": {
+      "selectedBackground": "rgb(27, 27, 30)",
+      "actionsOpacity": "1",
+      "select": [
+        28,
+        44
+      ],
+      "pinnedPosition": "static"
+    },
+    "fonts": {
+      "allowed": [
+        11,
+        12,
+        13,
+        14,
+        20,
+        24
+      ],
+      "pages": [
+        "dashboard",
+        "settings-basic",
+        "settings-appearance",
+        "appearance",
+        "comments",
+        "posts"
+      ],
+      "violations": 0
+    }
+  },
+  "artifacts": [
+    {
+      "name": "after-dashboard-1280.png",
+      "sha256": "2a01d8ffd99d3284130589d1ab31fd6cc2a9882afbbda07072136fc5c2719bb4"
+    },
+    {
+      "name": "after-dashboard-390.png",
+      "sha256": "1d2a27b233257405bdcb3b4489c8fa8467702b1da11c7ac2cf46b368f5fc8e87"
+    },
+    {
+      "name": "after-posts-1280.png",
+      "sha256": "ce1649967b5d951089b4b8eba7998bad6308b104a51ef187697b49ffaed3b32b"
+    },
+    {
+      "name": "after-posts-poster-1280.png",
+      "sha256": "2a98948a0baa76660ace4e903501c7822c8dba4678123f71f4148587c79fd99b"
+    },
+    {
+      "name": "after-posts-poster-390.png",
+      "sha256": "d199d7e6d7067cabd07e8d4983d831341024ccd3a1f9d3dd8be6667c56f5fe75"
+    },
+    {
+      "name": "after-posts-390.png",
+      "sha256": "9ae8629c7af6a973a1ef63d85b4632067ad0b91c362a5ba7f61a125d860bdd81"
+    },
+    {
+      "name": "after-settings-1280.png",
+      "sha256": "27520bb5f38c8e28b26dad508d9d653a709df2f79915101133756948df4e7035"
+    },
+    {
+      "name": "after-settings-390.png",
+      "sha256": "fd34a4bc7cc947d6dec44ff262a7909bb199fe54a4a1cc189e342021bc412ab9"
+    },
+    {
+      "name": "after-comments-1280.png",
+      "sha256": "c3c1001b3d6fe8bfe2f738060a61a127370622aacc167196aaaf8ae4fbf13008"
+    },
+    {
+      "name": "after-comments-390.png",
+      "sha256": "6ca563ca0d59cac9b165e05e2a4b25ef36011241e2d14701307bfe6c9808b8ec"
+    },
+    {
+      "name": "after-comments-shortcuts-390.png",
+      "sha256": "fded187982ce9ca26e4d9871b91f49ef9b5e69d3b10a82cad3503b1d6a5a156a"
+    },
+    {
+      "name": "after-comments-shortcuts-1280.png",
+      "sha256": "15c48a018411495993a42c0e218498c8677001d74f0a4d2490723756fbf08a45"
+    },
+    {
+      "name": "after-size-modal-sm-1280.png",
+      "sha256": "e6ce0e290d2a85b915c0ecdaded02352281faf6315c25ac31fabfbc422de4b19"
+    },
+    {
+      "name": "after-size-modal-xxs-1280.png",
+      "sha256": "0f8d72b578d868d51bff667572b859e24803d0a3c1350807662f34ac19ae68a3"
+    }
+  ]
+}

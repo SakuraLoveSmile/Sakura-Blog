@@ -13,6 +13,32 @@ interface PostFixture {
   title: string;
 }
 
+function parseColor(value: string): [number, number, number] {
+  const hex = value.trim().match(/^#([0-9a-f]{6})$/i);
+  if (hex) {
+    const n = Number.parseInt(hex[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  const match = value.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  if (!match) return [0, 0, 0];
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+/** WCAG 相对亮度对比度，用于确认弱化说明仍达到正文可读阈值。 */
+function contrastRatio(foreground: string, background: string): number {
+  const channel = (value: number) => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = (color: string) => {
+    const [r, g, b] = parseColor(color).map(channel);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const a = luminance(foreground);
+  const b = luminance(background);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
 /** 创建带唯一 token 的隔离文章夹具，返回 slug 与标题的对应关系。 */
 async function ensurePosts(page: Page, count = 5, token = "mobile-e2e-post"): Promise<PostFixture[]> {
   const fixtures: PostFixture[] = [];
@@ -378,9 +404,9 @@ test.describe("Console UI 一致性测试", () => {
     expect(styles.boxShadow).toBe("none");
     // 高度为标准 36px
     expect(styles.height).toBe("36px");
-    // 本轮确定工作控件使用 8px 圆角，显式 pill 仍可使用胶囊。
+    // 方向 A：工作控件统一 6px 工具型圆角（原 8px 属上一版规范），显式 pill 仍可使用胶囊。
     const radiusNum = parseFloat(styles.borderRadius);
-    expect(radiusNum).toBe(8);
+    expect(radiusNum).toBe(6);
   });
 
   test("分段 Tabs 与按钮支持键盘聚焦并具有清晰焦点环", async ({ page }) => {
@@ -1051,6 +1077,298 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await search.fill("");
     await expect(page.locator("tbody tr").filter({ hasText: attachment.filename }).first()).toBeVisible();
     await expect(page.locator(".v-floating-dock")).toHaveCount(0);
+  });
+
+  test("仪表盘默认布局保持声明的紧凑尺寸，不被加载归一化扩回", async ({ page }, testInfo) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/console/dashboard");
+    const stat = page.locator('.grid-stack-item[gs-id="stat-posts-1"]');
+    const trend = page.locator('.grid-stack-item[gs-id="trend-chart-1"]');
+    await expect(stat).toBeVisible({ timeout: 20_000 });
+    await expect(trend).toBeVisible();
+    const statBox = (await stat.boundingBox())!;
+    const trendBox = (await trend.boundingBox())!;
+    // 12 行 × 8px + 外边距约 96px；44 行约 352px。
+    expect(statBox.height, "1280 统计卡应保持 h12 紧凑高度").toBeGreaterThanOrEqual(88);
+    expect(statBox.height, "1280 统计卡不得被扩成 h19").toBeLessThanOrEqual(112);
+    expect(trendBox.height, "1280 趋势卡应保持 h44 紧凑高度").toBeGreaterThanOrEqual(330);
+    expect(trendBox.height, "1280 趋势卡不得被扩成 h52").toBeLessThanOrEqual(380);
+    expect(await stat.getAttribute("gs-h")).toBe("12");
+    expect(await trend.getAttribute("gs-h")).toBe("44");
+    const quick = await page.locator(".dashboard-quick-links a").allTextContents();
+    expect(quick).toEqual(["写文章", "评论", "分类", "设置"]);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/dashboard");
+    await expect(stat).toBeVisible({ timeout: 20_000 });
+    const stats = await page.locator('.grid-stack-item[gs-id^="stat-"]').evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return { x: node.getAttribute("gs-x"), w: node.getAttribute("gs-w"), h: rect.height, top: rect.top };
+      }),
+    );
+    expect(stats).toHaveLength(4);
+    expect(new Set(stats.map((item) => item.x))).toEqual(new Set(["0", "2"]));
+    for (const item of stats) {
+      expect(item.w, "390 统计卡保持 2 列").toBe("2");
+      expect(item.h, "390 统计卡不得保留旧 h14/h18 的空白").toBeGreaterThanOrEqual(88);
+      expect(item.h).toBeLessThanOrEqual(112);
+    }
+    await page.screenshot({ path: testInfo.outputPath("dashboard-compact-390.png") });
+  });
+
+  test("海报视图选择有可见反馈，置顶信息位于可读 meta 行", async ({ page }, testInfo) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const token = `poster-${Date.now()}`;
+    const title = `海报选择反馈 ${token}`;
+    const created = await page.request.post("/api/v1/posts", {
+      data: {
+        slug: token,
+        title,
+        content_md: "海报卡片选择反馈夹具",
+        status: "published",
+        pinned: true,
+        stellar_version: 2,
+        stellar_config: "{}",
+        blog_extensions: "{}",
+      },
+    });
+    expect(created.ok(), await created.text()).toBeTruthy();
+
+    await page.goto("/console/posts");
+    await page.getByRole("button", { name: "海报卡片视图" }).click();
+    const card = page.locator(".post-card").filter({ hasText: title }).first();
+    await expect(card).toBeVisible();
+    await card.locator(".post-select").click();
+    await expect(card).toHaveClass(/is-selected/);
+    // 背景色有过渡，必须等计算值真正落到 accent 而不是过渡起点。
+    await expect
+      .poll(() => card.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5_000 })
+      .not.toBe("rgba(0, 0, 0, 0)");
+    await expect
+      .poll(() => card.locator(".post-card-actions").evaluate((el) => getComputedStyle(el).opacity), { timeout: 5_000 })
+      .toBe("1");
+
+    const pinned = card.locator(".post-pinned");
+    await expect(pinned).toBeVisible();
+    expect(await pinned.evaluate((el) => getComputedStyle(el).position)).not.toBe("absolute");
+    await expect(card.locator(".post-card-meta .post-pinned")).toHaveCount(1);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const selectBox = (await card.locator(".post-select").boundingBox())!;
+    expect(selectBox.width, "390 海报选择命中区 ≥44px").toBeGreaterThanOrEqual(44);
+    expect(selectBox.height, "390 海报选择命中区 ≥44px").toBeGreaterThanOrEqual(44);
+    await page.screenshot({ path: testInfo.outputPath("poster-selected-390.png") });
+  });
+
+  test("方向 A 图形与文字可访问性：设置导读、头像圆形、标签插件重试对比度、模块/菜单单层", async ({ page }) => {
+    await login(page);
+    const allSettings = await page.request.get("/api/v1/settings");
+    expect(allSettings.ok(), await allSettings.text()).toBeTruthy();
+    const site = ((await allSettings.json()) as Record<string, unknown>).site as Record<string, unknown>;
+    const restoreSite = async () => {
+      await page.request.put("/api/v1/settings/site", { data: site });
+    };
+    await page.request.put("/api/v1/settings/site", {
+      data: { ...site, avatar: "/images/e2e-avatar.png", avatar_bg: "/images/e2e-avatar-bg.png" },
+    });
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/console/settings?tab=basic");
+    await expect(page.getByRole("heading", { name: "站点身份", exact: true })).toBeVisible();
+    await expect(page.locator(".guide-title")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "站点身份", exact: true })).toHaveCount(1);
+    const guide = await page.locator(".settings-effect-guide").evaluate((el) => {
+      const summary = el.querySelector(".guide-explanation summary") as HTMLElement;
+      const result = el.querySelector(".guide-result") as HTMLElement;
+      const save = el.querySelector(".guide-save") as HTMLElement;
+      return {
+        summaryHeight: summary.getBoundingClientRect().height,
+        summaryColor: getComputedStyle(summary).color,
+        resultColor: getComputedStyle(result).color,
+        saveColor: getComputedStyle(save).color,
+        background: getComputedStyle(document.documentElement).getPropertyValue("--color-background").trim(),
+      };
+    });
+    expect(guide.summaryHeight).toBeGreaterThanOrEqual(32);
+    expect(guide.summaryColor).toBe(guide.resultColor);
+    expect(guide.saveColor, "导读保存说明必须使用与正文说明一致的 tertiary").toBe(guide.resultColor);
+    expect(
+      contrastRatio(guide.saveColor, guide.background),
+      `.guide-save 对比度不足：${guide.saveColor} on ${guide.background}`,
+    ).toBeGreaterThanOrEqual(4.5);
+    const avatar = await page.locator(".settings-avatar-128").evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { radius: style.borderTopLeftRadius, width: el.getBoundingClientRect().width };
+    });
+    expect(
+      avatar.radius === "50%" || Math.abs(parseFloat(avatar.radius) * 2 - avatar.width) < 1,
+      `头像预览必须保持圆形，实际 ${avatar.radius}`,
+    ).toBe(true);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/settings?tab=basic");
+    expect((await page.locator(".guide-explanation summary").boundingBox())!.height).toBeGreaterThanOrEqual(44);
+
+    await page.route("**/api/v1/plugins/catalog", (route) => route.fulfill({ status: 500, json: { error: "fixture catalog failure" } }));
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/console/plugins/shortcodes");
+    const retry = page.locator(".retry-button");
+    await expect(retry).toBeVisible();
+    const retryStyles = await retry.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { color: style.color, background: style.backgroundColor };
+    });
+    expect(retryStyles.color).toBe("rgb(0, 0, 0)");
+    expect(retryStyles.background).not.toBe("rgb(0, 0, 0)");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/plugins/shortcodes");
+    await expect(retry).toBeVisible();
+    const mobileRetry = (await retry.boundingBox())!;
+    expect(mobileRetry.height, "390 标签插件重试按钮命中区 ≥44px").toBeGreaterThanOrEqual(44);
+    expect(mobileRetry.width, "390 标签插件重试按钮命中区 ≥44px").toBeGreaterThanOrEqual(44);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/console/modules");
+    await expect(page.getByRole("heading", { name: "功能模块" })).toBeVisible();
+    await expect(page.locator("main.content h1 svg")).toHaveCount(0);
+    expect(await page.locator(".module-record").first().evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+
+    await page.goto("/console/menus");
+    await expect(page.getByRole("heading", { name: "菜单" })).toBeVisible();
+    await expect(page.locator(".card-wrapper")).toHaveCount(0);
+    const menuPadding = await page.locator(".menu-container").evaluate((el) => getComputedStyle(el).paddingLeft);
+    expect(menuPadding).toBe("32px");
+    await restoreSite();
+  });
+
+  test("运行时字号白名单包含继承值：仪表盘/设置/外观/评论/文章无 16px 泄漏", async ({ page }) => {
+    await login(page);
+    const pages = [
+      "/console/dashboard",
+      "/console/settings?tab=basic",
+      "/console/settings?tab=appearance",
+      "/console/appearance",
+      "/console/comments",
+      "/console/posts",
+    ];
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const violations: unknown[] = [];
+    for (const url of pages) {
+      await page.goto(url);
+      await expect(page.locator("main.content h1").first()).toBeVisible();
+      const bad = await page.evaluate(() => {
+        const root = document.querySelector("main.content");
+        if (!root) return [{ text: "missing main.content", size: 0 }];
+        const allowed = new Set([11, 12, 13, 14, 20, 24]);
+        const result: { text: string; size: number; tag: string; cls: string }[] = [];
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node.textContent?.trim();
+          if (!text) continue;
+          const el = node.parentElement;
+          if (!el || el.closest("script,style,svg,.sr-only")) continue;
+          const style = getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          if (style.display === "none" || style.visibility === "hidden" || rect.width === 0 || rect.height === 0) continue;
+          const size = Math.round(parseFloat(style.fontSize) * 100) / 100;
+          if (!allowed.has(size)) {
+            result.push({ text: text.slice(0, 24), size, tag: el.tagName, cls: typeof el.className === "string" ? el.className : "" });
+          }
+        }
+        return result;
+      });
+      for (const item of bad) violations.push({ url, ...item });
+    }
+    expect(violations, `继承字号必须收敛到 11/12/13/14/20/24：${JSON.stringify(violations, null, 2)}`).toEqual([]);
+  });
+
+  test("组件尺寸弹窗与识别共用宽×高：sm/xxs 中档组件三档可见且选中", async ({ page }, testInfo) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/console/dashboard/designer");
+    await expect(page.getByRole("heading", { name: "设置仪表盘", exact: true })).toBeVisible();
+
+    const widgets = ["trend-chart-1", "recent-posts-1", "recent-comments-1", "category-donut-1", "stellar-version-1"];
+    for (const device of ["平板", "手机"]) {
+      await page.getByRole("tab", { name: device }).click();
+      for (const widgetId of widgets) {
+        const item = page.locator(`.grid-stack-item[gs-id="${widgetId}"]`);
+        await expect(item, `${widgetId} 在${device}断点可见`).toBeVisible();
+        await item.getByRole("button", { name: "选择组件大小" }).click();
+        const dialog = page.getByRole("dialog", { name: "组件大小" });
+        await expect(dialog).toBeVisible();
+        const options = dialog.locator(".size-preset-option");
+        await expect(options, `${widgetId}/${device} 必须列出三档`).toHaveCount(3);
+        for (const preset of ["small", "medium", "large"]) {
+          await expect(dialog.locator(`[data-size-preset="${preset}"]`), `${widgetId}/${device} 缺少 ${preset}`).toBeVisible();
+        }
+        await expect(
+          dialog.locator('[data-size-preset="medium"]'),
+          `${widgetId}/${device} 当前尺寸应识别为中档并选中`,
+        ).toHaveAttribute("aria-pressed", "true");
+        await expect(dialog.locator('[data-size-preset="medium"]')).toHaveClass(/is-selected/);
+        if (widgetId === "trend-chart-1") {
+          const sizes = await options.locator(".size-preset-grid-size").allTextContents();
+          expect(sizes, `趋势 ${device} 三档必须是可区分的宽×高`).toEqual(
+            device === "平板" ? ["6 列 × 36 行", "6 列 × 44 行", "6 列 × 52 行"] : ["4 列 × 32 行", "4 列 × 42 行", "4 列 × 50 行"],
+          );
+          await page.screenshot({ path: testInfo.outputPath(`size-modal-${device === "平板" ? "sm" : "xxs"}.png`) });
+        }
+        await dialog.getByRole("button", { name: "取消", exact: true }).click();
+        await expect(dialog).toBeHidden();
+      }
+    }
+  });
+
+  test("评论快捷键帮助保持紧凑入口、44px 命中区与可访问弹层", async ({ page }, testInfo) => {
+    await login(page);
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+      await page.goto("/console/comments");
+      const trigger = page.getByRole("button", { name: "评论快捷键" });
+      await expect(trigger).toBeVisible();
+      const box = (await trigger.boundingBox())!;
+      expect(box.width, `${width} 快捷键入口宽度 ≥44px`).toBeGreaterThanOrEqual(44);
+      expect(box.height, `${width} 快捷键入口高度 ≥44px`).toBeGreaterThanOrEqual(44);
+      await trigger.click();
+      const dialog = page.getByRole("dialog", { name: "评论快捷键" });
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText("J / K");
+      await expect(dialog).toContainText("批准通过");
+      await expect(dialog).toContainText("勾选 / 取消");
+      await page.screenshot({ path: testInfo.outputPath(`comments-shortcuts-${width}.png`) });
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeHidden();
+      await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    }
+  });
+
+  test("评论 J/K 焦点行同步显示操作按钮", async ({ page }) => {
+    await login(page);
+    const token = Date.now();
+    const content = `J/K 焦点行夹具 ${token}`;
+    const created = await page.request.post("/api/comments", {
+      data: {
+        page_key: `/post/focus-${token}`,
+        nick: "Focus Reader",
+        email: "admin@e2e.test",
+        content,
+      },
+    });
+    expect(created.ok(), await created.text()).toBeTruthy();
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/console/comments");
+    const row = page.locator(".comment-row").filter({ hasText: content }).first();
+    await expect(row).toBeVisible();
+    await page.keyboard.press("j");
+    await expect(row).toHaveClass(/is-focused/);
+    await expect
+      .poll(() => row.locator(".comment-actions").evaluate((el) => getComputedStyle(el).opacity), { timeout: 5_000 })
+      .toBe("1");
   });
 });
 

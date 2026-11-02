@@ -256,14 +256,26 @@ func (h *Handler) register(r *gin.Engine) {
 	// RAG 前台问答：是否启用与 BYOK 策略在 handler 内判定。
 	v1.POST("/rag/ask/public", h.ragAskPublic)
 
-	// 组件库预览 Fixture 端点（Spec 63）：只服务 iframe 预览，不落库、不发外部请求，公开免鉴权以兼容 sandboxed srcdoc iframe
-	v1.GET("/preview/rating", h.previewRatingFixture)
-	v1.POST("/preview/rating", h.previewRatingFixtureSubmit)
-	v1.GET("/preview/vote/info", h.previewVoteFixtureInfo)
-	v1.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
-	v1.GET("/preview/friends", h.previewFriendsFixture)
-	v1.GET("/preview/sites", h.previewSitesFixture)
-	v1.GET("/preview/md", h.previewMDFixture)
+	// 组件库预览 Fixture 端点（Spec 63）：只服务 iframe 预览，不落库、不发外部请求，公开免鉴权以兼容 sandboxed srcdoc iframe。
+	// BLG-20261031-03：sandbox="allow-scripts" 的 opaque origin 读取这些 Fixture 属于跨源请求，
+	// 仅对下列公开、只读、无凭据端点补 CORS（含预检），不放宽 iframe sandbox。
+	v1.OPTIONS("/preview/rating", previewFixturePreflight)
+	v1.OPTIONS("/preview/rating/info", previewFixturePreflight)
+	v1.OPTIONS("/preview/rating/update", previewFixturePreflight)
+	v1.OPTIONS("/preview/vote/info", previewFixturePreflight)
+	v1.OPTIONS("/preview/vote/update", previewFixturePreflight)
+	v1.OPTIONS("/preview/friends", previewFixturePreflight)
+	v1.OPTIONS("/preview/sites", previewFixturePreflight)
+	v1.OPTIONS("/preview/md", previewFixturePreflight)
+	v1.GET("/preview/rating", previewFixtureCORS(), h.previewRatingFixture)
+	v1.POST("/preview/rating", previewFixtureCORS(), h.previewRatingFixtureSubmit)
+	v1.GET("/preview/rating/info", previewFixtureCORS(), h.previewRatingInfoFixture)
+	v1.POST("/preview/rating/update", previewFixtureCORS(), h.previewRatingUpdateFixture)
+	v1.GET("/preview/vote/info", previewFixtureCORS(), h.previewVoteFixtureInfo)
+	v1.POST("/preview/vote/update", previewFixtureCORS(), h.previewVoteFixtureUpdate)
+	v1.GET("/preview/friends", previewFixtureCORS(), h.previewFriendsFixture)
+	v1.GET("/preview/sites", previewFixtureCORS(), h.previewSitesFixture)
+	v1.GET("/preview/md", previewFixtureCORS(), h.previewMDFixture)
 
 	// 需认证路由（账户级：资料/令牌/通知/改密，任何登录角色可用）
 	authed := v1.Group("", h.apiAuth())

@@ -153,26 +153,23 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
 <template>
   <div>
     <VPageHeader title="链接订阅">
-      <template #icon>
-        <Icon icon="ri:rss-line" class="mr-2 self-center text-xl" />
-      </template>
       <template #actions>
         <div class="flex items-center gap-2">
           <button
-            class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
+            class="flex items-center gap-1.5 rounded-sm border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent max-sm:min-h-11"
             @click="setFilter('later')"
           >
             <Icon icon="ri:bookmark-line" />稍后阅读
           </button>
           <button
-            class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
+            class="flex items-center gap-1.5 rounded-sm border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent max-sm:min-h-11"
             @click="setFilter('favorite')"
           >
             <Icon icon="ri:star-line" />收藏
           </button>
           <router-link
             to="/friends"
-            class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
+            class="flex items-center gap-1.5 rounded-sm border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent max-sm:min-h-11"
           >
             <Icon icon="ri:arrow-left-line" />返回链接
           </router-link>
@@ -187,7 +184,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
           <span class="flex items-center gap-1.5 text-sm font-semibold text-text-secondary">
             <Icon icon="ri:rss-line" class="text-primary" />RSS 订阅
           </span>
-          <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-text-tertiary">{{ sources.length }}</span>
+          <span class="rounded-sm bg-secondary px-2 py-0.5 text-xs text-text-tertiary">{{ sources.length }}</span>
         </div>
         <ul class="space-y-0.5">
           <li>
@@ -234,7 +231,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
         <div class="rounded-xl border border-border bg-card p-4">
           <div class="mb-3 flex items-center gap-2">
             <Icon icon="ri:rss-line" class="text-lg text-primary" />
-            <span class="text-base font-semibold text-foreground">{{ activeSourceTitle }}</span>
+            <span class="font-semibold text-foreground">{{ activeSourceTitle }}</span>
           </div>
           <p class="mb-3 text-sm text-text-tertiary">
             {{ sources.length }} 个订阅 / {{ totalCount }} 篇缓存 / {{ totalUnread }} 篇未读
@@ -243,7 +240,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
             <button
               v-for="t in filterTabs"
               :key="t.key"
-              class="flex-1 rounded-md py-1.5 text-sm transition-colors"
+              class="flex-1 rounded-sm py-1.5 text-sm transition-colors max-sm:min-h-11"
               :class="
                 filter === t.key
                   ? 'bg-card font-medium text-foreground shadow-sm '
@@ -257,7 +254,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
           <div class="flex flex-wrap gap-2">
             <button
               :disabled="refreshing"
-              class="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-xs text-text-tertiary disabled:opacity-50 hover:bg-accent"
+              class="flex items-center gap-1.5 rounded-sm border border-border px-2.5 py-1.5 text-xs text-text-tertiary disabled:opacity-50 hover:bg-accent max-sm:min-h-11"
               @click="refreshAll"
             >
               <Icon
@@ -266,13 +263,13 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
               />获取全部
             </button>
             <button
-              class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-accent"
+              class="flex items-center gap-1.5 rounded-sm border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-accent max-sm:min-h-11"
               @click="markAllRead"
             >
               <Icon icon="ri:mail-open-line" />全部标为已读
             </button>
             <button
-              class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-accent"
+              class="flex items-center gap-1.5 rounded-sm border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-accent max-sm:min-h-11"
               @click="reloadList"
             >
               <Icon icon="ri:refresh-line" />刷新列表
@@ -301,7 +298,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
             <span class="flex-1"></span>
             <button
               title="收藏"
-              class="rounded p-1 hover:bg-accent"
+              class="rounded-sm p-1 hover:bg-accent"
               :class="a.favorite ? 'text-state-warning' : 'text-text-quaternary'"
               @click="toggleFlag(a, 'favorite')"
             >
@@ -309,7 +306,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
             </button>
             <button
               title="稍后阅读"
-              class="rounded p-1 hover:bg-accent"
+              class="rounded-sm p-1 hover:bg-accent"
               :class="a.later ? 'text-primary' : 'text-text-quaternary'"
               @click="toggleFlag(a, 'later')"
             >
@@ -317,7 +314,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
             </button>
             <button
               :title="a.read ? '标为未读' : '标为已读'"
-              class="rounded p-1 text-text-quaternary hover:bg-accent"
+              class="rounded-sm p-1 text-text-quaternary hover:bg-accent"
               @click="markRead(a, !a.read)"
             >
               <Icon :icon="a.read ? 'ri:mail-line' : 'ri:mail-open-line'" />
@@ -326,7 +323,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
           <a
             :href="a.link"
             target="_blank"
-            class="flex items-start gap-1 text-base font-semibold text-foreground hover:text-primary"
+            class="flex items-start gap-1 font-semibold text-foreground hover:text-primary"
             @click="markRead(a, true)"
           >
             <span>{{ a.title }}</span>
@@ -335,7 +332,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
           <p v-if="a.summary" class="mt-1.5 line-clamp-2 text-sm text-text-tertiary">{{ a.summary }}</p>
           <div class="mt-2">
             <span
-              class="rounded px-1.5 py-0.5 text-xs feed-badge"
+              class="rounded-sm px-1.5 py-0.5 text-xs feed-badge"
               :class="a.read ? 'bg-secondary text-text-quaternary ' : 'bg-primary/15 text-primary'"
               >{{ a.read ? "已读" : "未读" }}</span
             >
@@ -344,7 +341,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
         <!-- Spec 62：分页加载更多（原全量渲染，随订阅累积无界） -->
         <div v-if="articles.length < articleTotal" class="mt-4 flex justify-center">
           <button
-            class="rounded-full border border-border px-5 py-2 text-sm text-text-tertiary transition-colors hover:bg-secondary hover:text-foreground"
+            class="rounded-sm border border-border px-5 py-2 text-sm text-text-tertiary transition-colors hover:bg-secondary hover:text-foreground max-sm:min-h-11"
             :disabled="loading"
             @click="loadMore"
           >
@@ -370,7 +367,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
     padding: 8px !important;
   }
   aside .text-sm {
-    font-size: 12.5px;
+    font-size: 13px;
   }
   aside .text-xs {
     font-size: 11px;
@@ -385,9 +382,6 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
   /* 概览卡更紧凑 */
   section > .rounded-xl:first-child {
     padding: 12px !important;
-  }
-  .text-base.font-semibold {
-    font-size: 14px !important;
   }
   .text-sm.text-text-tertiary {
     font-size: 12px;
@@ -415,16 +409,13 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
   section .space-y-4 .rounded-xl {
     padding: 12px !important;
   }
-  section .space-y-4 .text-base {
-    font-size: 13.5px !important;
-  }
   section .space-y-4 .text-sm.text-text-tertiary {
     font-size: 12px;
   }
 
   /* 已读/未读徽章 */
   .feed-badge {
-    font-size: 10.5px !important;
+    font-size: 11px !important;
     padding: 2px 8px !important;
   }
 }

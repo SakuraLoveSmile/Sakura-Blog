@@ -14,12 +14,23 @@ import {
 } from "../web/src/modules/plugins/preview/resources.ts";
 import {
   buildPreviewDoc,
+  injectPreviewStorageFallback,
+  injectPreviewSurface,
+  injectPreviewWriteGuard,
+  preparePreviewDocument,
+  previewFailureMessage,
+  previewInvalidNoticeVisible,
+  previewSurfaceColor,
+  previewSurfaceFallback,
+  previewWriteAllowed,
+  PREVIEW_WRITE_PATHS,
   MIN_PREVIEW_HEIGHT,
   MAX_PREVIEW_HEIGHT,
   DEFAULT_PREVIEW_HEIGHT,
   resolvePreviewHeight,
   clampPreviewHeight,
 } from "../web/src/modules/plugins/preview/preview-document.ts";
+import { runInNewContext } from "node:vm";
 import { RenderGate } from "../web/src/modules/plugins/preview/render-gate.ts";
 
 const SURFACE = "插件预览";
@@ -227,6 +238,17 @@ test(`${SURFACE} · Fixture 路由与失败降级提示正确`, () => {
   );
 });
 
+test(`${SURFACE} · 服务端整页预览文档注入存储回退且幂等`, () => {
+  const serverDoc = '<!doctype html><html><head><meta charset="utf-8"><script src="/assets/js/main.js"></script></head><body></body></html>';
+  const injected = injectPreviewStorageFallback(serverDoc);
+  assert.ok(injected.includes('data-preview-storage="1"'), "应在 head 注入存储回退");
+  assert.ok(injected.indexOf('data-preview-storage="1"') > injected.indexOf('<meta charset="utf-8">'), "不得把 charset 推出前 1024 字节");
+  assert.ok(injected.indexOf('data-preview-storage="1"') < injected.indexOf("/assets/js/main.js"), "必须早于运行时脚本");
+  assert.equal(injectPreviewStorageFallback(injected), injected, "重复注入应保持幂等");
+  // 原生 buildPreviewDoc 文档同样带存储回退（opaque origin 下 rating/vote 不抛 SecurityError）
+  assert.ok(buildPreviewDoc({ bodyHtml: "" }).includes('data-preview-storage="1"'));
+});
+
 test(`${SURFACE} · 组件 iframe 运行时包含侧栏交互脚本`, () => {
   const doc = buildPreviewDoc({
     bodyHtml: '<widget class="widget-wrapper tagcloud"></widget>',
@@ -352,4 +374,275 @@ test(`${SURFACE} · 内容高度回传钳制：不低于推荐高度、不超上
   assert.equal(clampPreviewHeight(100, min), min, "回传低于推荐高度时保持推荐高度");
   assert.equal(clampPreviewHeight(400, min), 424, "回传高于推荐高度时按内容 +24px");
   assert.equal(clampPreviewHeight(5000, min), MAX_PREVIEW_HEIGHT, "超上限钳制到 900");
+});
+
+// ---------- 预览表面：不透明背景与主题回退（V1） ----------
+
+test(`${SURFACE} · 预览表面注入不透明背景、跟随文档主题且幂等`, () => {
+  const serverDoc =
+    '<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/assets/css/main.css"></head><body><article class="md-text content"><p>x</p></article></body></html>';
+  const prepared = preparePreviewDocument(serverDoc, null);
+  assert.ok(prepared.includes('data-preview-surface="1"'), "必须注入表面样式");
+  assert.ok(prepared.includes('data-preview-surface-script="1"'), "必须注入运行时表面解析");
+  assert.ok(prepared.indexOf('data-preview-surface="1"') < prepared.indexOf("</head>"), "样式应晚于站点样式表");
+  assert.ok(prepared.indexOf('data-preview-surface-script="1"') < prepared.indexOf("</body>"), "脚本应在正文之后");
+  assert.ok(prepared.includes("--background") && prepared.includes("--bg"), "优先读取文档主题变量");
+  assert.ok(prepared.includes("prefers-color-scheme: dark"), "无 data-theme 时跟随系统偏好");
+  assert.ok(prepared.includes('html[data-theme="dark"]'), "深色文档使用深底");
+  assert.ok(prepared.includes("#1c1c1e") && prepared.includes("#ffffff"), "提供中性明暗回退色");
+  assert.equal(injectPreviewSurface(prepared), prepared, "重复注入必须幂等");
+  assert.equal((prepared.match(/data-preview-surface="1"/g) || []).length, 1);
+});
+
+function surfaceScriptOf(document: string): string {
+  const match = document.match(/<script data-preview-surface-script="1">([\s\S]*?)<\/script>/);
+  assert.ok(match, "缺少预览表面脚本");
+  return match[1];
+}
+
+function runSurfaceScript(options: { theme?: string | null; prefersDark?: boolean; background?: string }) {
+  const styleSink = () => {
+    const style: Record<string, string> & { setProperty?: (name: string, value: string) => void } = {};
+    style.setProperty = (name: string, value: string) => {
+      style[name] = value;
+    };
+    return style;
+  };
+  const probe = { style: {} as Record<string, string>, remove() {} };
+  const html = {
+    style: styleSink(),
+    getAttribute: (name: string) => (name === "data-theme" ? options.theme ?? null : null),
+    appendChild() {},
+  };
+  const body = { style: styleSink(), appendChild() {} };
+  const background = options.background ?? "";
+  const sandbox: any = {
+    document: {
+      documentElement: html,
+      body,
+      readyState: "complete",
+      createElement: () => probe,
+      addEventListener() {},
+    },
+    window: {
+      getComputedStyle(el: any) {
+        if (el === probe) return { color: probe.style.color };
+        return {
+          getPropertyValue: (name: string) => (name === "--background" ? background : ""),
+          backgroundColor: "rgba(0, 0, 0, 0)",
+        };
+      },
+      addEventListener() {},
+      matchMedia: () => ({ matches: Boolean(options.prefersDark), addEventListener() {} }),
+      MutationObserver: class {
+        observe() {}
+      },
+    },
+    setTimeout() {},
+    setInterval() {},
+    clearInterval() {},
+    console,
+  };
+  runInNewContext(surfaceScriptOf(
+    preparePreviewDocument('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>', null),
+  ), sandbox);
+  return { html: html.style["background-color"], body: body.style["background-color"] };
+}
+
+test(`${SURFACE} · 表面回退按主题/系统偏好，透明变量合成到不透明底色`, () => {
+  assert.equal(previewSurfaceFallback("dark", false), "#1c1c1e");
+  assert.equal(previewSurfaceFallback("light", true), "#ffffff");
+  assert.equal(previewSurfaceFallback(undefined, true), "#1c1c1e");
+  assert.equal(previewSurfaceFallback("auto", false), "#ffffff");
+  assert.equal(previewSurfaceColor([], "#ffffff"), "rgb(255, 255, 255)");
+  assert.equal(previewSurfaceColor(["rgba(0, 0, 0, 0)"], "#ffffff"), "rgb(255, 255, 255)", "透明变量必须回退");
+  assert.equal(previewSurfaceColor(["rgba(0, 0, 0, 0.5)"], "#ffffff"), "rgb(128, 128, 128)", "半透明色需合成");
+  assert.equal(previewSurfaceColor(["rgb(18, 18, 20)"], "#ffffff"), "rgb(18, 18, 20)", "不透明主题色直接复用");
+  assert.equal(previewSurfaceColor(["rgba(0, 0, 0, 0)", "rgb(24, 24, 24)"], "#ffffff"), "rgb(24, 24, 24)");
+
+  // 实际执行注入脚本：主题变量、透明回退、data-theme 与 prefers-color-scheme 都要落到 html/body。
+  const themed = runSurfaceScript({ theme: null, prefersDark: false, background: "rgb(250, 250, 250)" });
+  assert.equal(themed.html, "rgb(250, 250, 250)");
+  assert.equal(themed.body, "rgb(250, 250, 250)");
+  const transparentDark = runSurfaceScript({ theme: "dark", prefersDark: false, background: "rgba(0, 0, 0, 0)" });
+  assert.equal(transparentDark.html, "rgb(28, 28, 30)");
+  const systemDark = runSurfaceScript({ theme: null, prefersDark: true, background: "" });
+  assert.equal(systemDark.html, "rgb(28, 28, 30)");
+  const forcedLight = runSurfaceScript({ theme: "light", prefersDark: true, background: "" });
+  assert.equal(forcedLight.html, "rgb(255, 255, 255)");
+});
+
+// ---------- 写入守卫 / 存储回退 profile 收窄 ----------
+
+function guardScriptOf(document: string): string {
+  const match = document.match(/<script data-preview-write-guard="1">([\s\S]*?)<\/script>/);
+  assert.ok(match, "缺少写入守卫脚本");
+  return match[1];
+}
+
+test(`${SURFACE} · 写入守卫 URL 判定：GET 放行、精确 Fixture 写放行、真实写/绝对 URL 拒绝`, () => {
+  assert.equal(previewWriteAllowed("GET", "/api/vote/info", "about:srcdoc"), true);
+  assert.equal(previewWriteAllowed("HEAD", "/api/vote/update", "about:srcdoc"), true);
+  assert.equal(previewWriteAllowed("OPTIONS", "/api/vote/update", "about:srcdoc"), true);
+  assert.equal(previewWriteAllowed("GET", "https://evil.example/api/vote/info", "about:srcdoc"), true, "GET 放行");
+  for (const path of PREVIEW_WRITE_PATHS) {
+    assert.equal(previewWriteAllowed("POST", path, "about:srcdoc"), true, `${path} 应放行`);
+    assert.equal(previewWriteAllowed("POST", `${path}?id=demo`, "about:srcdoc"), true, `${path} 允许 query`);
+  }
+  assert.equal(previewWriteAllowed("post", "/api/v1/preview/vote/update", "about:srcdoc"), true);
+  assert.equal(previewWriteAllowed("POST", "/api/vote/update", "about:srcdoc"), false);
+  assert.equal(previewWriteAllowed("POST", "/api/rating/update", "about:srcdoc"), false);
+  // 只允许精确路径：前缀相近、尾斜杠、额外段都不放行
+  assert.equal(previewWriteAllowed("POST", "/api/v1/preview/rating-extra", "about:srcdoc"), false);
+  assert.equal(previewWriteAllowed("POST", "/api/v1/preview/rating/info/extra", "about:srcdoc"), false);
+  assert.equal(previewWriteAllowed("POST", "/api/v1/preview/friends/", "about:srcdoc"), false);
+  // 协议相对 URL 视为绝对，即使是同源也不放行
+  assert.equal(previewWriteAllowed("POST", "//localhost:8096/api/v1/preview/rating", "about:srcdoc"), false);
+  assert.equal(previewWriteAllowed("POST", "//evil.example/api/v1/preview/friends", "about:srcdoc"), false);
+  // 反斜杠在 URL 解析中等价于 `/`：`\\evil.example/...`、`/\evil.example/...` 曾会被解析成外域并放行
+  assert.equal(previewWriteAllowed("POST", "\\\\evil.example/api/v1/preview/rating", "about:srcdoc"), false);
+  assert.equal(previewWriteAllowed("POST", "/\\evil.example/api/v1/preview/rating", "about:srcdoc"), false);
+  assert.equal(previewWriteAllowed("POST", "\\\\localhost:8096/api/v1/preview/rating", "about:srcdoc"), false);
+  // GET/HEAD/OPTIONS 不受影响
+  assert.equal(previewWriteAllowed("GET", "\\\\evil.example/api/v1/preview/rating", "about:srcdoc"), true);
+  // 绝对外域即使路径像 Fixture 也不能放行
+  assert.equal(previewWriteAllowed("POST", "https://evil.example/api/v1/preview/friends", "about:srcdoc"), false);
+  // 解析结果的 origin 必须与当前 base 的 origin 一致
+  assert.equal(
+    previewWriteAllowed("POST", "/api/v1/preview/rating", "http://localhost:8096/console", "http://localhost:8096/console"),
+    true,
+  );
+  // 动态 <base> 把相对 Fixture 导向外域时必须拒绝
+  assert.equal(
+    previewWriteAllowed("POST", "/api/v1/preview/rating", "https://evil.example/console", "http://localhost:8096/console"),
+    false,
+  );
+  assert.equal(
+    previewWriteAllowed("POST", "/api/v1/preview/rating", "http://localhost:8097/console", "http://localhost:8096/console"),
+    false,
+    "base 端口变化也要拒绝",
+  );
+  // 非法 URL 不能因解析异常而放行
+  assert.equal(previewWriteAllowed("POST", "http://[bad", "about:srcdoc"), false);
+  assert.equal(previewWriteAllowed("POST", "/api/v1/preview/rating", "http://[bad", "http://[bad"), false);
+});
+
+test(`${SURFACE} · 写入守卫脚本拦截真实 fetch/XHR/beacon，放行 Fixture 写与 GET`, async () => {
+  const document = injectPreviewWriteGuard(
+    '<!doctype html><html><head><meta charset="utf-8"><script src="/assets/js/main.js"></script></head><body></body></html>',
+  );
+  const calls: string[] = [];
+  class FakeXHR {
+    method = "";
+    url = "";
+    open(method: string, url: string) {
+      this.method = method;
+      this.url = url;
+    }
+    send() {
+      calls.push(`xhr:${this.method}:${this.url}`);
+    }
+  }
+  const sandbox: any = {
+    window: {
+      fetch(input: any, init?: any) {
+        calls.push(`fetch:${init?.method ?? "GET"}:${String(input)}`);
+        return Promise.resolve({ ok: true });
+      },
+      XMLHttpRequest: FakeXHR,
+    },
+    navigator: {
+      sendBeacon(url: string) {
+        calls.push(`beacon:${url}`);
+        return true;
+      },
+    },
+    document: { baseURI: "about:srcdoc" },
+    URL,
+    Promise,
+    Error,
+    Date,
+    console,
+  };
+  runInNewContext(guardScriptOf(document), sandbox);
+
+  // GET 放行
+  await sandbox.window.fetch("/api/vote/info");
+  // Fixture POST 放行
+  await sandbox.window.fetch("/api/v1/preview/rating/update", { method: "POST" });
+  // 真实 POST 拒绝：promise rejected 且原 fetch 未被调用
+  await assert.rejects(sandbox.window.fetch("/api/vote/update", { method: "POST" }), /preview write blocked/);
+  assert.equal(sandbox.window.__stellarPreviewWriteBlocked.method, "POST");
+  assert.equal(sandbox.window.__stellarPreviewWriteBlocked.url, "/api/vote/update");
+  assert.deepEqual(calls, ["fetch:GET:/api/vote/info", "fetch:POST:/api/v1/preview/rating/update"]);
+
+  // XHR：Fixture 放行，真实写同步抛错
+  const allowedXHR = new sandbox.window.XMLHttpRequest();
+  allowedXHR.open("POST", "/api/v1/preview/vote/update");
+  allowedXHR.send();
+  const blockedXHR = new sandbox.window.XMLHttpRequest();
+  blockedXHR.open("POST", "/api/vote/update");
+  assert.throws(() => blockedXHR.send(), /preview write blocked/);
+  assert.ok(calls.includes("xhr:POST:/api/v1/preview/vote/update"));
+
+  // sendBeacon：真实写返回 false，Fixture 放行
+  assert.equal(sandbox.navigator.sendBeacon("/api/vote/update"), false);
+  assert.equal(sandbox.navigator.sendBeacon("/api/v1/preview/vote/update"), true);
+  assert.ok(calls.includes("beacon:/api/v1/preview/vote/update"));
+
+  // 协议相对 / 反斜杠变体 / 动态 <base>：写请求必须拒绝
+  await assert.rejects(
+    sandbox.window.fetch("//localhost:8096/api/v1/preview/rating/update", { method: "POST" }),
+    /preview write blocked/,
+  );
+  await assert.rejects(
+    sandbox.window.fetch("\\\\evil.example/api/v1/preview/rating", { method: "POST" }),
+    /preview write blocked/,
+    "反斜杠绝对 URL 不得放行",
+  );
+  await assert.rejects(
+    sandbox.window.fetch("/\\evil.example/api/v1/preview/rating", { method: "POST" }),
+    /preview write blocked/,
+    "斜杠+反斜杠绝对 URL 不得放行",
+  );
+  assert.equal(sandbox.navigator.sendBeacon("\\\\evil.example/api/v1/preview/rating"), false);
+  sandbox.document.baseURI = "https://evil.example/console";
+  await assert.rejects(
+    sandbox.window.fetch("/api/v1/preview/rating/update", { method: "POST" }),
+    /preview write blocked/,
+  );
+  assert.equal(sandbox.navigator.sendBeacon("/api/v1/preview/vote/update"), false);
+});
+
+test(`${SURFACE} · 写入守卫幂等、位于 charset 之后且早于站点脚本`, () => {
+  const serverDoc = '<!doctype html><html><head><meta charset="utf-8"><script src="/assets/js/main.js"></script></head><body></body></html>';
+  const guarded = injectPreviewWriteGuard(serverDoc);
+  assert.equal(injectPreviewWriteGuard(guarded), guarded, "重复注入必须幂等");
+  assert.equal((guarded.match(/data-preview-write-guard="1"/g) || []).length, 1);
+  assert.ok(guarded.indexOf('data-preview-write-guard="1"') > guarded.indexOf('<meta charset="utf-8">'));
+  assert.ok(guarded.indexOf('data-preview-write-guard="1"') < guarded.indexOf("/assets/js/main.js"));
+});
+
+test(`${SURFACE} · 存储回退只在 component-library 预览注入，真实上下文保持旧行为`, () => {
+  const serverDoc = '<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>';
+  const library = preparePreviewDocument(serverDoc, "component-library");
+  assert.ok(library.includes('data-preview-write-guard="1"'), "component-library 必须有写守卫");
+  assert.ok(library.includes('data-preview-storage="1"'), "component-library 应注入内存 Storage");
+
+  for (const profile of [null, undefined, "", "real"]) {
+    const real = preparePreviewDocument(serverDoc, profile as any);
+    assert.ok(real.includes('data-preview-write-guard="1"'), `${String(profile)} 仍必须有写守卫`);
+    assert.ok(!real.includes('data-preview-storage="1"'), `${String(profile)} 不应注入内存 Storage`);
+  }
+  // 旧 API 仍可单独使用
+  assert.ok(injectPreviewStorageFallback(serverDoc).includes('data-preview-storage="1"'));
+});
+
+test(`${SURFACE} · 参数无效提示与 Markdown 失败文案`, () => {
+  assert.equal(previewInvalidNoticeVisible(false, false, true), true);
+  assert.equal(previewInvalidNoticeVisible(false, true, true), false, "校验中不提示参数无效");
+  assert.equal(previewInvalidNoticeVisible(true, false, true), false);
+  assert.equal(previewInvalidNoticeVisible(false, false, false), false, "无旧文档时走源码错误态");
+  assert.equal(previewFailureMessage(true), "预览渲染失败，仍显示上一次结果");
+  assert.equal(previewFailureMessage(false), "预览渲染失败");
 });

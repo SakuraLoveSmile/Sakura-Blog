@@ -590,12 +590,12 @@ function submit() {
 }
 .settings-section {
   margin: 0;
-  padding: 28px;
+  padding: 24px 0;
   border-bottom: 1px solid var(--color-border);
 }
 .settings-section-heading {
   max-width: 860px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .settings-section-heading h2 {
   display: flex;
@@ -603,18 +603,12 @@ function submit() {
   gap: 8px;
   margin: 0;
   color: var(--color-foreground);
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .settings-section-heading h2::before {
-  content: "";
-  display: inline-block;
-  width: 3.5px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  flex-shrink: 0;
+  display: none;
 }
 .settings-section-heading p,
 .settings-help {
@@ -700,8 +694,8 @@ function submit() {
 .settings-field-heading > label {
   margin: 0;
   color: var(--color-foreground);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
 }
 .settings-reset {
   flex-shrink: 0;
@@ -782,19 +776,10 @@ function submit() {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  padding: 16px 28px calc(16px + env(safe-area-inset-bottom));
+  /* 横向留白由 .settings-container（桌面 32 / 手机 16）统一提供，操作条只补纵向安全区。 */
+  padding: 16px 0 calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
-  background: var(--color-card);
-}
-@media (max-width: 767px) {
-  .settings-section {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-  .settings-canonical-actions {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
+  background: var(--color-background);
 }
 @media (max-width: 640px) {
   .settings-section {

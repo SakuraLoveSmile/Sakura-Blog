@@ -165,22 +165,22 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 }
 .health-subtitle { margin-top: 2px; color: var(--color-muted-foreground); font-size: 11px; }
 .health-detail-link { display: inline-flex; align-items: center; gap: 3px; border: 0; color: var(--color-muted-foreground); background: transparent; font: inherit; font-size: 11px; cursor: pointer; transition: color var(--duration-fast, 150ms) ease; }
-.health-detail-link:hover { color: var(--color-primary); }
+.health-detail-link:hover { color: var(--color-foreground); }
 .health-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .health-metric-grid.is-large { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.health-metric { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--color-muted-foreground) 4%, transparent); }
+.health-metric { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 0; border: 0; border-radius: 0; background: transparent; }
 .health-metric > span:last-child { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
-.health-metric small { color: var(--color-muted-foreground); font-size: 10px; line-height: 1.2; }
+.health-metric small { color: var(--color-muted-foreground); font-size: 11px; line-height: 1.2; }
 .health-metric strong { overflow: hidden; color: var(--color-foreground); font-size: 13px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.health-metric-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex: 0 0 auto; border-radius: 9px; }
-.health-metric-icon.is-success { color: var(--color-state-success); background: color-mix(in srgb, var(--color-state-success) 12%, transparent); }
-.health-metric-icon.is-primary { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
-.health-metric-icon.is-purple { color: var(--color-chart-5); background: color-mix(in srgb, var(--color-chart-5) 12%, transparent); }
-.health-metric-icon.is-warning { color: var(--color-state-warning); background: color-mix(in srgb, var(--color-state-warning) 12%, transparent); }
-.health-storage { margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); }
+.health-metric-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex: 0 0 auto; border-radius: var(--radius-sm); }
+.health-metric-icon.is-success { color: var(--color-state-success); background: transparent; }
+.health-metric-icon.is-primary { color: var(--color-text-secondary); background: transparent; }
+.health-metric-icon.is-purple { color: var(--color-chart-5); background: transparent; }
+.health-metric-icon.is-warning { color: var(--color-state-warning); background: transparent; }
+.health-storage { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--color-border); }
 .health-section-label { color: var(--color-foreground); font-size: 11px; font-weight: 600; }
 .health-storage-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.health-storage-track { height: 5px; overflow: hidden; border-radius: 99px; background: color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); }
+.health-storage-track { height: 5px; overflow: hidden; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); }
 .health-storage-track i { display: block; height: 100%; min-width: 4px; border-radius: inherit; background: var(--color-primary); }
 .health-storage-track i.is-chart-5 { background: var(--color-chart-5); }
 .health-storage-track i.is-chart-1 { background: var(--color-chart-1); }
@@ -190,11 +190,11 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 .system-health-small.health-card { padding: 13px 15px; }
 .system-health-small .health-header { margin-bottom: 6px; }
 .system-health-small .health-metric-grid { gap: 6px; }
-.system-health-small .health-metric { padding: 6px 8px; border-radius: 10px; gap: 6px; }
-.system-health-small .health-metric-icon { width: 24px; height: 24px; border-radius: 7px; }
-.system-health-small .health-metric strong { font-size: 11.5px; }
-.system-health-small .health-metric small { font-size: 9.5px; }
-.system-health-small .health-runtime-note { padding-top: 6px; padding-bottom: 0; font-size: 10px; }
+.system-health-small .health-metric { padding: 6px 8px; border-radius: var(--radius-md); gap: 6px; }
+.system-health-small .health-metric-icon { width: 24px; height: 24px; border-radius: var(--radius-sm); }
+.system-health-small .health-metric strong { font-size: 12px; }
+.system-health-small .health-metric small { font-size: 11px; }
+.system-health-small .health-runtime-note { padding-top: 6px; padding-bottom: 0; font-size: 11px; }
 
 .system-health-large.health-card { padding: 18px 22px; }
 .system-health-large .health-header { margin-bottom: 8px; }

@@ -209,13 +209,13 @@ function formatViews(n: number): string {
 function statusBadge(status: string) {
   switch (status) {
     case "published":
-      return { cls: "bg-[#30D158]/10 text-[#30D158]", label: "已发布" };
+      return { cls: "text-state-success", label: "已发布" };
     case "draft":
-      return { cls: "bg-[#FF9500]/10 text-[#FF9500]", label: "草稿" };
+      return { cls: "text-state-warning", label: "草稿" };
     case "trashed":
-      return { cls: "bg-[#FF453A]/10 text-[#FF453A]", label: "回收站" };
+      return { cls: "text-state-error", label: "回收站" };
     default:
-      return { cls: "bg-secondary text-text-tertiary", label: status };
+      return { cls: "text-text-tertiary", label: status };
   }
 }
 </script>
@@ -224,9 +224,6 @@ function statusBadge(status: string) {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="独立页面" actions-layout="stack-below-lg">
-      <template #icon>
-        <Icon icon="ri:pages-line" class="text-primary" />
-      </template>
       <template #subtitle>{{ total }} 个页面</template>
       <template #actions>
         <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
@@ -295,6 +292,7 @@ function statusBadge(status: string) {
           <div class="apple-segmented">
             <button
               type="button"
+              class="segmented-icon-btn"
               :class="{ active: viewMode === 'grid' }"
               title="卡片视图"
               aria-label="卡片视图"
@@ -305,6 +303,7 @@ function statusBadge(status: string) {
             </button>
             <button
               type="button"
+              class="segmented-icon-btn"
               :class="{ active: viewMode === 'table' }"
               title="列表视图"
               aria-label="列表视图"
@@ -340,61 +339,35 @@ function statusBadge(status: string) {
         :message="keyword ? '换个搜索关键词试试' : '点击“新建页面”创建独立页面。'"
       />
 
-      <!-- ============ 模式 1：卡片网格视图 ============ -->
-      <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <div
+      <!-- ============ 模式 1：卡片网格视图（保留选择与操作，视觉退为分隔线） ============ -->
+      <div v-else-if="viewMode === 'grid'" class="page-grid">
+        <article
           v-for="p in pages"
           :key="p.slug"
-          class="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-4 transition-colors duration-150 hover:border-border-strong sm:p-5"
-          :class="{ 'border-primary ring-1 ring-primary bg-primary/5': selectedSlugs.has(p.slug) }"
+          class="page-card"
+          :class="{ 'is-selected': selectedSlugs.has(p.slug) }"
         >
-          <div>
-            <!-- 顶部类型与状态徽章 -->
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  :checked="selectedSlugs.has(p.slug)"
-                  class="h-4 w-4 rounded border-border text-primary cursor-pointer"
-                  @change="toggleSelect(p.slug)"
-                />
-                <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusBadge(p.status).cls">
-                  {{ statusBadge(p.status).label }}
-                </span>
-                <span
-                  v-if="p.is_system"
-                  class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
-                >
-                  系统内置
-                </span>
-              </div>
-
-              <!-- 浏览量徽标 -->
-              <span class="flex items-center gap-1 font-mono text-xs text-text-quaternary">
-                <Icon icon="ri:eye-line" />
-                {{ formatViews(p.views) }}
-              </span>
-            </div>
-
-            <!-- 标题与 Slug -->
-            <div class="mt-3">
-              <h3
-                class="truncate text-base font-bold text-foreground transition-colors group-hover:text-primary cursor-pointer"
-                @click="router.push(`/pages/edit/${p.slug}`)"
-              >
-                {{ p.title || p.slug }}
-              </h3>
-              <div class="mt-1 flex items-center gap-1.5 font-mono text-xs text-text-tertiary truncate">
-                <span>/{{ p.slug }}</span>
-              </div>
-            </div>
+          <div class="page-card-top">
+            <label class="page-select-hit">
+              <input
+                type="checkbox"
+                :checked="selectedSlugs.has(p.slug)"
+                class="page-select"
+                :aria-label="`选择页面：${p.title || p.slug}`"
+                @change="toggleSelect(p.slug)"
+              />
+            </label>
+            <span class="page-status" :class="statusBadge(p.status).cls">{{ statusBadge(p.status).label }}</span>
+            <span v-if="p.is_system" class="page-note">系统内置</span>
+            <span class="page-views">{{ formatViews(p.views) }} 浏览</span>
           </div>
 
-          <!-- 底部更新时间与操作 -->
-          <div class="mt-5 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
-            <span class="text-text-quaternary">{{ formatRelative(p.updated_at) }}</span>
+          <h3 class="page-title" @click="router.push(`/pages/edit/${p.slug}`)">{{ p.title || p.slug }}</h3>
+          <div class="page-slug">/{{ p.slug }}</div>
 
-            <div class="flex items-center gap-1">
+          <div class="page-card-footer">
+            <span class="page-time">{{ formatRelative(p.updated_at) }}</span>
+            <div class="page-actions">
               <button
                 v-if="p.status === 'published'"
                 type="button"
@@ -404,7 +377,6 @@ function statusBadge(status: string) {
               >
                 <Icon icon="ri:external-link-line" />
               </button>
-
               <button
                 v-if="p.status !== 'trashed'"
                 type="button"
@@ -414,31 +386,28 @@ function statusBadge(status: string) {
               >
                 <Icon icon="ri:edit-line" />
               </button>
-
               <button
                 v-if="p.status === 'trashed'"
                 type="button"
-                class="action-icon-btn text-primary"
+                class="action-icon-btn"
                 title="从回收站恢复"
                 @click="handleRestore(p)"
               >
                 <Icon icon="ri:restart-line" />
               </button>
-
               <button
                 v-if="p.status !== 'trashed'"
                 type="button"
-                class="action-icon-btn hover:text-state-error"
+                class="action-icon-btn"
                 title="移入回收站"
                 @click="handleDelete(p)"
               >
                 <Icon icon="ri:delete-bin-line" />
               </button>
-
               <button
                 v-if="p.status === 'trashed'"
                 type="button"
-                class="action-icon-btn text-state-error"
+                class="action-icon-btn"
                 title="彻底删除"
                 @click="handlePurge(p)"
               >
@@ -446,7 +415,7 @@ function statusBadge(status: string) {
               </button>
             </div>
           </div>
-        </div>
+        </article>
       </div>
 
       <!-- 行列表在窄屏内折行，保留同一份选择与操作状态。 -->
@@ -563,7 +532,119 @@ function statusBadge(status: string) {
 </template>
 
 <style scoped>
-/* 操作小按钮 */
+.page-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0 32px;
+}
+@media (min-width: 640px) {
+  .page-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .page-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.page-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.page-card.is-selected {
+  background: var(--color-accent);
+}
+
+.page-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+.page-select-hit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: -2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.page-select {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-foreground);
+  cursor: pointer;
+}
+.page-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.page-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.page-note {
+  font-size: 12px;
+}
+.page-views {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.page-title {
+  margin: 8px 0 0;
+  overflow: hidden;
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.page-title:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.page-slug {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.page-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+.page-time {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
 .action-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -581,12 +662,24 @@ function statusBadge(status: string) {
   cursor: pointer;
 }
 .action-icon-btn:hover {
-  background: var(--color-secondary);
+  background: var(--color-accent);
   color: var(--color-foreground);
   border-color: var(--color-border);
 }
 
+@media (hover: hover) and (min-width: 1024px) {
+  .page-actions { opacity: 0; }
+  .page-card:hover .page-actions,
+  .page-card:focus-within .page-actions,
+  .page-card.is-selected .page-actions { opacity: 1; }
+}
+
 @media (max-width: 1023px) {
   .action-icon-btn, .post-card-action { width: 44px; height: 44px; }
+  .page-select-hit {
+    width: 44px;
+    height: 44px;
+    margin: -12px 0 -12px -10px;
+  }
 }
 </style>

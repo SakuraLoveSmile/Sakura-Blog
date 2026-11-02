@@ -320,13 +320,13 @@ function parseTags(tags: string | string[] | undefined | null): string[] {
 function statusBadge(status: string) {
   switch (status) {
     case "published":
-      return { cls: "bg-state-success/10 text-state-success", dotCls: "bg-state-success", label: "已发布" };
+      return { cls: "text-state-success", label: "已发布" };
     case "draft":
-      return { cls: "bg-state-warning/10 text-state-warning", dotCls: "bg-state-warning", label: "草稿" };
+      return { cls: "text-state-warning", label: "草稿" };
     case "trashed":
-      return { cls: "bg-state-error/10 text-state-error", dotCls: "bg-state-error", label: "回收站" };
+      return { cls: "text-state-error", label: "回收站" };
     default:
-      return { cls: "bg-secondary text-text-tertiary", dotCls: "bg-text-quaternary", label: status };
+      return { cls: "text-text-tertiary", label: status };
   }
 }
 </script>
@@ -335,9 +335,6 @@ function statusBadge(status: string) {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="文章管理" :hide-on-scroll="false" actions-layout="stack-below-lg">
-      <template #icon>
-        <Icon icon="ri:article-line" class="text-primary" />
-      </template>
       <template #subtitle>{{ total }} 篇文章</template>
       <template #actions>
         <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
@@ -442,6 +439,7 @@ function statusBadge(status: string) {
           <div class="apple-segmented">
             <button
               type="button"
+              class="segmented-icon-btn"
               :class="{ active: viewMode === 'grid' }"
               title="海报卡片视图"
               aria-label="海报卡片视图"
@@ -452,6 +450,7 @@ function statusBadge(status: string) {
             </button>
             <button
               type="button"
+              class="segmented-icon-btn"
               :class="{ active: viewMode === 'table' }"
               title="列表视图"
               aria-label="列表视图"
@@ -504,19 +503,15 @@ function statusBadge(status: string) {
         </template>
       </VEmpty>
 
-      <!-- ============ 模式 1：海报卡片网格 ============ -->
-      <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <!-- ============ 模式 1：海报卡片网格（保留功能与偏好，只简化视觉） ============ -->
+      <div v-else-if="viewMode === 'grid'" class="post-grid">
         <article
           v-for="p in posts"
           :key="p.slug"
-          class="post-card group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card hover:border-border-strong"
+          class="post-card group"
           :class="{ 'is-selected': selectedSlugs.has(p.slug) }"
         >
-          <!-- 封面图：只保留媒体与轻量浮层，点击直达编辑，悬停平滑缩放 -->
-          <div
-            class="relative aspect-video w-full cursor-pointer overflow-hidden bg-secondary"
-            @click="router.push(`/posts/edit/${p.slug}`)"
-          >
+          <div class="post-cover" @click="router.push(`/posts/edit/${p.slug}`)">
             <img
               v-if="p.cover"
               :src="p.cover"
@@ -529,129 +524,53 @@ function statusBadge(status: string) {
               <Icon icon="ri:article-line" />
             </div>
 
-            <!-- 顶部浮动栏：多选、置顶与状态各自保持清晰热区与高对比浮层 -->
-            <div class="pointer-events-none absolute inset-x-2.5 top-2.5 flex items-center justify-between">
-              <div class="pointer-events-auto flex items-center gap-1.5" @click.stop>
-                <label
-                  class="group/cb relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-transform duration-150 active:scale-90"
-                  :aria-label="`选择文章：${p.title}`"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="selectedSlugs.has(p.slug)"
-                    class="sr-only"
-                    @change="toggleSelect(p.slug)"
-                  />
-                  <!-- 未选中：高对比圆环 + 悬停微光点 -->
-                  <div
-                    v-if="!selectedSlugs.has(p.slug)"
-                    class="flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/60 shadow-sm transition-colors duration-200 group-hover/cb:border-white/70 group-hover/cb:bg-black/80"
-                  >
-                    <div
-                      class="h-1.5 w-1.5 rounded-full bg-white/0 transition-colors duration-200 group-hover/cb:bg-white/50"
-                    ></div>
-                  </div>
-                  <!-- 已选中：Apple 蓝实心底板 + 锐利白色勾选 -->
-                  <div
-                    v-else
-                    class="flex h-7 w-7 items-center justify-center rounded-full border border-primary bg-primary text-primary-foreground transition-colors duration-200"
-                  >
-                    <Icon icon="ri:check-line" class="text-sm font-bold" />
-                  </div>
-                </label>
-                <span
-                  v-if="p.pinned"
-                  class="inline-flex items-center gap-1 rounded-full border border-white/20 bg-primary px-2 py-0.5 text-[10px] font-medium text-white shadow-sm"
-                >
-                  <Icon icon="ri:pushpin-fill" class="text-[10px]" /> 置顶
-                </span>
-              </div>
-
-              <span
-                class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-2.5 py-0.5 text-[11px] font-medium text-white/90 shadow-sm"
-              >
-                <span class="h-1.5 w-1.5 rounded-full" :class="statusBadge(p.status).dotCls"></span>
-                {{ statusBadge(p.status).label }}
+            <label class="post-select" :aria-label="`选择文章：${p.title}`" @click.stop>
+              <input type="checkbox" :checked="selectedSlugs.has(p.slug)" class="sr-only" @change="toggleSelect(p.slug)" />
+              <span class="post-select-knob" :class="{ 'is-checked': selectedSlugs.has(p.slug) }">
+                <Icon v-if="selectedSlugs.has(p.slug)" icon="ri:check-line" />
               </span>
-            </div>
+            </label>
           </div>
 
-          <!-- 卡片正文信息：分类与标签作为 Eyebrow 前置，单行滚动标题主导 -->
-          <div class="flex flex-1 flex-col justify-between p-4">
-            <div>
-              <!-- 1. 分类与标签（Eyebrow 前置元信息，保齐网格行高，点击即快捷筛选） -->
-              <div class="mb-2 flex min-h-[22px] flex-wrap items-center gap-1.5">
-                <span
-                  v-if="p.category"
-                  class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-white/5 bg-white/[0.06] px-2 py-0.5 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:bg-white/[0.12] hover:text-foreground active:scale-95"
-                  :title="`按分类「${p.category}」筛选`"
-                  @click.stop="
-                    selectedCategory = p.category;
-                    page = 1;
-                  "
-                >
-                  <Icon icon="ri:folder-3-line" class="text-xs text-text-tertiary" />
-                  {{ p.category }}
-                </span>
-                <span
-                  v-for="t in parseTags(p.tags).slice(0, 2)"
-                  :key="t"
-                  class="inline-flex cursor-pointer items-center rounded-md border border-white/5 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-text-tertiary transition-colors hover:border-primary/40 hover:bg-white/[0.1] hover:text-foreground active:scale-95"
-                  :title="`按标签「#${t}」筛选`"
-                  @click.stop="
-                    selectedTag = t;
-                    page = 1;
-                  "
-                >
-                  #{{ t }}
-                </span>
-                <span
-                  v-if="!p.category && parseTags(p.tags).length === 0"
-                  class="inline-flex items-center rounded-md border border-white/[0.04] bg-white/[0.02] px-2 py-0.5 text-[10px] text-text-quaternary"
-                >
-                  未分类
-                </span>
-              </div>
-
-              <!-- 完整标题通过提示可查看，点击进入编辑。 -->
-              <div
-                class="post-title-wrapper mb-2"
-                :title="p.title"
-                @click="router.push(`/posts/edit/${p.slug}`)"
+          <div class="post-card-body">
+            <div class="post-card-meta">
+              <span class="post-status" :class="statusBadge(p.status).cls">{{ statusBadge(p.status).label }}</span>
+              <span v-if="p.pinned" class="post-pinned">置顶</span>
+              <button
+                v-if="p.category"
+                type="button"
+                class="post-meta-link"
+                :title="`按分类「${p.category}」筛选`"
+                @click.stop="selectedCategory = p.category; page = 1"
               >
-                <div class="post-title-scroll">
-                  <h3
-                    class="post-title-inner text-[15px] font-semibold leading-snug text-foreground transition-colors group-hover:text-primary"
-                  >
-                    {{ p.title }}
-                  </h3>
-                </div>
-              </div>
-
-              <!-- 3. 摘要信息（若有） -->
-              <p v-if="p.excerpt" class="mb-2.5 line-clamp-2 text-xs leading-relaxed text-text-tertiary">
-                {{ p.excerpt }}
-              </p>
+                {{ p.category }}
+              </button>
+              <button
+                v-for="t in parseTags(p.tags).slice(0, 2)"
+                :key="t"
+                type="button"
+                class="post-meta-link"
+                :title="`按标签「#${t}」筛选`"
+                @click.stop="selectedTag = t; page = 1"
+              >
+                #{{ t }}
+              </button>
+              <span class="post-card-views">{{ formatViews(p.views ?? 0) }} 浏览</span>
             </div>
 
-            <!-- 时间、阅读量与常显操作。 -->
-            <div class="flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs">
-              <div
-                class="flex items-center gap-1.5 text-[11px] text-text-tertiary transition-colors hover:text-text-secondary"
-                :title="`创建时间：${formatDateTime(p.created_at)}\n更新时间：${formatDateTime(p.updated_at)}`"
-              >
-                <span>{{ formatRelative(p.created_at) }}</span>
-                <template v-if="p.views !== undefined">
-                  <span class="text-text-quaternary" aria-hidden="true">·</span>
-                  <span>{{ formatViews(p.views) }} 浏览</span>
-                </template>
-              </div>
+            <h3 class="post-title-inner" :title="p.title" @click="router.push(`/posts/edit/${p.slug}`)">
+              {{ p.title }}
+            </h3>
+            <p v-if="p.excerpt" class="post-excerpt">{{ p.excerpt }}</p>
 
-              <div class="post-card-actions flex items-center gap-1">
+            <div class="post-card-footer">
+              <span class="post-card-time" :title="`创建：${formatDateTime(p.created_at)}\n更新：${formatDateTime(p.updated_at)}`">
+                {{ formatRelative(p.created_at) }}
+              </span>
+              <div class="post-card-actions">
                 <button type="button" class="post-card-action" title="生成临时分享链接" @click="openShareModal(p)">
                   <Icon icon="ri:share-forward-line" />
                 </button>
-
                 <button
                   v-if="p.status === 'published'"
                   type="button"
@@ -661,7 +580,6 @@ function statusBadge(status: string) {
                 >
                   <Icon icon="ri:external-link-line" />
                 </button>
-
                 <button
                   v-if="p.status !== 'trashed'"
                   type="button"
@@ -671,17 +589,15 @@ function statusBadge(status: string) {
                 >
                   <Icon icon="ri:edit-line" />
                 </button>
-
                 <button
                   v-if="p.status === 'trashed'"
                   type="button"
-                  class="post-card-action text-primary"
+                  class="post-card-action"
                   title="恢复博文"
                   @click="handleRestore(p)"
                 >
                   <Icon icon="ri:restart-line" />
                 </button>
-
                 <button
                   v-if="p.status !== 'trashed'"
                   type="button"
@@ -691,11 +607,10 @@ function statusBadge(status: string) {
                 >
                   <Icon icon="ri:delete-bin-line" />
                 </button>
-
                 <button
                   v-if="p.status === 'trashed'"
                   type="button"
-                  class="post-card-action post-card-action-danger text-state-error"
+                  class="post-card-action post-card-action-danger"
                   title="彻底删除"
                   @click="handlePurge(p)"
                 >
@@ -881,31 +796,173 @@ function statusBadge(status: string) {
 </template>
 
 <style scoped>
-/* 封面视图保留内容预览，选中状态只用边界区分。 */
-.post-card {
-  transition: border-color var(--duration-fast) var(--ease-standard);
+/* 海报视图保留封面、摘要与操作，去掉玻璃浮层、彩色胶囊和重阴影。 */
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 24px 32px;
 }
-.post-card.is-selected {
-  border-color: var(--color-primary);
+@media (min-width: 640px) {
+  .post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.post-title-wrapper {
-  overflow: hidden;
-  cursor: pointer;
+@media (min-width: 1024px) {
+  .post-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-.post-title-inner {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+@media (min-width: 1280px) {
+  .post-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* 封面缺省图使用中性背景。 */
-.post-card-placeholder {
+.post-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 16px;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.post-card.is-selected {
+  background: var(--color-accent);
+}
+
+.post-cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
   background: var(--color-secondary);
-  color: color-mix(in srgb, var(--color-foreground) 22%, transparent);
-  font-size: 1.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.post-card-placeholder {
+  color: var(--color-text-quaternary);
+  font-size: 24px;
+}
+
+.post-select {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+.post-select-knob {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-background);
+  color: var(--color-background);
+  font-size: 12px;
+}
+.post-select-knob.is-checked {
+  background: var(--color-foreground);
+  border-color: var(--color-foreground);
+}
+
+.post-pinned {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.post-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+}
+
+.post-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+.post-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.post-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.post-meta-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.post-meta-link:hover {
+  color: var(--color-foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.post-card-views {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.post-title-inner {
+  overflow: hidden;
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.post-title-inner:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.post-excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.post-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+.post-card-time {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
 }
 
 .post-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
@@ -913,11 +970,11 @@ function statusBadge(status: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--color-secondary) 78%, transparent);
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--color-text-tertiary);
   cursor: pointer;
   transition:
@@ -927,19 +984,18 @@ function statusBadge(status: string) {
 }
 
 .post-card-action:hover {
-  border-color: var(--color-border-strong);
+  border-color: var(--color-border);
   background: var(--color-accent);
   color: var(--color-foreground);
 }
 
 .post-card-action:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
 
 .post-card-action-danger:hover {
-  border-color: color-mix(in srgb, var(--color-state-error) 40%, transparent);
-  background: color-mix(in srgb, var(--color-state-error) 12%, transparent);
+  border-color: var(--color-state-error);
   color: var(--color-state-error);
 }
 
@@ -961,12 +1017,20 @@ function statusBadge(status: string) {
   cursor: pointer;
 }
 .action-icon-btn:hover {
-  background: var(--color-secondary);
+  background: var(--color-accent);
   color: var(--color-foreground);
   border-color: var(--color-border);
 }
 
+@media (hover: hover) and (min-width: 1024px) {
+  .post-card-actions { opacity: 0; }
+  .post-card:hover .post-card-actions,
+  .post-card:focus-within .post-card-actions,
+  .post-card.is-selected .post-card-actions { opacity: 1; }
+}
+
 @media (max-width: 1023px) {
   .action-icon-btn, .post-card-action { width: 44px; height: 44px; }
+  .post-select { top: 0; left: 0; width: 44px; height: 44px; }
 }
 </style>

@@ -161,14 +161,12 @@ function handleSubmit() {
 
 <style scoped>
 .settings-basic-form {
-  background: var(--color-card);
+  background: transparent;
 }
 
 .settings-basic-field {
   max-width: 860px;
-  margin: 0 0 20px;
-  padding: 0 0 20px;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  margin: 0 0 16px;
 }
 
 .settings-section-body > :last-child {
@@ -182,8 +180,8 @@ function handleSubmit() {
   display: block;
   margin-bottom: 10px;
   color: var(--color-foreground);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .settings-required {
@@ -197,13 +195,13 @@ function handleSubmit() {
 
 .settings-basic-section {
   margin: 0;
-  padding: 28px;
+  padding: 24px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
 .settings-basic-section-heading {
   max-width: 860px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .settings-basic-section-heading h2 {
@@ -212,24 +210,18 @@ function handleSubmit() {
   gap: 8px;
   margin: 0;
   color: var(--color-foreground);
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .settings-basic-section-heading h2::before {
-  content: "";
-  display: inline-block;
-  width: 3.5px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--color-primary);
-  flex-shrink: 0;
+  display: none;
 }
 
 .settings-basic-section-heading p,
 .settings-basic-help {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.5;
@@ -248,7 +240,7 @@ function handleSubmit() {
 .settings-basic-asset {
   display: block;
   max-width: 860px;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .settings-basic-asset:first-child {
@@ -273,7 +265,7 @@ function handleSubmit() {
 }
 
 .settings-basic-subfield + .settings-basic-subfield {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .settings-basic-preview-box {
@@ -286,9 +278,9 @@ function handleSubmit() {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  padding: 16px 28px calc(16px + env(safe-area-inset-bottom));
+  padding: 16px 0 calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
-  background: var(--color-card);
+  background: var(--color-background);
 }
 
 .settings-basic-actions-inner {
@@ -297,25 +289,14 @@ function handleSubmit() {
   justify-content: flex-start;
 }
 
-@media (max-width: 767px) {
-  .settings-basic-section {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-}
-
 @media (max-width: 640px) {
-  .settings-basic-field {
-    padding: 20px 16px;
-  }
-
   .settings-basic-section {
     padding-top: 24px;
     padding-bottom: 24px;
   }
 
   .settings-basic-actions {
-    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
   }
 }
 </style>

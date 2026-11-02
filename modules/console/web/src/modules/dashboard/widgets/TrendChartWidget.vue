@@ -265,7 +265,7 @@ function onChartLeave() {
         <h3 class="apple-section-title text-sm">访问趋势</h3>
         <span class="text-[11px] text-muted-foreground">近 7 天</span>
       </div>
-      <div class="text-xs font-semibold text-primary tabular-nums">
+      <div class="text-[12px] font-medium text-text-secondary tabular-nums">
         总浏览 {{ formatNumber(totals.pv) }}
       </div>
     </div>
@@ -302,7 +302,7 @@ function onChartLeave() {
       </div>
       <div class="trend-stat-card">
         <div class="trend-stat-label">独立访客 (UV)</div>
-        <div class="trend-stat-value text-chart-1 tabular-nums">{{ formatNumber(totals.uv) }}</div>
+        <div class="trend-stat-value tabular-nums">{{ formatNumber(totals.uv) }}</div>
       </div>
       <div class="trend-stat-card">
         <div class="trend-stat-label">日均访问</div>
@@ -310,7 +310,7 @@ function onChartLeave() {
       </div>
       <div v-if="sizePreset === 'large'" class="trend-stat-card">
         <div class="trend-stat-label">峰值单日</div>
-        <div class="trend-stat-value text-chart-3 tabular-nums">{{ formatNumber(totals.peak) }}</div>
+        <div class="trend-stat-value tabular-nums">{{ formatNumber(totals.peak) }}</div>
       </div>
     </div>
 
@@ -347,10 +347,6 @@ function onChartLeave() {
             <stop offset="50%" stop-color="var(--color-primary)" />
             <stop offset="100%" stop-color="var(--color-primary-active)" />
           </linearGradient>
-          <filter :id="`${chartUid}-glow`" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
         </defs>
 
         <!-- grid lines -->
@@ -369,7 +365,6 @@ function onChartLeave() {
         <path :d="areaPath" :fill="`url(#${chartUid}-area)`" class="trend-area-path" />
 
         <!-- Line path with smooth cubic spline -->
-        <path :d="linePath" fill="none" stroke="var(--color-primary)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.18" :filter="`url(#${chartUid}-glow)`" class="trend-line-path" />
         <path :d="linePath" fill="none" :stroke="`url(#${chartUid}-line)`" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="trend-line-path" />
         <!-- Large 尺寸渲染 UV 辅助线（chart-1 绿色） -->
         <path
@@ -392,7 +387,7 @@ function onChartLeave() {
           :cy="yScale(d.pv)"
           :r="sizePreset === 'small' ? 2.5 : 3.5"
           fill="var(--color-primary)"
-          stroke="var(--color-card)"
+          stroke="var(--color-background)"
           stroke-width="2"
         />
 
@@ -423,7 +418,7 @@ function onChartLeave() {
             opacity="0.6"
           />
           <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="10" fill="var(--color-primary)" opacity="0.2" />
-          <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="5" fill="var(--color-primary)" stroke="#ffffff" stroke-width="2" />
+          <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="5" fill="var(--color-primary)" stroke="var(--color-background)" stroke-width="2" />
         </g>
       </svg>
 
@@ -486,24 +481,27 @@ function onChartLeave() {
 </template>
 
 <style scoped>
-.trend-header { margin-bottom: 20px; }
+.trend-header { margin-bottom: 16px; }
 .trend-subtitle { color: var(--color-muted-foreground); font-size: 12px; margin-top: 2px; }
 
+/* 指标只是一行数字，不再内嵌小卡。 */
 .trend-stats {
   display: grid;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 24px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .trend-stat-card {
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: color-mix(in srgb, #fff 3%, transparent);
-  border: 1px solid color-mix(in srgb, #fff 5%, transparent);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
 }
 
-.trend-stat-label { color: var(--color-muted-foreground); font-size: 11px; margin-bottom: 3px; }
-.trend-stat-value { color: var(--color-foreground); font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.trend-stat-label { color: var(--color-muted-foreground); font-size: 11px; margin-bottom: 2px; }
+.trend-stat-value { color: var(--color-foreground); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
 
 .trend-chart-box { height: 220px; }
 .trend-chart-svg { height: 220px; display: block; touch-action: pan-y; }
@@ -516,14 +514,14 @@ function onChartLeave() {
   gap: 12px;
   padding: 18px 8px 26px;
   overflow: hidden;
-  border-radius: 14px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 4%, transparent), transparent);
+  border-radius: var(--radius-md);
+  background: var(--color-secondary);
 }
 
 .trend-skeleton-bar {
   width: 8%;
   min-height: 12px;
-  border-radius: 999px 999px 3px 3px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   background: color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
@@ -555,27 +553,27 @@ function onChartLeave() {
 .trend-legend-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 5px;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  gap: 6px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
   color: var(--color-muted-foreground);
   background: transparent;
   font: inherit;
   font-size: 11px;
   cursor: pointer;
+  box-shadow: inset 0 -1px 0 transparent;
 }
 .trend-legend-toggle:hover,
 .trend-legend-toggle.active {
   color: var(--color-foreground);
-  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  box-shadow: inset 0 -1px 0 var(--color-foreground);
 }
 .trend-legend-line {
   display: inline-block;
   width: 12px;
   height: 2px;
-  border-radius: 99px;
+  border-radius: 0;
   background: var(--color-primary);
 }
 .trend-legend-line.uv {
@@ -587,17 +585,17 @@ function onChartLeave() {
   justify-content: center;
   gap: 8px;
   color: var(--color-muted-foreground);
-  border: 1px dashed color-mix(in srgb, #fff 10%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, #fff 2%, transparent);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
 }
 .trend-insight-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid color-mix(in srgb, #fff 7%, transparent);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
 }
 .trend-insight-item {
   display: flex;
@@ -607,12 +605,12 @@ function onChartLeave() {
 }
 .trend-insight-item span {
   color: var(--color-muted-foreground);
-  font-size: 10px;
+  font-size: 11px;
 }
 .trend-insight-item strong {
   overflow: hidden;
   color: var(--color-foreground);
-  font-size: 12px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -622,14 +620,14 @@ function onChartLeave() {
   pointer-events: none;
   min-width: 120px;
   padding: 8px 12px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-card) 85%, transparent);
-  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-2xl);
+  background: var(--color-popover);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-lg);
 }
 .trend-tooltip.above { transform: translate(-50%, -100%); }
 .trend-tooltip.below { transform: translate(-50%, 0); }
-.trend-tooltip-date { color: var(--color-muted-foreground); font-size: 11px; font-family: var(--font-mono); margin-bottom: 4px; border-bottom: 1px solid color-mix(in srgb, #fff 6%, transparent); padding-bottom: 4px; text-align: center; }
+.trend-tooltip-date { color: var(--color-muted-foreground); font-size: 11px; font-family: var(--font-mono); margin-bottom: 4px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px; text-align: center; }
 .trend-tooltip-row {
   display: flex;
   align-items: center;
@@ -639,9 +637,10 @@ function onChartLeave() {
   line-height: 20px;
   white-space: nowrap;
 }
-.trend-tooltip-row b { margin-left: auto; padding-left: 12px; font-weight: 650; color: var(--color-foreground); }
-.trend-tooltip-dot { width: 7px; height: 7px; border-radius: 50%; }
-.trend-tooltip-dot.pv { background: var(--color-chart-2); }
+.trend-tooltip-row b { margin-left: auto; padding-left: 12px; font-weight: 600; color: var(--color-foreground); }
+.trend-tooltip-dot { width: 5px; height: 5px; border-radius: 50%; }
+/* PV 折线使用 primary 渐变，提示点必须同色，避免图例与线色不一致。 */
+.trend-tooltip-dot.pv { background: var(--color-primary); }
 .trend-tooltip-dot.uv { background: var(--color-chart-1); }
 
 .tip-enter-active, .tip-leave-active { transition: opacity var(--duration-fast) var(--ease-standard); }
@@ -658,7 +657,7 @@ function onChartLeave() {
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-stats,
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats { gap: 10px; margin-bottom: 16px; }
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-stat-value,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 17px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 20px; }
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-chart-box,
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box { height: 180px; }
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-chart-svg,
@@ -675,8 +674,8 @@ function onChartLeave() {
   align-self: flex-start;
 }
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats { gap: 8px; margin-bottom: 12px; }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-label { font-size: 10px; margin-bottom: 2px; }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 15px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-label { font-size: 11px; margin-bottom: 2px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 20px; }
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box { height: 150px; }
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg { height: 150px; }
 </style>

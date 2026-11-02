@@ -1,0 +1,402 @@
+/* Direction A — Editorial Desk. Injected preview only. */
+:root {
+  --color-background: #0a0a0b;
+  --color-card: #121214;
+  --color-sidebar: #0a0a0b;
+  --color-secondary: #151517;
+  --color-accent: #1b1b1e;
+  --color-border: #242428;
+  --color-border-strong: #37373d;
+  --color-muted-foreground: #8b8b91;
+  --color-text-secondary: #b9b9bf;
+  --color-text-tertiary: #7e7e85;
+  --color-text-quaternary: #6a6a71;
+  --color-primary: #cfcfd6;
+  --color-primary-hover: #ededf1;
+  --color-primary-active: #ffffff;
+  --color-primary-foreground: #0a0a0b;
+  --color-ring: #cfcfd6;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-base: 6px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+}
+
+html,
+body,
+.bg-background,
+.dashboard-viewport,
+.dashboard-canvas,
+.dashboard-apple {
+  background: #0a0a0b !important;
+}
+
+/* ---------- shell ---------- */
+aside {
+  background: #0a0a0b !important;
+  border-right: 1px solid #1e1e22 !important;
+}
+.menu-label {
+  padding: 16px 8px 6px !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.04em;
+  color: #5f5f66 !important;
+}
+.menu-item-title {
+  min-height: 32px !important;
+  padding: 5px 8px !important;
+  border-radius: 5px !important;
+  font-size: 13px !important;
+}
+.menu-item-title:hover {
+  background: #141416 !important;
+}
+.menu-item-title.active {
+  background: #19191c !important;
+  color: #f4f4f6 !important;
+}
+.menu-subitem {
+  padding-left: 2rem !important;
+}
+aside button[aria-label="搜索"] {
+  background: transparent !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid #1e1e22;
+  padding: 8px 4px !important;
+}
+aside .shrink-0 .btn {
+  background: transparent !important;
+  border: 1px solid #26262a !important;
+  color: #b9b9bf !important;
+  border-radius: 5px !important;
+  height: 32px !important;
+  font-size: 12.5px !important;
+  justify-content: flex-start !important;
+  padding-left: 10px !important;
+}
+aside .shrink-0 .btn:hover {
+  background: #141416 !important;
+  color: #f4f4f6 !important;
+}
+.current-profile {
+  border-top: 1px solid #1e1e22;
+}
+
+/* ---------- page header ---------- */
+header.sticky {
+  background: #0a0a0b !important;
+  border-bottom: 0 !important;
+  padding: 28px 40px 4px !important;
+  min-height: 0 !important;
+}
+header.sticky h1 {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+}
+.page-header-icon {
+  display: none !important;
+}
+header.sticky p {
+  font-size: 12.5px !important;
+  color: #6f6f76 !important;
+}
+main .mx-auto.max-w-\[1400px\] {
+  padding: 10px 40px 40px !important;
+  max-width: 1240px !important;
+}
+
+/* ---------- buttons / controls ---------- */
+.btn {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+.btn-primary {
+  background: #e8e8ec !important;
+  color: #0a0a0b !important;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #ffffff !important;
+}
+.btn-default {
+  background: transparent !important;
+  border-color: #303036 !important;
+  color: #c9c9d1 !important;
+}
+.btn-default:hover:not(:disabled) {
+  background: #17171a !important;
+  border-color: #46464d !important;
+}
+.apple-segmented {
+  background: transparent !important;
+  padding: 0 !important;
+  gap: 16px !important;
+  border-radius: 0 !important;
+}
+.apple-segmented button {
+  padding: 2px 0 !important;
+  border-radius: 0 !important;
+  font-size: 12.5px !important;
+  color: #6f6f76 !important;
+}
+.apple-segmented button.active {
+  background: transparent !important;
+  color: #f2f2f4 !important;
+  box-shadow: inset 0 -1px 0 #f2f2f4 !important;
+}
+.apple-input,
+.apple-textarea,
+.apple-search {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #2a2a2f !important;
+  border-radius: 0 !important;
+}
+.apple-select {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #2a2a2f !important;
+  border-radius: 0 !important;
+  padding-left: 0 !important;
+  appearance: auto !important;
+}
+.apple-input:focus,
+.apple-textarea:focus,
+.apple-search:focus-within {
+  border-color: #cfcfd6 !important;
+}
+.apple-btn-icon,
+.apple-filter-btn,
+.post-card-action,
+.action-icon-btn {
+  border-radius: 5px !important;
+}
+.apple-filter-btn {
+  border: 0 !important;
+  border-bottom: 1px solid transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ---------- dashboard ---------- */
+.dashboard-heading {
+  padding: 0 0 12px !important;
+}
+.dashboard-heading h1 {
+  font-size: 24px !important;
+  letter-spacing: -0.02em;
+}
+.dashboard-grid-stack .apple-card {
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid #1f1f23 !important;
+  border-radius: 0 !important;
+  padding: 20px !important;
+}
+.dashboard-stat-card {
+  padding: 16px 0 !important;
+  gap: 4px !important;
+}
+.dashboard-stat-heading svg {
+  display: none !important;
+}
+.dashboard-stat-heading {
+  font-size: 12px !important;
+  color: #6f6f76 !important;
+}
+.dashboard-stat-value {
+  font-size: 30px !important;
+  font-weight: 550 !important;
+  letter-spacing: -0.02em;
+}
+.dashboard-stat-detail {
+  font-size: 11.5px !important;
+  color: #6a6a71 !important;
+}
+.stat-change-label {
+  display: none !important;
+}
+.apple-section-title {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+}
+.apple-card-badge,
+.apple-card-subtitle {
+  font-size: 11.5px !important;
+  letter-spacing: 0 !important;
+  color: #6a6a71 !important;
+}
+.trend-stat-card {
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+.trend-stat-label {
+  font-size: 11px !important;
+  color: #6a6a71 !important;
+}
+.trend-stat-value {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+}
+.quick-action-item {
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+.quick-action-item:hover {
+  background: #141416 !important;
+  border-color: transparent !important;
+}
+.quick-icon-compact {
+  color: #8b8b91;
+}
+
+/* ---------- lists ---------- */
+.console-summary {
+  padding: 10px 0 !important;
+  border-bottom: 1px solid #1f1f23 !important;
+}
+.stats-label {
+  font-size: 11.5px !important;
+  color: #6f6f76 !important;
+}
+.stats-value {
+  font-size: 16px !important;
+  font-weight: 550 !important;
+}
+.console-records {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+.content-record {
+  min-height: 56px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 1px solid #1c1c20 !important;
+}
+.content-record:hover {
+  background: #0f0f11;
+}
+.content-records .record-title {
+  font-size: 14px !important;
+  font-weight: 450 !important;
+}
+.content-records .record-title:hover {
+  color: #f4f4f6 !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.record-status {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  font-size: 11.5px !important;
+}
+.record-status::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+.record-updated,
+.record-views,
+.record-metadata {
+  color: #73737a !important;
+}
+.record-metadata button {
+  color: #73737a !important;
+}
+.action-icon-btn {
+  color: #73737a !important;
+}
+.action-icon-btn:hover {
+  color: #f2f2f4 !important;
+}
+.post-card {
+  border: 0 !important;
+  border-bottom: 1px solid #1c1c20 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+/* ---------- settings ---------- */
+.settings-container {
+  padding: 0 40px 40px !important;
+}
+.settings-content {
+  max-width: 1080px !important;
+}
+.settings-basic-panel.card-wrapper {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+.settings-basic-panel .card-header {
+  padding: 0 !important;
+  border-bottom: 1px solid #1f1f23 !important;
+}
+.settings-basic-panel .card-body {
+  padding: 0 !important;
+}
+.tabbar-item-icon {
+  display: none !important;
+}
+.tabbar-default .tabbar-item {
+  padding: 11px 12px !important;
+  font-size: 13px !important;
+}
+.tabbar-default .tabbar-item.active {
+  border-bottom-color: #e8e8ec !important;
+}
+.settings-basic-section,
+.settings-section {
+  padding: 24px 0 !important;
+  max-width: 820px;
+  border-bottom: 1px solid #1c1c20 !important;
+}
+.settings-basic-section-heading h2::before {
+  display: none !important;
+}
+.settings-basic-section-heading h2 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+.settings-basic-section-heading p,
+.settings-basic-help {
+  font-size: 12px !important;
+  color: #6f6f76 !important;
+}
+.settings-effect-guide {
+  display: none !important;
+}
+/* donut legend: plain rows, no per-row mini cards */
+.apple-card svg + div > div[role="button"] {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 2px 0 !important;
+}
+.apple-card svg + div > div[role="button"]:hover {
+  background: #141416 !important;
+}
+.settings-dirty-badge {
+  color: #c9c9d1 !important;
+}
+.settings-card-tabbar {
+  gap: 2px !important;
+}
+.field label {
+  font-size: 12px !important;
+  color: #8b8b91 !important;
+}

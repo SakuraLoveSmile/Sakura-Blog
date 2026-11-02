@@ -97,7 +97,7 @@ test("sanitizeDashboardLayouts: 修正边界、去重并保留实例", () => {
   assert.ok(output);
   assert.equal(output.lg?.length, 3);
   assert.equal(output.lg?.[0].w, 6);
-  assert.equal(output.lg?.[0].h, 19);
+  assert.equal(output.lg?.[0].h, 12);
   assert.notEqual(output.lg?.[0].i, output.lg?.[1].i);
   assert.equal(output.lg?.[2].id, "future:widget");
   assert.equal(hasGridOverlaps(output.lg ?? []), false);
@@ -170,10 +170,10 @@ test("组件尺寸只有小、中、大三个预设", () => {
   const small = getGridPresetSize("trend-chart", "lg", "small");
   const medium = getGridPresetSize("trend-chart", "lg", "medium");
   const large = getGridPresetSize("trend-chart", "lg", "large");
-  assert.deepEqual(medium, { w: 8, h: 52 });
+  assert.deepEqual(medium, { w: 8, h: 44 });
   assert.ok(small.w < medium.w && small.h < medium.h);
   assert.ok(large.w > medium.w && large.h >= medium.h);
-  assert.equal(getWidgetSizePreset({ w: 8, h: 52 }, "lg", "trend-chart"), "medium");
+  assert.equal(getWidgetSizePreset({ w: 8, h: 44 }, "lg", "trend-chart"), "medium");
   assert.equal(getWidgetSizePreset({ w: 99, h: 99 }, "lg", "trend-chart"), "large");
 });
 
@@ -193,10 +193,41 @@ test("加载历史任意宽高时会迁移到预设且保持无重叠", () => {
 
 test("切换尺寸遇到冲突时会自动移动组件", () => {
   const widgets = [
-    { i: "trend-1", id: "trend-chart", x: 0, y: 0, w: 8, h: 52 },
+    { i: "trend-1", id: "trend-chart", x: 0, y: 0, w: 8, h: 44 },
     { i: "quick-1", id: "quick-actions", x: 8, y: 0, w: 4, h: 35 },
   ];
   const resized = applyGridWidgetSize(widgets[0], "large", "lg", widgets);
-  assert.deepEqual({ w: resized.w, h: resized.h }, { w: 12, h: 52 });
+  assert.deepEqual({ w: resized.w, h: resized.h }, { w: 12, h: 44 });
   assert.equal(hasGridOverlaps([resized, widgets[1]]), false);
+});
+
+test("ensureCompleteLayout({}) 原样保留声明的紧凑默认尺寸", () => {
+  const output = ensureCompleteLayout({});
+  for (const bp of BREAKPOINT_ORDER) {
+    assert.deepEqual(
+      output[bp].map(({ id, w, h }) => ({ id, w, h })),
+      defaultMultiLayout[bp].map(({ id, w, h }) => ({ id, w, h })),
+      `${bp} 默认尺寸被扩写`,
+    );
+  }
+  assert.deepEqual(
+    output.lg.slice(0, 2).map(({ w, h }) => ({ w, h })),
+    [{ w: 3, h: 12 }, { w: 3, h: 12 }],
+  );
+  assert.deepEqual(
+    output.lg.find((item) => item.id === "trend-chart"),
+    { ...defaultMultiLayout.lg.find((item) => item.id === "trend-chart") },
+  );
+});
+
+test("保存紧凑布局后往返重载尺寸不变", () => {
+  const saved = JSON.parse(JSON.stringify(defaultMultiLayout));
+  const reloaded = ensureCompleteLayout(sanitizeDashboardLayouts(saved) ?? {});
+  for (const bp of BREAKPOINT_ORDER) {
+    assert.deepEqual(
+      reloaded[bp].map(({ id, x, y, w, h }) => ({ id, x, y, w, h })),
+      defaultMultiLayout[bp].map(({ id, x, y, w, h }) => ({ id, x, y, w, h })),
+      `${bp} 往返后布局被改写`,
+    );
+  }
 });

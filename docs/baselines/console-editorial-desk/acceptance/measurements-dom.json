@@ -1,0 +1,328 @@
+{
+  "dashboard1280": {
+    "viewButtons": [
+      {
+        "label": "自适应",
+        "svg": true,
+        "html": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" aria-hidden=\"true\" role=\"img\" width=\""
+      },
+      {
+        "label": "电脑",
+        "svg": true,
+        "html": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" aria-hidden=\"true\" role=\"img\" width=\""
+      },
+      {
+        "label": "平板",
+        "svg": true,
+        "html": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" aria-hidden=\"true\" role=\"img\" width=\""
+      },
+      {
+        "label": "手机",
+        "svg": true,
+        "html": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" aria-hidden=\"true\" role=\"img\" width=\""
+      }
+    ],
+    "quick": [
+      {
+        "text": "写文章",
+        "w": 39,
+        "h": 20
+      },
+      {
+        "text": "评论",
+        "w": 26,
+        "h": 20
+      },
+      {
+        "text": "分类",
+        "w": 26,
+        "h": 20
+      },
+      {
+        "text": "设置",
+        "w": 26,
+        "h": 20
+      }
+    ],
+    "primary": {
+      "bg": "rgb(232, 232, 236)",
+      "color": "rgb(0, 0, 0)",
+      "radius": "6px"
+    },
+    "coloredStatusCount": 7,
+    "coloredStatusSamples": [
+      {
+        "cls": "apple-status-dot published",
+        "bg": "rgb(48, 209, 88)"
+      },
+      {
+        "cls": "apple-status-dot draft",
+        "bg": "rgb(255, 159, 10)"
+      },
+      {
+        "cls": "apple-status-dot draft",
+        "bg": "rgb(255, 159, 10)"
+      },
+      {
+        "cls": "apple-status-dot draft",
+        "bg": "rgb(255, 159, 10)"
+      },
+      {
+        "cls": "apple-status-dot published",
+        "bg": "rgb(48, 209, 88)"
+      }
+    ],
+    "h1": "仪表盘"
+  },
+  "posts390": {
+    "rowCount": 7,
+    "rowHeight": {
+      "w": 358,
+      "h": 179
+    },
+    "checkbox": {
+      "w": 16,
+      "h": 16
+    },
+    "checkboxLabel": {
+      "w": 44,
+      "h": 44
+    },
+    "actions": [
+      {
+        "title": "生成临时分享链接",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "title": "编辑博文",
+        "w": 44,
+        "h": 44
+      },
+      {
+        "title": "移入回收站",
+        "w": 44,
+        "h": 44
+      }
+    ],
+    "selectAll": {
+      "w": 70,
+      "h": 44,
+      "text": "全选本页"
+    },
+    "searchBox": {
+      "input": {
+        "w": 308,
+        "h": 20
+      },
+      "wrap": {
+        "w": 358,
+        "h": 44
+      }
+    },
+    "statusButtons": [
+      {
+        "text": "全部",
+        "w": 26,
+        "h": 44
+      },
+      {
+        "text": "已发布",
+        "w": 39,
+        "h": 44
+      },
+      {
+        "text": "草稿",
+        "w": 26,
+        "h": 44
+      },
+      {
+        "text": "回收站",
+        "w": 39,
+        "h": 44
+      }
+    ]
+  },
+  "comments390": [
+    {
+      "row": {
+        "w": 358,
+        "h": 151
+      },
+      "status": {
+        "w": 59,
+        "h": 18,
+        "text": "垃圾评论"
+      },
+      "email": {
+        "w": 82,
+        "scrollW": 130,
+        "text": "<spam@example.com>"
+      },
+      "infoW": 82,
+      "actions": [
+        {
+          "title": "批准通过 (A)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "拒绝显示 (D)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "快捷回复 (R)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "删除评论",
+          "w": 44,
+          "h": 44
+        }
+      ]
+    },
+    {
+      "row": {
+        "w": 358,
+        "h": 169
+      },
+      "status": {
+        "w": 34,
+        "h": 36,
+        "text": "待审核"
+      },
+      "email": {
+        "w": 34,
+        "scrollW": 144,
+        "text": "<reader@example.com>"
+      },
+      "infoW": 34,
+      "actions": [
+        {
+          "title": "批准通过 (A)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "拒绝显示 (D)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "标为垃圾 (S)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "快捷回复 (R)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "删除评论",
+          "w": 44,
+          "h": 44
+        }
+      ]
+    },
+    {
+      "row": {
+        "w": 358,
+        "h": 169
+      },
+      "status": {
+        "w": 34,
+        "h": 36,
+        "text": "待审核"
+      },
+      "email": {
+        "w": 34,
+        "scrollW": 130,
+        "text": "<alan@example.com>"
+      },
+      "infoW": 34,
+      "actions": [
+        {
+          "title": "批准通过 (A)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "拒绝显示 (D)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "标为垃圾 (S)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "快捷回复 (R)",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "title": "删除评论",
+          "w": 44,
+          "h": 44
+        }
+      ]
+    }
+  ],
+  "settings390": {
+    "tabbar": {
+      "top": 118,
+      "bottom": 161,
+      "w": 358,
+      "h": 43,
+      "scrollW": 358,
+      "clientW": 358,
+      "overflowX": "hidden"
+    },
+    "nav": {
+      "top": 787,
+      "bottom": 844,
+      "w": 390,
+      "h": 57
+    },
+    "save": {
+      "top": 708,
+      "bottom": 752,
+      "w": 79,
+      "h": 44
+    },
+    "docScrollW": 390,
+    "innerW": 390
+  },
+  "settings390Bottom": {
+    "navTop": 787,
+    "contentBottom": 1680,
+    "worst": {
+      "tag": "section",
+      "cls": "settings-basic-section",
+      "bottom": 1680
+    },
+    "covered": true
+  },
+  "appearance390Bottom": {
+    "navTop": 787,
+    "link": {
+      "top": 777,
+      "bottom": 793
+    },
+    "covered": true
+  },
+  "settingsAppearance390": {
+    "save": {
+      "top": 662,
+      "bottom": 706,
+      "w": 157,
+      "h": 44
+    },
+    "navTop": 787,
+    "overlappedTiles": 3
+  }
+}

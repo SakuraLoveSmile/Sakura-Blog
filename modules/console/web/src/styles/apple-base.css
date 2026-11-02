@@ -1,12 +1,12 @@
-/* ===== Apple Dark Mode 全局基础样式 ===== */
+/* ===== Console 编辑台基础样式 ===== */
 
-/* 选区颜色（brand-400 透明） */
+/* 选区颜色（中性前景，不使用品牌蓝装饰） */
 ::selection {
-  background-color: rgba(46, 141, 255, 0.3);
-  color: #fff;
+  background-color: color-mix(in srgb, var(--color-foreground) 18%, transparent);
+  color: var(--color-foreground);
 }
 
-/* Apple 风格滚动条 */
+/* 滚动条 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -29,13 +29,13 @@ select {
   color-scheme: dark;
 }
 
-/* 全局焦点环 */
+/* 全局焦点环：蓝色只保留给焦点与功能性图表 */
 *:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
 
-/* 管理页事实摘要：统计辅助扫描，不占用独立卡片层级。 */
+/* 管理页事实摘要：一行数字与细线，不占用独立卡片层级。 */
 .console-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -46,7 +46,7 @@ select {
 .stats-card {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 4px 16px;
   min-width: 0;
   box-sizing: border-box;
@@ -60,31 +60,37 @@ select {
   border-left: 1px solid var(--color-border);
 }
 .console-summary > .stats-card:first-child { padding-left: 0; }
+/* 摘要项可点击筛选，但选中态不再铺底色：用数字与标签明度区分，保持单行事实。 */
 .stats-card:is(button, [role="button"]) {
   cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background-color var(--duration-fast) var(--ease-standard);
+  border-radius: 0;
+  transition: color var(--duration-fast) var(--ease-standard);
 }
-.stats-card:is(button, [role="button"]):hover,
-.stats-card:is(button, [role="button"])[aria-pressed="true"] {
-  background: var(--color-card);
+.stats-card:is(button, [role="button"]) .stats-value {
+  color: var(--color-text-secondary);
+}
+.stats-card:is(button, [role="button"]):hover .stats-label,
+.stats-card:is(button, [role="button"]):hover .stats-value,
+.stats-card:is(button, [role="button"])[aria-pressed="true"] .stats-label,
+.stats-card:is(button, [role="button"])[aria-pressed="true"] .stats-value {
+  color: var(--color-foreground);
 }
 .stats-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 .stats-label { display: block; font-size: 12px; color: var(--color-text-tertiary); }
 .stats-value {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--color-foreground);
-  line-height: 1.5;
+  line-height: 1.4;
 }
 .stats-sub {
   display: inline;
@@ -105,11 +111,12 @@ select {
   max-width: 100%;
   flex-wrap: wrap;
 }
+/* 单层列表：容器不再提供第二层卡片。 */
 .console-records {
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 @media (max-width: 1023px) {
   .console-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
@@ -117,97 +124,91 @@ select {
 }
 @media (max-width: 767px) {
   .stats-card { padding-right: 8px; }
-  .stats-value { font-size: 16px; }
+  .stats-value { font-size: 20px; }
   .stats-sub { display: block; margin-left: 0; }
   .console-summary button.stats-card { min-height: 44px; }
 }
 
-/* 卡片顶部高光（Apple 风常用 1px 顶部亮线） */
-.apple-card-highlight {
-  position: relative;
-}
-/* apple-card-highlight removed */
+/* 头像使用中性明度梯度，不再用蓝色装饰。 */
+.avatar-gradient-1 { background: color-mix(in srgb, var(--color-foreground) 22%, var(--color-card)); }
+.avatar-gradient-2 { background: color-mix(in srgb, var(--color-foreground) 14%, var(--color-card)); }
+.avatar-gradient-3 { background: color-mix(in srgb, var(--color-foreground) 30%, var(--color-card)); }
+.avatar-gradient-4 { background: color-mix(in srgb, var(--color-foreground) 10%, var(--color-card)); }
+.avatar-gradient-5 { background: color-mix(in srgb, var(--color-foreground) 26%, var(--color-card)); }
+.avatar-gradient-6 { background: color-mix(in srgb, var(--color-foreground) 18%, var(--color-card)); }
+.avatar-gradient-7 { background: color-mix(in srgb, var(--color-foreground) 34%, var(--color-card)); }
+.avatar-gradient-8 { background: color-mix(in srgb, var(--color-foreground) 12%, var(--color-card)); }
 
-/* 渐变头像（brand 蓝族单色系——设计库「单页主色 ≤ 2、冷暖不混」约束） */
-.avatar-gradient-1 {
-  background: #2e8dff;
-}
-.avatar-gradient-2 {
-  background: #007aff;
-}
-.avatar-gradient-3 {
-  background: #66abff;
-}
-.avatar-gradient-4 {
-  background: #0064d6;
-}
-.avatar-gradient-5 {
-  background: #004fad;
-}
-.avatar-gradient-6 {
-  background: #2e8dff;
-}
-.avatar-gradient-7 {
-  background: #66abff;
-}
-.avatar-gradient-8 {
-  background: #007aff;
-}
-
-/* 封面预览渐变（brand 蓝族单色系） */
+/* 封面预览渐变（中性前景单色系） */
 .cover-preview-blue {
-  background: #007aff;
+  background: color-mix(in srgb, var(--color-foreground) 24%, var(--color-card));
 }
 
-/* 紧凑分段控件 */
+/* 紧凑分段控件：文字 + 底线，不用悬浮胶囊底板 */
 .apple-segmented {
   display: inline-flex;
-  padding: 2px;
-  background: var(--color-secondary);
-  border-radius: var(--radius-sm);
-  gap: 2px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  gap: 16px;
 }
 .apple-segmented button {
-  padding: 6px 14px;
+  padding: 4px 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text-tertiary);
-  border-radius: var(--radius-sm);
-  transition: color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 0 -1px 0 transparent;
+  transition: color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
   white-space: nowrap;
   outline: none;
 }
 .apple-segmented button:hover {
   color: var(--color-foreground);
 }
+/* 纯图标分段按钮：手机端保证 44×44 触控目标，桌面仅补水平内边距。 */
+.apple-segmented button.segmented-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 8px;
+}
+@media (max-width: 767px) {
+  .apple-segmented button.segmented-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
+  }
+}
 .apple-segmented button.active {
-  background: var(--color-accent);
+  background: transparent;
   color: var(--color-foreground);
-  box-shadow: none;
+  box-shadow: inset 0 -1px 0 var(--color-foreground);
 }
 .apple-segmented button:focus-visible,
 .appearance-tabs button:focus-visible {
-  outline: 2px solid var(--color-ring, var(--color-primary, #2e8dff));
+  outline: 2px solid var(--color-ring, #2e8dff);
   outline-offset: 2px;
 }
 
 /* 矩形分段变体（设置页等紧凑场景） */
 .apple-segmented.rect {
-  border-radius: var(--radius-md);
+  border-radius: 0;
 }
 .apple-segmented.rect button {
-  border-radius: var(--radius-sm);
+  border-radius: 0;
 }
 
-/* 表单输入基础类（统一各模块 inputCls）
-   底色比卡片（--color-secondary 同值 --color-card）深一档，建立嵌套面 tonal 层次 */
+/* 表单输入基础类（统一各模块 inputCls） */
 .apple-input {
   width: 100%;
   height: 36px;
   padding: 0 12px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-foreground);
-  background: color-mix(in srgb, #000 30%, var(--color-secondary));
+  background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   transition:
@@ -218,14 +219,14 @@ select {
   color: var(--color-text-quaternary);
 }
 .apple-input:focus {
-  border-color: var(--color-ring);
+  border-color: var(--color-border-strong);
 }
 .apple-textarea {
   width: 100%;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-foreground);
-  background: color-mix(in srgb, #000 30%, var(--color-secondary));
+  background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   resize: vertical;
@@ -237,26 +238,26 @@ select {
   color: var(--color-text-quaternary);
 }
 .apple-textarea:focus {
-  border-color: var(--color-ring);
+  border-color: var(--color-border-strong);
 }
 .apple-textarea.code-style {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.6;
-  background: #0f0f10;
+  background: var(--color-background);
   border-color: var(--color-border-strong, var(--color-border));
-  color: #e5e5ea;
+  color: var(--color-foreground);
 }
 .apple-textarea.code-style::placeholder {
-  color: rgba(142, 142, 147, 0.6);
+  color: var(--color-text-quaternary);
 }
 .apple-select {
   height: 36px;
   padding: 0 32px 0 12px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-foreground);
-  background: color-mix(in srgb, #000 30%, var(--color-secondary))
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")
+  background: var(--color-background)
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237e7e85' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")
     no-repeat right 10px center;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -270,8 +271,8 @@ select {
   align-items: center;
   gap: 8px;
   height: 36px;
-  padding: 0 14px;
-  background: color-mix(in srgb, #000 30%, var(--color-secondary));
+  padding: 0 12px;
+  background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   transition:
@@ -279,7 +280,7 @@ select {
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 .apple-search:focus-within {
-  border-color: var(--color-ring);
+  border-color: var(--color-border-strong);
 }
 .apple-search input {
   min-width: 0;
@@ -288,7 +289,7 @@ select {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-foreground);
 }
 .apple-search input::placeholder {
@@ -342,7 +343,7 @@ select {
   margin-top: 24px;
 }
 .subsection-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-secondary);
   margin: 0 0 12px;
@@ -350,19 +351,19 @@ select {
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-top: 24px;
 }
 .card-actions-inline {
   flex-wrap: wrap;
 }
 
-/* Apple 风颜色选择器：与 apple-input 同高同圆角，swatch 内嵌 */
+/* 颜色选择器：与 apple-input 同高同圆角，swatch 内嵌 */
 .apple-color {
   width: 44px;
   height: 36px;
   padding: 3px;
-  background: color-mix(in srgb, #000 30%, var(--color-secondary));
+  background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -371,7 +372,7 @@ select {
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 .apple-color:focus {
-  border-color: var(--color-ring);
+  border-color: var(--color-border-strong);
 }
 .apple-color::-webkit-color-swatch-wrapper {
   padding: 0;
@@ -385,27 +386,27 @@ select {
   border-radius: calc(var(--radius-sm) - 2px);
 }
 
-/* Apple 风滑杆：主色填充 + 可见轨道 + 圆润 thumb。
-   轨道底色用可见的浅灰（secondary 与卡片同色会隐形），填充部分由组件内联 gradient 覆盖。 */
+/* 滑杆：前景填充 + 可见轨道 + 圆润 thumb。
+   轨道底色用可见的浅灰，填充部分由组件内联 gradient 覆盖。 */
 .apple-range {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
   border-radius: var(--radius-full);
-  background: color-mix(in srgb, #fff 16%, transparent);
+  background: color-mix(in srgb, var(--color-foreground) 16%, transparent);
   outline: none;
   cursor: pointer;
 }
 .apple-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--color-foreground);
   border: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: transform var(--duration-fast) var(--ease-standard);
 }
@@ -413,12 +414,12 @@ select {
   transform: scale(1.1);
 }
 .apple-range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--color-foreground);
   border: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
 }
 .apple-range-value {
@@ -448,24 +449,24 @@ select {
   height: 32px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
-  background: var(--color-card);
+  background: transparent;
   color: var(--color-text-secondary);
   transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
   flex-shrink: 0;
 }
 .apple-btn-icon:hover {
-  background: var(--color-secondary);
+  background: var(--color-accent);
   border-color: var(--color-border-strong);
   color: var(--color-foreground);
 }
 .apple-btn-icon:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 .apple-btn-icon.lg {
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
 }
 .apple-btn-icon.pill {
   border-radius: var(--radius-full);
@@ -509,7 +510,7 @@ select {
   }
 }
 
-/* 文章与独立页面共用一份响应式记录布局。 */
+/* 文章与独立页面共用一份响应式记录布局：单层列表，行高 56。 */
 .content-records {
   margin: 0;
   padding: 0;
@@ -520,15 +521,15 @@ select {
   grid-template-columns: 44px minmax(0, 1fr) 116px 144px;
   align-items: center;
   gap: 12px;
-  min-height: 72px;
-  padding: 10px 16px 10px 4px;
+  min-height: 56px;
+  padding: 8px 16px 8px 4px;
   border-bottom: 1px solid var(--color-border);
 }
 .content-records .content-record:last-child {
   border-bottom: 0;
 }
 .content-records .content-record.is-selected {
-  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-card));
+  background: var(--color-accent);
 }
 .content-records .record-selection {
   display: flex;
@@ -541,7 +542,7 @@ select {
 .content-records .record-selection input {
   width: 16px;
   height: 16px;
-  accent-color: var(--color-primary);
+  accent-color: var(--color-foreground);
 }
 .content-records .record-main {
   min-width: 0;
@@ -566,7 +567,9 @@ select {
 }
 .content-records .record-title:hover,
 .content-records .record-metadata button:hover {
-  color: var(--color-primary);
+  color: var(--color-foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .content-records .record-note {
   flex-shrink: 0;
@@ -578,7 +581,7 @@ select {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  margin-top: 5px;
+  margin-top: 2px;
   font-size: 12px;
   color: var(--color-text-tertiary);
 }
@@ -596,6 +599,7 @@ select {
   white-space: nowrap;
   cursor: pointer;
 }
+/* 状态只保留 5px 圆点 + 12px 文字，不再铺彩色底。 */
 .content-records .record-state {
   display: flex;
   flex-wrap: wrap;
@@ -604,8 +608,22 @@ select {
   font-size: 12px;
 }
 .content-records .record-status {
-  border-radius: var(--radius-xs);
-  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+}
+.content-records .record-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
 }
 .content-records .record-updated,
 .content-records .record-views {
@@ -620,6 +638,19 @@ select {
 }
 .content-records .record-danger:hover {
   color: var(--color-state-error);
+}
+
+/* 桌面端操作图标 hover 显现；触屏/窄屏常显，保证可发现与 44px 触控。 */
+@media (hover: hover) and (min-width: 1024px) {
+  .content-records .record-actions {
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+  .content-records .content-record:hover .record-actions,
+  .content-records .content-record:focus-within .record-actions,
+  .content-records .content-record.is-selected .record-actions {
+    opacity: 1;
+  }
 }
 @media (max-width: 1023px) {
   .content-records .content-record {

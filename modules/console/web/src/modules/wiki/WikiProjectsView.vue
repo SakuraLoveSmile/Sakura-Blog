@@ -287,9 +287,6 @@ onMounted(() => loadProjects());
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="文库项目">
-      <template #icon>
-        <Icon icon="ri:stack-line" class="text-primary" />
-      </template>
       <template #subtitle>管理文库项目的多版本元数据、封面海报、标签与 Hero 介绍</template>
       <template #actions>
         <VButton :route="{ path: '/wiki' }">

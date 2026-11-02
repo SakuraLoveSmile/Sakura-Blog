@@ -287,7 +287,7 @@ onMounted(loadIcons);
   position: absolute;
   left: 10px;
   color: var(--color-text-quaternary);
-  font-size: 15px;
+  font-size: 14px;
   pointer-events: none;
 }
 
@@ -325,14 +325,14 @@ onMounted(loadIcons);
 
 .asset-search-hint {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--color-text-tertiary);
 }
 
 .hint-code {
   font-family: var(--font-mono, monospace);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--color-foreground) 8%, transparent);
   color: var(--color-foreground);
   font-size: 12px;
@@ -375,12 +375,12 @@ onMounted(loadIcons);
   display: inline-block;
   width: 3.5px;
   height: 14px;
-  border-radius: 2px;
+  border-radius: 6px;
   background: var(--color-primary);
 }
 
 .asset-group-count {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-quaternary);
 }
 
@@ -480,7 +480,7 @@ onMounted(loadIcons);
 .emoji-source-pill {
   padding: 5px 12px;
   font-size: 12px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-card);
   color: var(--color-text-secondary);
@@ -499,13 +499,13 @@ onMounted(loadIcons);
 .emoji-source-pill.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-foreground);
   font-weight: 550;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .source-count {
-  font-size: 10px;
+  font-size: 11px;
   opacity: 0.8;
 }
 

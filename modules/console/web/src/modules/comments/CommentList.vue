@@ -43,12 +43,12 @@ const size = ref(20);
 
 type StatusKey = "all" | "pending" | "approved" | "rejected" | "spam";
 const selectedStatus = ref<StatusKey>("all");
-const statusTabs: { key: StatusKey; label: string; icon: string }[] = [
-  { key: "all", label: "全部", icon: "ri:chat-3-line" },
-  { key: "pending", label: "待审核", icon: "ri:time-line" },
-  { key: "approved", label: "已批准", icon: "ri:checkbox-circle-line" },
-  { key: "rejected", label: "已拒绝", icon: "ri:close-circle-line" },
-  { key: "spam", label: "垃圾评论", icon: "ri:spam-2-line" },
+const statusTabs: { key: StatusKey; label: string }[] = [
+  { key: "all", label: "全部" },
+  { key: "pending", label: "待审核" },
+  { key: "approved", label: "已批准" },
+  { key: "rejected", label: "已拒绝" },
+  { key: "spam", label: "垃圾评论" },
 ];
 
 const keyword = ref("");
@@ -71,9 +71,9 @@ const replyTarget = ref<CommentItem | null>(null);
 const replyContent = ref("");
 const replySubmitting = ref(false);
 
-// 键盘快捷流焦点
+// 键盘快捷流焦点与紧凑帮助入口
 const focusedIndex = ref<number>(-1);
-const keyboardHelpVisible = ref(false);
+const shortcutHelpVisible = ref(false);
 
 // 响应式查询参数
 const queryParams = computed(() => {
@@ -121,15 +121,15 @@ watch(
 function statusInfo(status: string): { cls: string; label: string } {
   switch (status) {
     case "pending":
-      return { cls: "bg-[#FF9500]/10 text-[#FF9500] border-[#FF9500]/20", label: "待审核" };
+      return { cls: "text-state-warning", label: "待审核" };
     case "approved":
-      return { cls: "bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20", label: "已批准" };
+      return { cls: "text-state-success", label: "已批准" };
     case "rejected":
-      return { cls: "bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20", label: "已拒绝" };
+      return { cls: "text-state-error", label: "已拒绝" };
     case "spam":
-      return { cls: "bg-[#8E8E93]/10 text-[#8E8E93] border-[#8E8E93]/20", label: "垃圾评论" };
+      return { cls: "text-text-tertiary", label: "垃圾评论" };
     default:
-      return { cls: "bg-secondary text-text-tertiary border-border", label: status };
+      return { cls: "text-text-tertiary", label: status };
   }
 }
 
@@ -266,6 +266,10 @@ function onKeydown(e: KeyboardEvent) {
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || replyVisible.value) {
     return;
   }
+  if (e.key === "Escape" && shortcutHelpVisible.value) {
+    shortcutHelpVisible.value = false;
+    return;
+  }
 
   const list = comments.value;
   if (!list.length) return;
@@ -312,10 +316,6 @@ onUnmounted(() => {
   <div class="min-h-full">
     <!-- 统一 Page Header -->
     <VPageHeader title="评论管理">
-      <template #icon>
-        <Icon icon="ri:chat-3-line" class="text-primary" />
-      </template>
-      <template #subtitle>审核读者留言与互动评论，支持键盘极速审核与批量处置</template>
       <template #actions>
         <div class="apple-search min-w-[200px] max-w-[280px]">
           <Icon icon="ri:search-line" class="text-text-quaternary" />
@@ -330,39 +330,45 @@ onUnmounted(() => {
           评论用户
         </VButton>
 
-        <button
-          type="button"
-          class="rounded-xl border border-border px-3 py-1.5 text-xs text-text-secondary hover:bg-secondary hover:text-foreground flex items-center gap-1.5"
-          @click="keyboardHelpVisible = !keyboardHelpVisible"
-        >
-          <Icon icon="ri:keyboard-line" />
-          <span>快捷键</span>
-        </button>
+        <div class="shortcut-help-wrap">
+          <button
+            type="button"
+            class="shortcut-help-trigger"
+            aria-label="评论快捷键"
+            aria-controls="comment-shortcuts"
+            :aria-expanded="shortcutHelpVisible"
+            @click="shortcutHelpVisible = !shortcutHelpVisible"
+          >
+            <Icon icon="ri:keyboard-line" />
+            <span class="hidden sm:inline">快捷键</span>
+          </button>
+          <div
+            v-if="shortcutHelpVisible"
+            id="comment-shortcuts"
+            class="shortcut-help-popover"
+            role="dialog"
+            aria-label="评论快捷键"
+          >
+            <div class="shortcut-help-head">
+              <span>评论快捷键</span>
+              <button type="button" aria-label="关闭快捷键帮助" @click="shortcutHelpVisible = false">
+                <Icon icon="ri:close-line" />
+              </button>
+            </div>
+            <dl>
+              <div><dt>J / K</dt><dd>上下翻选评论</dd></div>
+              <div><dt>A</dt><dd>批准通过</dd></div>
+              <div><dt>D</dt><dd>拒绝显示</dd></div>
+              <div><dt>S</dt><dd>标为垃圾</dd></div>
+              <div><dt>R</dt><dd>快捷回复</dd></div>
+              <div><dt>X</dt><dd>勾选 / 取消</dd></div>
+            </dl>
+          </div>
+        </div>
       </template>
     </VPageHeader>
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
-      <!-- 快捷键指南横幅 -->
-      <div
-        v-if="keyboardHelpVisible"
-        class="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-foreground flex flex-wrap items-center justify-between gap-3 animate-fade-in"
-      >
-        <div class="flex flex-wrap items-center gap-4">
-          <span class="font-bold text-primary flex items-center gap-1">
-            <Icon icon="ri:flashlight-line" /> 极速审核快捷键：
-          </span>
-          <span><kbd class="apple-kbd">J</kbd> / <kbd class="apple-kbd">K</kbd> 上下翻选</span>
-          <span><kbd class="apple-kbd">A</kbd> 批准通过</span>
-          <span><kbd class="apple-kbd">D</kbd> 拒绝</span>
-          <span><kbd class="apple-kbd">S</kbd> 标为垃圾</span>
-          <span><kbd class="apple-kbd">R</kbd> 快捷回复</span>
-          <span><kbd class="apple-kbd">X</kbd> 勾选/取消</span>
-        </div>
-        <button type="button" class="text-text-quaternary hover:text-foreground" @click="keyboardHelpVisible = false">
-          <Icon icon="ri:close-line" />
-        </button>
-      </div>
-
       <!-- 按状态筛选评论 -->
       <div class="console-summary" role="group" aria-label="评论状态摘要">
         <button
@@ -377,7 +383,7 @@ onUnmounted(() => {
         >
           <span>
             <span class="stats-label">全部评论</span>
-            <span class="stats-value">{{ statusCounts.all }} <span class="stats-sub">条留言</span></span>
+            <span class="stats-value">{{ statusCounts.all }}</span>
           </span>
         </button>
 
@@ -393,9 +399,7 @@ onUnmounted(() => {
         >
           <span>
             <span class="stats-label">待审核</span>
-            <span class="stats-value text-[#FF9500]">
-              {{ statusCounts.pending }} <span class="stats-sub">条需要处理</span>
-            </span>
+            <span class="stats-value">{{ statusCounts.pending }}</span>
           </span>
         </button>
 
@@ -411,9 +415,7 @@ onUnmounted(() => {
         >
           <span>
             <span class="stats-label">已批准展示</span>
-            <span class="stats-value text-[#30D158]">
-              {{ statusCounts.approved }} <span class="stats-sub">条正常显示</span>
-            </span>
+            <span class="stats-value">{{ statusCounts.approved }}</span>
           </span>
         </button>
 
@@ -429,9 +431,7 @@ onUnmounted(() => {
         >
           <span>
             <span class="stats-label">垃圾拦截</span>
-            <span class="stats-value text-[#FF453A]">
-              {{ statusCounts.spam }} <span class="stats-sub">条已拦截</span>
-            </span>
+            <span class="stats-value">{{ statusCounts.spam }}</span>
           </span>
         </button>
       </div>
@@ -450,7 +450,6 @@ onUnmounted(() => {
               page = 1;
             "
           >
-            <Icon :icon="st.icon" class="mr-1 inline-block" />
             {{ st.label }}
             <span v-if="statusCounts[st.key] > 0" class="ml-1 opacity-70 font-mono">
               ({{ statusCounts[st.key] }})
@@ -478,26 +477,28 @@ onUnmounted(() => {
         :message="keyword ? '换个搜索关键词试试' : '当读者在前台或文章中留言时将在此处列出'"
       />
 
-      <!-- 评论卡片列表 -->
-      <div v-else class="space-y-3">
+      <!-- 评论分隔线行 -->
+      <div v-else class="comment-rows">
         <div
           v-for="(c, idx) in comments"
           :key="c.id"
-          class="group relative rounded-2xl border border-border bg-card p-4 transition-colors duration-150 hover:border-border-strong sm:p-5"
-          :class="[
-            selectedIds.has(c.id) ? 'border-primary ring-1 ring-primary bg-primary/5' : '',
-            focusedIndex === idx ? 'ring-2 ring-primary/60 border-primary' : '',
-          ]"
+          class="comment-row group"
+          :class="{
+            'is-selected': selectedIds.has(c.id),
+            'is-focused': focusedIndex === idx,
+          }"
         >
-          <div class="flex items-start justify-between gap-3">
+          <div class="comment-row-main">
             <!-- 评论者信息 -->
             <div class="flex items-start gap-3 min-w-0">
-              <input
-                type="checkbox"
-                :checked="selectedIds.has(c.id)"
-                class="mt-1 h-4 w-4 rounded border-border text-primary cursor-pointer shrink-0"
-                @change="toggleSelect(c.id)"
-              />
+              <label class="comment-select">
+                <input
+                  type="checkbox"
+                  :checked="selectedIds.has(c.id)"
+                  class="h-4 w-4 rounded-sm border-border text-text-secondary cursor-pointer shrink-0"
+                  @change="toggleSelect(c.id)"
+                />
+              </label>
 
               <!-- 头像 -->
               <img
@@ -518,18 +519,15 @@ onUnmounted(() => {
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
                   <span
-                    class="text-sm font-semibold text-foreground truncate cursor-pointer hover:underline"
+                    class="text-[14px] font-medium text-foreground truncate cursor-pointer hover:underline"
                     @click="openUserDrawer(c)"
                   >
                     {{ c.nick || "匿名访客" }}
                   </span>
-                  <span
-                    class="rounded-full border px-2 py-0.2 text-[10px] font-medium"
-                    :class="statusInfo(c.status).cls"
-                  >
+                  <span class="comment-status" :class="statusInfo(c.status).cls">
                     {{ statusInfo(c.status).label }}
                   </span>
-                  <span v-if="c.email" class="text-xs font-mono text-text-quaternary truncate">
+                  <span v-if="c.email" class="min-w-0 text-xs font-mono text-text-quaternary truncate">
                     &lt;{{ c.email }}&gt;
                   </span>
                 </div>
@@ -540,19 +538,19 @@ onUnmounted(() => {
                     <Icon icon="ri:article-line" />
                     <span>{{ c.post_title || c.post_slug }}</span>
                   </span>
-                  <span>·</span>
-                  <span>{{ formatRelative(c.created_at) }}</span>
+                  <span v-if="(c.post_title || c.post_slug) && c.created_at">·</span>
+                  <span v-if="c.created_at">{{ formatRelative(c.created_at) }}</span>
                   <span v-if="c.ip" class="font-mono text-[11px]">IP: {{ c.ip }}</span>
                 </div>
               </div>
             </div>
 
             <!-- 操作按钮组 -->
-            <div class="flex items-center gap-1 shrink-0">
+            <div class="comment-actions">
               <button
                 v-if="c.status !== 'approved'"
                 type="button"
-                class="action-btn text-[#30D158] hover:bg-[#30D158]/10"
+                class="action-btn text-state-success"
                 title="批准通过 (A)"
                 @click="setCommentStatus(c.id, 'approved')"
               >
@@ -563,7 +561,7 @@ onUnmounted(() => {
               <button
                 v-if="c.status !== 'rejected'"
                 type="button"
-                class="action-btn text-[#FF9500] hover:bg-[#FF9500]/10"
+                class="action-btn text-state-warning"
                 title="拒绝显示 (D)"
                 @click="setCommentStatus(c.id, 'rejected')"
               >
@@ -574,7 +572,7 @@ onUnmounted(() => {
               <button
                 v-if="c.status !== 'spam'"
                 type="button"
-                class="action-btn text-[#8E8E93] hover:bg-[#8E8E93]/10"
+                class="action-btn text-text-tertiary"
                 title="标为垃圾 (S)"
                 @click="setCommentStatus(c.id, 'spam')"
               >
@@ -583,7 +581,7 @@ onUnmounted(() => {
 
               <button
                 type="button"
-                class="action-btn text-primary hover:bg-primary/10"
+                class="action-btn text-text-secondary"
                 title="快捷回复 (R)"
                 @click="openReply(c)"
               >
@@ -592,7 +590,7 @@ onUnmounted(() => {
 
               <button
                 type="button"
-                class="action-btn text-state-error hover:bg-state-error/10"
+                class="action-btn text-state-error"
                 title="删除评论"
                 @click="handleDeleteSingle(c)"
               >
@@ -604,10 +602,10 @@ onUnmounted(() => {
           <!-- 评论富文本正文 -->
           <div
             v-if="c.content_html"
-            class="comment-rich-content mt-3 text-sm leading-relaxed text-foreground pl-12"
+            class="comment-rich-content mt-2 text-[13px] leading-relaxed text-foreground pl-11"
             v-html="c.content_html"
           ></div>
-          <p v-else class="mt-3 text-sm leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
+          <p v-else class="mt-2 text-[13px] leading-relaxed text-foreground pl-11 whitespace-pre-wrap">
             {{ c.content }}
           </p>
         </div>
@@ -675,12 +673,12 @@ onUnmounted(() => {
           />
           <div
             v-else
-            class="avatar-gradient-1 flex h-12 w-12 items-center justify-center rounded-full text-base font-bold text-white"
+            class="avatar-gradient-1 flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white"
           >
             {{ userDrawerTarget.nick ? userDrawerTarget.nick.charAt(0).toUpperCase() : "?" }}
           </div>
           <div>
-            <div class="text-base font-bold text-foreground">{{ userDrawerTarget.nick }}</div>
+            <div class="text-sm font-bold text-foreground">{{ userDrawerTarget.nick }}</div>
             <div class="text-text-quaternary font-mono">{{ userDrawerTarget.email || "未填邮箱" }}</div>
           </div>
         </div>
@@ -726,32 +724,197 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 操作小按钮 */
+.comment-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.comment-row {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.comment-row.is-selected {
+  background: var(--color-accent);
+}
+.comment-row.is-focused {
+  box-shadow: inset 2px 0 0 var(--color-foreground);
+}
+
+.comment-row-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.comment-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-top: -4px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.comment-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.comment-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .action-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 4px 6px;
   border-radius: var(--radius-sm);
+  border: 1px solid transparent;
   font-size: 12px;
   font-weight: 500;
   background: transparent;
   transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
-
-/* 快捷键 kbd */
-.apple-kbd {
-  display: inline-block;
-  padding: 1px 5px;
-  font-size: 10px;
-  font-family: monospace;
-  font-weight: 700;
+.action-btn:hover {
+  background: var(--color-accent);
+  border-color: var(--color-border);
   color: var(--color-foreground);
-  background: var(--color-secondary);
+}
+
+.comment-actions {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+@media (hover: hover) and (min-width: 1024px) {
+  .comment-actions { opacity: 0; }
+  .comment-row:hover .comment-actions,
+  .comment-row:focus-within .comment-actions,
+  .comment-row.is-focused .comment-actions,
+  .comment-row.is-selected .comment-actions { opacity: 1; }
+}
+
+/* 紧凑快捷键帮助：入口 44px，弹层只展示键位，不再恢复整宽横幅。 */
+.shortcut-help-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.shortcut-help-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  transition: border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.shortcut-help-trigger:hover,
+.shortcut-help-trigger[aria-expanded="true"] {
+  border-color: var(--color-border-strong);
+  color: var(--color-foreground);
+}
+
+.shortcut-help-trigger:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.shortcut-help-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: 232px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-popover);
+  box-shadow: var(--shadow-lg);
+}
+
+.shortcut-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.shortcut-help-head button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+}
+
+.shortcut-help-head button:hover {
+  color: var(--color-foreground);
+  background: var(--color-accent);
+}
+
+.shortcut-help-popover dl {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+}
+
+.shortcut-help-popover dl > div {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+
+.shortcut-help-popover dt {
+  color: var(--color-foreground);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.shortcut-help-popover dd {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+/* 宽屏时入口靠右，弹层向右对齐；窄屏入口换行到左侧，改为向左展开。 */
+@media (min-width: 1024px) {
+  .shortcut-help-popover {
+    left: auto;
+    right: 0;
+  }
 }
 
 /* 表情图片样式 */
@@ -766,4 +929,28 @@ onUnmounted(() => {
   object-fit: contain !important;
 }
 
+@media (max-width: 1023px) {
+  .action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .comment-select {
+    width: 44px;
+    height: 44px;
+    margin-top: -14px;
+    margin-left: -10px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* 窄屏把 5 个 44px 操作按钮移到信息行下方，避免作者/状态/邮箱被挤到不可读。 */
+  .comment-row-main {
+    flex-wrap: wrap;
+  }
+  .comment-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
 </style>

@@ -68,7 +68,7 @@ onUnmounted(() => {
 <template>
   <header
     ref="headerEl"
-    class="sticky top-0 z-20 flex min-h-[58px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 transition-transform duration-200 sm:px-6 sm:py-4 md:px-8"
+    class="page-header sticky top-0 z-20 flex min-h-0 flex-wrap items-center justify-between gap-3 px-4 pb-2 pt-6 transition-transform duration-200 sm:px-6 sm:pt-7 md:px-8"
     :class="{
       'page-header-scroll-aware': hideOnScroll,
       'page-header-scroll-hidden': hideOnScroll && hidden,
@@ -76,24 +76,19 @@ onUnmounted(() => {
     }"
     :aria-hidden="hideOnScroll && hidden ? 'true' : undefined"
     :inert="hideOnScroll && hidden"
-    style="
-      background: var(--color-background);
-      border-bottom: 1px solid var(--color-border);
-      
-    "
+    style="background: var(--color-background)"
   >
     <div
       class="page-header-title min-w-0 self-center"
       :class="actionsLayout === 'stack-below-lg' ? 'w-full lg:w-auto lg:flex-1' : 'flex-1'"
     >
       <div class="flex items-center gap-2.5">
-        <span v-if="$slots.icon" class="page-header-icon" aria-hidden="true"><slot name="icon" /></span>
-        <h1 class="truncate text-xl font-semibold tracking-tight text-foreground">
+        <h1 class="truncate text-[20px] font-semibold tracking-[-0.02em] text-foreground sm:text-[24px]">
           <slot name="title">{{ title }}</slot>
         </h1>
         <slot name="badge" />
       </div>
-      <p v-if="subtitle || $slots.subtitle" class="mt-0.5 truncate text-xs text-text-tertiary sm:text-[13px]">
+      <p v-if="subtitle || $slots.subtitle" class="mt-1 truncate text-[12px] text-text-tertiary">
         <slot name="subtitle">{{ subtitle }}</slot>
       </p>
     </div>
@@ -108,15 +103,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.page-header-icon {
-  display: inline-flex;
-  color: var(--color-text-tertiary);
-}
-.page-header-icon :deep(svg) {
-  color: inherit;
-  width: 18px;
-  height: 18px;
-}
+/* 标题栏只用留白与字号建立层级，不再使用下边框与标题图标。 */
 
 /* 手机标题独占一行，避免搜索与操作把标题压成零宽。 */
 @media (max-width: 767px) {

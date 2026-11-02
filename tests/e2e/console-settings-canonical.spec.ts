@@ -1,5 +1,4 @@
 import { expect, test, type Page } from "@playwright/test";
-import path from "node:path";
 
 const endpoint = "/api/v1/settings/stellar";
 const activeForm = (page: Page) => page.locator(".canonical-settings-form:visible");
@@ -328,7 +327,7 @@ test("旧文章链接定位普通表单，取消离开时保留未保存草稿",
   await expect(page).toHaveURL(/\/console\/dashboard$/);
 });
 
-test("普通设置在六种宽度保持单卡片、正确边距和完整可用标签", async ({ page }) => {
+test("普通设置在六种宽度保持单卡片、正确边距和完整可用标签", async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   await page.goto("/console/settings?tab=post");
   for (const width of [390, 640, 641, 767, 768, 1280]) {
@@ -345,14 +344,62 @@ test("普通设置在六种宽度保持单卡片、正确边距和完整可用�
         return { padding: getComputedStyle(section).paddingLeft, background: style.backgroundColor,
           border: style.borderWidth, radius: style.borderRadius, shadow: style.boxShadow, bodyPadding: style.paddingLeft };
       }));
+      // 方向 A：横向页面边距由 .settings-container 承担（手机 16px / 桌面 32px），
+      // 分区自身不再叠加横向 padding，因此这里断言 0 并单独校验容器边距。
+      const containerPadding = await page.locator(".settings-container").evaluate((el) => getComputedStyle(el).paddingLeft);
+      expect(containerPadding).toBe(width < 768 ? "16px" : "32px");
       expect(styles.length).toBeGreaterThan(0);
-      for (const style of styles) expect(style).toEqual({ padding: width < 768 ? "16px" : "28px",
+      for (const style of styles) expect(style).toEqual({ padding: "0px",
         background: "rgba(0, 0, 0, 0)", border: "0px", radius: "0px", shadow: "none", bodyPadding: "0px" });
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       if (width === 390 || width === 1280) {
         await page.locator(".settings-card-tabs").scrollIntoViewIfNeeded();
-        await page.screenshot({ path: path.resolve(`docs/baselines/stellar-settings/existing-${key}-${width}.png`) });
+        // 测试不得覆写受跟踪基线目录，证据统一写入 Playwright 输出目录。
+        await page.screenshot({ path: testInfo.outputPath(`settings-${key}-${width}.png`) });
       }
     }
+  }
+});
+
+test("规范保存条与预览面板不透明，横向边距由容器统一提供", async ({ page }, testInfo) => {
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/console/settings?tab=appearance");
+    const actions = page.locator(".settings-canonical-actions").first();
+    await expect(actions).toBeVisible();
+    const bar = await actions.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        background: style.backgroundColor,
+        paddingLeft: style.paddingLeft,
+        paddingRight: style.paddingRight,
+        position: style.position,
+        bottom: style.bottom,
+      };
+    });
+    expect(bar.position, "保存条保持 sticky").toBe("sticky");
+    expect(bar.bottom).toBe("0px");
+    expect(bar.paddingLeft, "横向留白由 .settings-container 统一提供").toBe("0px");
+    expect(bar.paddingRight).toBe("0px");
+    expect(bar.background, "保存条必须不透明，滚动时不得透出正文").not.toBe("rgba(0, 0, 0, 0)");
+    expect(bar.background).toMatch(/^rgb\(/);
+    const containerPadding = await page.locator(".settings-container").evaluate((el) => getComputedStyle(el).paddingLeft);
+    expect(containerPadding).toBe(width < 768 ? "16px" : "32px");
+
+    await page.getByRole("button", { name: "查看草稿效果", exact: true }).click();
+    const panel = page.locator(".preview-panel");
+    await expect(panel).toBeVisible();
+    const preview = await panel.evaluate((el) => {
+      const header = el.querySelector(".preview-panel-header") as HTMLElement;
+      return {
+        background: getComputedStyle(el).backgroundColor,
+        headerBackground: getComputedStyle(header).backgroundColor,
+      };
+    });
+    expect(preview.background, "预览面板必须不透明").not.toBe("rgba(0, 0, 0, 0)");
+    expect(preview.headerBackground, "预览头部必须不透明").not.toBe("rgba(0, 0, 0, 0)");
+    await page.screenshot({ path: testInfo.outputPath(`canonical-appearance-${width}.png`) });
+    await page.getByRole("button", { name: "关闭预览", exact: true }).click();
+    await expect(panel).toBeHidden();
   }
 });

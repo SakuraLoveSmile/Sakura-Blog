@@ -10,17 +10,6 @@ import StellarVersionWidget from "./StellarVersionWidget.vue";
 import SystemVersionWidget from "./SystemVersionWidget.vue";
 import TopPostsWidget from "./TopPostsWidget.vue";
 import SystemHealthWidget from "./SystemHealthWidget.vue";
-import { themeColors } from "@/lib/theme-colors";
-
-const chartColors = themeColors({
-  primary: "#2E8DFF",
-  success: "#30D158",
-  chart5: "#BF5AF2",
-  warning: "#FF9F0A",
-  primaryHover: "#66ABFF",
-  error: "#FF453A",
-});
-
 export interface WidgetConfigField {
   key: string;
   label: string;
@@ -66,7 +55,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: "ri:book-read-line",
     group: "statistics",
     component: StatCardWidget,
-    props: { statKey: "post_total", label: "文章", icon: "ri:book-read-line", color: chartColors.primary },
+    props: { statKey: "post_total", label: "文章" },
     defaultSize: { w: 3, h: 19 },
   }),
   defineWidget({
@@ -75,7 +64,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: "ri:checkbox-circle-line",
     group: "statistics",
     component: StatCardWidget,
-    props: { statKey: "post_published", label: "已发布", icon: "ri:checkbox-circle-line", color: chartColors.success },
+    props: { statKey: "post_published", label: "已发布" },
     defaultSize: { w: 3, h: 19 },
   }),
   defineWidget({
@@ -84,7 +73,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: "ri:eye-line",
     group: "statistics",
     component: StatCardWidget,
-    props: { statKey: "view_total", label: "浏览量", icon: "ri:eye-line", color: chartColors.chart5 },
+    props: { statKey: "view_total", label: "浏览量" },
     defaultSize: { w: 3, h: 19 },
   }),
   defineWidget({
@@ -93,7 +82,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: "ri:chat-3-line",
     group: "statistics",
     component: StatCardWidget,
-    props: { statKey: "comment_total", label: "评论", icon: "ri:chat-3-line", color: chartColors.warning },
+    props: { statKey: "comment_total", label: "评论" },
     defaultSize: { w: 3, h: 19 },
   }),
   defineWidget({
@@ -102,7 +91,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: "ri:attachment-2",
     group: "statistics",
     component: StatCardWidget,
-    props: { statKey: "attachment_total", label: "附件", icon: "ri:attachment-2", color: chartColors.primaryHover },
+    props: { statKey: "attachment_total", label: "附件" },
     defaultSize: { w: 3, h: 19 },
   }),
   defineWidget({
@@ -111,7 +100,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     icon: "ri:user-3-line",
     group: "statistics",
     component: StatCardWidget,
-    props: { statKey: "user_total", label: "用户", icon: "ri:user-3-line", color: chartColors.error },
+    props: { statKey: "user_total", label: "用户" },
     defaultSize: { w: 3, h: 19 },
   }),
   defineWidget({

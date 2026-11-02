@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
-import { previewApi } from "@/api";
 import { VModal, VButton } from "@/components/ui";
-import { type PluginMeta } from "@/modules/plugins/plugin-types";
+import { type PluginMeta, previewInfoFor } from "@/modules/plugins/plugin-types";
 import { PLUGIN_CATEGORIES } from "@/modules/plugins/plugin-types";
 import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCatalog";
+import { usePluginPreview } from "@/modules/plugins/preview/usePluginPreview";
+import { sharedPreviewQueue } from "@/modules/plugins/preview/render-gate";
 
 // 编辑器顶部工具栏（对照 Halo 编辑器）：
 // 左侧「+」插入下拉（Stellar 标签，悬停出预览气泡）+ 格式化按钮组 + 图片；
@@ -119,9 +120,11 @@ function onDocClick(e: MouseEvent) {
 onMounted(() => {
   loadPluginCatalog();
   document.addEventListener("click", onDocClick);
+  window.addEventListener("message", onPreviewMessage);
 });
 onBeforeUnmount(() => {
   document.removeEventListener("click", onDocClick);
+  window.removeEventListener("message", onPreviewMessage);
   clearTimeout(hoverTimer);
 });
 
@@ -131,41 +134,47 @@ function insertPlugin(p: PluginMeta) {
   hideBubble();
 }
 
-// ---------- 悬停预览气泡（300ms 防抖；渲染结果按插件名缓存） ----------
+// ---------- 悬停/聚焦预览气泡 ----------
+// 与插入面板共用整文档预览管线（component-library fixture、mode:content）：
+// 加载运行时脚本后 friends/timeline/tabs 不再是 CSS 空壳；请求静默、按示例缓存、序列号防串台。
 
 const bubblePlugin = ref<PluginMeta | null>(null);
 const bubbleTop = ref(0);
-const bubbleHtml = ref("");
-const bubbleLoading = ref(false);
-const previewCache = new Map<string, string>();
+const bubbleFrame = ref<HTMLIFrameElement | null>(null);
+const bubblePreview = usePluginPreview(
+  () => (bubblePlugin.value ? previewInfoFor(bubblePlugin.value) : { capability: "static", height: 180 }),
+  undefined,
+  { delayMs: 0, queue: sharedPreviewQueue, frame: { minHeight: 180, maxHeight: 360, margin: 0 } },
+);
+const bubbleHeight = computed(() => bubblePreview.frameHeight.value);
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+// 记录当前气泡展示的是哪个插件：A→B 未返回时先清旧文档，避免标题 B 配内容 A。
+let shownPluginName: string | null = null;
 
-function onItemEnter(p: PluginMeta, e: MouseEvent) {
+function showBubble(p: PluginMeta, item: HTMLElement) {
+  const switching = shownPluginName !== null && shownPluginName !== p.name;
+  bubblePlugin.value = p;
+  // 气泡顶部与菜单项对齐（相对下拉容器），限制不超出下拉高度
+  const menu = dropdownRef.value?.querySelector(".insert-menu") as HTMLElement | null;
+  bubbleTop.value = Math.max(0, item.offsetTop - (menu?.scrollTop || 0));
+  if (switching) bubblePreview.clearPreview();
+  shownPluginName = p.name;
+  bubblePreview.resetHeight();
+  bubblePreview.scheduleRender(p.example, { immediate: true });
+}
+
+// hover 与键盘 focus 共用同一 300ms 防抖：Tab 连续遍历只渲染最后一项，mousedown focus 后 click 插入也不会多打请求。
+function scheduleBubble(p: PluginMeta, item: HTMLElement) {
   clearTimeout(hoverTimer);
-  const item = e.currentTarget as HTMLElement;
-  hoverTimer = setTimeout(async () => {
-    bubblePlugin.value = p;
-    // 气泡顶部与菜单项对齐（相对下拉容器），限制不超出下拉高度
-    const menu = dropdownRef.value?.querySelector(".insert-menu") as HTMLElement | null;
-    bubbleTop.value = Math.max(0, item.offsetTop - (menu?.scrollTop || 0));
-    const cached = previewCache.get(p.name);
-    if (cached !== undefined) {
-      bubbleHtml.value = cached;
-      return;
-    }
-    bubbleLoading.value = true;
-    bubbleHtml.value = "";
-    try {
-      const { data } = await previewApi.render(p.example);
-      previewCache.set(p.name, data.html);
-      // 请求返回时鼠标可能已移到其他项，只有仍悬停在该项才展示
-      if (bubblePlugin.value?.name === p.name) bubbleHtml.value = data.html;
-    } catch {
-      if (bubblePlugin.value?.name === p.name) bubbleHtml.value = '<p style="color:#ef4444">预览渲染失败</p>';
-    } finally {
-      bubbleLoading.value = false;
-    }
-  }, 300);
+  hoverTimer = setTimeout(() => showBubble(p, item), 300);
+}
+
+function onItemEnter(p: PluginMeta, e: Event) {
+  scheduleBubble(p, e.currentTarget as HTMLElement);
+}
+
+function onItemFocus(p: PluginMeta, e: FocusEvent) {
+  scheduleBubble(p, e.currentTarget as HTMLElement);
 }
 
 function onItemLeave() {
@@ -175,23 +184,13 @@ function onItemLeave() {
 function hideBubble() {
   clearTimeout(hoverTimer);
   bubblePlugin.value = null;
-  bubbleHtml.value = "";
+  shownPluginName = null;
+  bubblePreview.clearPreview();
 }
 
-// 预览气泡 iframe：深色-only，固定 dark 主题
-const bubbleSrcdoc = computed(() => {
-  return `<!DOCTYPE html>
-<html data-theme="dark">
-<head>
-<meta charset="utf-8">
-<link rel="stylesheet" href="/assets/css/main.css">
-<link rel="stylesheet" href="/assets/css/tag-plugins.css">
-<link rel="stylesheet" href="/assets/css/highlight.css">
-<style>html,body{margin:0;padding:0;}body{padding:12px;background:#1c1c1e;}.md-text{max-width:100%;}</style>
-</head>
-<body><article class="md-text content">${bubbleHtml.value}</article></body>
-</html>`;
-});
+function onPreviewMessage(event: MessageEvent) {
+  bubblePreview.onMessage(event, bubbleFrame.value);
+}
 
 // 工具栏按钮统一样式（Apple 风：32px、rounded-lg、hover 灰底）。
 // 激活态用 scoped 的 .btn-active（浅蓝 tint 底 + 蓝色图标）——不叠工具类，
@@ -215,7 +214,7 @@ const btnActive = "btn-active";
           <Icon icon="ri:add-line" class="text-lg" />
         </button>
 
-        <div v-if="insertOpen" class="absolute left-0 top-full z-30 mt-1 flex items-start">
+        <div v-if="insertOpen" class="absolute left-0 top-full z-30 insert-popover mt-1 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-0">
           <div class="insert-menu max-h-96 w-52 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg">
             <template v-for="group in groupedPlugins" :key="group.cat">
               <div class="flex items-center gap-1.5 px-3 pb-1 pt-2 text-[11px] text-text-quaternary">
@@ -230,6 +229,8 @@ const btnActive = "btn-active";
                 @click="insertPlugin(p)"
                 @mouseenter="onItemEnter(p, $event)"
                 @mouseleave="onItemLeave"
+                @focus="onItemFocus(p, $event)"
+                @blur="onItemLeave"
               >
                 <span class="flex-1 truncate">{{ p.title }}</span>
                 <code class="text-[10px] text-text-quaternary">{{ p.name }}</code>
@@ -239,22 +240,51 @@ const btnActive = "btn-active";
 
           <div
             v-if="bubblePlugin"
-            class="ml-2 w-80 overflow-hidden rounded-lg border border-border bg-card shadow-xl"
+            class="insert-bubble w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-border bg-card shadow-xl sm:ml-2"
             :style="{ marginTop: bubbleTop + 'px' }"
           >
-            <div class="flex items-center justify-between border-b border-border px-3 py-1.5">
+            <div class="flex items-center justify-between gap-2 border-b border-border px-3 py-1.5">
               <span class="text-xs font-medium text-text-secondary">{{ bubblePlugin.title }} 预览</span>
-              <span v-if="bubbleLoading" class="text-[10px] text-text-quaternary">渲染中…</span>
+              <span v-if="bubblePreview.status.value === 'loading'" class="text-[10px] text-text-quaternary"
+                >渲染中…</span
+              >
+              <span
+                v-else-if="bubblePreview.status.value === 'updating'"
+                class="text-[10px] text-text-quaternary"
+                >更新中…</span
+              >
+              <button
+                v-else-if="bubblePreview.status.value === 'error'"
+                type="button"
+                class="text-[10px] text-primary"
+                @click="bubblePreview.retry()"
+              >
+                重试
+              </button>
             </div>
             <iframe
-              v-if="bubbleHtml"
-              :srcdoc="bubbleSrcdoc"
-              class="block w-full border-0 bg-card"
-              style="min-height: 180px; max-height: 360px; resize: vertical; overflow: auto"
-              sandbox="allow-same-origin allow-scripts"
+              v-if="bubblePreview.srcdoc.value"
+              ref="bubbleFrame"
+              :srcdoc="bubblePreview.srcdoc.value"
+              class="block w-full border-0 bg-card transition-[height] duration-150"
+              :style="{ height: bubbleHeight + 'px', maxHeight: '360px' }"
+              sandbox="allow-scripts"
               title="标签预览"
             ></iframe>
+            <p
+              v-else-if="bubblePreview.status.value === 'error'"
+              class="px-3 py-6 text-center text-xs text-state-error"
+            >
+              {{ bubblePreview.previewError.value }}
+              <button type="button" class="ml-1 text-primary" @click="bubblePreview.retry()">重试</button>
+            </p>
             <p v-else class="px-3 py-6 text-center text-xs text-text-quaternary">渲染中…</p>
+            <p
+              v-if="bubblePreview.srcdoc.value && bubblePreview.status.value === 'error'"
+              class="border-t border-state-error/30 px-3 py-1.5 text-[11px] text-state-error"
+            >
+              预览更新失败，仍显示上一次结果
+            </p>
           </div>
         </div>
       </div>
@@ -418,10 +448,16 @@ const btnActive = "btn-active";
     gap: 0;
     padding: 4px 8px;
   }
-  /* 插入下拉的预览气泡：移动端屏幕太窄，隐藏（避免溢出屏幕） */
-  .insert-menu + div,
-  .absolute > div:last-child {
-    display: none !important;
+  /* 390px 等窄视口：菜单与气泡改为上下排列，气泡收窄到视口内，不横向溢出 */
+  .insert-popover {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .insert-bubble {
+    width: calc(100vw - 2rem);
+    max-width: 20rem;
+    margin-left: 0;
+    margin-top: 0 !important;
   }
   /* 分组边框在移动端稍微减淡 */
   .border-l {

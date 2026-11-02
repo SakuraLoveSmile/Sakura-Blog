@@ -1,0 +1,97 @@
+{
+  "task": "BLG-20261031-03",
+  "round": "fix-round re-verification",
+  "date": "2026-10-31",
+  "status": "实现中（存在可见性失败）",
+  "environment": {
+    "os": "macOS arm64",
+    "playwright": "1.62.1",
+    "browser": "Google Chrome 156.0.8078.74 (channel: chrome)",
+    "bundledChromium": "未使用：单次 install chromium 超时",
+    "port": 8096,
+    "isolatedRoot": ".tmp/e2e-server.*",
+    "productionBuildHash": "assets/index-Bj5s8NTO.js",
+    "servedHashMatchedDist": true
+  },
+  "commands": {
+    "make test": "exit 0；console 397/397，Go/staticcheck/module-check 全绿",
+    "pnpm exec vue-tsc -b": "exit 0",
+    "make build": "exit 0；dist/index.html → assets/index-Bj5s8NTO.js",
+    "new e2e": "15 tests: 14 passed, 1 failed（tabs 可见性）",
+    "baseline e2e": "shortcode-visual-editor + tag-plugin-parity → 26 passed",
+    "new unit suites": "use-plugin-preview + editor-toolbar-preview + plugin-preview-engine → 22 passed",
+    "backend cors/rating": "go test ./modules/console/api -run TestPreviewFixtureCORSHeaders|TestPreviewFixturePreflight|TestPreviewMarkdownIsNotWildcardCORS|TestPreviewRating → ok"
+  },
+  "fix_round_checks": {
+    "H1": {
+      "nodeview": {
+        "hasWriteGuard": true,
+        "hasStorageShim": false,
+        "fetchVoteBlocked": "PreviewWriteBlockedError",
+        "fetchRatingBlocked": "PreviewWriteBlockedError",
+        "xhrBlocked": "PreviewWriteBlockedError",
+        "sendBeacon": false,
+        "realWrites": 0,
+        "pageErrors": []
+      },
+      "markdown": {
+        "hasWriteGuard": true,
+        "hasStorageShim": false,
+        "fetchVoteBlocked": "PreviewWriteBlockedError",
+        "realWrites": 0,
+        "pageErrors": []
+      }
+    },
+    "fixture": {
+      "ratingInfo": { "status": 200, "cors": "*", "shape": { "rating": { "1": 2, "2": 4, "3": 8, "4": 30, "5": 86 } }, "avg": "4.5", "count": "130" },
+      "ratingUpdate": { "status": 200, "cors": "*" },
+      "voteInfo": { "up": "86" },
+      "voteUpdate": { "status": 200, "cors": "*", "upAfter": "87" },
+      "realWrites": 0,
+      "corsConsoleErrors": []
+    },
+    "M1": { "heldRequest": 1, "mixedWhilePending": false, "tabsPanes": 2, "friendsCardsAfterSwitch": 0 },
+    "M2": { "rapidFocusItems": 4, "componentPreviewRequestsAfterFocus": 1, "beforeInsertClick": 1, "afterInsertClick": 1 },
+    "M3": { "studioNotice": true, "studioOldSrcdocRetained": true, "studioNoticeCleared": true, "insertNotice": true, "insertOldSrcdocRetained": true, "insertNoticeCleared": true },
+    "markdownFirstFailure": { "message": "预览渲染失败", "historicalMessageAbsent": true, "retryRecovered": true },
+    "L1": "resetHeight min/max 钳制单测通过",
+    "L2": "NodeView 高度由 composable 驱动，高度 118→118→118、iframe 身份保持",
+    "L3": "四处 iframe 均有 150ms height 过渡（Studio CSS 0.15s；其余 transition-[height] duration-150）",
+    "L4": "Markdown 首次/历史失败文案区分；rating /info、/update 契约与 CORS 通过",
+    "L5": "POST /preview/markdown 未鉴权 401 且无 ACAO；Fixture 端点为 ACAO *"
+  },
+  "visibility_failure": {
+    "blocking": true,
+    "summary": "tabs 预览文本为 rgba(0,0,0,0.8)，iframe/article/body/html 背景全透明；实心父容器为深色（Studio #101012、插入面板/顶栏 #121214），文本实际不可见。friends/sites 因自带白色卡片背景未暴露。",
+    "ratios": {
+      "studio": 1.0836,
+      "insertPanel": 1.0982,
+      "toolbarBubble": 1.0982
+    },
+    "expected": "文本对比度 >= 4.5:1（或预览文档使用不透明浅色/深色主题）",
+    "actual": "三处均约 1.08–1.10:1；截图预览区域为空",
+    "repro": [
+      "启动隔离服务（8096），登录 Console",
+      "Studio 搜索 tabs 选中；或插入面板选择 tabs 并填入 tabs 源码；或顶栏插入菜单 focus/hover tabs",
+      "等待 .nav-tabs 出现在 iframe DOM",
+      "观测/截图：预览区为深色空白；计算 .nav-tabs 文本与有效背景对比度约 1.1:1"
+    ],
+    "screenshots": [
+      "docs/baselines/tag-live-preview/e2e-visibility-studio-tabs.png",
+      "docs/baselines/tag-live-preview/e2e-visibility-insert-tabs.png",
+      "docs/baselines/tag-live-preview/e2e-visibility-toolbar-tabs.png"
+    ],
+    "suggestedFix": "给预览 iframe 设置与文档主题一致的不透明背景（浅色文档 → 白底），或为预览文档注入深色主题；需覆盖 Studio/插入面板/顶栏三个容器，不改变公开站与 iframe sandbox。"
+  },
+  "e2e_result": {
+    "total": 15,
+    "passed": 14,
+    "failed": 1,
+    "failure": "可见性：tabs 预览文本在深色容器中必须可读（Studio/插入面板/顶栏）"
+  },
+  "unverified": [
+    "Playwright 自带 Chromium 未安装，CI 浏览器结果以 CI 为准",
+    "NodeView 中 tabs/纯文本标签的深色背景可见性未单独探针（与三处组件库预览同源，风险同）",
+    "L3 高度过渡只做代码与数值核验，未逐帧录屏"
+  ]
+}

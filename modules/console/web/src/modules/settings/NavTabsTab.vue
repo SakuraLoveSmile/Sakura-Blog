@@ -33,7 +33,7 @@ function moveItem(i: number, dir: -1 | 1) {
 <template>
   <div class="space-y-4">
     <label class="flex items-center gap-2 text-sm font-medium text-text-secondary">
-      <input type="checkbox" v-model="data.enable_custom" class="rounded" />
+      <input type="checkbox" v-model="data.enable_custom" class="rounded-sm" />
       完全由下方列表驱动导航栏（关闭时保留「近期发布/分类/标签/归档」固定 tab，列表项追加在后）
     </label>
 
@@ -83,7 +83,7 @@ function moveItem(i: number, dir: -1 | 1) {
             class="col-span-10"
           />
           <label class="col-span-2 flex items-center gap-1.5 text-sm text-text-tertiary">
-            <input type="checkbox" v-model="it.external" class="rounded" /> 外链
+            <input type="checkbox" v-model="it.external" class="rounded-sm" /> 外链
           </label>
         </div>
       </div>
