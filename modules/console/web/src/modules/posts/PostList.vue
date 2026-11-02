@@ -18,6 +18,7 @@ import {
   Toast,
 } from "@/components/ui";
 import { formatRelative, formatDateTime } from "@/lib/format";
+import { batchStatusToast, planBatchStatus, type BatchStatusAction, type BatchStatusResult } from "./batch-status";
 
 interface PostItem {
   id?: number;
@@ -28,6 +29,7 @@ interface PostItem {
   category?: string;
   tags?: string | string[];
   status: "published" | "draft" | "trashed";
+  has_draft?: boolean;
   pinned?: boolean;
   views?: number;
   created_at: string;
@@ -192,6 +194,13 @@ watch(
   },
 );
 
+// 批量发布/草稿的目标集合、计数、禁用原因与确认文案由纯逻辑推导：
+// 回收站文章不参与，已是目标状态的跳过。
+const batchPlans = computed(() => ({
+  publish: planBatchStatus(posts.value, selectedSlugs.value, "publish"),
+  draft: planBatchStatus(posts.value, selectedSlugs.value, "draft"),
+}));
+
 // ---------- 操作流 ----------
 function handleDelete(p: PostItem) {
   Dialog.warning({
@@ -258,6 +267,33 @@ async function handleBatchDelete() {
       } catch {}
     },
   });
+}
+
+// 批量切换发布状态：发布用信息型弹窗，设为草稿用警告型弹窗（次级确认）。
+async function handleBatchStatus(action: BatchStatusAction) {
+  const plan = batchPlans.value[action];
+  if (plan.count === 0) return;
+  const options = {
+    title: plan.dialogTitle,
+    description: plan.dialogDescription,
+    confirmType: action === "publish" ? ("primary" as const) : ("secondary" as const),
+    onConfirm: async () => {
+      try {
+        const { data } = await postApi.batchStatus({ slugs: plan.targets, action });
+        const result = data as BatchStatusResult;
+        // 只在接口成功后清空选择；失败保持原选择，错误由全局 transport 提示。
+        clearSelection();
+        await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
+        await refetch();
+        const toast = batchStatusToast(action, result);
+        if (toast.tone === "error") Toast.error(toast.message);
+        else if (toast.tone === "info") Toast.info(toast.message);
+        else Toast.success(toast.message);
+      } catch {}
+    },
+  };
+  if (action === "publish") Dialog.info(options);
+  else Dialog.warning(options);
 }
 
 // ---------- 分享链接创建弹窗 ----------
@@ -752,6 +788,23 @@ function statusBadge(status: string) {
       @clear="clearSelection"
     >
       <div class="flex items-center gap-2">
+        <VButton
+          size="sm"
+          type="primary"
+          :disabled="batchPlans.publish.count === 0"
+          :title="batchPlans.publish.disabledReason ?? undefined"
+          @click="handleBatchStatus('publish')"
+        >
+          批量发布
+        </VButton>
+        <VButton
+          size="sm"
+          :disabled="batchPlans.draft.count === 0"
+          :title="batchPlans.draft.disabledReason ?? undefined"
+          @click="handleBatchStatus('draft')"
+        >
+          批量设为草稿
+        </VButton>
         <VButton size="sm" type="danger" @click="handleBatchDelete"> 批量移入回收站 </VButton>
       </div>
     </VFloatingDock>

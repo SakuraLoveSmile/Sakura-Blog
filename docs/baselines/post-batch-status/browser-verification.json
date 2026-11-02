@@ -1,0 +1,267 @@
+{
+  "task": "BLG-20261102-04 文章批量设置为发布 / 草稿",
+  "role": "独立浏览器/E2E 验收（verify-batch）",
+  "worktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/Blog/20261102-feat-blg-20261102-04-post-batch-status",
+  "branch": "codex/feat/20261102-blg-20261102-04-post-batch-status",
+  "head": "ddecd77e",
+  "worktreeState": "功能改动未提交：5 个实现文件已修改、5 个文件新增（含本测例与证据目录）。本次验收只新增 tests/e2e/post-batch-status.spec.ts 与 docs/baselines/post-batch-status/ 证据文件，未修改任何实现文件。",
+  "executedAt": {
+    "timeZone": "Asia/Taipei (UTC+8)",
+    "specRun": { "start": "2026-11-02T18:12:49+08:00", "end": "2026-11-02T18:13:13+08:00" },
+    "regressionRun": { "start": "2026-11-02T18:13:20+08:00", "end": "2026-11-02T18:15:09+08:00" },
+    "lastConsoleBuildMtime": "2026-11-02T18:13:29+08:00"
+  },
+  "environment": {
+    "playwright": "1.62.1",
+    "browser": { "name": "chromium", "version": "151.0.7922.34" },
+    "node": "v22.23.2",
+    "pnpm": "8.15.4",
+    "serverPort": 8096,
+    "baseURL": "http://127.0.0.1:8096",
+    "serviceStart": "pnpm e2e → playwright webServer：VITE_E2E=1 pnpm --filter console run build && bash scripts/e2e/run-server.sh",
+    "isolation": "独立临时根目录 .tmp/e2e-server.*、独立 SQLite 库、BLOG_LISTEN=:8096、-dev 模式；未使用 8080 与真实数据",
+    "serverStartupLog": "console SPA loaded from .tmp/e2e-server.WMUAjf/modules/console/web/dist (dev)；user center SPA loaded from .../dist-uc (dev)"
+  },
+  "commands": [
+    {
+      "name": "post-batch-status",
+      "command": "pnpm e2e tests/e2e/post-batch-status.spec.ts",
+      "exitCode": 0,
+      "passed": 6,
+      "failed": 0,
+      "failures": [],
+      "specDuration": "22.9s"
+    },
+    {
+      "name": "regression",
+      "command": "pnpm e2e tests/e2e/console-ui-consistency.spec.ts tests/e2e/console-mobile-a11y.spec.ts",
+      "exitCode": 0,
+      "passed": 54,
+      "failed": 0,
+      "failures": [],
+      "specDuration": "1.8m",
+      "perSpec": {
+        "tests/e2e/console-ui-consistency.spec.ts": { "passed": 38, "failed": 0 },
+        "tests/e2e/console-mobile-a11y.spec.ts": { "passed": 16, "failed": 0 }
+      }
+    }
+  ],
+  "testIterations": {
+    "note": "前两次运行失败均因本次验收脚本的预期写错（不是产品缺陷），修正后第三次 6/6 通过；失败原文如实记录如下。",
+    "runs": [
+      {
+        "start": "2026-11-02T18:10:49+08:00",
+        "end": "约 2026-11-02T18:11:27+08:00（未单独记录结束时间，最后一次证据写入 18:11:26）",
+        "result": "4 passed / 2 failed",
+        "failures": [
+          "桌面用例：expect(publishBtn).toBeEnabled() 失败 —— 预期两篇草稿选中时「批量设为草稿」可用，实际 disabled 且 title=\"所选文章均已是草稿\"。产品行为符合契约（草稿不进入设为草稿的目标集合），是验收脚本预期错误。",
+          "移动用例：同一断言失败（相同原因）。"
+        ]
+      },
+      {
+        "start": "2026-11-02T18:12:10+08:00",
+        "end": "2026-11-02T18:12:34+08:00",
+        "result": "5 passed / 1 failed",
+        "failures": [
+          "移动用例：expect(result.body).toEqual({ succeeded: 1, skipped: 1, failed: 0 }) 失败 —— 实际 skipped=0。前端只提交目标 slug（已发布文章在目标集合阶段即被前端过滤），后端 skipped 计数为 0，符合计划契约；是验收脚本预期错误。"
+        ]
+      },
+      {
+        "start": "2026-11-02T18:12:49+08:00",
+        "end": "2026-11-02T18:13:13+08:00",
+        "result": "6 passed / 0 failed（本文件 commands[0] 引用的最终通过运行）"
+      }
+    ]
+  },
+  "consoleArtifacts": {
+    "proof": "浏览器实际加载的入口 HTML 与功能 chunk 的 SHA256 均与磁盘 modules/console/web/dist 下同名文件一致，证明验收对象是本次重建后的当前 SPA 产物（而非旧内存/旧 chunk）。",
+    "entryHtml": {
+      "servedURL": "http://127.0.0.1:8096/console/posts",
+      "sha256": "f7e474f0f0a6cdf793a5a8c7707d9259fce2457d598d96cebdd7d48a61e6a183",
+      "diskPath": "modules/console/web/dist/index.html",
+      "diskSha256": "f7e474f0f0a6cdf793a5a8c7707d9259fce2457d598d96cebdd7d48a61e6a183",
+      "matchesDisk": true,
+      "scriptSources": ["/console/assets/index-D8q4ecF8.js"],
+      "modulePreloads": [
+        "/console/assets/api-A7kJ8ncB.js",
+        "/console/assets/runtime-core.esm-bundler-GmtFT3dp.js",
+        "/console/assets/pinia-CXeiBUD1.js",
+        "/console/assets/preload-helper-l0U7FUPx.js"
+      ]
+    },
+    "featureChunks": [
+      {
+        "role": "API client chunk（含 /posts/batch 请求路径）",
+        "url": "http://127.0.0.1:8096/console/assets/api-A7kJ8ncB.js",
+        "sha256": "078ce9a31f2a3ee47c56f5c1d85e603e6b2c6bcfcb97ab345aca15e502e58627",
+        "diskPath": "modules/console/web/dist/assets/api-A7kJ8ncB.js",
+        "diskSha256": "078ce9a31f2a3ee47c56f5c1d85e603e6b2c6bcfcb97ab345aca15e502e58627",
+        "matchesDisk": true,
+        "containsBatchEndpoint": true
+      },
+      {
+        "role": "PostList 视图 chunk（含「批量发布」等 UI 文案）",
+        "url": "http://127.0.0.1:8096/console/assets/PostList-DKf4voRC.js",
+        "sha256": "3afc164ba73cfb1cf6015e489a941180af4ec05c6e1942f27578d521a77ae856",
+        "diskPath": "modules/console/web/dist/assets/PostList-DKf4voRC.js",
+        "diskSha256": "3afc164ba73cfb1cf6015e489a941180af4ec05c6e1942f27578d521a77ae856",
+        "matchesDisk": true,
+        "containsBatchPublishText": true
+      }
+    ],
+    "loadedScriptCount": 19,
+    "rawEvidence": "docs/baselines/post-batch-status/browser-evidence.json"
+  },
+  "assertions": {
+    "desktop1280x800": {
+      "statusLabelsBefore": ["草稿", "草稿"],
+      "dock": {
+        "countPill": "2",
+        "buttons": ["批量发布", "批量设为草稿", "批量移入回收站"],
+        "publishEnabled": true,
+        "draftEnabled": false,
+        "draftDisabledTitle": "所选文章均已是草稿",
+        "trashEnabled": true,
+        "box": { "x": 376.45, "y": 720.11, "width": 479.08, "height": 57.77 },
+        "layout": "单行"
+      },
+      "publish": {
+        "dialogRole": "dialog",
+        "dialogTitle": "将选中的 2 篇文章设为已发布？",
+        "dialogDescription": "这 2 篇文章将设为已发布。",
+        "confirmBackground": "rgb(232, 232, 236)（主色确认）",
+        "response": { "status": 200, "body": { "succeeded": 2, "skipped": 0, "failed": 0 } },
+        "toast": "已发布 2 篇文章",
+        "statusLabelsAfter": ["已发布", "已发布"],
+        "selectionCleared": true,
+        "dockHiddenAfter": true
+      },
+      "draft": {
+        "dialogRole": "alertdialog",
+        "dialogTitle": "将选中的 1 篇文章设为草稿？",
+        "dialogDescription": "这 1 篇文章将设为草稿，前台将不再展示；已保存的内容仍会保留。",
+        "confirmBackground": "rgb(20, 20, 22)（次级确认，与发布不同）",
+        "response": { "status": 200, "body": { "succeeded": 1, "skipped": 0, "failed": 0 } },
+        "toast": "已设为草稿 1 篇",
+        "statusLabelsAfter": { "draft-a": "草稿", "draft-b": "已发布" },
+        "selectionCleared": true
+      }
+    },
+    "disabledAndTargetFilter": {
+      "publishedOnlySelection": {
+        "publishDisabled": true,
+        "publishTitle": "所选文章均已发布",
+        "draftEnabled": true
+      },
+      "mixedSelection": {
+        "countPill": "2",
+        "publishEnabled": true,
+        "publishTitleAttribute": null,
+        "dialogTitle": "将选中的 1 篇文章设为已发布？",
+        "dialogDescription": "这 1 篇文章将设为已发布。另有 1 篇已发布，将跳过处理。",
+        "cancelIssuedBatchRequest": false
+      }
+    },
+    "trashedSelection": {
+      "statusLabel": "回收站",
+      "publishDisabled": true,
+      "publishTitle": "回收站文章需先恢复再设置状态",
+      "draftDisabled": true,
+      "draftTitle": "回收站文章需先恢复再设置状态",
+      "trashButtonEnabled": true
+    },
+    "cancelConfirmation": {
+      "requestsAfterCancel": 0,
+      "selectionAfterCancel": { "dockVisible": true, "countPill": "1", "checkboxChecked": true, "statusLabel": "草稿" },
+      "requestsAfterConfirm": 1,
+      "confirmResponse": { "status": 200, "body": { "succeeded": 1, "skipped": 0, "failed": 0 } },
+      "statusLabelAfterConfirm": "已发布"
+    },
+    "mobile390x844": {
+      "dock": {
+        "box": { "x": 24.1, "y": 622.71, "width": 331.59, "height": 149.82 },
+        "flexWrap": "wrap",
+        "countPill": "2",
+        "buttonBoxes": {
+          "批量发布": { "x": 42.13, "y": 669.51, "width": 73.93, "height": 43.96 },
+          "批量设为草稿": { "x": 124.05, "y": 669.51, "width": 97.91, "height": 43.96 },
+          "批量移入回收站": { "x": 229.95, "y": 669.51, "width": 109.89, "height": 43.96 }
+        },
+        "allButtonsEnabled": true,
+        "layout": "折行为 3 行（计数药丸行 / 状态按钮行 / 关闭按钮行）"
+      },
+      "overflow": { "documentElementScrollWidth": 390, "windowInnerWidth": 390, "bodyScrollWidth": 390, "verdict": "无横向溢出（scrollWidth <= innerWidth + 1）" },
+      "publishResponse": { "status": 200, "body": { "succeeded": 1, "skipped": 0, "failed": 0 } },
+      "toast": "已发布 1 篇文章",
+      "statusLabelsAfter": ["已发布", "已发布"],
+      "clickThroughOnMobile": true
+    }
+  },
+  "screenshots": [
+    {
+      "file": "docs/baselines/post-batch-status/dock-desktop-1280.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 100028,
+      "sha256": "1048e787e2a4a43ea2065125fd0c8b412c8f35f5c4d38956d148fe10dd4bc22b",
+      "content": "1280×800 列表视图选中 2 篇草稿：浮条单行显示「2 已选文章 · 批量发布 · 批量设为草稿（禁用）· 批量移入回收站 · 关闭」"
+    },
+    {
+      "file": "docs/baselines/post-batch-status/after-published.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 92346,
+      "sha256": "84c4b0ae9b88458f55cf3e2b111586fb282178783bce7785f9e77f848c847372",
+      "content": "批量发布后：Toast「已发布 2 篇文章」，两行状态「已发布」，选择清空、浮条消失"
+    },
+    {
+      "file": "docs/baselines/post-batch-status/after-draft.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 96906,
+      "sha256": "7bcabb0d6d712d18490d8299f6c89ddaa54307d1c4fd64f8b14da34572c099fd",
+      "content": "单篇批量设为草稿后：Toast「已设为草稿 1 篇」（上一枚发布 Toast 仍在 2.5s 展示窗口内），第一行「草稿」、第二行保持「已发布」"
+    },
+    {
+      "file": "docs/baselines/post-batch-status/dock-mobile-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 62890,
+      "sha256": "c48382858f81fa7bbcc9d31b99f9e94158abbbf34474ecb9c8fc79f272299eea",
+      "content": "390×844 混合状态选中 2 篇：浮条在 max-w 内折行，三个状态/回收站按钮均启用且完整可见，无横向溢出"
+    }
+  ],
+  "coverage": {
+    "verifiedInBrowser": [
+      "桌面 1280×800：2 篇草稿选中 → 批量发布（信息型弹窗/主色确认）→ POST /api/v1/posts/batch 200 {succeeded:2,skipped:0,failed:0} → 行状态变「已发布」+ Toast「已发布 2 篇文章」+ 选择清空、浮条消失",
+      "桌面 1280×800：再选中其中 1 篇 → 批量设为草稿（警告型弹窗/次级确认）→ 200 {succeeded:1} → 该行「草稿」、另一行保持「已发布」+ Toast「已设为草稿 1 篇」",
+      "浮条按钮顺序与视觉：批量发布（primary）/批量设为草稿（default）/批量移入回收站（danger，既有样式不变）",
+      "禁用与原因：已发布单选时「批量发布」disabled 且 title=「所选文章均已发布」；两篇草稿全选时「批量设为草稿」disabled 且 title=「所选文章均已是草稿」；回收站文章选中时两个状态按钮均 disabled 且 title=「回收站文章需先恢复再设置状态」",
+      "目标集合过滤：草稿+已发布混合选择 2 篇时，发布弹窗条数为 1 且描述说明「另有 1 篇已发布，将跳过处理」",
+      "取消确认：data-dialog-action='cancel' 后无 batch 请求、选择保留（浮条仍在、计数 1、复选框仍勾选、状态未变）；再次打开并确认才发起 1 次请求",
+      "移动 390×844：浮条 flex-wrap 折行（高 149.82px vs 桌面 57.77px）、三个按钮均可见可点（混合状态，全部 enabled）、documentElement.scrollWidth=390 <= innerWidth+1、浮条与按钮边界均在视口内；移动端真实点击批量发布成功",
+      "当前构建产物：入口 HTML 与 PostList/api chunk 的浏览器实际响应 SHA256 与磁盘 dist 一致；PostList chunk 含「批量发布」UI 文案、api chunk 含 /posts/batch"
+    ],
+    "regression": [
+      "console-ui-consistency.spec.ts 38/38 通过（含批量浮条相关既有用例：空列表隐藏批量入口、卡片/记录列表选择后筛选为空浮条消失、海报视图选择反馈等）",
+      "console-mobile-a11y.spec.ts 16/16 通过（含主操作与危险操作三态对比度：选中文具后 .v-floating-dock .btn-danger 对比度）"
+    ]
+  },
+  "notCovered": [
+    "后端/存储语义：100 条上限、非法 action 400、非管理员 403、不存在/回收站 slug 计入 failed、已是目标状态不刷新 updated_at、draft_json 不被清空、ContentChanged 只发一次 —— 不在本次浏览器范围，由 api-batch 的 Go 测试与前端 node:test 覆盖，本次未复验",
+    "skipped>0 / failed>0 时 Toast 追加「，M 篇未处理」文案：正常 UI 路径前端已过滤 skipped，浏览器未构造该响应",
+    "has_draft 文章发布的确认说明（「本次只切换发布状态，草稿修改保留」）未在浏览器覆盖（夹具无 has_draft），仅 node:test 覆盖文案",
+    "键盘路径：Tab 聚焦浮条按钮、Escape 取消确认弹窗、弹窗焦点管理未单独断言",
+    "768–1279px 中间断点浮条折行未截图验证（本任务只要求 1280 与 390；390 折行为 3 行）",
+    "视觉逐像素比对未做：只核对按钮顺序、尺寸体系、确认弹窗类型/底色与基线要求",
+    "真实数据规模（100 篇批量）性能、邮件/SEO 通知不在本次验证边界（计划已声明）",
+    "仅 Chromium；未覆盖 Firefox/WebKit 与真实移动设备"
+  ],
+  "riskNotes": [
+    "未发现产品缺陷；实现文件未修改。",
+    "390px 下浮条折成 3 行、高约 150px，会遮住约 2 行列表内容；基线允许折行且无溢出/按钮可点，是否进一步压缩布局可留待产品体验确认，不构成验收阻塞。",
+    "桌面 2 篇草稿选中时「批量设为草稿」禁用（title=所选文章均已是草稿）属于计划契约的目标集合语义，不是缺陷。",
+    "前端只提交目标 slug，正常 UI 路径后端 skipped 恒为 0；后端 skipped 语义主要覆盖并发/跨端竞态。",
+    "移动端浮条 sm 按钮实测高度约 43.96px（四舍五入接近 44px）；与既有「批量移入回收站」同规格，既有移动端 44px 断言未包含浮条按钮，非本次回归引入。"
+  ]
+}

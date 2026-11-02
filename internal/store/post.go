@@ -1129,6 +1129,94 @@ func (s *Store) RestorePost(slug string) error {
 	return nil
 }
 
+// SetPostsStatusBySlug 批量切换文章发布状态，只接受 StatusPublished / StatusDraft。
+// 同一事务内先一次 SELECT 分类，再对真实变更的 slug 一次 UPDATE；返回值语义：
+// succeeded=实际变更数，skipped=已是目标状态（不写库，因此不刷新 updated_at），
+// failed=不存在或位于回收站（deleted_at 非空）的 slug 数。
+// 只改 status 与 updated_at，不触碰正文、草稿头、定时发布时间与作者/分类/置顶等字段；
+// 提交后对每个实际变更的 slug 触发既有写路径回调（RAG 等派生数据）。
+// 空 slug 列表视为无操作；其余非法输入返回错误且不写库。
+func (s *Store) SetPostsStatusBySlug(slugs []string, status string) (succeeded, skipped, failed int, err error) {
+	if len(slugs) == 0 {
+		return 0, 0, 0, nil
+	}
+	if status != StatusPublished && status != StatusDraft {
+		return 0, 0, 0, fmt.Errorf("invalid post status %q: only %s/%s are allowed", status, StatusPublished, StatusDraft)
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("begin set posts status: %w", err)
+	}
+	defer tx.Rollback()
+
+	// 事务内读取分类结果：SQLite 单连接约束下必须先读完 rows 再发起写操作。
+	placeholders := make([]string, len(slugs))
+	selectArgs := make([]any, len(slugs))
+	for i, slug := range slugs {
+		placeholders[i] = "?"
+		selectArgs[i] = slug
+	}
+	rows, err := tx.Query(`SELECT slug, status FROM posts WHERE slug IN (`+strings.Join(placeholders, ",")+`) AND deleted_at = ''`, selectArgs...)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("select posts status: %w", err)
+	}
+	currentStatus := make(map[string]string, len(slugs))
+	for rows.Next() {
+		var slug, current string
+		if err := rows.Scan(&slug, &current); err != nil {
+			rows.Close()
+			return 0, 0, 0, fmt.Errorf("scan post status: %w", err)
+		}
+		currentStatus[slug] = current
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, 0, 0, fmt.Errorf("iterate post status: %w", err)
+	}
+	rows.Close()
+
+	changed := make([]string, 0, len(slugs))
+	for _, slug := range slugs {
+		current, ok := currentStatus[slug]
+		switch {
+		case !ok:
+			failed++
+		case current == status:
+			skipped++
+		default:
+			changed = append(changed, slug)
+		}
+	}
+	if len(changed) > 0 {
+		updatePlaceholders := make([]string, len(changed))
+		// 写入格式与 UpdateSlug 保持一致（time.Now()），避免同表 updated_at 格式分叉。
+		updateArgs := make([]any, 0, len(changed)+2)
+		updateArgs = append(updateArgs, status, time.Now())
+		for i, slug := range changed {
+			updatePlaceholders[i] = "?"
+			updateArgs = append(updateArgs, slug)
+		}
+		res, err := tx.Exec(`UPDATE posts SET status = ?, updated_at = ? WHERE slug IN (`+strings.Join(updatePlaceholders, ",")+`) AND deleted_at = ''`, updateArgs...)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("update posts status: %w", err)
+		}
+		if n, _ := res.RowsAffected(); int(n) != len(changed) {
+			// SELECT 与 UPDATE 之间被回收站标记等并发变化会导致行数不符：整单回滚，
+			// 避免把部分变更当作成功返回。
+			return 0, 0, 0, fmt.Errorf("update posts status: affected %d rows, want %d", n, len(changed))
+		}
+		succeeded = len(changed)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, 0, 0, fmt.Errorf("commit set posts status: %w", err)
+	}
+	for _, slug := range changed {
+		s.firePostWrite("update", slug)
+	}
+	return succeeded, skipped, failed, nil
+}
+
 // ListRecentPosts 返回最近更新的 n 篇文章（不含已删除，含草稿和已发布），按 updated_at 倒序。
 func (s *Store) ListRecentPosts(n int) ([]*Post, error) {
 	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE deleted_at = '' ORDER BY substr(updated_at, 1, 19) DESC LIMIT ?", n)
