@@ -27,6 +27,8 @@ export const postApi = {
   saveDraft: (slug: string, data: PostPayload) => http.put(`/posts/${slug}/draft`, data),
   publish: (slug: string, data: PostPayload) => http.post(`/posts/${slug}/publish`, data),
   discardDraft: (slug: string) => http.delete(`/posts/${slug}/draft`),
+  // 批量切换发布状态：只改 status，不应用/清空草稿头；计数见计划接口契约。
+  batchStatus: (data: { slugs: string[]; action: "publish" | "draft" }) => http.post("/posts/batch", data),
 };
 
 // --- Topics ---
