@@ -81,6 +81,8 @@ services:
 
 Console「系统更新」页面（`/console/system-update`）读取 GHCR 公开镜像标签，与镜像内 ldflags 注入的当前版本做 semver 比较，只做检测、不触发升级。匿名访问公开镜像包即可，无需 GitHub Token；`refresh=1` 绕过 6h 缓存。
 
+更新日志、发布时间与「发布说明」链接来自该 tag 对应的 GitHub Release。发布工作流会自动创建一个不带资产的 Release 并生成 commit/PR 说明；Release 不存在或版本不一致时只显示版本信息，不影响升级判断。
+
 服务器无法访问 `ghcr.io`、或镜像包不是公开的时，页面会显示具体失败原因。
 
 ## 手动升级与回滚

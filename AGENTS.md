@@ -76,6 +76,7 @@ make pre-commit-check
 5. **完成判定**（缺任一项即未完成，不得宣布发布）：
    - 该 tag 上 `Docker Release` 为 `success`（`gh run list --workflow=docker-release.yml`）。
    - `docker run --rm ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z -h` 退出码为 0，证明镜像内二进制可启动。
+   - 该 tag 的 `docker-release.yml` 还会创建一个不带资产的 GitHub Release（`gh release create --generate-notes`），只用于 Console「检查更新」展示更新日志；镜像仍是唯一发布产物，不要给该 Release 附加二进制资产。
    - 仓库不再有 `release.yml` 二进制发布工作流；`update.sh`、`update-docker.sh` 与 systemd 更新单元已移除，不要恢复。
 6. **服务器升级（需授权，且第 5 步已完成）**：compose 的 `image` 固定为 `ghcr.io/sakuralovesmile/sakura-blog:X.Y.Z`，执行 `docker compose pull && docker compose up -d`，再探测宿主映射端口的 `/readyz`，并在 Console 核对版本。不要以 `latest` 是否变化作为版本证据。
    - 回退：把 `image` 改回上一个已验证的版本标签并 `up -d`。若该版本含数据迁移，回退前必须先恢复停服前的完整数据备份，只切回镜像不足以回退（见 `deploy/README.md`「整站恢复与维护窗口」）。

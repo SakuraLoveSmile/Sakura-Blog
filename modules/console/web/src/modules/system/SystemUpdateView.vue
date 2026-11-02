@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VCard, VButton, VTag, Toast } from "@/components/ui";
 import { systemApi, type UpdateCheckResponse } from "@/api";
+import { formatDate } from "@/lib/format";
 
 const checkData = ref<UpdateCheckResponse | null>(null);
 const checking = ref(false);
@@ -182,6 +183,9 @@ onMounted(() => {
             <VTag v-if="checkData?.latest_version" theme="primary" rounded>
               {{ checkData.latest_version }}
             </VTag>
+            <span v-if="checkData?.published_at" class="text-xs font-normal text-text-tertiary">
+              发布于 {{ formatDate(checkData.published_at) }}
+            </span>
           </div>
           <div class="flex items-center gap-2">
             <VButton
@@ -195,6 +199,19 @@ onMounted(() => {
               </template>
               复制日志
             </VButton>
+            <a
+              v-if="checkData?.release_notes_url"
+              :href="checkData.release_notes_url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <VButton size="xs" type="secondary">
+                <template #icon>
+                  <Icon icon="ri:github-fill" />
+                </template>
+                发布说明
+              </VButton>
+            </a>
             <a v-if="checkData?.release_url" :href="checkData.release_url" target="_blank" rel="noopener noreferrer">
               <VButton size="xs" type="secondary">
                 <template #icon>

@@ -33,6 +33,12 @@ test("SystemUpdateView: 版本来源文案为 GHCR 镜像标签", () => {
   assert.doesNotMatch(VIEW, /GitHub 最新|GitHub 发布页|GitHub Token/);
 });
 
+test("SystemUpdateView: 更新日志来自无资产的 GitHub Release", () => {
+  assert.match(VIEW, /release_notes/);
+  assert.match(VIEW, /release_notes_url/);
+  assert.match(VIEW, /发布说明/);
+});
+
 test("api/monitoring.ts: systemApi 仅保留 version 与 check", () => {
   assert.match(API, /systemApi/);
   assert.doesNotMatch(API, /apply:\s*\(|status:\s*\(\)|UpdateApplyResponse|UpdateStatusResponse/);
