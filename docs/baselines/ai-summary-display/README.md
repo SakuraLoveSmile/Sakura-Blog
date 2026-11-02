@@ -31,6 +31,12 @@
 - `after-heti-desktop.png`：启用 HeTi 的隔离服务（beta04 代码）1280×900，`heti-spacing` 只包裹完整单词，摘要排版正常。
 - `after-production.png`：beta04 生产页面 1280×900，摘要完整、排版正常（最终效果）。
 
+## 发布与生产
+
+- beta03（`v2.0.7-beta03`，release `0796ac76`，镜像 digest `sha256:fd65dba9…`）部署后文章摘要首次显示；beta04（`v2.0.7-beta04`，release `ef7d687c`，镜像 digest `sha256:1f6612a7…`）部署后 HeTi 词内空隙修复。
+- 生产验收（公网真实页面，Playwright 1280×900）：`#ai-summary .body p` 文本完整；`heti-spacing` 仅包裹完整 token（Hexo、Git、Node.js v12、npm、cnpm、hexo-cli、`hexo clean && hexo g && hexo s`、github.io 等），无词内拆分；公网 `/settings` 显示 `Blog v2.0.7-beta04`，`/readyz` 200。
+- 升级前备份 `/home/ubuntu/blog-release-v2.0.7-beta04/`（0700，db 三件套与 compose 副本，db md5 一致）；回退为 compose image 改回 `:2.0.7-beta03` 后 `up -d`，本次无 schema 迁移。
+
 ## 边界
 
 - 隔离截图来自 `scripts/e2e/prepare.go` 空站 + 合成文章，不连接生产数据库；生产只做了只读查询与已授权的升级操作。
