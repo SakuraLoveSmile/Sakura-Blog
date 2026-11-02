@@ -58,7 +58,9 @@ func (r stellarTemplateRenderer) blogShareButtons(d *StellarRenderData, share ma
 	return template.HTML(b.String()), qrcode
 }
 func (r stellarTemplateRenderer) blogSummary(d *StellarRenderData) template.HTML {
-	if !stellarBlogDetail(d) || stellarGet(d.Stellar.Data, "blog.ai.summary.enabled") != true || d.Page.Title == "" {
+	// AI 摘要是文章内容导读：独立页面（layout=page，如 /friends、/about）没有可摘要的文章正文，
+	// 不渲染摘要块与读者自助面板，也不留空容器。
+	if !stellarBlogDetail(d) || d.Stellar.Layout == "page" || stellarGet(d.Stellar.Data, "blog.ai.summary.enabled") != true || d.Page.Title == "" {
 		return ""
 	}
 	byok := stellarGet(d.Stellar.Data, "blog.ai.summary.allow_user_api") == true

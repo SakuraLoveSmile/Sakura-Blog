@@ -310,7 +310,7 @@ func TestStellarBlogCapabilitiesUseCanonicalFlagsAndUniqueContainers(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, id := range []string{"share", "reading-progress", "reward-toggle", "ai-summary", "rag-ai-ask"} {
+	for _, id := range []string{"share", "reading-progress", "reward-toggle", "rag-ai-ask"} {
 		if strings.Count(source, `id="`+id+`"`) != 1 {
 			t.Fatalf("missing or duplicate %s", id)
 		}
@@ -318,7 +318,11 @@ func TestStellarBlogCapabilitiesUseCanonicalFlagsAndUniqueContainers(t *testing.
 	if strings.Contains(source, "secret-must-not-leak") {
 		t.Fatal("configured secret rendered")
 	}
-	for _, marker := range []string{`data-platform="link"`, `data-platform="wechat"`, `data-user-api="1"`, `data-rag-ai-key`, `Saved summary`, `/pay.png`} {
+	// 独立页面（layout=page）不渲染 AI 摘要块与读者自助面板，已存摘要也不展示。
+	if strings.Contains(source, `id="ai-summary"`) || strings.Contains(source, `data-user-api`) || strings.Contains(source, "Saved summary") {
+		t.Fatal("standalone page rendered AI summary")
+	}
+	for _, marker := range []string{`data-platform="link"`, `data-platform="wechat"`, `data-rag-ai-key`, `/pay.png`} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("missing %s", marker)
 		}
