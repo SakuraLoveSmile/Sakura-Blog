@@ -418,7 +418,7 @@ func (s *Service) EmbeddingConfigured() bool {
 		return false
 	}
 	cfg, err := config.LoadAI(s.store)
-	return err == nil && strings.TrimSpace(cfg.BaseURL) != "" && strings.TrimSpace(cfg.EmbeddingModel) != ""
+	return err == nil && cfg.Embedding.Configured()
 }
 
 // RebuildNow performs a full rebuild synchronously, primarily for tests and
@@ -461,7 +461,7 @@ func (s *Service) Status() (Status, error) {
 		return Status{}, err
 	}
 	cfg, _ := config.LoadAI(s.store)
-	embeddingModel := cfg.EmbeddingModel
+	embeddingModel := cfg.Embedding.Model
 	if embeddingModel == "" {
 		embeddingModel = m.EmbeddingModel
 	}
@@ -503,10 +503,11 @@ func (s *Service) Ask(ctx context.Context, question string, override *ChatOverri
 	if err != nil {
 		return Answer{}, err
 	}
-	if strings.TrimSpace(cfg.BaseURL) == "" || strings.TrimSpace(cfg.EmbeddingModel) == "" || strings.TrimSpace(cfg.Model) == "" {
+	// 检索需要向量接口，回答需要对话接口；两组都配置才可用。
+	if !cfg.Embedding.Configured() || !cfg.Chat.Configured() {
 		return Answer{}, ErrNotConfigured
 	}
-	queryVectors, err := s.client.Embed(ctx, llm.Config{BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, Model: cfg.EmbeddingModel}, []string{question})
+	queryVectors, err := s.client.Embed(ctx, llm.Config{BaseURL: cfg.Embedding.BaseURL, APIKey: cfg.Embedding.APIKey, Model: cfg.Embedding.Model}, []string{question})
 	if err != nil {
 		return Answer{}, fmt.Errorf("embed question: %w", err)
 	}
@@ -518,7 +519,7 @@ func (s *Service) Ask(ctx context.Context, question string, override *ChatOverri
 		return Answer{}, ErrEmptyKnowledge
 	}
 	system, user := promptFor(question, chunks)
-	chatCfg := llm.Config{BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, Model: cfg.Model}
+	chatCfg := llm.Config{BaseURL: cfg.Chat.BaseURL, APIKey: cfg.Chat.APIKey, Model: cfg.Chat.Model}
 	if override != nil {
 		chatCfg = llm.Config{BaseURL: override.BaseURL, APIKey: override.APIKey, Model: override.Model}
 	}
@@ -600,7 +601,7 @@ func (s *Service) enqueue(item job) {
 
 func (s *Service) needsRebuild() bool {
 	cfg, err := config.LoadAI(s.store)
-	if err != nil || strings.TrimSpace(cfg.BaseURL) == "" || strings.TrimSpace(cfg.EmbeddingModel) == "" {
+	if err != nil || !cfg.Embedding.Configured() {
 		return false
 	}
 	m, err := s.readMeta()
@@ -611,7 +612,7 @@ func (s *Service) needsRebuild() bool {
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM rag_chunks`).Scan(&count); err != nil || count == 0 {
 		return true
 	}
-	return m.EmbeddingFingerprint != embeddingFingerprint(cfg.BaseURL, cfg.EmbeddingModel)
+	return m.EmbeddingFingerprint != embeddingFingerprint(cfg.Embedding.BaseURL, cfg.Embedding.Model)
 }
 
 func (s *Service) build(ctx context.Context) error {
@@ -627,11 +628,11 @@ func (s *Service) build(ctx context.Context) error {
 	if err != nil {
 		return s.markBuildError(err)
 	}
-	if strings.TrimSpace(cfg.EmbeddingModel) == "" {
+	if !cfg.Embedding.Configured() {
 		return ErrNotConfigured
 	}
 	items := ItemsFromStore(s.store)
-	if err := s.writeMeta(meta{Status: StatusBuilding, Total: len(items), Done: 0, EmbeddingModel: cfg.EmbeddingModel, EmbeddingFingerprint: embeddingFingerprint(cfg.BaseURL, cfg.EmbeddingModel)}); err != nil {
+	if err := s.writeMeta(meta{Status: StatusBuilding, Total: len(items), Done: 0, EmbeddingModel: cfg.Embedding.Model, EmbeddingFingerprint: embeddingFingerprint(cfg.Embedding.BaseURL, cfg.Embedding.Model)}); err != nil {
 		return s.markBuildError(err)
 	}
 	all := make([]Chunk, 0)
@@ -650,7 +651,7 @@ func (s *Service) build(ctx context.Context) error {
 			for j := range inputs {
 				inputs[j] = item.Title + "\n\n" + parts[start+j]
 			}
-			vectors, err := s.client.Embed(ctx, llm.Config{BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, Model: cfg.EmbeddingModel}, inputs)
+			vectors, err := s.client.Embed(ctx, llm.Config{BaseURL: cfg.Embedding.BaseURL, APIKey: cfg.Embedding.APIKey, Model: cfg.Embedding.Model}, inputs)
 			if err != nil {
 				return s.markBuildError(err)
 			}
@@ -664,7 +665,7 @@ func (s *Service) build(ctx context.Context) error {
 				all = append(all, Chunk{DocType: item.DocType, Slug: item.Slug, ChunkIdx: start + j, Title: item.Title, Content: parts[start+j], Vector: vector, ContentHash: documentHash(item)})
 			}
 		}
-		if err := s.writeMeta(meta{Status: StatusBuilding, Total: len(items), Done: i + 1, EmbeddingModel: cfg.EmbeddingModel, EmbeddingDims: dims, EmbeddingFingerprint: embeddingFingerprint(cfg.BaseURL, cfg.EmbeddingModel)}); err != nil {
+		if err := s.writeMeta(meta{Status: StatusBuilding, Total: len(items), Done: i + 1, EmbeddingModel: cfg.Embedding.Model, EmbeddingDims: dims, EmbeddingFingerprint: embeddingFingerprint(cfg.Embedding.BaseURL, cfg.Embedding.Model)}); err != nil {
 			return s.markBuildError(err)
 		}
 	}
@@ -672,7 +673,7 @@ func (s *Service) build(ctx context.Context) error {
 		return s.markBuildError(err)
 	}
 	stamp := time.Now().UTC().Format(time.RFC3339)
-	if err := s.writeMeta(meta{Status: StatusIdle, Total: len(items), Done: len(items), LastBuiltAt: stamp, EmbeddingModel: cfg.EmbeddingModel, EmbeddingDims: dims, EmbeddingFingerprint: embeddingFingerprint(cfg.BaseURL, cfg.EmbeddingModel)}); err != nil {
+	if err := s.writeMeta(meta{Status: StatusIdle, Total: len(items), Done: len(items), LastBuiltAt: stamp, EmbeddingModel: cfg.Embedding.Model, EmbeddingDims: dims, EmbeddingFingerprint: embeddingFingerprint(cfg.Embedding.BaseURL, cfg.Embedding.Model)}); err != nil {
 		return s.markBuildError(err)
 	}
 	s.mu.Lock()
@@ -688,7 +689,7 @@ func (s *Service) updateDocument(ctx context.Context, docType, slug string) erro
 	}
 	defer release()
 	cfg, err := config.LoadAI(s.store)
-	if err != nil || strings.TrimSpace(cfg.EmbeddingModel) == "" {
+	if err != nil || !cfg.Embedding.Configured() {
 		return err
 	}
 	item, public, err := s.item(docType, slug)
@@ -718,7 +719,7 @@ func (s *Service) updateDocument(ctx context.Context, docType, slug string) erro
 		for j := range inputs {
 			inputs[j] = item.Title + "\n\n" + parts[start+j]
 		}
-		vectors, err := s.client.Embed(ctx, llm.Config{BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, Model: cfg.EmbeddingModel}, inputs)
+		vectors, err := s.client.Embed(ctx, llm.Config{BaseURL: cfg.Embedding.BaseURL, APIKey: cfg.Embedding.APIKey, Model: cfg.Embedding.Model}, inputs)
 		if err != nil {
 			return err
 		}

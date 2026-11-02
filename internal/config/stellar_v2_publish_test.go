@@ -18,8 +18,12 @@ func TestStellarV2MaskAndPublishSecrets(t *testing.T) {
 		"native_comments": map[string]any{"notify": map[string]any{"password": "mail-secret", "enabled": false}},
 		"comments":        map[string]any{"notify": map[string]any{"password": "legacy-mail"}},
 		"notify":          map[string]any{"password": "notify-secret"},
-		"ai":              map[string]any{"api_key": "ai-secret", "model": "initial"},
-		"custom":          map[string]any{"password": "public-value", "api_key": "public-key"},
+		"ai": map[string]any{
+			"api_key": "ai-secret", "model": "initial",
+			"chat":      map[string]any{"base_url": "https://chat.example/v1", "api_key": "chat-secret", "model": "chat-model"},
+			"embedding": map[string]any{"base_url": "https://embedding.example/v1", "api_key": "embedding-secret", "model": "embedding-model"},
+		},
+		"custom": map[string]any{"password": "public-value", "api_key": "public-key"},
 	}
 	initial, err := InitializeStellarV2(st, map[string]any{}, blog)
 	if err != nil {
@@ -30,13 +34,19 @@ func TestStellarV2MaskAndPublishSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 	encoded, _ := json.Marshal(masked)
-	for _, secret := range []string{"mail-secret", "legacy-mail", "notify-secret", "ai-secret"} {
+	for _, secret := range []string{"mail-secret", "legacy-mail", "notify-secret", "ai-secret", "chat-secret", "embedding-secret"} {
 		if strings.Contains(string(encoded), secret) {
 			t.Fatal("known secret leaked")
 		}
 	}
 	if custom := masked["custom"].(map[string]any); custom["password"] != "public-value" || custom["api_key"] != "public-key" {
 		t.Fatal("public parameter bag was masked")
+	}
+	maskedAI := masked["ai"].(map[string]any)
+	if maskedAI["api_key"] != StellarV2SecretMask ||
+		maskedAI["chat"].(map[string]any)["api_key"] != StellarV2SecretMask ||
+		maskedAI["embedding"].(map[string]any)["api_key"] != StellarV2SecretMask {
+		t.Fatal("legacy or nested AI keys were not masked")
 	}
 	masked["ai"].(map[string]any)["model"] = "updated"
 	before := &settings.Site{Title: "retained", StellarV2: initial}
@@ -60,10 +70,16 @@ func TestStellarV2MaskAndPublishSecrets(t *testing.T) {
 		}
 	}
 	masked["ai"].(map[string]any)["api_key"] = nil
+	masked["ai"].(map[string]any)["chat"].(map[string]any)["api_key"] = nil
 	masked["native_comments"].(map[string]any)["notify"].(map[string]any)["password"] = ""
 	cleared, err := SaveAndPublishStellarV2(st, pointer, saved.RawTheme, masked)
-	if err != nil || cleared.Blog["ai"].(map[string]any)["api_key"] != nil || cleared.Blog["native_comments"].(map[string]any)["notify"].(map[string]any)["password"] != "" {
+	if err != nil || cleared.Blog["ai"].(map[string]any)["api_key"] != nil ||
+		cleared.Blog["ai"].(map[string]any)["chat"].(map[string]any)["api_key"] != nil ||
+		cleared.Blog["native_comments"].(map[string]any)["notify"].(map[string]any)["password"] != "" {
 		t.Fatalf("explicit secret clearing failed: %v", err)
+	}
+	if cleared.Blog["ai"].(map[string]any)["embedding"].(map[string]any)["api_key"] != "embedding-secret" {
+		t.Fatal("untouched nested secret was not restored")
 	}
 }
 
@@ -85,6 +101,9 @@ func TestStellarV2PublishFailureDoesNotSaveOrReplace(t *testing.T) {
 	}
 	if _, err := SaveAndPublishStellarV2(st, pointer, map[string]any{}, map[string]any{"ai": map[string]any{"api_key": StellarV2SecretMask}}); err == nil {
 		t.Fatal("masked key without stored secret accepted")
+	}
+	if _, err := SaveAndPublishStellarV2(st, pointer, map[string]any{}, map[string]any{"ai": map[string]any{"chat": map[string]any{"api_key": StellarV2SecretMask}}}); err == nil {
+		t.Fatal("masked nested key without stored secret accepted")
 	}
 	after, _ := st.ReadSettingsSnapshot()
 	if !reflect.DeepEqual(before, after) || pointer.Load() != current {

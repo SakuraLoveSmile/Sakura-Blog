@@ -46,7 +46,7 @@ func TestStellarBlogRuntimePublishAndRebuildConsumers(t *testing.T) {
 		t.Fatal("old snapshot mutated")
 	}
 	cfg, err := LoadAI(st)
-	if err != nil || cfg.APIKey != "canonical-ai" || cfg.SummaryOn() || cfg.UserAPIOn() || !cfg.QAOn() || cfg.QAUserLLMOn() {
+	if err != nil || cfg.Chat.APIKey != "canonical-ai" || cfg.SummaryOn() || cfg.UserAPIOn() || !cfg.QAOn() || cfg.QAUserLLMOn() {
 		t.Fatal("AI policy not canonical")
 	}
 	if err := RebuildSite(st, pointer); err != nil {
@@ -135,7 +135,7 @@ func TestStellarBlogAIStoreIsolationAndStrictGate(t *testing.T) {
 					st, want = b, "B"
 				}
 				got, err := LoadAI(st)
-				if err != nil || got.APIKey != want {
+				if err != nil || got.Chat.APIKey != want {
 					t.Error("cross-store AI configuration")
 				}
 			}
@@ -146,7 +146,7 @@ func TestStellarBlogAIStoreIsolationAndStrictGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg, err := LoadAI(a)
-	if err != nil || cfg.APIKey != "updated" {
+	if err != nil || cfg.Chat.APIKey != "updated" {
 		t.Fatal("read did not observe committed config")
 	}
 	if err := a.PutSetting(SectionAI, `{"api_key":"obsolete"}`); err != nil {
@@ -155,7 +155,7 @@ func TestStellarBlogAIStoreIsolationAndStrictGate(t *testing.T) {
 	if err := a.PutSetting(SectionStellarV2, `{"version":2,"theme":{"style":{}}}`); err != nil {
 		t.Fatal(err)
 	}
-	if cfg, err := LoadAI(a); err == nil || cfg.APIKey != "" {
+	if cfg, err := LoadAI(a); err == nil || cfg.Chat.APIKey != "" {
 		t.Fatal("invalid canonical config fell back to obsolete secret")
 	}
 }
@@ -178,5 +178,123 @@ func TestStellarBlogNullableFlagsAndSummaryPermission(t *testing.T) {
 	runtime, err := ParseStellarBlogRuntime(map[string]any{"ai": map[string]any{"summary": map[string]any{"enabled": true, "allow_user_api": true}}})
 	if err != nil || !runtime.AI.SummaryOn() || !runtime.AI.UserAPIOn() {
 		t.Fatal("explicitly enabled summary permissions were lost")
+	}
+}
+
+func TestStellarBlogAIEndpointFieldFallback(t *testing.T) {
+	legacy := func() map[string]any {
+		return map[string]any{
+			"base_url": "https://legacy.example/v1", "api_key": "legacy-key",
+			"model": "legacy-chat", "embedding_model": "legacy-embed",
+		}
+	}
+	with := func(extra map[string]any) map[string]any {
+		ai := legacy()
+		for key, value := range extra {
+			ai[key] = value
+		}
+		return ai
+	}
+	legacyChat := AIEndpoint{BaseURL: "https://legacy.example/v1", APIKey: "legacy-key", Model: "legacy-chat"}
+	legacyEmbedding := AIEndpoint{BaseURL: "https://legacy.example/v1", APIKey: "legacy-key", Model: "legacy-embed"}
+	chatEndpoint := map[string]any{"base_url": "https://chat.example/v1", "api_key": "chat-key", "model": "chat-model"}
+	embeddingEndpoint := map[string]any{"base_url": "https://embedding.example/v1", "api_key": "embedding-key", "model": "embedding-model"}
+	cases := []struct {
+		name          string
+		ai            map[string]any
+		wantChat      AIEndpoint
+		wantEmbedding AIEndpoint
+	}{
+		{
+			name: "旧平铺字段逐字段回退", ai: legacy(),
+			wantChat: legacyChat, wantEmbedding: legacyEmbedding,
+		},
+		{
+			name:          "新嵌套字段优先于旧字段",
+			ai:            with(map[string]any{"chat": chatEndpoint, "embedding": embeddingEndpoint}),
+			wantChat:      AIEndpoint{BaseURL: "https://chat.example/v1", APIKey: "chat-key", Model: "chat-model"},
+			wantEmbedding: AIEndpoint{BaseURL: "https://embedding.example/v1", APIKey: "embedding-key", Model: "embedding-model"},
+		},
+		{
+			name:          "只有新嵌套字段",
+			ai:            map[string]any{"chat": chatEndpoint, "embedding": embeddingEndpoint},
+			wantChat:      AIEndpoint{BaseURL: "https://chat.example/v1", APIKey: "chat-key", Model: "chat-model"},
+			wantEmbedding: AIEndpoint{BaseURL: "https://embedding.example/v1", APIKey: "embedding-key", Model: "embedding-model"},
+		},
+		{
+			name:          "半填时未填字段逐项回退",
+			ai:            with(map[string]any{"chat": map[string]any{"base_url": "https://chat.example/v1"}}),
+			wantChat:      AIEndpoint{BaseURL: "https://chat.example/v1", APIKey: "legacy-key", Model: "legacy-chat"},
+			wantEmbedding: legacyEmbedding,
+		},
+		{
+			name:     "空白字符视为未填",
+			ai:       with(map[string]any{"chat": map[string]any{"base_url": "  ", "api_key": "\t", "model": " "}}),
+			wantChat: legacyChat, wantEmbedding: legacyEmbedding,
+		},
+		{
+			name:     "嵌套对象为 null 视为缺省",
+			ai:       with(map[string]any{"chat": nil, "embedding": nil}),
+			wantChat: legacyChat, wantEmbedding: legacyEmbedding,
+		},
+		{
+			name: "嵌套 api_key 为 null 时回退旧 key",
+			ai: with(map[string]any{"chat": map[string]any{
+				"base_url": "https://chat.example/v1", "api_key": nil, "model": "chat-model",
+			}}),
+			wantChat:      AIEndpoint{BaseURL: "https://chat.example/v1", APIKey: "legacy-key", Model: "chat-model"},
+			wantEmbedding: legacyEmbedding,
+		},
+		{
+			name:          "embedding 只填模型名",
+			ai:            with(map[string]any{"embedding": map[string]any{"model": "new-embed"}}),
+			wantChat:      legacyChat,
+			wantEmbedding: AIEndpoint{BaseURL: "https://legacy.example/v1", APIKey: "legacy-key", Model: "new-embed"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runtime, err := ParseStellarBlogRuntime(map[string]any{"ai": tc.ai})
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			if runtime.AI.Chat != tc.wantChat || runtime.AI.Embedding != tc.wantEmbedding {
+				t.Fatalf("AI endpoints = %+v / %+v, want %+v / %+v", runtime.AI.Chat, runtime.AI.Embedding, tc.wantChat, tc.wantEmbedding)
+			}
+		})
+	}
+	runtime, err := ParseStellarBlogRuntime(map[string]any{})
+	if err != nil || runtime.AI.Chat.Configured() || runtime.AI.Embedding.Configured() {
+		t.Fatal("missing ai extension should leave both endpoints unconfigured")
+	}
+}
+
+func TestStellarBlogAINestedEndpointValidation(t *testing.T) {
+	for _, raw := range []string{
+		`{"ai":{"chat":{"base_url":123}}}`,
+		`{"ai":{"embedding":{"model":{"private-value":true}}}}`,
+		`{"ai":{"chat":"private-value"}}`,
+	} {
+		var blog map[string]any
+		if err := decodeStellarV2JSON([]byte(raw), &blog, false); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := ParseStellarBlogRuntime(blog); err == nil {
+			t.Fatalf("invalid nested AI endpoint accepted: %s", raw)
+		} else if strings.Contains(err.Error(), "private-value") {
+			t.Fatalf("validation error leaked candidate value: %v", err)
+		}
+	}
+	for _, raw := range []string{
+		`{"ai":{"chat":null,"embedding":null}}`,
+		`{"ai":{"chat":{"api_key":null},"embedding":{"api_key":null}}}`,
+	} {
+		var blog map[string]any
+		if err := decodeStellarV2JSON([]byte(raw), &blog, false); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := ParseStellarBlogRuntime(blog); err != nil {
+			t.Fatalf("nullable nested AI endpoint rejected: %v", err)
+		}
 	}
 }

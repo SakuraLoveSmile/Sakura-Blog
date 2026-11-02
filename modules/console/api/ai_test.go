@@ -96,7 +96,7 @@ func TestCallChatCompletionSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	content, err := callChatCompletion(config.AIConfig{
+	content, err := callChatCompletion(config.AIEndpoint{
 		BaseURL: srv.URL + "/v1/", // 末尾斜杠应被规范化
 		APIKey:  "sk-test",
 		Model:   "test-model",
@@ -118,7 +118,7 @@ func TestCallChatCompletionAPIError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", srv.Client())
+	_, err := callChatCompletion(config.AIEndpoint{BaseURL: srv.URL, Model: "m"}, "s", "u", srv.Client())
 	if err == nil || !strings.Contains(err.Error(), "invalid api key") {
 		t.Fatalf("expected api error message, got %v", err)
 	}
@@ -131,7 +131,7 @@ func TestCallChatCompletionNonJSONResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", srv.Client())
+	_, err := callChatCompletion(config.AIEndpoint{BaseURL: srv.URL, Model: "m"}, "s", "u", srv.Client())
 	if err == nil {
 		t.Fatal("non-JSON response should error")
 	}
@@ -143,7 +143,7 @@ func TestCallChatCompletionRejectsLoopbackByDefault(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", nil)
+	_, err := callChatCompletion(config.AIEndpoint{BaseURL: srv.URL, Model: "m"}, "s", "u", nil)
 	if err == nil || !strings.Contains(err.Error(), "forbidden address") {
 		t.Fatalf("error = %v, want loopback rejection", err)
 	}
@@ -236,5 +236,20 @@ func TestSafeFetchClientRejectsRedirect(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusFound {
 		t.Fatalf("redirect status = %d, want %d", resp.StatusCode, http.StatusFound)
+	}
+}
+
+// 属性生成只使用对话接口：只配置向量模型时应拒绝并明确提示「对话模型」。
+func TestAIGenerateRequiresChatEndpoint(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{"ai": map[string]any{
+		"embedding": map[string]any{"base_url": "https://embedding.example/v1", "api_key": "embedding-key", "model": "embedding-model"},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	config.InvalidateLoadAI()
+	w := do2FA(r, http.MethodPost, "/api/v1/ai/generate", `{"fields":["title"],"title":"标题","content":"正文"}`, authCookie(user))
+	if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "对话模型") {
+		t.Fatalf("embedding-only AI generate: %d %s", w.Code, w.Body.String())
 	}
 }
