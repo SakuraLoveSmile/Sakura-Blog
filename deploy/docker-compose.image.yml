@@ -1,6 +1,6 @@
 # 镜像部署示例：二进制内置在镜像中，只挂载运行态子目录。
-# 与 update-docker.sh 挂载部署互斥——本形态升级走 `docker compose pull && up -d`，
-# Console 一键更新不适用（详见 deploy/README.md「镜像部署」）。
+# 升级走 `docker compose pull && up -d`；生产必须固定具体 X.Y.Z 标签。
+# Console「检查更新」读取 GHCR 镜像标签，只检测、不执行升级（详见 deploy/README.md）。
 services:
   blog:
     image: ghcr.io/sakuralovesmile/sakura-blog:latest

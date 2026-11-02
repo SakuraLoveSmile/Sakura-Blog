@@ -22,13 +22,19 @@ test("SystemUpdateView: 版本三态文案存在（含「无法确定」）", ()
   }
 });
 
-test("SystemUpdateView: 新版本横幅给出手动升级指引", () => {
-  // 替代原「立即一键升级」按钮：告知 docker pull / update.sh 两种手动路径。
+test("SystemUpdateView: 新版本横幅只给 Docker 升级指引", () => {
+  // 发布统一为镜像：横幅只提示 compose 拉取，不再出现二进制更新脚本。
   assert.match(VIEW, /docker compose pull/);
-  assert.match(VIEW, /update\.sh/);
+  assert.doesNotMatch(VIEW, /update\.sh|update-docker\.sh|二进制部署/);
+});
+
+test("SystemUpdateView: 版本来源文案为 GHCR 镜像标签", () => {
+  assert.match(VIEW, /GHCR/);
+  assert.doesNotMatch(VIEW, /GitHub 最新|GitHub 发布页|GitHub Token/);
 });
 
 test("api/monitoring.ts: systemApi 仅保留 version 与 check", () => {
   assert.match(API, /systemApi/);
   assert.doesNotMatch(API, /apply:\s*\(|status:\s*\(\)|UpdateApplyResponse|UpdateStatusResponse/);
+  assert.doesNotMatch(API, /X-GitHub-Token/);
 });
