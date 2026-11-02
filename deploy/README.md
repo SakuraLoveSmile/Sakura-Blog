@@ -35,7 +35,9 @@ services:
 
 `deploy/docker-compose.image.yml` 是同一形态的示例（其中的 `:latest` 仅作演示）。生产环境必须固定具体 `X.Y.Z` 标签，升级与回退都只改这一行。
 
-镜像标签：`X.Y.Z`、`X.Y`、`X`、`latest` 与 `sha-<短哈希>`；`latest` 只由 tag 推送更新。
+镜像标签：`X.Y.Z`、`X.Y`、`X`、`latest` 与 `sha-<短哈希>`；`latest` 只由正式版 tag 推送更新。
+
+预发布版本（tag 含 `-`，如 `v2.0.7-beta01`）只发布自身完整版本标签与 `sha-` 标签，不生成 `X.Y` / `X` 别名、不移动 `latest`，对应 GitHub Release 标记为 prerelease。试用 beta 时 compose 仍显式固定该完整标签（如 `:2.0.7-beta01`），升级与回退方式与正式版相同。
 
 ## 首次部署步骤
 

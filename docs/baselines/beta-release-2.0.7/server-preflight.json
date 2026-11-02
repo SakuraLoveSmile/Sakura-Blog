@@ -1,0 +1,429 @@
+{
+  "schemaVersion": 1,
+  "kind": "pre-release-baseline",
+  "baseline": {
+    "name": "beta-release-2.0.7",
+    "targetRelease": "v2.0.7-beta01",
+    "purpose": "v2.0.7-beta01 预发布前固定服务器与 GHCR 稳定标签基线；发布后用同一份基线证明稳定标签（latest/2/2.0/2.0.6）未被移动。",
+    "mode": "read-only：未修改生产服务器、未创建或删除远端资源、未 docker pull/push、未重启容器、未 git 提交或推送",
+    "collectedAt": "2026-11-02T19:06:29+08:00",
+    "collectedAtUtc": "2026-11-02T11:06:29Z",
+    "collectionWindow": {
+      "start": "2026-11-02T19:03:39+08:00",
+      "end": "2026-11-02T19:06:34+08:00",
+      "startUtc": "2026-11-02T11:03:39Z",
+      "endUtc": "2026-11-02T11:06:34Z"
+    },
+    "collector": "release-ops（只读核查 agent）",
+    "agentWorktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261102-fix-blg-20261102-05-beta-release-tags",
+    "evidenceFiles": [
+      "docs/baselines/beta-release-2.0.7/server-preflight.json",
+      "docs/baselines/beta-release-2.0.7/server-preflight.md"
+    ],
+    "sensitiveDataPolicy": "仅记录结构与非敏感元数据；compose 的 environment 段与 config/ 正文均未读取写入，服务器以 ssh 别名引用，证据中不含 IP。"
+  },
+  "server": {
+    "sshAlias": "blog-prod",
+    "sshUser": "ubuntu",
+    "hostAliasOnly": true,
+    "host": {
+      "hostname": "VM-0-12-ubuntu",
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "Linux VM-0-12-ubuntu 6.8.0-124-generic #124-Ubuntu SMP PREEMPT_DYNAMIC Tue May 26 13:00:45 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+      "timezone": "CST +08:00（与 Asia/Taipei 一致）",
+      "clockAtCollection": "2026-11-02T19:06:07+08:00",
+      "clockUtc": "2026-11-02T11:06:07Z"
+    },
+    "privilege": {
+      "sudo": "免密 sudo 可用（sudo -n true 退出码 0）",
+      "dockerGroup": "ubuntu 不在 docker 组，docker 命令需 sudo；docker.sock 权限 srw-rw---- root:docker",
+      "note": "本基线所有 docker 相关证据均通过 sudo -n 只读采集（ps/inspect/images/system df/compose ps/config）。"
+    },
+    "docker": {
+      "clientVersion": "29.7.2",
+      "serverVersion": "29.7.2",
+      "apiVersion": "1.55",
+      "serverArch": "linux/amd64",
+      "composeVersion": "v5.5.0"
+    },
+    "compose": {
+      "directory": "/opt/1panel/docker/compose/blog",
+      "file": "/opt/1panel/docker/compose/blog/docker-compose.yml",
+      "fileBytes": 341,
+      "fileLines": 15,
+      "project": "blog",
+      "resolvedImages": [
+        "ghcr.io/sakuralovesmile/sakura-blog:2.0.6"
+      ],
+      "services": [
+        {
+          "service": "blog",
+          "containerName": "blog",
+          "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.6",
+          "restart": "unless-stopped",
+          "ports": [
+            "0.0.0.0:8081->8080/tcp",
+            "[::]:8081->8080/tcp"
+          ],
+          "volumes": [
+            "./config:/app/config",
+            "./data:/app/data",
+            "./content:/app/content"
+          ],
+          "environment": "<redacted>：存在 environment 段，按要求未记录任何正文；未发现其它 image 覆盖项"
+        }
+      ],
+      "directoryListing": [
+        "config/ (drwxr-xr-x, blog:blog)",
+        "content/ (drwxr-xr-x, blog:blog)",
+        "data/ (drwxr-xr-x, blog:blog)",
+        "docker-compose.yml (root:root, 755, 341 bytes, mtime 2026-11-02 18:23)",
+        "docker-compose.yml.bak-before-2.0.4 (root:root, mtime 2026-10-31 15:18)",
+        "docker-compose.yml.bak-before-2.0.5 (root:root, mtime 2026-11-02 15:39)",
+        "docker-compose.yml.bak-before-2.0.6 (root:root, mtime 2026-11-02 17:32)"
+      ],
+      "previousImageLines": {
+        "docker-compose.yml.bak-before-2.0.4": "image: ghcr.io/sakuralovesmile/sakura-blog:2.0.3",
+        "docker-compose.yml.bak-before-2.0.5": "image: ghcr.io/sakuralovesmile/sakura-blog:2.0.4",
+        "docker-compose.yml.bak-before-2.0.6": "image: ghcr.io/sakuralovesmile/sakura-blog:2.0.5"
+      },
+      "rollbackTarget": {
+        "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.5",
+        "basis": "最近一次升级前备份 bak-before-2.0.6 中的 image 行",
+        "localImageAvailable": true
+      },
+      "notes": [
+        "compose 结构极简：单服务 blog，无 healthcheck，无显式 networks 覆盖（使用 blog_default），端口 8081:8080。",
+        "8081 当前绑定 0.0.0.0 与 [::]，属现状记录；本次发布未改动该项。",
+        "历史升级方式与 deploy/README.md 一致：改 image 行后 docker compose pull && up -d。"
+      ]
+    },
+    "container": {
+      "name": "blog",
+      "idShort": "63022227f7e4",
+      "imageRef": "ghcr.io/sakuralovesmile/sakura-blog:2.0.6",
+      "status": "running",
+      "dockerPsStatus": "Up 42 minutes",
+      "createdAt": "2026-11-02T10:23:22.402618334Z",
+      "startedAt": "2026-11-02T10:23:22.703263068Z",
+      "finishedAt": null,
+      "restartCount": 0,
+      "restartPolicy": "unless-stopped",
+      "oomKilled": false,
+      "exitCode": 0,
+      "healthcheck": null,
+      "networkMode": "blog_default",
+      "ports": {
+        "8080/tcp": [
+          { "hostIp": "0.0.0.0", "hostPort": "8081" },
+          { "hostIp": "::", "hostPort": "8081" }
+        ]
+      },
+      "uptimeNote": "自 2026-11-02T10:23:22Z（18:23:22+08）持续运行；采集时约 43 分钟，无重启。"
+    },
+    "image": {
+      "ref": "ghcr.io/sakuralovesmile/sakura-blog:2.0.6",
+      "id": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "repoDigest": "ghcr.io/sakuralovesmile/sakura-blog@sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "repoTags": [
+        "ghcr.io/sakuralovesmile/sakura-blog:2.0.6"
+      ],
+      "created": "2026-11-02T10:16:09.861Z",
+      "platform": "linux/amd64",
+      "sizeBytesReportedByInspect": 90422499,
+      "sizeDisplayedByDockerImages": "315MB",
+      "labels": {
+        "org.opencontainers.image.created": "2026-11-02T10:16:09.861Z",
+        "org.opencontainers.image.description": "前端移植了 stellar 主题，后端使用了 go，极简的个人博客",
+        "org.opencontainers.image.licenses": "GPL-3.0",
+        "org.opencontainers.image.revision": "400ada097ebe6b993b3a0b36df3e1ab213305655",
+        "org.opencontainers.image.source": "https://github.com/SakuraLoveSmile/Sakura-Blog",
+        "org.opencontainers.image.title": "Sakura-Blog",
+        "org.opencontainers.image.url": "https://github.com/SakuraLoveSmile/Sakura-Blog",
+        "org.opencontainers.image.version": "2.0.6"
+      },
+      "labelCount": 8,
+      "labelCaveat": "镜像未设置独立的 VERSION / GIT_COMMIT / BUILD_TIME Docker label；这三项在 Dockerfile 中是构建参数并经 ldflags 写入二进制（blog/internal/app.Version 等）。版本以 org.opencontainers.image.version 与公开页面为准。"
+    },
+    "versionEvidence": {
+      "conclusion": "生产运行版本 = v2.0.6",
+      "publicSettingsPage": {
+        "url": "https://blog.xn--fhqths51enha.cn/settings",
+        "httpCode": 200,
+        "contentType": "text/html; charset=utf-8",
+        "contentLength": 104286,
+        "snippet": "博客框架 <span class=\"settings-kv__value\">Blog v2.0.6</span>",
+        "observedVersion": "v2.0.6"
+      },
+      "imageLabel": {
+        "org.opencontainers.image.version": "2.0.6",
+        "org.opencontainers.image.revision": "400ada097ebe6b993b3a0b36df3e1ab213305655"
+      },
+      "containerEnvVersion": null,
+      "containerEnvNote": "容器 env 中不存在 VERSION / GIT_COMMIT / BUILD_TIME / BLOG_VERSION 等键，不能作为版本证据。"
+    },
+    "readyz": {
+      "hostSide": {
+        "url": "http://127.0.0.1:8081/readyz",
+        "httpCode": 200,
+        "body": "{\"ok\":true}",
+        "bytes": 11,
+        "contentType": "application/json; charset=utf-8",
+        "samplesSeconds": [0.000726, 0.000756, 0.000795],
+        "medianSeconds": 0.000756
+      },
+      "public": {
+        "url": "https://blog.xn--fhqths51enha.cn/readyz",
+        "httpCode": 200,
+        "body": "{\"ok\":true}",
+        "bytes": 11,
+        "contentType": "application/json; charset=utf-8",
+        "server": "openresty",
+        "strictTransportSecurity": "max-age=31536000",
+        "samplesSeconds": [0.097658, 0.083643, 0.095561],
+        "medianSeconds": 0.095561
+      },
+      "otherProbes": {
+        "hostRoot": { "url": "http://127.0.0.1:8081/", "httpCode": 200, "seconds": 0.200229 },
+        "publicHomepage": { "url": "https://blog.xn--fhqths51enha.cn/", "httpCode": 200, "seconds": 0.407836 },
+        "publicConsoleRoot": { "url": "https://blog.xn--fhqths51enha.cn/console/", "httpCode": 200 },
+        "publicUpdateCheckUnauthed": { "url": "https://blog.xn--fhqths51enha.cn/api/v1/system/update/check", "httpCode": 401, "note": "未登录，符合预期；未执行 Console 版本页验证" }
+      }
+    },
+    "disk": {
+      "mounts": [
+        { "filesystem": "/dev/vda2", "size": "50G", "used": "40G", "avail": "7.7G", "usePercent": "84%", "mount": "/" }
+      ],
+      "note": "关键路径（/、/opt、/var/lib/docker）同一根盘 /dev/vda2；升级所需镜像约 315MB。",
+      "dockerSystemDf": {
+        "images": { "total": 60, "active": 10, "size": "16.39GB", "reclaimable": "9.338GB (56%)" },
+        "containers": { "total": 10, "active": 10, "size": "86.65MB", "reclaimable": "0B (0%)" },
+        "localVolumes": { "total": 6, "active": 2, "size": "72.52MB", "reclaimable": "1.061MB (1%)" },
+        "buildCache": { "total": 64, "active": 0, "size": "4.716GB", "reclaimable": "4.064GB" }
+      },
+      "dataDirUsage": {
+        "backups": "317M",
+        "blog.db": "13M",
+        "blog.db-wal": "3.1M",
+        "blog.db-shm": "32K",
+        "uploads": "48M",
+        "ogcache": "19M",
+        "ghcache": "68K",
+        "update.log": "28K"
+      }
+    },
+    "backups": {
+      "directory": "/opt/1panel/docker/compose/blog/data/backups",
+      "totalSize": "317M",
+      "zipCount": 7,
+      "latest": {
+        "path": "/opt/1panel/docker/compose/blog/data/backups/blog-backup-20261102-102323.zip",
+        "sizeBytes": 47333471,
+        "mtimeLocal": "2026-11-02T18:23:00+08:00",
+        "ageMinutesAtCollection": 43
+      },
+      "recent": [
+        { "path": "/opt/1panel/docker/compose/blog/data/backups/blog-backup-20261102-102323.zip", "sizeBytes": 47333471, "mtimeLocal": "2026-11-02T18:23:00+08:00" },
+        { "path": "/opt/1panel/docker/compose/blog/data/backups/blog-backup-20261102-093229.zip", "sizeBytes": 47438568, "mtimeLocal": "2026-11-02T17:32:00+08:00" },
+        { "path": "/opt/1panel/docker/compose/blog/data/backups/blog-backup-20261102-073937.zip", "sizeBytes": 47365274, "mtimeLocal": "2026-11-02T15:39:00+08:00" },
+        { "path": "/opt/1panel/docker/compose/blog/data/backups/blog-backup-20261102-071939.zip", "sizeBytes": 47307100, "mtimeLocal": "2026-11-02T15:19:00+08:00" },
+        { "path": "/opt/1panel/docker/compose/blog/data/backups/blog-backup-20261101-071939.zip", "sizeBytes": 47316181, "mtimeLocal": "2026-11-01T15:19:00+08:00" }
+      ],
+      "restoreTaskLogs": {
+        "count": 20,
+        "latestFileStatus": "succeeded",
+        "unfinishedFound": false,
+        "note": "backups/.restore-*.json 历史恢复任务记录最早 2026-10-19；restore-tasks/ 子目录存在但为 700 root，内容未读取（du 曾报 Permission denied）。"
+      },
+      "maintenanceLock": {
+        "path": "/opt/1panel/docker/compose/blog/data/maintenance.lock",
+        "sizeBytes": 0,
+        "mtimeLocal": "2026-10-19T23:48:00+08:00",
+        "holder": null,
+        "note": "fuser 未发现持锁进程 → 采集时无恢复/升级维护进行中。"
+      }
+    },
+    "otherContainersOnHost": [
+      { "name": "feedback-feedback-1", "image": "ghcr.io/sakuralovesmile/sakura-feedback:v0.8.1", "status": "Up 59 minutes (healthy)", "ports": "127.0.0.1:8787->8787/tcp" },
+      { "name": "studytool-app-1", "image": "ghcr.io/sakuralovesmile/studytool:latest", "status": "Up 2 weeks", "ports": "127.0.0.1:5333->8000/tcp" },
+      { "name": "assistant-hub-1", "image": "ghcr.io/sakuralovesmile/assistant-hub:latest", "status": "Up 5 weeks (healthy)", "ports": "127.0.0.1:8795->8795/tcp" },
+      { "name": "kaneo-kaneo-1", "image": "ghcr.io/sakuralovesmile/kaneo:latest", "status": "Up 6 weeks (healthy)", "ports": "0.0.0.0:5173->5173/tcp" },
+      { "name": "wxchat", "image": "ddsderek/wxchat:latest", "status": "Up 7 weeks", "ports": "0.0.0.0:8088->80/tcp" },
+      { "name": "kaneo-postgres-1", "image": "postgres:16-alpine", "status": "Up 7 weeks (healthy)", "ports": "0.0.0.0:5432->5432/tcp" },
+      { "name": "mihomo", "image": "metacubex/mihomo", "status": "Up 2 months" },
+      { "name": "metacubexd", "image": "ghcr.io/metacubex/metacubexd", "status": "Up 2 months", "ports": "0.0.0.0:9098->80/tcp" },
+      { "name": "openresty", "image": "1panel/openresty:1.31.1.1-2-4-noble", "status": "Up 2 months", "note": "公网站点反向代理（响应头 server: openresty）" }
+    ]
+  },
+  "ghcrBaseline": {
+    "repository": "ghcr.io/sakuralovesmile/sakura-blog",
+    "authMethod": "匿名 token：https://ghcr.io/token?scope=repository:sakuralovesmile/sakura-blog:pull&service=ghcr.io → HTTP 200；全程未使用 docker 守护进程",
+    "tagsList": {
+      "collectedVia": "GET /v2/sakuralovesmile/sakura-blog/tags/list?n=1000（无 Link 分页头，视为完整列表）",
+      "count": 29,
+      "complete": true,
+      "tags": [
+        "release", "latest", "1.0.0", "1.0", "main", "v1.7.2", "sha-393020b",
+        "1.7.3", "1.7", "1", "sha-3a16ccd", "1.7.4", "sha-73b279a",
+        "2.0.0", "2.0", "2", "sha-1b1c88f",
+        "2.0.1", "sha-77206db",
+        "2.0.2", "sha-e05aec5",
+        "2.0.3", "sha-8a66cde",
+        "2.0.4", "sha-b1b4e12",
+        "2.0.5", "sha-f884610",
+        "2.0.6", "sha-400ada0"
+      ]
+    },
+    "stableTagDigests": {
+      "sourceHeader": "docker-content-digest（GET /v2/<repo>/manifests/<tag> 响应头）",
+      "acceptHeader": "application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json",
+      "manifestMediaType": "application/vnd.oci.image.index.v1+json",
+      "tags": {
+        "latest": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+        "2": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+        "2.0": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+        "2.0.6": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392"
+      },
+      "allStableTagsSameDigest": true,
+      "etagMatchesDigest": true,
+      "responseDateHeaders": {
+        "latest": "Mon, 02 Nov 2026 11:06:31 GMT",
+        "2": "Mon, 02 Nov 2026 11:06:32 GMT",
+        "2.0": "Mon, 02 Nov 2026 11:06:33 GMT",
+        "2.0.6": "Mon, 02 Nov 2026 11:06:34 GMT"
+      },
+      "repeatCheck": "19:04:30Z 与 19:06:29Z 两轮采集结果一致，期间无稳定标签移动。"
+    },
+    "manifestPlatforms": {
+      "indexDigest": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "entries": [
+        { "platform": "linux/amd64", "digest": "sha256:62bbb4995e9a57b153b03440ae73d7146e7cab0a7f862ce211f2c245af711089" },
+        { "platform": "unknown/unknown", "digest": "sha256:7c8196965c2306ac388bbabaec197f58c91ee542ab6576c40b8792d0d259d9c7", "note": "构建 attestation 层" }
+      ]
+    },
+    "absentTags": {
+      "checkedVia": "GET manifest 返回 HTTP 404",
+      "2.0.7": "HTTP 404（不存在）",
+      "2.0.7-beta01": "HTTP 404（不存在，符合发布前预期）",
+      "2.0.6-beta01": "HTTP 404（不存在）"
+    },
+    "productionImageCrossCheck": {
+      "serverImageDigest": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "ghcr206Digest": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "match": true,
+      "note": "服务器本地 2.0.6 镜像的 RepoDigest 与 GHCR 响应头 digest 完全一致 → 生产运行的正是 GHCR 上当前 2.0.6/latest/2/2.0 指向的镜像。"
+    },
+    "localImageCacheCaveat": {
+      "serverLocalLatestTag": "ghcr.io/sakuralovesmile/sakura-blog:latest → sha256:c5439b90c2ed0442581946f002a34fab7eeecef0b0bc466ac8ec658e5f94648f（5 周前，243MB，v1.7.x 基础镜像）",
+      "serverLocalV172Tag": "ghcr.io/sakuralovesmile/sakura-blog:v1.7.2 → sha256:422dce10e46a5ac845ed056e9dadc4acf5512d68c2649ee2c72140b5233fcd0a",
+      "warning": "服务器本地 latest 标签是旧缓存，与 GHCR latest 不同。任何「标签是否移动」的判断都必须使用 GHCR HTTP docker-content-digest，不能使用本地缓存或 docker images 输出。"
+    },
+    "locallyAvailableReleaseImages": [
+      "2.0.6", "2.0.5", "2.0.4", "2.0.3", "2.0.2", "2.0.1", "2.0.0"
+    ]
+  },
+  "githubBaseline": {
+    "repository": "SakuraLoveSmile/Sakura-Blog",
+    "v206Release": {
+      "tagName": "v2.0.6",
+      "isPrerelease": false,
+      "isDraft": false,
+      "isLatest": true,
+      "publishedAt": "2026-11-02T10:21:40Z",
+      "createdAt": "2026-11-02T10:15:34Z",
+      "targetCommitish": "main",
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/releases/tag/v2.0.6"
+    },
+    "dockerReleaseRuns": [
+      {
+        "databaseId": 41427360218,
+        "event": "push",
+        "headBranch": "v2.0.6",
+        "headSha": "400ada097ebe6b993b3a0b36df3e1ab213305655",
+        "status": "completed",
+        "conclusion": "success",
+        "createdAt": "2026-11-02T10:15:41Z",
+        "updatedAt": "2026-11-02T10:21:54Z",
+        "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/41427360218"
+      },
+      {
+        "databaseId": 41420700754,
+        "event": "push",
+        "headBranch": "v2.0.5",
+        "headSha": "f8846101a0746fed30774ea549084e76aa363e35",
+        "status": "completed",
+        "conclusion": "success",
+        "createdAt": "2026-11-02T09:26:46Z",
+        "updatedAt": "2026-11-02T09:31:31Z"
+      }
+    ],
+    "currentRemoteTags": "git ls-remote --tags origin 最新为 v2.0.6（未见 v2.0.7*）",
+    "consistencyNote": "GHCR sha-400ada0 与 v2.0.6 运行 headSha 一致；镜像 label revision 亦为 400ada0…，三者互相印证。"
+  },
+  "releaseContract": {
+    "target": "v2.0.7-beta01",
+    "worktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261102-fix-blg-20261102-05-beta-release-tags",
+    "branch": "codex/fix/20261102-blg-20261102-05-beta-release-tags",
+    "headCommit": "4d4f9633bf7b832382050f3feeef081d90ac2f1e",
+    "headVsOriginDev": "0 0（与 origin/dev 同步）",
+    "pendingChanges": [
+      ".github/workflows/docker-release.yml",
+      "deploy/README.md"
+    ],
+    "pendingDiffStat": "2 files changed, 25 insertions(+), 8 deletions(-)",
+    "expectedTagBehaviorAfterRelease": [
+      "GHCR 新增 2.0.7-beta01 与 sha-<短哈希>（预发布只发布完整版本标签 + sha 标签）",
+      "不生成 2.0.7 / 2.0 / 2 别名（预发布禁用 major/minor 别名）",
+      "不移动 latest（latest 仅在正式版 tag 推送时更新）",
+      "2.0.6、2.0、2、latest 的 docker-content-digest 保持 sha256:944df8d8… 不变",
+      "GitHub Release v2.0.7-beta01 为 isPrerelease=true、不成为 Latest"
+    ],
+    "basis": "工作树未提交的 docker-release.yml 改动：版本串含 '-' 判定 prerelease=true，据此 enable 条件关闭 {{major}}.{{minor}}/{{major}}/latest，并给 gh release create 追加 --prerelease。"
+  },
+  "notVerified": [
+    "2.0.7-beta01 镜像尚不存在（发布前预期），镜像可启动性与真实运行未验证（第二阶段）。",
+    "升级后验证（生产切换、/readyz、Console 版本页）未开始（第三阶段，由 lead 安排）。",
+    "Console 登录态版本页与「检查更新」未验证（未登录时 /api/v1/system/update/check 返回 401，符合预期）。",
+    "备份可恢复性未演练：仅确认最新备份存在、体积正常、与数据库同宿主机。",
+    "openresty → 8081 的具体代理配置未读取（只读边界内未取 nginx 配置）。",
+    "GHCR 包匿名拉取的完整 manifest/blob 下载未在本地执行；但服务器已成功运行同 digest 镜像，等价佐证可拉取。",
+    "本次未做任何写入/升级动作，生产仍运行 v2.0.6。"
+  ],
+  "risks": [
+    {
+      "level": "medium",
+      "item": "磁盘余量偏低",
+      "detail": "/dev/vda2 50G 已用 84%，可用 7.7G；单次拉取约 315MB 可承受，但并发构建/备份会压缩余量。历史镜像 9.338GB + 构建缓存 4.064GB 可回收（本次只读，未清理）。"
+    },
+    {
+      "level": "low",
+      "item": "docker 需 sudo",
+      "detail": "ubuntu 不在 docker 组；升级命令须带 sudo（sudo docker compose pull && sudo docker compose up -d），否则会 permission denied。"
+    },
+    {
+      "level": "low",
+      "item": "容器无 healthcheck",
+      "detail": "升级后只能用 /readyz、公开页面版本与 docker ps 状态判断，不能依赖 Docker health 状态。"
+    },
+    {
+      "level": "low",
+      "item": "本地 latest 缓存陈旧",
+      "detail": "服务器本地 latest 指向 5 周前 v1.7.x 镜像（c5439b90…），并非 GHCR latest。禁止用本地 tag 判断稳定标签是否移动。"
+    },
+    {
+      "level": "low",
+      "item": "历史恢复任务日志 20 份",
+      "detail": "最新状态 succeeded，未发现 running/pending 标记；maintenance.lock 无持有进程。按 deploy/README，若存在未完成恢复日志会限制降级，本次不构成阻塞。"
+    },
+    {
+      "level": "info",
+      "item": "8081 绑定 0.0.0.0",
+      "detail": "容器端口直接绑定到所有网卡（现状）；公网链路经 openresty。非本次发布引入，仅记录。"
+    },
+    {
+      "level": "info",
+      "item": "预发布标签策略尚未提交",
+      "detail": "docker-release.yml 的 prerelease 修复仍是工作树未提交改动；发布前必须先经 dev → main → release → tag 流程落地，否则 v2.0.7-beta01 可能移动 latest/2/2.0。"
+    }
+  ]
+}
