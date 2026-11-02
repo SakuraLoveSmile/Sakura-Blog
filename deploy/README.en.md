@@ -32,7 +32,7 @@ Upgrade and rollback both work by changing the pinned `image` tag and running `d
 ## nginx, Console and operations
 
 - `nginx.conf.example` terminates TLS and forwards requests to the container's host port.
-- The Console "System Update" page (`/console/system-update`) reads public GHCR image tags and only reports whether a newer version exists; it does not trigger upgrades.
+- The Console "System Update" page (`/console/system-update`) reads public GHCR image tags and only reports whether a newer version exists; it does not trigger upgrades. Release notes, publish time and the "release notes" link come from the notes-only GitHub Release created for the tag; when it is missing or mismatched, only version information is shown.
 - Automatic full backups are written to `data/backups/` every 24h (database, uploads and site.yml), retention is controlled by `backup_keep`.
 - Logs: `docker logs -f blog`.
 - Site restore runs inside the application; keep `data/` writable and `config/site.yml` as a single writable file, and do not delete unfinished restore journals.
