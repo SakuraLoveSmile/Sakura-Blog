@@ -104,5 +104,60 @@
       }
     ],
     "productionBeforeFix": "production-before-heti-fix.png（beta03 线上页面，词内空隙）"
+  },
+  "release": {
+    "beta03": {
+      "tag": "v2.0.7-beta03",
+      "releaseCommit": "0796ac76",
+      "imageDigest": "sha256:fd65dba9e2f861a5a99ea542532ab53c712685385d47c76ce9e8d21c608d67cd",
+      "dockerReleaseRun": "41479377596",
+      "production": "2.0.7-beta03 已部署；文章摘要正文首次显示，但 HeTi 页面存在词内空隙（随后 beta04 修复）"
+    },
+    "beta04": {
+      "tag": "v2.0.7-beta04",
+      "releaseCommit": "ef7d687c",
+      "imageDigest": "sha256:1f6612a75e4fa05811178f60821c31e0e9336be92409a3a95ca71b2d4897da36",
+      "dockerReleaseRun": "41489270857",
+      "production": {
+        "container": "ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta04",
+        "containerImageID": "sha256:1f6612a7…（= GHCR digest）",
+        "status": "running",
+        "restarts": 0,
+        "hostReadyz": 200,
+        "publicReadyz": 200,
+        "publicVersion": "Blog v2.0.7-beta04",
+        "stableTags": {
+          "latest": "sha256:944df8d8…a734392",
+          "2": "sha256:944df8d8…a734392",
+          "2.0": "sha256:944df8d8…a734392",
+          "2.0.6": "sha256:944df8d8…a734392"
+        },
+        "backup": "/home/ubuntu/blog-release-v2.0.7-beta04/（0700；blog.db 三件套与 compose 副本，db md5 一致）",
+        "rollback": "compose image 改回 :2.0.7-beta03 后 up -d；无 schema 迁移"
+      }
+    },
+    "productionFinalCheck": {
+      "url": "https://blog.xn--fhqths51enha.cn/post/hexo-blog-setup-guide",
+      "method": "Playwright chromium 1280×900 加载公网页面并读取 DOM",
+      "summaryTextPresent": true,
+      "hetiSpacingTokens": [
+        "Hexo",
+        "Git",
+        "Node.js v12",
+        "npm",
+        "cnpm",
+        "hexo-cli",
+        "hexo clean && hexo g && hexo s",
+        "4000",
+        "Github",
+        "SSH",
+        "hexo-deployer-git",
+        "_config.yml",
+        "hexo d",
+        "github.io"
+      ],
+      "wordInternalSplits": 0,
+      "screenshot": "after-production.png"
+    }
   }
 }

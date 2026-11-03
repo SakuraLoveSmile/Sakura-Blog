@@ -31,20 +31,22 @@ const chatContainerRef = ref<HTMLElement | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 const route = useRoute();
 const router = useRouter();
-type AssistantTab = "assistant" | "knowledge" | "settings";
-const activeTab = ref<AssistantTab>(route.query.tab === "settings" ? "settings" : route.query.tab === "knowledge" ? "knowledge" : "assistant");
-// AI 设置在首次进入设置标签后才挂载，之后保持挂载以保留草稿与离开守卫；默认助手标签不读取配置。
+// 对话与知识库是同一种使用场景：左侧对话与右侧知识库状态始终同屏，不再拆成两个标签。
+// 旧的 ?tab=knowledge / ?tab=assistant 链接统一落到对话视图，?tab=settings 仍是 AI 设置。
+type AssistantTab = "chat" | "settings";
+const activeTab = ref<AssistantTab>(route.query.tab === "settings" ? "settings" : "chat");
+// AI 设置在首次进入设置标签后才挂载，之后保持挂载以保留草稿与离开守卫；默认对话标签不读取配置。
 const settingsVisited = ref(activeTab.value === "settings");
 
 watch(activeTab, (tab) => {
   if (tab === "settings") settingsVisited.value = true;
   const query = { ...route.query };
-  if (tab === "assistant") delete query.tab;
+  if (tab === "chat") delete query.tab;
   else query.tab = tab;
   if (route.query.tab !== query.tab) void router.push({ query });
 });
 watch(() => route.query.tab, (tab) => {
-  activeTab.value = tab === "settings" ? "settings" : tab === "knowledge" ? "knowledge" : "assistant";
+  activeTab.value = tab === "settings" ? "settings" : "chat";
 });
 
 const suggestedPrompts = [
@@ -390,7 +392,7 @@ onBeforeUnmount(() => {
   <div class="assistant-page">
     <VPageHeader title="AI 助手">
       <template #actions>
-        <div v-if="activeTab !== 'settings'" class="flex items-center gap-2">
+        <div v-if="activeTab === 'chat'" class="flex items-center gap-2">
           <VButton
             v-if="messages.length > 0"
             type="secondary"
@@ -415,12 +417,11 @@ onBeforeUnmount(() => {
     </VPageHeader>
 
     <nav class="assistant-tabs apple-segmented rect" aria-label="AI 助手分类">
-      <button type="button" :class="{ active: activeTab === 'assistant' }" @click="activeTab = 'assistant'">助手</button>
-      <button type="button" :class="{ active: activeTab === 'knowledge' }" @click="activeTab = 'knowledge'">知识库</button>
+      <button type="button" :class="{ active: activeTab === 'chat' }" @click="activeTab = 'chat'">对话</button>
       <button type="button" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
     </nav>
 
-    <div v-if="activeTab !== 'settings'" class="assistant-layout">
+    <div v-if="activeTab === 'chat'" class="assistant-layout">
       <!-- 左侧：AI 对话工作区 -->
       <div class="chat-workspace">
         <!-- 聊天区域容器 -->
