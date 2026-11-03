@@ -1,6 +1,6 @@
 # AI 摘要已生成但前台不显示
 
-任务编号：BLG-20261102-08。状态：待体验（beta03 已修复并部署；beta04 补齐 HeTi 排版修复，待生产部署后复验）。
+任务编号：BLG-20261102-08。状态：待体验（beta03 修复摘要不可见、beta04 修复 HeTi 词内空隙，均已发布并部署；线上文章摘要完整可见，待用户确认体验）。
 
 ## 现象与根因
 
@@ -55,6 +55,19 @@
 - 稳定标签未移动：`latest` / `2` / `2.0` / `2.0.6` 仍为 `sha256:944df8d8…a734392`；GitHub Release `v2.0.7-beta03` 为 Pre-release。
 - 生产升级：升级前 `2.0.7-beta02`（image ID `e49df5be…`）、running、restarts 0。备份 `/home/ubuntu/blog-release-v2.0.7-beta03/`（0700）保存 `blog.db` 三件套与 compose 副本，db md5 源与副本一致；compose 仅 image 一行改为 `:2.0.7-beta03` 后 `pull && up -d`。升级后容器 `2.0.7-beta03`（image ID `fd65dba9…` = GHCR digest）、running、restarts 0；宿主 `/readyz` 200、公网 `/readyz` 200、公网 `/settings` 显示 `Blog v2.0.7-beta03`。
 - 生产验收：`/post/hexo-blog-setup-guide` 的 `#ai-summary .body` 首次出现完整摘要 `<p>这篇教程…</p>`（回退路径生效）；但同页 HeTi 造成词内空隙，随后在 beta04 修复。回退方案：compose image 改回 `:2.0.7-beta02` 并 `up -d`；本次无数据库 schema 迁移。
+
+
+## 发布记录（v2.0.7-beta04，2026-11-03）
+
+- 提交：`e58672d0` fix: 修复 HeTi 环境下 AI 摘要词内空隙（7 files，含计划、验收基线与 JS 回归用例）；经 `make merge-check` 合入 dev 为 `d17113f9`（合并 `origin/release` 历史，内容零差异）。
+- 晋级：PR #42 `dev → main` 合并 `805d86df`；PR #43 `main → release` 合并 `ef7d687c`。两 PR 的必需 CI（go/lint/security/console/e2e/build，发布 PR 另含 release-source/image）全部通过；release strict 前置通过（dev 已含 release 历史，无需额外同步 PR）。
+- tag：`v2.0.7-beta04`（GPG 签名）打在 `ef7d687c`；Docker Release run `41489270857` success（约 7m46s）。
+- 镜像：`ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta04` digest `sha256:1f6612a75e4fa05811178f60821c31e0e9336be92409a3a95ca71b2d4897da36`；`sha-ef7d687` 同 digest；label `version=2.0.7-beta04`、`revision=ef7d687c…`；服务器 `docker run --rm …:2.0.7-beta04 -h` 退出码 0。
+- 稳定标签未移动：`latest` / `2` / `2.0` / `2.0.6` 仍为 `sha256:944df8d8…a734392`；`2.0.7-beta03` digest 未变；GitHub Release `v2.0.7-beta04` 为 Pre-release。
+- 生产升级：升级前 `2.0.7-beta03`（image ID `fd65dba9…`）、running、restarts 0。备份 `/home/ubuntu/blog-release-v2.0.7-beta04/`（0700）保存 `blog.db` 三件套与 compose 副本，db md5 源与副本一致；compose 仅 image 一行改为 `:2.0.7-beta04` 后 `pull && up -d`。升级后容器 `2.0.7-beta04`（image ID `1f6612a7…` = GHCR digest）、running、restarts 0；宿主 `/readyz` 200、公网 `/readyz` 200、公网 `/settings` 显示 `Blog v2.0.7-beta04`，公网首页/`/console/`/`/uc/` 200。
+- 生产验收（Playwright，公网真实页面）：`#ai-summary .body p` 文本完整；`heti-spacing` 仅包裹完整 token（`Hexo`、`Git`、`Node.js v12`、`npm`、`cnpm`、`hexo-cli`、`hexo clean && hexo g && hexo s`、`4000`、`Github`、`SSH`、`hexo-deployer-git`、`_config.yml`、`hexo d`、`github.io`），无词内拆分；截图 `after-production.png` 为最终 1280×900 效果。
+- 回退：compose image 改回 `:2.0.7-beta03` 并 `up -d`；本次无数据库 schema 迁移。
+- 证据：`docs/baselines/ai-summary-display/verification.json` 的 `release` 与 `followUp` 段；发布日志与服务器命令记录保存在本次会话与计划记录中。
 
 ## 剩余问题
 
