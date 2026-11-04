@@ -449,6 +449,17 @@ const btnActive = "btn-active";
   color: var(--color-primary-hover);
 }
 
+/* ===== 横向滚动条隐藏 =====
+   工具栏在窄宽度下保留横向滚动，但滚动条本身会贴着按钮下沿显示（macOS 悬浮条在滚动时可见），
+   观感与工具栏不一致，因此只隐藏滚动条，不改变溢出滚动行为。 */
+.editor-toolbar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.editor-toolbar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ===== 移动端适配 ===== */
 @media (max-width: 640px) {
   /* 工具栏更紧凑 */
