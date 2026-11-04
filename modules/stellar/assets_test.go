@@ -44,13 +44,13 @@ func TestRuntimeVersionIncludesImportedModules(t *testing.T) {
 
 func TestRuntimeVersionIncludesDynamicallyLoadedAssets(t *testing.T) {
 	for _, name := range []string{
-		"js/search/algolia-search.js",
-		"js/services/siteinfo.js",
+		"js/search/local-search.js",
+		"js/services/rating.js",
 		"js/plugins/fancybox.js",
 		"vendor/fancybox/fancybox.umd.js",
 		"vendor/fancybox/fancybox.css",
 		"css/plugins/fancybox.css",
-		"css/comments/waline.css",
+		"css/comments.css",
 		"fonts/font.css",
 		"js/icons/default.json",
 	} {
@@ -114,7 +114,7 @@ func TestRuntimeVersionMatchesDiskAndEmbed(t *testing.T) {
 	}
 	dev := NewAssetVersioner(true, root, generated...)
 	embedded := NewAssetVersioner(false, "", generated...)
-	for _, path := range []string{"/assets/js/runtime/index.js", "assets/js/runtime/index.js", "/assets/js/search/algolia-search.js", "/assets/css/main.css", "/assets/js/icons/default.json"} {
+	for _, path := range []string{"/assets/js/runtime/index.js", "assets/js/runtime/index.js", "/assets/js/search/local-search.js", "/assets/css/main.css", "/assets/js/icons/default.json"} {
 		if got, want := dev(path), embedded(path); got == "0" || got != want {
 			t.Errorf("disk and embed must agree for %s: got %s, want %s", path, got, want)
 		}

@@ -23,7 +23,7 @@ var resources = func() object {
 }()
 var htmlComments = regexp.MustCompile(`<!--[\s\S]*?-->`)
 
-const servicesSelector = "#artalk_container, #twikoo_container, #waline_container, .data-service, [class*='ds-'], a[cardlink], a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api], .voice>audio, .video>video, .chat-file"
+const servicesSelector = ".data-service, [class*='ds-'], a[cardlink], .voice>audio, .video>video, .chat-file"
 const lightboxSelector = "[data-fancybox]:not(.error), .with-fancybox, .ds-memos"
 
 func Build(input Input) (Bundle, error) {
@@ -69,8 +69,7 @@ func Build(input Input) (Bundle, error) {
 	if colorScheme != "auto" && colorScheme != "light" && colorScheme != "dark" {
 		return Bundle{}, fmt.Errorf("appearance.colorScheme %q is invalid", colorScheme)
 	}
-	comments := resolveComments(theme, input)
-	bundle := Bundle{Comments: comments, CoreScripts: []string{"/assets/js/utils.js", "/assets/js/main.js", "/assets/js/navigation-init.js", "/assets/js/profile.js"}, Bootstrap: "/assets/js/runtime/index.js"}
+	bundle := Bundle{CoreScripts: []string{"/assets/js/utils.js", "/assets/js/main.js", "/assets/js/navigation-init.js", "/assets/js/profile.js"}, Bootstrap: "/assets/js/runtime/index.js"}
 	bundle.ClientData = clientData(theme, assets, input, root)
 	var policy Policy
 	policySource := obj(clone(at(resources, "constants.runtime")))
@@ -98,17 +97,17 @@ func Build(input Input) (Bundle, error) {
 	}
 	if !input.Blog.GoSearch {
 		provider := str(search["provider"])
+		// 产品已移除 Algolia：旧配置回退到本地索引。
+		if provider == "algolia" {
+			provider = "local"
+		}
 		if provider != "" {
-			if provider != "local" && provider != "algolia" {
+			if provider != "local" {
 				return Bundle{}, fmt.Errorf("search.provider %q is invalid", provider)
 			}
-			options, res := split(obj(search[provider]), obj(at(defaults, "search."+provider)), "js")
-			var client any
-			if provider == "algolia" {
-				client = rewrite(res["js"])
-			}
-			add("search", "document", ".search-input", object{"provider": provider, "options": options, "assets": object{"client": client, "provider": rewrite(at(assets, "search.providers."+provider)), "shortcut": rewrite(at(assets, "search.shortcut"))}})
-			if provider == "local" && at(search, "local.includeContent") == false {
+			options, _ := split(obj(search["local"]), obj(at(defaults, "search.local")), "js")
+			add("search", "document", ".search-input", object{"provider": "local", "options": options, "assets": object{"client": nil, "provider": rewrite(at(assets, "search.providers.local")), "shortcut": rewrite(at(assets, "search.shortcut"))}})
+			if at(search, "local.includeContent") == false {
 				entry := &bundle.Manifest.Extensions[len(bundle.Manifest.Extensions)-1]
 				entry.Module = "/assets/js/runtime/extensions/blog-title-search.js"
 				entry.Config["assets"].(object)["provider"] = "/assets/js/blog/search/title-search.js"
@@ -127,9 +126,6 @@ func Build(input Input) (Bundle, error) {
 	add("services", "region", servicesSelector, object{"marked": rewrite(marked["js"])})
 	// Wrapper 划分本地服务 DOM 所有权；services.js 保持上游结构并补充区域生命周期与动态内容净化。
 	bundle.Manifest.Extensions[len(bundle.Manifest.Extensions)-1].Module = "/assets/js/runtime/extensions/blog-upstream-services.js"
-	if comments.Enabled {
-		add("comments", "region", "#comments", object{"provider": comments.Service, "options": clone(comments.Options), "pageTitle": comments.PageTitle, "assets": clone(comments.Assets)})
-	}
 	add("settings", "region", ".settings-page", object{})
 	if at(features, "linkPrefetch.enabled") == true {
 		_, res := split(obj(features["linkPrefetch"]), obj(at(defaults, "features.link_prefetch")), "js")
@@ -206,9 +202,10 @@ func clientData(theme, assets object, input Input, root string) object {
 	}
 	services := obj(rewrite(at(assets, "services")))
 	services["gravatar"] = object{"baseUrl": at(theme, "services.gravatar.baseUrl")}
-	siteinfo := obj(at(theme, "services.siteInfo"))
-	endpoint := at(siteinfo, str(siteinfo["provider"])+".endpoint")
-	services["siteinfo"].(object)["api"] = endpoint
+	// 站点信息外部 API 已移除：保留 null 兼容字段，客户端不再读取。
+	if siteinfo, ok := services["siteinfo"].(object); ok {
+		siteinfo["api"] = nil
+	}
 	ctx := object{"root": root, "tag_plugins": object{"chat": object{"api": at(assets, "services.chat.endpoint")}}, "icons": icons, "ui": object{"classes": object{"interactive": "ui-interactive", "interactiveSpotlight": "ui-interactive card-hover card-hover--spotlight", "collectionItem": "ui-collection__item ui-interactive card-hover card-hover--spotlight", "spotlight": "card-hover card-hover--spotlight", "hoverCard": "card-hover card-hover--spotlight card-hover--tilt"}}, "services": services}
 	provider := str(at(theme, "search.provider"))
 	if input.Blog.GoSearch {
@@ -244,66 +241,6 @@ func clientData(theme, assets object, input Input, root string) object {
 	canonical["encoded"] = base64.StdEncoding.EncodeToString([]byte(str(canonical["host"])))
 	canonical["param"] = object{"permalink": input.PageURL, "checklink": at(services, "video.js")}
 	return object{"canonical": canonical, "ctx": ctx, "def": object{"avatar": at(theme, "fallbacks.avatar"), "cover": at(theme, "fallbacks.cover")}}
-}
-func resolveComments(theme object, input Input) CommentsModel {
-	source := obj(theme["comments"])
-	base := object{"enabled": source["enabled"] != false, "title": str(source["title"]), "id": str(source["id"]), "provider": nil, "options": object{}}
-	if _, ok := source["provider"].(string); ok {
-		base["provider"] = source["provider"]
-	}
-	profile := input.Profile
-	profileKey := runtimeKey(profile)
-	if profile == "404" {
-		profileKey = "error"
-	}
-	if (profile == "home" && input.Data["isHomeFirstPage"] != false) || profileKey == "error" {
-		if override := at(theme, "profiles."+profileKey+".comments"); truth(override) {
-			if m, ok := override.(object); ok {
-				base = mergeComments(base, m)
-			} else {
-				base["enabled"] = true
-			}
-		}
-	}
-	collection := obj(input.Collection["comments"])
-	if v := at(input.Collection, "presentation.comments"); v != nil {
-		collection = obj(v)
-	}
-	base = mergeComments(base, mergeConfig(collection, obj(input.Page["comments"])))
-	service := str(base["provider"])
-	options := mergeComments(obj(source[service]), obj(base["options"]))
-	fields := []string{"js"}
-	if service == "artalk" || service == "waline" {
-		fields = append(fields, "css")
-	}
-	if service == "waline" {
-		fields = append(fields, "meta_css")
-	}
-	for _, field := range fields {
-		if v, ok := obj(base["options"])[field]; ok {
-			options[field] = v
-		}
-	}
-	resolved, assets := split(options, obj(at(resources, "defaults.comments."+service)), fields...)
-	assets = merged(obj(at(resources, "constants.assets.comments."+service)), assets)
-	if service == "artalk" {
-		server := strings.TrimRight(strings.TrimSpace(str(options["server"])), "/")
-		for _, field := range []string{"js", "css"} {
-			if assets[field] == nil {
-				if server != "" {
-					assets[field] = server + "/dist/Artalk." + field
-				}
-			}
-		}
-	}
-	if service == "giscus" && str(at(theme, "appearance.colorScheme")) != "auto" && options["data-theme"] == "preferred_color_scheme" {
-		resolved["data-theme"] = at(theme, "appearance.colorScheme")
-	}
-	pageTitle := str(input.Data["title"])
-	if pageTitle == "" {
-		pageTitle = str(input.Page["title"])
-	}
-	return CommentsModel{Enabled: base["enabled"] != false && service != "", Title: str(base["title"]), ID: str(base["id"]), Service: service, Options: resolved, Assets: obj(rewrite(assets)), PageTitle: pageTitle}
 }
 func addBlog(manifest *Manifest, blog BlogConfig, messages object) error {
 	add := func(id, module, scope, selector string, config object) {

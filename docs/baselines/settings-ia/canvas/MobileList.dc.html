@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 手机列表</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#0a0a0b;color:#f4f4f6;font:14px/1.5 "DM Sans","PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,a{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{text-decoration:none}
+h1,h2{margin:0}
+:focus-visible{outline:2px solid #2e8dff;outline-offset:-2px}
+
+.phone{position:relative;display:flex;flex-direction:column;width:390px;height:844px;overflow:hidden;background:#0a0a0b}
+
+.top{flex:none;display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 6px 0 16px;border-bottom:1px solid #242428}
+.top h1{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;color:#b9b9bf}
+.ib:active{background:#19191c}
+
+.list{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none}
+.list::-webkit-scrollbar{display:none}
+.gl{padding:9px 16px 3px;font-size:12px;font-weight:500;line-height:16px;letter-spacing:.04em;color:#8b8b91}
+.gl.first{padding-top:5px}
+.li{display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border-top:1px solid #1b1b1e;font-size:15px;color:#f4f4f6}
+.li:active,.li.press{background:#19191c}
+.li::after{content:"";flex:none;width:7px;height:7px;margin:0 3px 0 0;border-top:1.8px solid #8b8b91;border-right:1.8px solid #8b8b91;transform:rotate(45deg)}
+.t{flex:1;min-width:0;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.v{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:200px;color:#8b8b91;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{display:inline-block;flex:none;width:6px;height:6px;border-radius:50%;background:#ff9f0a}
+.sdot{display:inline-block;flex:none;width:6px;height:6px;border-radius:50%}
+.sw3{display:inline-flex;gap:4px}
+.sw3 i{display:block;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+
+.save{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px;padding:0 10px 0 16px;border-top:1px solid #242428;background:#0a0a0b}
+.sm{display:flex;flex-direction:column;min-width:0}
+.sm b{font-size:13.5px;font-weight:600;line-height:19px}
+.sm span{color:#8b8b91;font-size:12px;line-height:16px}
+.pbtn{display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:72px;height:38px;padding:0 16px;border-radius:6px;background:#e8e8ec;color:#000;font-weight:500}
+
+.nav{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:57px;border-top:1px solid #242428;background:#121214}
+.nav a,.nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#b9b9bf;font-size:12px}
+</style>
+</helmet>
+
+<div class="phone">
+  <header class="top">
+    <h1>系统设置</h1>
+    <a class="ib" href="#" aria-label="前端预览"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+  </header>
+
+  <main class="list">
+    <h2 class="gl first">站点</h2>
+    <a class="li" href="#"><span class="t">站点信息</span><span class="v">Stellar Demo</span></a>
+    <a class="li" href="#"><span class="t">SEO 与搜索</span><span class="v"><span class="sdot" style="background:#30d158"></span>站内搜索开启</span></a>
+
+    <h2 class="gl">外观与布局</h2>
+    <a class="li" href="#"><span class="t">主题外观</span><span class="v"><span class="sw3" aria-hidden="true"><i style="background:hsl(192 98% 55%)"></i><i style="background:hsl(14 100% 57%)"></i><i style="background:hsl(207 90% 54%)"></i></span>卡片 · 自动配色</span></a>
+    <a class="li" href="#"><span class="t">导航与页脚</span><span class="v">5 个导航项</span></a>
+    <a class="li" href="#"><span class="t">页面与侧栏</span><span class="v">右侧栏 · 3 个组件</span></a>
+
+    <h2 class="gl">内容</h2>
+    <a class="li press" href="MobilePage.dc.html"><span class="t">文章页<span class="dot" role="img" aria-label="有未保存修改"></span></span><span class="v">技术文章</span></a>
+    <a class="li" href="#"><span class="t">列表与卡片</span><span class="v">置顶 3 篇</span></a>
+    <a class="li" href="#"><span class="t">作者与友链</span><span class="v">1 位作者 · 12 个友链</span></a>
+
+    <h2 class="gl">互动</h2>
+    <a class="li" href="#"><span class="t">评论</span><span class="v"><span class="sdot" style="background:#30d158"></span>原生 + Giscus</span></a>
+    <a class="li" href="#"><span class="t">访客反馈</span><span class="v"><span class="sdot" style="background:#6b6b72"></span>未启用</span></a>
+
+    <h2 class="gl">扩展与高级</h2>
+    <a class="li" href="#"><span class="t">扩展与服务</span><span class="v">3 项已启用</span></a>
+    <a class="li" href="#"><span class="t">代码与原文</span><span class="v">未自定义</span></a>
+  </main>
+
+  <div class="save" role="region" aria-label="未保存的修改">
+    <div class="sm"><b>1 处未保存修改</b><span>文章页 1</span></div>
+    <button type="button" class="pbtn">保存</button>
+  </div>
+
+  <nav class="nav" aria-label="移动端底部导航">
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg><span>仪表盘</span></a>
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13z"></path><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13z"></path></svg><span>文章</span></a>
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg><span>评论</span></a>
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-12z"></path></svg><span>媒体库</span></a>
+    <button type="button" aria-label="更多导航"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg><span>更多</span></button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

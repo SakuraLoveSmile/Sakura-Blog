@@ -18,11 +18,8 @@ document.currentScript.stellarMount = function (root, context) {
         const data = await resp.json();
         const cells = [];
         for (let item of (data.content || data)) {
-          const siteinfoApi = !item.appicon && !item.icon && !item.avatar && ctx.services.siteinfo?.api
-            ? ctx.services.siteinfo.api.replace('{href}', encodeURIComponent(item.url))
-            : '';
           var cell = `<div class="grid-cell site-card">`;
-          cell += `<a class="card-link"${siteinfoApi ? ` data-siteinfo-api="${url(siteinfoApi)}"` : ''} target="_blank" rel="external nofollow noopener noreferrer" href="${url(item.url, 'href')}">`;
+          cell += `<a class="card-link" target="_blank" rel="external nofollow noopener noreferrer" href="${url(item.url, 'href')}">`;
           cell += `<img src="${url(item.cover || item.snapshot || item.screenshot, 'src')}" data-fallback-src="${url(default_cover)}"/>`;
           cell += `<div class="info">`;
           cell += `<img class="siteinfo-icon" src="${url(item.appicon || item.icon || item.avatar || default_avatar, 'src')}" data-fallback-src="${url(default_avatar)}"/>`;

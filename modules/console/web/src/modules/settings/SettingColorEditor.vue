@@ -239,6 +239,13 @@ function choose(value: string) {
   margin: 0;
   accent-color: var(--color-primary);
 }
+@media (max-width: 767px) {
+  /* 手机点击区 ≥44px：滑块自身加高，再用负外边距抵回，所以行高、轨道与圆点的位置都不变。 */
+  .color-opacity-row input {
+    height: 44px;
+    margin: -8px 0;
+  }
+}
 .color-opacity-row output {
   min-width: 36px;
   text-align: right;

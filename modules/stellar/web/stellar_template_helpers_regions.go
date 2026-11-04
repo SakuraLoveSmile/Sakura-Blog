@@ -115,10 +115,6 @@ func (r stellarTemplateRenderer) search(d *StellarRenderData, placement string, 
 		class += " has-hover-surface"
 	}
 	attrs := map[string]any{"title": label, "aria-label": label, "data-shell-action": "open-search", "data-search-instance": "leftbar-brand-search"}
-	filter := stellarText(stellarRenderGet(d, "layout.algoliaFilterPath"))
-	if filter != "" && stellarGet(d.Stellar.Theme, "search.provider") == "algolia" {
-		attrs["data-algolia-filter-path"] = "/" + strings.TrimLeft(filter, "/")
-	}
 	if stellarGet(d.Stellar.Client, "ClientData.ctx.search.service") == "local_search" {
 		profile := stellarText(stellarCollectionGet(d, "profile"))
 		id := stellarText(stellarCollectionGet(d, "id"))
@@ -515,7 +511,7 @@ func (r stellarTemplateRenderer) widget(d *StellarRenderData, region, layout str
 			return template.HTML(`<details class="topbar-toc"><summary class="` + stellarEscape(r.ui(d, "region-compact-action")) + `" aria-label="` + stellarEscape(stellarTranslate(d, "btn.toc")) + `"><span class="ui-icon">` + string(r.icon("default:rightbar")) + `</span></summary><div class="topbar-toc-popover">` + string(body) + `</div></details>`)
 		}
 		remote := stellarTruth(stellarRenderGet(d, "article.readmeHtml"))
-		comments := stellarTruth(stellarGet(d.Stellar.Client, "Comments.Enabled")) || d.Stellar.BlogNativeComments
+		comments := d.Stellar.BlogNativeComments
 		if body == "" && !remote && !comments {
 			return ""
 		}
@@ -529,9 +525,6 @@ func (r stellarTemplateRenderer) widget(d *StellarRenderData, region, layout str
 			}
 		}
 		footer := `<div class="widget-footer"><a class="top ui-interactive" onclick="util.scrollTop()"><span class="ui-icon">` + string(r.icon("default:to-top")) + `</span><span>` + stellarEscape(stellarTranslate(d, "btn.top")) + `</span></a>`
-		if stellarTruth(stellarGet(d.Stellar.Client, "Comments.Enabled")) {
-			footer += `<a class="buttom ui-interactive" onclick="util.scrollComment()"><span class="ui-icon">` + string(r.icon("default:to-comment")) + `</span><span>` + stellarEscape(stellarTranslate(d, "btn.comments")) + `</span></a>`
-		}
 		if d.Stellar.BlogNativeComments {
 			footer += `<a class="buttom ui-interactive" data-blog-action="scroll-comments" data-comments-target="blog-comments" href="#blog-comments"><span class="ui-icon">` + string(r.icon("default:to-comment")) + `</span><span>` + stellarEscape(stellarTranslate(d, "btn.comments")) + `</span></a>`
 		}
@@ -785,7 +778,7 @@ func (r stellarTemplateRenderer) dynamicWidget(d *StellarRenderData, layout stri
 		attrs := ` data-api="` + stellarEscape(api) + `"`
 		keys := make([]string, 0, len(item))
 		for key := range item {
-			if key != "title" && key != "type" && key != "api" && stellarCommentAttr(key) {
+			if key != "title" && key != "type" && key != "api" && stellarSafeAttrName(key) {
 				keys = append(keys, key)
 			}
 		}

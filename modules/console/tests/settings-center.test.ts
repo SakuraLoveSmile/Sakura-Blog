@@ -4,40 +4,47 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ensureSettingsDefaults } from "../web/src/modules/settings/settings-state.ts";
+import { resolveSettingsTab } from "../web/src/modules/settings/settings-pages.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../web/src");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
-test("settings center exposes one six-tab system settings surface", () => {
+test("settings center exposes one registry-driven system settings surface of 5 groups and 12 pages", () => {
   const view = read("modules/settings/SettingsView.vue");
-  for (const label of ["基本", "文章", "评论", "SEO", "搜索", "高级"])
-    assert.match(view, new RegExp(`label: "${label}"`));
+  const registry = read("modules/settings/settings-pages.ts");
+  for (const label of ["站点信息", "SEO 与搜索", "主题外观", "导航与页脚", "页面与侧栏", "文章页", "列表与卡片", "作者与友链", "评论", "访客反馈", "扩展与服务", "代码与原文"])
+    assert.match(registry, new RegExp(`label: "${label}",`));
+  for (const label of ["站点", "外观与布局", "内容", "互动", "扩展与高级"])
+    assert.match(registry, new RegExp(`label: "${label}",`));
   assert.doesNotMatch(view, /activeGroup|currentGroupTabs|安全设置/);
-  assert.match(view, /settings-tabs/);
-  assert.match(view, /settings-basic-panel/);
-  assert.match(view, /VTabbar/);
+  assert.match(view, /<SettingsNav/);
+  assert.doesNotMatch(view, /VTabbar|settings-tabs/);
   assert.match(view, /CanonicalSettingsForm/);
   assert.doesNotMatch(view, /CanonicalSettingsNotice/);
-  assert.match(view, /<SeoSettings[^>]*host-only/);
-  assert.match(read("modules/settings/tabs/SeoSettings.vue"), /<template v-if="!hostOnly">/);
+  assert.doesNotMatch(view, /<SeoSettings/);
   assert.match(view, /ALL_SETTINGS_SECTIONS/);
 });
 
-test("basic settings follows Halo identity and branding order", () => {
+test("basic settings follows Halo identity and branding order and owns the site description and URL", () => {
   const basic = read("modules/settings/tabs/BasicSettings.vue");
-  const markers = ["settings-site-title", "settings-site-subtitle", ">Logo<", ">Favicon<", ">Apple Touch Icon<"];
+  const markers = [
+    "settings-site-title",
+    "settings-site-subtitle",
+    ">Logo<",
+    ">Favicon<",
+    ">Apple Touch Icon<",
+    "settings-site-desc",
+    "settings-site-url",
+  ];
   let previous = -1;
   for (const marker of markers) {
     const index = basic.indexOf(marker);
     assert.ok(index > previous, `${marker} should follow the previous Halo basic field`);
     previous = index;
   }
-  assert.doesNotMatch(basic, /data\.site\.description/);
-  assert.doesNotMatch(basic, /data\.site\.url/);
-  const seo = read("modules/settings/tabs/SeoSettings.vue");
-  assert.match(seo, /data\.site\.description/);
-  assert.match(seo, /data\.site\.url/);
-  assert.match(seo, /emit\('save', 'site'\)/);
+  assert.match(basic, /data\.site\.description/);
+  assert.match(basic, /data\.site\.url/);
+  assert.match(basic, /emit\(["']save["'], ["']site["']\)/);
 });
 
 test("post settings follows Halo vertical form order and keeps the article save contract", () => {
@@ -61,10 +68,9 @@ test("post settings follows Halo vertical form order and keeps the article save 
 
 test("settings center keeps structured forms and section save contracts split by tab", () => {
   const components: Array<[string, RegExp]> = [
-    ["BasicSettings.vue", /emit\('save', 'site'\)/],
+    ["BasicSettings.vue", /emit\(["']save["'], ["']site["']\)/],
     ["PostSettings.vue", /emit\(["']save["'], ["']article["']\)/],
     ["CommentSettings.vue", /settingsApi\.testNotify/],
-    ["SeoSettings.vue", /emit\('save', 'seo'\)/],
     ["SearchSettings.vue", /emit\(["']save["'], ["']search["']\)/],
     ["AdvancedSettings.vue", /saveJson/],
   ] as const;
@@ -92,7 +98,14 @@ test("basic settings validates site title and supports native form submit", () =
   const basic = read("modules/settings/tabs/BasicSettings.vue");
   assert.match(basic, /<form class="settings-basic-form" @submit\.prevent="handleSubmit">/);
   assert.match(basic, /站点标题不能为空/);
-  assert.match(basic, /native-type="submit"/);
+  // 保存按钮由统一保存栏经 actions 插槽放进表单，类型为原生 submit：回车与点击都先走 handleSubmit 的标题校验。
+  assert.match(basic, /<slot name="actions" \/>/);
+  assert.doesNotMatch(basic, /native-type="submit"/);
+  assert.match(read("modules/settings/SettingsSaveBar.vue"), /native-type="submit"/);
+  assert.match(
+    read("modules/settings/SettingsView.vue"),
+    /<BasicSettings[\s\S]*?<template #actions>[\s\S]*?<SettingsSaveBar[\s\S]*?scope="host"/,
+  );
 });
 
 test("settings view tracks dirty state and guards unsaved changes on leave", () => {
@@ -105,15 +118,15 @@ test("settings view tracks dirty state and guards unsaved changes on leave", () 
 });
 
 test("legacy settings tabs redirect to their new owners", () => {
+  assert.deepEqual(resolveSettingsTab("appearance"), { kind: "page", page: "appearance" });
+  assert.deepEqual(resolveSettingsTab("menubar"), { kind: "page", page: "navigation" });
+  assert.deepEqual(resolveSettingsTab("authors"), { kind: "page", page: "community" });
+  assert.deepEqual(resolveSettingsTab("ai"), { kind: "route", path: "/assistant", query: { tab: "settings" } });
+  assert.deepEqual(resolveSettingsTab("security"), { kind: "route", path: "/profile" });
+  // 视图只通过注册表落页：旧键由 resolveSettingsTab 解析，路由目标改走 router.replace。
   const view = read("modules/settings/SettingsView.vue");
-  for (const marker of [
-    'appearance: { path: "/settings", tab: "appearance" }',
-    'menubar: { path: "/settings", tab: "navigation" }',
-    'ai: { path: "/assistant", tab: "settings" }',
-    'security: { path: "/profile" }',
-    'authors: { path: "/settings", tab: "community" }',
-  ])
-    assert.match(view, new RegExp(marker));
+  assert.match(view, /resolveSettingsTab\(/);
+  assert.match(view, /router\.replace\(\{ path: target\.path, query: target\.query \}\)/);
 });
 
 test("Stellar runtime settings are exposed by structured forms", () => {

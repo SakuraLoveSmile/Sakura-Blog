@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 归属对照</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#0a0a0b;color:#f4f4f6;font:13px/1.55 "DM Sans","PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p,ul{margin:0;padding:0}
+ul{list-style:none}
+.mono{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+.page{display:flex;flex-direction:column;gap:26px;width:1440px;height:1040px;padding:44px 56px;overflow:hidden;background:#0a0a0b}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.top h1{font-size:26px;font-weight:600;letter-spacing:-.02em}
+.top p{margin-top:4px;color:#b9b9bf;font-size:14px}
+.legend{display:flex;align-items:center;gap:16px;color:#8b8b91;font-size:12px}
+.old{display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid #242428;border-bottom:1px solid #242428}
+.lab{flex:none;width:76px;color:#8b8b91;font-size:12px}
+.chips{display:flex;gap:6px;flex:1;min-width:0;overflow:hidden;white-space:nowrap}
+.chip{flex:none;display:inline-flex;align-items:center;height:28px;padding:0 12px;border:1px solid #242428;border-radius:6px;color:#b9b9bf}
+.oldnote{flex:none;color:#8b8b91;font-size:12px}
+.cols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:56px}
+.col{display:flex;flex-direction:column;gap:32px}
+.grp h2{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #242428;color:#8b8b91;font-size:12px;font-weight:600;letter-spacing:.08em}
+.grp h2 span{font-weight:400;letter-spacing:0}
+.pg{padding:14px 0 2px}
+.pgh{display:flex;align-items:baseline;gap:10px}
+.pgh h3{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.sv{color:#8b8b91;font-size:12px}
+.pg ul{margin-top:6px}
+.it{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:4px 0;color:#f4f4f6}
+.it .nm em{font-style:normal;color:#8b8b91}
+.tgs{display:flex;flex:none;gap:6px}
+.tg{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border:1px solid #242428;border-radius:4px;color:#8b8b91;font-size:11.5px;white-space:nowrap}
+.tg b{font-weight:600;color:#f4f4f6}
+.tg.mv,.tg.mg,.tg.sp,.tg.nw{border-color:#4a4a52;color:#b9b9bf}
+.nt{padding:6px 0;color:#b9b9bf}
+.nt + .nt{border-top:1px solid #1b1b1e}
+.nt > b{display:block;color:#f4f4f6;font-weight:500}
+.nt span{color:#8b8b91}
+</style>
+</helmet>
+<div class="page">
+  <div class="top">
+    <div>
+      <h1>设置页归属对照</h1>
+      <p>13 个横向 Tab → 5 组 12 页的纵向分组导航；每个设置项只有一个归属，字段路径与保存接口不变。</p>
+    </div>
+    <div class="legend">
+      <span class="tg mv"><b>移动</b> 设置项换页</span>
+      <span class="tg mg"><b>合并</b> 两页并为一页</span>
+      <span class="tg sp"><b>拆分</b> 一页分为两页</span>
+      <span class="tg nw"><b>新增</b> 仅入口</span>
+    </div>
+  </div>
+
+  <div class="old">
+    <span class="lab">现在</span>
+    <div class="chips">
+      <span class="chip">基本</span><span class="chip">外观</span><span class="chip">导航</span><span class="chip">页面布局</span><span class="chip">文章</span><span class="chip">评论</span><span class="chip">SEO</span><span class="chip">搜索</span><span class="chip">插件</span><span class="chip">服务</span><span class="chip">作者与友链</span><span class="chip">反馈</span><span class="chip">高级</span>
+    </div>
+    <span class="oldnote">13 个平铺 Tab · 手机宽度下需横向滑动 3 屏以上</span>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <section class="grp">
+        <h2>站点<span>2 页</span></h2>
+        <div class="pg">
+          <div class="pgh"><h3>站点信息</h3><span class="sv">独立保存 · 站点分段</span></div>
+          <ul>
+            <li class="it"><span class="nm">站点标识 <em>标题、副标题</em></span><span class="tgs"><span class="tg">基本</span></span></li>
+            <li class="it"><span class="nm">Logo <em>主图、悬停背景、主副标题</em></span><span class="tgs"><span class="tg">基本</span></span></li>
+            <li class="it"><span class="nm">图标 <em>Favicon、Apple Touch</em></span><span class="tgs"><span class="tg">基本</span></span></li>
+            <li class="it"><span class="nm">站点描述与站点 URL</span><span class="tgs"><span class="tg mv"><b>移动</b> SEO</span></span></li>
+          </ul>
+        </div>
+        <div class="pg">
+          <div class="pgh"><h3>SEO 与搜索</h3><span class="sv">共享主题草稿</span></div>
+          <ul>
+            <li class="it"><span class="nm">站内搜索 <em>服务、本地索引、Algolia</em></span><span class="tgs"><span class="tg mg"><b>合并</b> 搜索</span></span></li>
+            <li class="it"><span class="nm">页面地址与社交信息</span><span class="tgs"><span class="tg">SEO</span></span></li>
+            <li class="it"><span class="nm">搜索引擎与站长验证</span><span class="tgs"><span class="tg">SEO</span></span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="grp">
+        <h2>互动<span>2 页</span></h2>
+        <div class="pg">
+          <div class="pgh"><h3>评论</h3><span class="sv">共享主题草稿</span></div>
+          <ul>
+            <li class="it"><span class="nm">原生评论</span><span class="tgs"><span class="tg">评论</span></span></li>
+            <li class="it"><span class="nm">邮件通知</span><span class="tgs"><span class="tg">评论</span></span></li>
+            <li class="it"><span class="nm">第三方评论</span><span class="tgs"><span class="tg">评论</span></span></li>
+          </ul>
+        </div>
+        <div class="pg">
+          <div class="pgh"><h3>访客反馈</h3><span class="sv">独立保存 · 反馈分段</span></div>
+          <ul>
+            <li class="it"><span class="nm">Feedback 服务接入</span><span class="tgs"><span class="tg">反馈</span></span></li>
+            <li class="it"><span class="nm">入口与截图</span><span class="tgs"><span class="tg">反馈</span></span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="grp">
+        <h2>保存方式</h2>
+        <div class="nt"><b>每页只有一种保存方式</b><span>站点信息、访客反馈各自独立保存；其余 10 页共享同一份主题草稿，由页面底部统一保存。</span></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="grp">
+        <h2>外观与布局<span>3 页</span></h2>
+        <div class="pg">
+          <div class="pgh"><h3>主题外观</h3></div>
+          <ul>
+            <li class="it"><span class="nm">外观预设与配色模式</span><span class="tgs"><span class="tg">外观</span></span></li>
+            <li class="it"><span class="nm">颜色与渐变</span><span class="tgs"><span class="tg">外观</span></span></li>
+            <li class="it"><span class="nm">字体与排版 <em>含代码块</em></span><span class="tgs"><span class="tg">外观</span></span></li>
+            <li class="it"><span class="nm">形状与圆角</span><span class="tgs"><span class="tg">外观</span></span></li>
+            <li class="it"><span class="nm">背景</span><span class="tgs"><span class="tg">外观</span></span></li>
+          </ul>
+        </div>
+        <div class="pg">
+          <div class="pgh"><h3>导航与页脚</h3></div>
+          <ul>
+            <li class="it"><span class="nm">顶栏</span><span class="tgs"><span class="tg">导航</span></span></li>
+            <li class="it"><span class="nm">左侧栏</span><span class="tgs"><span class="tg">导航</span></span></li>
+            <li class="it"><span class="nm">站点页脚</span><span class="tgs"><span class="tg">导航</span></span></li>
+          </ul>
+        </div>
+        <div class="pg">
+          <div class="pgh"><h3>页面与侧栏</h3></div>
+          <ul>
+            <li class="it"><span class="nm">各类页面布局 <em>首页、文章、文档、笔记…</em></span><span class="tgs"><span class="tg">页面布局</span></span></li>
+            <li class="it"><span class="nm">右侧栏</span><span class="tgs"><span class="tg mv"><b>移动</b> 导航</span></span></li>
+            <li class="it"><span class="nm">侧栏组件定义</span><span class="tgs"><span class="tg">页面布局</span></span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="grp">
+        <h2>扩展与高级<span>2 页</span></h2>
+        <div class="pg">
+          <div class="pgh"><h3>扩展与服务</h3></div>
+          <ul>
+            <li class="it"><span class="nm">内容组件 <em>标签插件</em></span><span class="tgs"><span class="tg mg"><b>合并</b> 插件</span></span></li>
+            <li class="it"><span class="nm">前台增强</span><span class="tgs"><span class="tg mg"><b>合并</b> 插件</span></span></li>
+            <li class="it"><span class="nm">预连接地址</span><span class="tgs"><span class="tg mv"><b>移动</b> SEO</span></span></li>
+            <li class="it"><span class="nm">外部服务</span><span class="tgs"><span class="tg mg"><b>合并</b> 服务</span></span></li>
+            <li class="it"><span class="nm">默认图片</span><span class="tgs"><span class="tg mg"><b>合并</b> 服务</span></span></li>
+          </ul>
+        </div>
+        <div class="pg">
+          <div class="pgh"><h3>代码与原文</h3></div>
+          <ul>
+            <li class="it"><span class="nm">代码注入</span><span class="tgs"><span class="tg">高级</span></span></li>
+            <li class="it"><span class="nm">完整配置原文</span><span class="tgs"><span class="tg">高级</span></span></li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="grp">
+        <h2>内容<span>3 页</span></h2>
+        <div class="pg">
+          <div class="pgh"><h3>文章页</h3></div>
+          <ul>
+            <li class="it"><span class="nm">阅读体验 <em>风格、缩进、横幅、阅读时长</em></span><span class="tgs"><span class="tg sp"><b>拆分</b> 文章</span></span></li>
+            <li class="it"><span class="nm">页脚与许可 <em>标签、许可、主题分享</em></span><span class="tgs"><span class="tg sp"><b>拆分</b> 文章</span></span></li>
+            <li class="it"><span class="nm">文章扩展 <em>下一篇、编辑链接、扩展分享、打赏</em></span><span class="tgs"><span class="tg sp"><b>拆分</b> 文章</span></span></li>
+            <li class="it"><span class="nm">AI 创作标记</span><span class="tgs"><span class="tg sp"><b>拆分</b> 文章</span></span></li>
+          </ul>
+        </div>
+        <div class="pg">
+          <div class="pgh"><h3>列表与卡片</h3></div>
+          <ul>
+            <li class="it"><span class="nm">置顶与文章卡片 <em>封面比例、摘要、标签</em></span><span class="tgs"><span class="tg sp"><b>拆分</b> 文章</span></span></li>
+            <li class="it"><span class="nm">分类与标签样式 <em>颜色、图标</em></span><span class="tgs"><span class="tg mv"><b>移动</b> 文章 · 文章扩展</span></span></li>
+          </ul>
+        </div>
+        <div class="pg">
+          <div class="pgh"><h3>作者与友链</h3></div>
+          <ul>
+            <li class="it"><span class="nm">作者</span><span class="tgs"><span class="tg">作者与友链</span></span></li>
+            <li class="it"><span class="nm">友链更新</span><span class="tgs"><span class="tg">作者与友链</span></span></li>
+            <li class="it"><span class="nm">友链页面</span><span class="tgs"><span class="tg">作者与友链</span></span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="grp">
+        <h2>未列入对照</h2>
+        <div class="nt"><b>AI 与知识库 <span class="tg nw"><b>新增</b> 仅入口</span></b><span>配置仍在「助手 · 设置」，设置导航底部只放一个跳转入口。</span></div>
+        <div class="nt"><b>已移除的空组</b><span>「索引说明」「其他高级配置」没有任何字段，不再占位。</span></div>
+        <div class="nt"><b>旧分段</b><span>data_cache、site_tree 已停止保存，当前页面本就不展示。</span></div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

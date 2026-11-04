@@ -348,16 +348,60 @@ function addCategoryFromInput() {
   categoryQuery.value = "";
 }
 
-// 点标签 chip：toggle 语义——已选中则移除（可取消标签），未选中则追加；逗号分隔去重
-function pickTag(name: string) {
-  const list = props.form.tags
+// 已选标签：表单仍存逗号分隔字符串（保存契约不变），输入框改成 token 式交互。
+const tagDraft = ref("");
+const selectedTags = computed(() =>
+  props.form.tags
     .split(/[,，]/)
     .map((s) => s.trim())
+    .filter(Boolean),
+);
+
+function commitTagDraft() {
+  const parts = tagDraft.value
+    .split(/[,，\n]/)
+    .map((s) => s.trim())
     .filter(Boolean);
-  const idx = list.indexOf(name);
-  if (idx >= 0) list.splice(idx, 1);
-  else list.push(name);
+  tagDraft.value = "";
+  if (!parts.length) return;
+  const list = [...selectedTags.value];
+  for (const part of parts) {
+    if (!list.includes(part)) list.push(part);
+  }
   props.form.tags = list.join(",");
+}
+
+function removeTag(name: string) {
+  props.form.tags = selectedTags.value.filter((tag) => tag !== name).join(",");
+}
+
+function onTagKeydown(event: KeyboardEvent) {
+  // 中文输入法组合期间的回车用于确认候选词，不在这里生成标签。
+  if (event.isComposing) return;
+  if (event.key === "Enter" || event.key === "," || event.key === "，") {
+    event.preventDefault();
+    commitTagDraft();
+    return;
+  }
+  if (event.key === "Backspace" && !tagDraft.value && selectedTags.value.length) {
+    event.preventDefault();
+    removeTag(selectedTags.value[selectedTags.value.length - 1]);
+  }
+}
+
+function onTagPaste(event: ClipboardEvent) {
+  const text = event.clipboardData?.getData("text") ?? "";
+  if (!/[,，\n]/.test(text)) return;
+  event.preventDefault();
+  tagDraft.value += text;
+  commitTagDraft();
+}
+
+// 点标签 chip：toggle 语义——已选中则移除（可取消标签），未选中则追加；逗号分隔去重
+function pickTag(name: string) {
+  const idx = selectedTags.value.indexOf(name);
+  if (idx >= 0) removeTag(name);
+  else props.form.tags = [...selectedTags.value, name].join(",");
 }
 
 /** 随机封面图：picsum seed 模式，保存后 URL 固定图片不再变化 */
@@ -733,22 +777,37 @@ const chipActiveCls = "bg-primary/15 text-primary";
             </div>
           </div>
           <div>
-            <label :class="labelCls">标签（逗号分隔）</label>
-            <input v-model="form.tags" :class="fieldCls" />
+            <label :class="labelCls">标签</label>
+            <div
+              class="flex flex-wrap items-center gap-1.5 rounded-[var(--radius)] border border-border bg-secondary px-2 py-1.5 transition-colors focus-within:border-primary"
+            >
+              <span v-for="t in selectedTags" :key="t" :class="[chipCls, 'bg-accent pr-1.5 text-foreground']">
+                {{ t }}
+                <button
+                  type="button"
+                  class="-mr-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-foreground/10 hover:text-foreground"
+                  :aria-label="`移除标签 ${t}`"
+                  @click="removeTag(t)"
+                >
+                  <Icon icon="ri:close-line" class="text-[12px]" />
+                </button>
+              </span>
+              <input
+                v-model="tagDraft"
+                class="tag-draft-input min-w-[7rem] flex-1 border-0 bg-transparent px-1 py-0.5 text-[13px] text-foreground outline-none placeholder:text-text-quaternary"
+                placeholder="输入标签后回车"
+                @keydown="onTagKeydown"
+                @blur="commitTagDraft"
+                @paste="onTagPaste"
+              />
+            </div>
+            <p class="mt-1 text-[11px] text-text-quaternary">回车或逗号生成标签，退格删除最后一个</p>
             <div v-if="tags.length" class="mt-2 flex flex-wrap gap-1.5">
               <button
                 v-for="t in tags"
                 :key="t"
                 type="button"
-                :class="[
-                  chipCls,
-                  form.tags
-                    .split(/[,，]/)
-                    .map((s) => s.trim())
-                    .includes(t)
-                    ? chipActiveCls
-                    : chipIdleCls,
-                ]"
+                :class="[chipCls, selectedTags.includes(t) ? chipActiveCls : chipIdleCls]"
                 @click="pickTag(t)"
               >
                 {{ t }}
@@ -903,6 +962,11 @@ const chipActiveCls = "bg-primary/15 text-primary";
 </template>
 
 <style scoped>
+/* 标签输入在 token 容器内：焦点环交给 focus-within 边框，避免 input 再叠一圈全局蓝色焦点环。 */
+.tag-draft-input:focus-visible {
+  outline: none;
+}
+
 /* 共享配置组件保持功能边界，仅在文章侧栏内去掉卡片皮肤。 */
 .post-settings-content-config {
   padding: 18px 0 20px;

@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 主题外观</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#0a0a0b;color:#f4f4f6;font:13px/1.55 "DM Sans","PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea,summary{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid #2e8dff;outline-offset:2px}
+.mono{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+.app{display:flex;flex-wrap:wrap;background:#0a0a0b}
+
+.side{flex:0 0 224px;padding:16px 12px 12px;border-right:1px solid #242428;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:8px;padding:2px 8px 14px;font-size:15px;font-weight:600}
+.brand i{display:block;width:20px;height:20px;border-radius:6px;border:1.5px solid #8b8b91}
+.write{display:flex;align-items:center;justify-content:center;height:34px;margin-bottom:8px;border:1px solid #242428;border-radius:8px;background:#121214;font-weight:500}
+.sfind{display:flex;align-items:center;justify-content:space-between;height:34px;margin-bottom:6px;padding:0 10px;border-radius:8px;background:#121214;color:#8b8b91}
+.sgrp{padding:14px 8px 4px;font-size:12px;color:#8b8b91}
+.sitem{display:flex;align-items:center;height:32px;padding:0 8px;border-radius:6px;color:#b9b9bf}
+.sitem.on{background:#19191c;color:#f4f4f6}
+.suser{margin-top:auto;padding:12px 8px 0;border-top:1px solid #242428;color:#b9b9bf}
+
+.main{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 32px 14px;border-bottom:1px solid #242428}
+.hl{display:flex;align-items:center;gap:12px}
+.hl h1{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.unsaved{display:inline-flex;align-items:center;gap:6px;color:#ff9f0a;font-size:12px;font-weight:500}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border:1px solid #37373d;border-radius:6px;font-weight:500;color:#f4f4f6}
+.btn:hover{background:#19191c}
+.btn.on{background:#19191c}
+.btn.pri{background:#e8e8ec;border-color:#e8e8ec;color:#000}
+.btn.pri:hover{background:#fff}
+.btn.ghost{border-color:transparent;color:#b9b9bf}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px}
+
+.set{flex:1;display:flex;flex-wrap:wrap}
+.snav{flex:0 0 208px;padding:24px 12px 24px 20px;border-right:1px solid #1b1b1e;display:flex;flex-direction:column;gap:1px}
+.ngrp{padding:18px 10px 6px;font-size:11.5px;font-weight:500;letter-spacing:.04em;color:#8b8b91}
+.ngrp:first-child{padding-top:2px}
+.nitem{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 10px;border-radius:6px;color:#b9b9bf}
+.nitem:hover{background:#141416;color:#f4f4f6}
+.nitem.on{background:#19191c;color:#f4f4f6;font-weight:500}
+.nlink{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding:10px;border-top:1px solid #1b1b1e;color:#8b8b91;font-size:12.5px}
+.nlink:hover{color:#f4f4f6}
+
+.sbody{flex:999 1 460px;min-width:0;display:flex;flex-direction:column;padding:28px 36px 0}
+.ptitle h2{font-size:22px;font-weight:600;letter-spacing:-.015em}
+.ptitle p{margin-top:6px;color:#b9b9bf}
+.anch{display:flex;flex-wrap:wrap;gap:4px;margin-top:18px;padding-bottom:14px;border-bottom:1px solid #242428}
+.anch a{padding:5px 10px;border-radius:6px;color:#b9b9bf;font-size:12.5px}
+.anch a:hover{background:#141416;color:#f4f4f6}
+
+.sec{padding:34px 0 4px;scroll-margin-top:12px}
+.sec + .sec{border-top:1px solid #1b1b1e;margin-top:30px}
+.sh{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.sh h3{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.sh p{margin-top:2px;color:#8b8b91;max-width:520px}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;padding:14px 0;border-top:1px solid #1b1b1e}
+.rl{flex:1 1 220px;min-width:0}
+.rt{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+.rh{margin-top:2px;max-width:400px;color:#8b8b91;font-size:12.5px}
+.rc{flex:0 1 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.rc.col{flex-direction:column;align-items:stretch;gap:8px}
+.blk{padding:14px 0;border-top:1px solid #1b1b1e}
+.mod{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.reset{padding:3px 8px;border-radius:5px;color:#8b8b91;font-size:12px}
+.reset:hover{background:#19191c;color:#f4f4f6}
+
+.in{height:34px;padding:0 10px;border:1px solid #242428;border-radius:6px;background:#121214}
+.in:focus{border-color:#37373d}
+.w320{width:320px;max-width:100%}
+.w220{width:220px;max-width:100%}
+.num{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border:1px solid #242428;border-radius:6px;background:#121214}
+.num:focus-within{border-color:#37373d}
+.num input{width:52px;padding:0;border:0;background:none;text-align:right;outline:0}
+.num em{font-style:normal;color:#8b8b91}
+.seg{display:inline-flex;gap:2px;padding:2px;border:1px solid #242428;border-radius:8px;background:#121214}
+.seg button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:6px;color:#b9b9bf;font-weight:500}
+.seg button:hover{color:#f4f4f6}
+.seg button.on{background:#2a2a2f;color:#f4f4f6;box-shadow:inset 0 0 0 1px #37373d}
+.mi{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid currentColor}
+.mi.d{background:currentColor}
+.mi.a{background:linear-gradient(90deg,currentColor 50%,transparent 50%)}
+.sample{color:#b9b9bf;font-size:15px}
+
+.pcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.pcard{display:flex;flex-direction:column;border:1px solid #242428;border-radius:10px;background:#0d0d0f;overflow:hidden}
+.pcard:hover{border-color:#37373d}
+.pcard.on{border-color:#e8e8ec;box-shadow:0 0 0 1px #e8e8ec}
+.pthumb{display:flex;gap:6px;height:96px;padding:10px}
+.pm-side{flex:0 0 26px}
+.pm-col{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.pm-card{flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 7px}
+.pm-card b{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.42)}
+.pm-card b.s{width:60%;background:rgba(255,255,255,.22)}
+.pmeta{display:block;padding:10px 12px 12px}
+.pn{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;font-weight:600}
+.pd{display:block;margin-top:2px;color:#8b8b91;font-size:12px;line-height:1.4}
+
+.cchips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cchip{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid #242428;border-radius:10px;background:#0d0d0f}
+.cchip:hover{border-color:#37373d}
+.cchip.on{border-color:#e8e8ec;box-shadow:0 0 0 1px #e8e8ec}
+.csw{display:block;height:44px;border-radius:7px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.csw.s{width:34px;height:34px;flex:none;border-radius:6px}
+.cn{display:flex;align-items:center;gap:6px;font-weight:500}
+.cv{display:block;color:#8b8b91;font-size:11.5px}
+.ced{display:flex;flex-direction:column;gap:12px;margin:12px 0 6px;padding:14px;border:1px solid #242428;border-radius:10px;background:#0d0d0f}
+.ced-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ced-r .in{flex:1 1 200px}
+.pal{display:flex;flex-wrap:wrap;gap:10px}
+.pal button{width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.pal button.on{box-shadow:0 0 0 2px #0d0d0f,0 0 0 4px #f4f4f6}
+.opa{display:flex;align-items:center;gap:12px;color:#b9b9bf;font-size:12.5px}
+.rng{position:relative;flex:1;height:4px;border-radius:2px;background:#2a2a2f}
+.rng i{position:absolute;left:0;top:0;bottom:0;right:0;border-radius:2px;background:#8b8b91}
+.rng b{position:absolute;right:-6px;top:-5px;width:14px;height:14px;border-radius:50%;background:#f4f4f6}
+.chelp{color:#8b8b91;font-size:12px}
+.demo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dbtn{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;font-weight:600}
+.dtag{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600}
+.dlink{font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.gstrip{display:block;width:320px;max-width:100%;height:22px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+
+.more{margin-top:6px;border-top:1px solid #1b1b1e}
+.more > summary{display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer;color:#b9b9bf;font-weight:500;list-style:none}
+.more > summary::-webkit-details-marker{display:none}
+.more > summary::before{content:"+";display:inline-block;width:14px;color:#8b8b91}
+.more[open] > summary::before{content:"−"}
+.more .mh{color:#8b8b91;font-weight:400;font-size:12.5px}
+
+.rtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding-top:14px;border-top:1px solid #1b1b1e}
+.rtile{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid #242428;border-radius:10px;background:#0d0d0f}
+.rs{display:block;height:52px;border:1px solid #4a4a52;background:#17171a}
+.rn{display:flex;align-items:center;justify-content:space-between;color:#b9b9bf;font-size:12.5px}
+.rtile .num{height:30px}
+
+.sgrad{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.sg{display:flex;flex-direction:column;gap:8px}
+.sg .gl{color:#b9b9bf;font-size:12.5px}
+.stops{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.stops span{display:flex;align-items:center;gap:5px;color:#8b8b91;font-size:11px}
+.stops i{display:block;width:12px;height:12px;border-radius:3px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.up{display:flex;align-items:center;justify-content:center;width:140px;height:80px;border:1px dashed #37373d;border-radius:8px;color:#8b8b91;font-size:12.5px}
+.up:hover{border-color:#8b8b91;color:#f4f4f6}
+
+.savebar{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px;margin:36px -36px 0;padding:14px 36px;border-top:1px solid #242428;background:#0a0a0b}
+.savebar{margin-top:auto}
+.sbi{display:flex;align-items:center;gap:10px}
+.sbi .s{color:#8b8b91}
+.sbact{display:flex;gap:8px}
+
+.dock{flex:0 0 360px;padding:28px 24px 24px 0}
+.dbox{border:1px solid #242428;border-radius:10px;background:#0d0d0f;overflow:hidden}
+.dh{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid #242428}
+.dh .in{height:30px;min-width:0;width:96px;font-size:12.5px}
+.dh .seg button{height:24px;padding:0 8px;font-size:12px}
+.dbody{padding:12px}
+.dnote{padding:10px 12px;border-top:1px solid #242428;color:#8b8b91;font-size:12px}
+.pv{position:relative;display:flex;flex-direction:column;height:440px;border-radius:8px;overflow:hidden}
+.pv-top{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;flex:none}
+.pv-brand{font-size:11px;font-weight:600}
+.pv-sp{flex:1}
+.pv-pill{display:block;width:22px;height:6px;border-radius:3px}
+.pv-body{flex:1;display:flex;gap:10px;padding:10px;min-height:0}
+.pv-side{flex:0 0 78px;display:flex;flex-direction:column;gap:8px;padding:12px 10px;border-radius:12px}
+.pv-av{display:block;width:30px;height:30px;margin:0 auto 6px;border-radius:50%}
+.pv-m{display:block;height:8px;border-radius:4px}
+.pv-feed{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.pv-card{display:flex;flex-direction:column;gap:7px;padding:10px;flex:none}
+.pv-cover{display:block;height:64px;border-radius:8px}
+.pv-t{display:block;height:7px;border-radius:4px}
+.pv-t.s{width:60%}
+.pv-tags{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
+.pv-tag{padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.pv-link{font-size:10px;font-weight:600}
+</style>
+</helmet>
+
+<div class="app" style="min-height:2780px">
+  <aside class="side" aria-label="Console 导航（示意）">
+    <div class="brand"><i></i>Console</div>
+    <a href="#" class="write">开始写作</a>
+    <div class="sfind"><span>搜索内容与菜单</span><span class="mono">⌘K</span></div>
+    <a href="#" class="sitem">仪表盘</a>
+    <div class="sgrp">内容</div>
+    <a href="#" class="sitem">文章</a>
+    <a href="#" class="sitem">专栏</a>
+    <a href="#" class="sitem">笔记本</a>
+    <a href="#" class="sitem">页面</a>
+    <a href="#" class="sitem">文库</a>
+    <a href="#" class="sitem">作者</a>
+    <a href="#" class="sitem">瞬间</a>
+    <div class="sgrp">互动</div>
+    <a href="#" class="sitem">评论</a>
+    <a href="#" class="sitem">评论用户</a>
+    <a href="#" class="sitem">通知中心</a>
+    <a href="#" class="sitem">友链</a>
+    <a href="#" class="sitem">订阅</a>
+    <div class="sgrp">媒体</div>
+    <a href="#" class="sitem">媒体库</a>
+    <div class="sgrp">系统</div>
+    <a href="#" class="sitem on" aria-current="page">系统设置</a>
+    <div class="suser">管理员</div>
+  </aside>
+
+  <div class="main">
+    <header class="hdr">
+      <div class="hl">
+        <h1>系统设置</h1>
+        <sc-if value="{{dirty}}" hint-placeholder-val="{{true}}"><span class="unsaved"><span class="dot"></span>未保存修改</span></sc-if>
+      </div>
+      <button type="button" class="btn on" aria-pressed="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>前端预览</button>
+    </header>
+
+    <div class="set">
+      <nav class="snav" aria-label="设置分类">
+        <sc-for list="{{navRows}}" as="r" hint-placeholder-count="14">
+          <sc-if value="{{r.isHead}}" hint-placeholder-val="{{false}}"><div class="ngrp">{{r.text}}</div></sc-if>
+          <sc-if value="{{r.isItem}}" hint-placeholder-val="{{true}}"><a class="nitem {{r.cls}}" href="{{r.href}}" aria-current="{{r.current}}"><span>{{r.text}}</span><sc-if value="{{r.dirty}}" hint-placeholder-val="{{false}}"><span class="dot" role="img" aria-label="有未保存修改"></span></sc-if></a></sc-if>
+        </sc-for>
+        <a class="nlink" href="#"><span>AI 与知识库 · 在「助手」中设置</span><span aria-hidden="true">↗</span></a>
+      </nav>
+
+      <div class="sbody">
+        <div class="ptitle">
+          <h2>主题外观</h2>
+          <p>决定整站的质感、配色与字体；改动先进入草稿，右侧预览即时反映。</p>
+        </div>
+        <nav class="anch" aria-label="本页分区">
+          <a href="#sec-preset">外观预设</a>
+          <a href="#sec-color">颜色</a>
+          <a href="#sec-type">字体与排版</a>
+          <a href="#sec-shape">形状与圆角</a>
+          <a href="#sec-bg">背景</a>
+        </nav>
+
+        <section class="sec" id="sec-preset">
+          <div class="sh">
+            <div><h3>外观预设</h3><p>决定卡片、侧栏与导航的整体质感。</p></div>
+            <sc-if value="{{m.presetSec}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{resetPreset}}">恢复本节默认</button></sc-if>
+          </div>
+          <div class="pcards" role="group" aria-label="外观预设">
+            <sc-for list="{{presets}}" as="p" hint-placeholder-count="4">
+              <button type="button" class="pcard {{p.cls}}" aria-pressed="{{p.on}}" onClick="{{p.pick}}">
+                <span class="pthumb" style="position:relative;{{p.thumb}}">
+                  <span class="pm-side" style="display:block;{{p.side}}"></span>
+                  <span class="pm-col">
+                    <span class="pm-card" style="display:flex;{{p.card}}"><b></b><b class="s"></b></span>
+                    <span class="pm-card" style="display:flex;{{p.card}}"><b></b><b class="s"></b></span>
+                  </span>
+                </span>
+                <span class="pmeta">
+                  <span class="pn">{{p.name}}<sc-if value="{{p.on}}" hint-placeholder-val="{{false}}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7"></path></svg></sc-if></span>
+                  <span class="pd">{{p.desc}}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+          <div class="row">
+            <div class="rl">
+              <div class="rt">配色模式<sc-if value="{{m.mode}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div>
+              <div class="rh">自动：跟随访客设备的深浅色设置；浅色、深色：固定显示。</div>
+            </div>
+            <div class="rc">
+              <div class="seg" role="group" aria-label="配色模式">
+                <sc-for list="{{modes}}" as="o" hint-placeholder-count="3">
+                  <button type="button" class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}"><span class="mi {{o.mi}}"></span>{{o.label}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sec" id="sec-color">
+          <div class="sh">
+            <div><h3>颜色</h3><p>主题色用于导航与强调元素，强调色用于标签与高亮，链接色用于正文链接。</p></div>
+            <sc-if value="{{m.colorSec}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{resetColors}}">恢复本节默认</button></sc-if>
+          </div>
+          <div class="cchips" role="group" aria-label="选择要编辑的颜色">
+            <sc-for list="{{colorChips}}" as="c" hint-placeholder-count="3">
+              <button type="button" class="cchip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.pick}}">
+                <span class="csw" style="background:{{c.value}}"></span>
+                <span class="cn">{{c.name}}<sc-if value="{{c.mod}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></span>
+                <span class="cv mono">{{c.value}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div class="ced">
+            <div class="ced-r">
+              <span class="csw s" style="background:{{editValue}}"></span>
+              <input class="in mono" value="{{editValue}}" aria-label="{{editName}}的颜色值">
+              <button type="button" class="btn sm">取色</button>
+            </div>
+            <div class="pal" role="group" aria-label="{{editName}}常用色板">
+              <sc-for list="{{palette}}" as="k" hint-placeholder-count="8">
+                <button type="button" class="{{k.cls}}" aria-label="{{k.label}}" aria-pressed="{{k.on}}" style="background:{{k.value}}" onClick="{{k.pick}}"></button>
+              </sc-for>
+            </div>
+            <div class="opa"><span>不透明度</span><span class="rng"><i></i><b></b></span><span class="mono">100%</span></div>
+            <p class="chelp">支持 HEX、RGB、HSL；选色保留不透明度。</p>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt">效果示例</div><div class="rh">用当前三种颜色渲染的按钮、标签和链接。</div></div>
+            <div class="rc"><div class="demo"><span class="dbtn" style="background:{{demo.btnBg}};color:{{demo.btnFg}}">订阅</span><span class="dtag" style="background:{{demo.tagBg}};color:{{demo.tagFg}}">#标签</span><span class="dlink" style="color:{{demo.link}}">阅读全文 →</span></div></div>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt"><label for="g-act">主要按钮背景</label></div><div class="rh">CSS 渐变；用于主要操作按钮。</div></div>
+            <div class="rc col"><span class="gstrip" style="background:linear-gradient(to right,hsl(215,95%,64%),hsl(195,95%,60%),hsl(165,95%,56%),hsl(165,95%,56%),hsl(195 95% 60%),hsl(215,95%,64%))"></span><input id="g-act" class="in w320 mono" value="linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), …)"></div>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt"><label for="g-search">搜索栏背景</label></div><div class="rh">CSS 渐变；用于搜索栏边缘光效。</div></div>
+            <div class="rc col"><span class="gstrip" style="background:linear-gradient(to right,#04f3ff,#08ffc6,#ddf730,#ffbd19,#ff1fe0,#c418ff,#3b5bff,#04f3ff)"></span><input id="g-search" class="in w320 mono" value="linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, …)"></div>
+          </div>
+        </section>
+
+        <section class="sec" id="sec-type">
+          <div class="sh">
+            <div><h3>字体与排版</h3><p>正文与代码的字体、字号和对齐方式。</p></div>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt"><label for="f-body">正文字体</label></div><div class="rh">按顺序回退，最后一项应为通用字体族。</div></div>
+            <div class="rc col"><input id="f-body" class="in w320 mono" value="system-ui, &quot;Microsoft Yahei&quot;, &quot;Segoe UI&quot;, Arial, sans-serif"><span class="sample" style="font-family:system-ui,'Microsoft Yahei','Segoe UI',Arial,sans-serif">Aa 永字八法 Hello 123</span></div>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt"><label for="f-code">代码字体</label></div><div class="rh">用于行内代码与代码块。</div></div>
+            <div class="rc col"><input id="f-code" class="in w320 mono" value="Menlo, Monaco, Consolas, system-ui, monospace, sans-serif"><span class="sample mono" style="font-size:13px">const hello = &quot;world&quot;;</span></div>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt"><label for="f-root">基础字号</label></div><div class="rh">全站字号以此为基准按比例缩放。</div></div>
+            <div class="rc"><span class="num"><input id="f-root" class="mono" value="16"><em>px</em></span></div>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt">正文对齐<sc-if value="{{m.align}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">文章正文的段落对齐方式。</div></div>
+            <div class="rc">
+              <div class="seg" role="group" aria-label="正文对齐">
+                <sc-for list="{{aligns}}" as="a" hint-placeholder-count="4">
+                  <button type="button" class="{{a.cls}}" aria-pressed="{{a.on}}" onClick="{{a.pick}}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="{{a.path}}"></path></svg>{{a.label}}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{m.align}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{resetAlign}}">恢复默认</button></sc-if>
+            </div>
+          </div>
+          <details class="more">
+            <summary>更多排版选项<span class="mh">字体平滑 · 行内代码与代码块字号 · 字重映射 · 代码高亮</span></summary>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="f-smooth">字体平滑</label></div></div>
+              <div class="rc"><select id="f-smooth" class="in w220" value="antialiased"><option value="auto">自动</option><option value="none">无</option><option value="antialiased">抗锯齿</option></select></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt">行内代码与代码块字号</div><div class="rh">行内代码按比例，代码块按 rem。</div></div>
+              <div class="rc"><span class="num"><input class="mono" value="85%" aria-label="行内代码字号"></span><span class="num"><input class="mono" value="0.8125rem" aria-label="代码块字号" style="width:76px"></span></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="f-hl">代码高亮样式</label></div><div class="rh">高亮样式表地址；留空不加载。</div></div>
+              <div class="rc"><input id="f-hl" class="in w320 mono" value="…/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css"></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt">字重映射</div><div class="rh">100–900 共 9 档，当前为默认映射。</div></div>
+              <div class="rc"><button type="button" class="btn sm">编辑映射</button></div>
+            </div>
+          </details>
+        </section>
+
+        <section class="sec" id="sec-shape">
+          <div class="sh">
+            <div><h3>形状与圆角</h3><p>不同元素使用不同圆角，数值越大越圆润。</p></div>
+          </div>
+          <div class="row" style="border-top:0;padding-top:4px">
+            <div class="rl"><div class="rt"><label for="s-corner">曲率</label></div><div class="rh">CSS corner-shape；不支持的浏览器显示普通圆角。</div></div>
+            <div class="rc"><input id="s-corner" class="in w220 mono" value="superellipse(1.25)"></div>
+          </div>
+          <div class="rtiles">
+            <label class="rtile"><span class="rs" style="border-radius:24px"></span><span class="rn">大卡片<span class="num"><input class="mono" value="24" aria-label="大卡片圆角"><em>px</em></span></span></label>
+            <label class="rtile"><span class="rs" style="border-radius:16px"></span><span class="rn">卡片<span class="num"><input class="mono" value="16" aria-label="卡片圆角"><em>px</em></span></span></label>
+            <label class="rtile"><span class="rs" style="border-radius:12px"></span><span class="rn">小卡片<span class="num"><input class="mono" value="12" aria-label="小卡片圆角"><em>px</em></span></span></label>
+            <label class="rtile"><span class="rs" style="border-radius:12px;height:30px"></span><span class="rn">横条<span class="num"><input class="mono" value="12" aria-label="横条圆角"><em>px</em></span></span></label>
+            <label class="rtile"><span class="rs" style="border-radius:24px;background:linear-gradient(135deg,#2a3a4a,#4a2a3a)"></span><span class="rn">大图片<span class="num"><input class="mono" value="24" aria-label="大图片圆角"><em>px</em></span></span></label>
+            <label class="rtile"><span class="rs" style="border-radius:16px;background:linear-gradient(135deg,#2a3a4a,#4a2a3a)"></span><span class="rn">图片<span class="num"><input class="mono" value="16" aria-label="图片圆角"><em>px</em></span></span></label>
+            <label class="rtile"><span class="rs" style="border-radius:8px;background:linear-gradient(135deg,#2a3a4a,#4a2a3a)"></span><span class="rn">小图片<span class="num"><input class="mono" value="8" aria-label="小图片圆角"><em>px</em></span></span></label>
+          </div>
+        </section>
+
+        <section class="sec" id="sec-bg">
+          <div class="sh">
+            <div><h3>背景</h3><p>左侧栏与页面的背景。</p></div>
+          </div>
+          <div class="row" style="border-top:0">
+            <div class="rl"><div class="rt">左侧栏背景<sc-if value="{{m.sbg}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">深浅色模式各有一组渐变色。</div></div>
+            <div class="rc">
+              <div class="seg" role="group" aria-label="左侧栏背景类型">
+                <sc-for list="{{sbgOpts}}" as="b" hint-placeholder-count="3">
+                  <button type="button" class="{{b.cls}}" aria-pressed="{{b.on}}" onClick="{{b.pick}}">{{b.label}}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{m.sbg}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{resetSbg}}">恢复默认</button></sc-if>
+            </div>
+          </div>
+          <sc-if value="{{sbgGrad}}" hint-placeholder-val="{{true}}">
+            <div class="blk">
+              <div class="sgrad">
+                <div class="sg"><span class="gl">浅色模式</span><span class="gstrip" style="width:100%;background:linear-gradient(90deg,hsl(210 32% 84%),hsl(188 44% 84%),hsl(12 64% 73%),hsl(35 100% 82%))"></span><div class="stops mono"><span><i style="background:hsl(210 32% 84%)"></i>210 32 84</span><span><i style="background:hsl(188 44% 84%)"></i>188 44 84</span><span><i style="background:hsl(12 64% 73%)"></i>12 64 73</span><span><i style="background:hsl(35 100% 82%)"></i>35 100 82</span></div></div>
+                <div class="sg"><span class="gl">深色模式</span><span class="gstrip" style="width:100%;background:linear-gradient(90deg,hsl(210 16% 48%),hsl(188 18% 50%),hsl(12 30% 42%),hsl(35 36% 49%))"></span><div class="stops mono"><span><i style="background:hsl(210 16% 48%)"></i>210 16 48</span><span><i style="background:hsl(188 18% 50%)"></i>188 18 50</span><span><i style="background:hsl(12 30% 42%)"></i>12 30 42</span><span><i style="background:hsl(35 36% 49%)"></i>35 36 49</span></div></div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{sbgImg}}" hint-placeholder-val="{{false}}">
+            <div class="blk"><button type="button" class="up">选择背景图片…</button></div>
+          </sc-if>
+          <sc-if value="{{sbgNone}}" hint-placeholder-val="{{false}}">
+            <div class="blk"><p class="chelp">左侧栏不使用背景，仅保留所选外观预设的表面样式。</p></div>
+          </sc-if>
+          <div class="row">
+            <div class="rl"><div class="rt">左侧栏不透明度</div><div class="rh">1 为完全不透明。</div></div>
+            <div class="rc"><span class="num"><input class="mono" value="1" aria-label="左侧栏不透明度"></span></div>
+          </div>
+          <div class="row">
+            <div class="rl"><div class="rt">页面背景图</div><div class="rh">留空使用主题默认背景。</div></div>
+            <div class="rc"><button type="button" class="up">选择图片…</button></div>
+          </div>
+          <details class="more">
+            <summary>背景模糊<span class="mh">半径 100px · 遮罩 var(--bg-a75) · 饱和度 300%</span></summary>
+            <div class="row">
+              <div class="rl"><div class="rt">模糊半径与饱和度</div><div class="rh">仅在页面背景图存在时可见。</div></div>
+              <div class="rc"><span class="num"><input class="mono" value="100px" aria-label="模糊半径" style="width:64px"></span><span class="num"><input class="mono" value="300%" aria-label="饱和度" style="width:64px"></span></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="b-overlay">遮罩颜色</label></div></div>
+              <div class="rc"><input id="b-overlay" class="in w220 mono" value="var(--bg-a75)"></div>
+            </div>
+          </details>
+        </section>
+
+        <div class="savebar">
+          <div class="sbi"><span class="dot"></span><b>{{save.title}}</b><span class="s">{{save.detail}}</span></div>
+          <div class="sbact"><button type="button" class="btn ghost" onClick="{{discard}}">放弃本页修改</button><button type="button" class="btn pri">保存全部主题设置</button></div>
+        </div>
+      </div>
+
+      <aside class="dock" aria-label="前端预览">
+        <div class="dbox">
+          <div class="dh">
+            <select class="in" aria-label="预览页面" value="home"><option value="home">首页</option><option value="post">文章页</option><option value="doc">文档页</option></select>
+            <div class="seg" role="group" aria-label="预览宽度"><button type="button" class="on" aria-pressed="true">桌面</button><button type="button" aria-pressed="false">平板</button><button type="button" aria-pressed="false">手机</button></div>
+          </div>
+          <div class="dbody">
+            <div class="pv" role="img" aria-label="{{pv.label}}" style="position:relative;{{pv.root}}">
+              <div class="pv-top" style="flex:none;{{pv.top}}"><span class="pv-brand" style="color:{{pv.fg}}">Stellar Demo</span><span class="pv-sp"></span><span class="pv-pill" style="background:{{pv.bar}}"></span><span class="pv-pill" style="background:{{pv.bar}}"></span><span class="pv-pill" style="background:{{pv.primary}}"></span></div>
+              <div class="pv-body">
+                <div class="pv-side" style="flex:0 0 78px;{{pv.side}}">
+                  <span class="pv-av" style="background:{{pv.primary}}"></span>
+                  <span class="pv-m" style="background:{{pv.primaryTint}}"></span>
+                  <span class="pv-m" style="background:{{pv.bar}}"></span>
+                  <span class="pv-m" style="background:{{pv.bar}};width:70%"></span>
+                  <span class="pv-m" style="background:{{pv.bar}};width:85%"></span>
+                </div>
+                <div class="pv-feed">
+                  <div class="pv-card" style="flex:none;{{pv.card}}">
+                    <span class="pv-cover" style="background:linear-gradient(120deg,{{pv.primary}},{{pv.link}})"></span>
+                    <span class="pv-t" style="background:{{pv.bar}}"></span>
+                    <span class="pv-t s" style="background:{{pv.soft}}"></span>
+                    <span class="pv-tags"><span class="pv-tag" style="color:{{pv.accent}};background:{{pv.accentTint}}">#标签</span><span class="pv-link" style="color:{{pv.link}}">阅读全文 →</span></span>
+                  </div>
+                  <div class="pv-card" style="flex:none;{{pv.card}}">
+                    <span class="pv-t" style="background:{{pv.bar}}"></span>
+                    <span class="pv-t" style="background:{{pv.soft}}"></span>
+                    <span class="pv-t s" style="background:{{pv.soft}}"></span>
+                    <span class="pv-tags"><span class="pv-tag" style="color:{{pv.accent}};background:{{pv.accentTint}}">#标签</span><span class="pv-link" style="color:{{pv.link}}">阅读全文 →</span></span>
+                  </div>
+                  <div class="pv-card" style="flex:none;{{pv.card}}">
+                    <span class="pv-t" style="background:{{pv.bar}}"></span>
+                    <span class="pv-t s" style="background:{{pv.soft}}"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dnote">{{pv.note}}</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2780}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const D = { preset: 'card', mode: 'auto', primary: 'hsl(192 98% 55%)', accent: 'hsl(14 100% 57%)', link: 'hsl(207 90% 54%)', align: 'left', sbg: 'gradient' };
+    const preset = s.preset || D.preset;
+    const mode = s.mode || D.mode;
+    const edit = s.edit || 'primary';
+    const align = s.align || D.align;
+    const sbg = s.sbg || D.sbg;
+    const colors = { primary: s.primary || D.primary, accent: s.accent || D.accent, link: s.link || D.link };
+    const names = { primary: '主题色', accent: '强调色', link: '链接色' };
+    const set = (patch) => () => this.setState(patch);
+
+    const alpha = (c, a) => c.replace(/\)\s*$/, ' / ' + a + ')');
+    const onColor = (c) => {
+      const m = /hsl\(\s*[\d.]+\s+[\d.]+%\s+([\d.]+)%/.exec(c);
+      return m && parseFloat(m[1]) < 50 ? '#ffffff' : '#04141a';
+    };
+
+    const m = {
+      preset: preset !== D.preset,
+      mode: mode !== D.mode,
+      primary: colors.primary !== D.primary,
+      accent: colors.accent !== D.accent,
+      link: colors.link !== D.link,
+      align: align !== D.align,
+      sbg: sbg !== D.sbg,
+    };
+    m.presetSec = m.preset || m.mode;
+    m.colorSec = m.primary || m.accent || m.link;
+    const nApp = [m.preset, m.mode, m.primary, m.accent, m.link, m.align, m.sbg].filter(Boolean).length;
+    const nOther = 1;
+    const total = nApp + nOther;
+
+    const navDef = [
+      ['站点', [['站点信息', 'Site.dc.html'], ['SEO 与搜索', '#']]],
+      ['外观与布局', [['主题外观', 'Main.dc.html'], ['导航与页脚', '#'], ['页面与侧栏', '#']]],
+      ['内容', [['文章页', 'Post.dc.html'], ['列表与卡片', '#'], ['作者与友链', '#']]],
+      ['互动', [['评论', 'Comments.dc.html'], ['访客反馈', '#']]],
+      ['扩展与高级', [['扩展与服务', '#'], ['代码与原文', '#']]],
+    ];
+    const navRows = [];
+    navDef.forEach((g) => {
+      navRows.push({ isHead: true, isItem: false, text: g[0] });
+      g[1].forEach((it) => {
+        const on = it[0] === '主题外观';
+        const dirty = (on && nApp > 0) || it[0] === '文章页';
+        navRows.push({ isHead: false, isItem: true, text: it[0], href: it[1], cls: on ? 'on' : '', current: on ? 'page' : undefined, dirty });
+      });
+    });
+
+    const presetDefs = [
+      { id: 'card', name: '卡片', desc: '实色卡片，大圆角，轻阴影', thumb: 'background:#101114', side: 'background:#1d2026;border-radius:10px;box-shadow:0 3px 6px rgba(0,0,0,.4)', card: 'background:#1d2026;border-radius:10px;box-shadow:0 3px 6px rgba(0,0,0,.4)' },
+      { id: 'glass', name: '玻璃', desc: '半透明与背景模糊，带内发光', thumb: 'background:linear-gradient(135deg,hsl(210 16% 48%),hsl(188 18% 50%) 40%,hsl(12 30% 42%) 72%,hsl(35 36% 49%))', side: 'background:rgba(255,255,255,.18);border-radius:10px;box-shadow:inset 0 0 10px 2px rgba(255,255,255,.2)', card: 'background:rgba(255,255,255,.18);border-radius:10px;box-shadow:inset 0 0 10px 2px rgba(255,255,255,.2)' },
+      { id: 'minimal', name: '极简', desc: '无底色、无边框，只留文字', thumb: 'background:hsl(44 12% 12%)', side: 'background:transparent', card: 'background:transparent;border-bottom:1px solid #45454b' },
+      { id: 'flat', name: '平面', desc: '直角细边框，无阴影', thumb: 'background:#101114', side: 'background:#1d2026;border:1px solid #3a3d44', card: 'background:#1d2026;border:1px solid #3a3d44' },
+    ];
+    const presets = presetDefs.map((p) => ({ ...p, on: p.id === preset, cls: p.id === preset ? 'on' : '', pick: set({ preset: p.id }) }));
+    const modes = [['auto', '自动', 'a'], ['light', '浅色', ''], ['dark', '深色', 'd']].map((o) => ({ label: o[1], mi: o[2], on: mode === o[0], cls: mode === o[0] ? 'on' : '', pick: set({ mode: o[0] }) }));
+    const colorChips = ['primary', 'accent', 'link'].map((k) => ({ name: names[k], value: colors[k], on: edit === k, cls: edit === k ? 'on' : '', mod: m[k], pick: set({ edit: k }) }));
+    const palette = ['hsl(192 98% 55%)', 'hsl(14 100% 57%)', 'hsl(207 90% 54%)', 'hsl(262 83% 66%)', 'hsl(142 71% 45%)', 'hsl(340 82% 59%)', 'hsl(38 92% 50%)', 'hsl(220 9% 46%)'].map((v) => ({
+      value: v, on: colors[edit] === v, cls: colors[edit] === v ? 'on' : '', label: names[edit] + ' ' + v, pick: () => this.setState({ [edit]: v }),
+    }));
+    const aligns = [['left', '左对齐', 'M2 3h10M2 6h6M2 9h10M2 12h6'], ['center', '居中', 'M2 3h10M4 6h6M2 9h10M4 12h6'], ['right', '右对齐', 'M2 3h10M6 6h6M2 9h10M6 12h6'], ['justify', '两端对齐', 'M2 3h10M2 6h10M2 9h10M2 12h10']].map((a) => ({
+      label: a[1], path: a[2], on: align === a[0], cls: align === a[0] ? 'on' : '', pick: set({ align: a[0] }),
+    }));
+    const sbgOpts = [['none', '无'], ['gradient', '渐变'], ['image', '图片']].map((b) => ({ label: b[1], on: sbg === b[0], cls: sbg === b[0] ? 'on' : '', pick: set({ sbg: b[0] }) }));
+
+    const light = mode === 'light';
+    const T = light
+      ? { bg: '#eceff3', surf: '#ffffff', line: 'rgba(0,0,0,.09)', bar: 'rgba(0,0,0,.26)', soft: 'rgba(0,0,0,.10)', fg: '#171a20' }
+      : { bg: '#13151a', surf: '#1d2026', line: 'rgba(255,255,255,.10)', bar: 'rgba(255,255,255,.30)', soft: 'rgba(255,255,255,.12)', fg: '#eceef2' };
+    const gl = light
+      ? 'hsl(210 32% 84%), hsl(188 44% 84%) 38%, hsl(12 64% 73%) 72%, hsl(35 100% 82%)'
+      : 'hsl(210 16% 48%), hsl(188 18% 50%) 38%, hsl(12 30% 42%) 72%, hsl(35 36% 49%)';
+    const surf = {
+      card: 'background:' + T.surf + ';border-radius:14px;box-shadow:0 4px 8px rgba(0,0,0,' + (light ? '.07' : '.35') + ')',
+      glass: 'background:rgba(255,255,255,' + (light ? '.42' : '.14') + ');border-radius:14px;box-shadow:inset 0 0 14px 2px rgba(255,255,255,' + (light ? '.55' : '.14') + ')',
+      minimal: 'background:transparent;border-radius:0;border-bottom:1px solid ' + T.line,
+      flat: 'background:' + T.surf + ';border:1px solid ' + T.line + ';border-radius:0',
+    }[preset];
+    const root = {
+      card: 'background:' + T.bg,
+      glass: 'background:linear-gradient(135deg,' + gl + ')',
+      minimal: 'background:' + (light ? 'hsl(44 50% 96%)' : 'hsl(44 12% 12%)'),
+      flat: 'background:' + T.bg,
+    }[preset];
+    const top = {
+      card: 'background:' + T.surf + ';box-shadow:0 4px 8px rgba(0,0,0,' + (light ? '.06' : '.3') + ')',
+      glass: 'background:rgba(255,255,255,' + (light ? '.42' : '.14') + ');box-shadow:inset 0 0 14px 2px rgba(255,255,255,' + (light ? '.4' : '.1') + ')',
+      minimal: 'background:transparent;border-bottom:1px solid ' + T.line,
+      flat: 'background:' + T.surf + ';box-shadow:inset 0 -1px 0 ' + T.line,
+    }[preset];
+    const sideBg = sbg === 'gradient' ? ';background:linear-gradient(165deg,' + gl + ')' : sbg === 'image' ? ';background:repeating-linear-gradient(45deg,' + T.soft + ' 0 6px,transparent 6px 12px)' : '';
+    const modeName = { auto: '自动', light: '浅色', dark: '深色' }[mode];
+    const presetName = presetDefs.filter((p) => p.id === preset)[0].name;
+    const pv = {
+      label: '首页草稿预览：' + presetName + '，' + modeName,
+      root, top, fg: T.fg, bar: T.bar, soft: T.soft,
+      card: surf,
+      side: surf + sideBg,
+      primary: colors.primary,
+      primaryTint: alpha(colors.primary, 0.35),
+      accent: colors.accent,
+      accentTint: alpha(colors.accent, 0.16),
+      link: colors.link,
+      note: '当前草稿 · 尚未保存到前台。' + (mode === 'auto' ? '自动模式的预览按深色显示。' : '预览按' + modeName + '显示。'),
+    };
+    const demo = { btnBg: colors.primary, btnFg: onColor(colors.primary), tagBg: alpha(colors.accent, 0.16), tagFg: colors.accent, link: colors.link };
+
+    const save = {
+      title: total + ' 处未保存修改',
+      detail: (nApp > 0 ? '主题外观 ' + nApp + ' · ' : '') + '文章页 ' + nOther + ' · 草稿在各页共享',
+    };
+
+    return {
+      dirty: total > 0, m, navRows, presets, modes, colorChips, palette, aligns, sbgOpts, pv, demo, save,
+      editName: names[edit], editValue: colors[edit],
+      sbgGrad: sbg === 'gradient', sbgImg: sbg === 'image', sbgNone: sbg === 'none',
+      resetPreset: set({ preset: D.preset, mode: D.mode }),
+      resetColors: set({ primary: D.primary, accent: D.accent, link: D.link }),
+      resetAlign: set({ align: D.align }),
+      resetSbg: set({ sbg: D.sbg }),
+      discard: set({ preset: D.preset, mode: D.mode, primary: D.primary, accent: D.accent, link: D.link, align: D.align, sbg: D.sbg, edit: 'primary' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

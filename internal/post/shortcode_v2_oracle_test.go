@@ -34,6 +34,13 @@ func newV2Oracle(t *testing.T, ctx StellarRenderContext) *v2Oracle {
 	t.Helper()
 	s := NewService("")
 	theme := v2Merge(stellarv2.DefaultTheme(), ctx.Theme)
+	// 产品已把评分/投票改走站内原生接口；oracle 同步使用相同 endpoint，
+	// 这样官方渲染器与本地渲染器的差异只保留产品有意移除的部分。
+	if services, ok := theme["services"].(map[string]any); ok {
+		for name, endpoint := range map[string]string{"rating": "/api/rating", "vote": "/api/vote"} {
+			services[name] = map[string]any{"provider": "star_vote", "star_vote": map[string]any{"endpoint": endpoint}}
+		}
+	}
 	language := ctx.Language
 	if language == "" {
 		language = "zh-CN"
@@ -431,7 +438,7 @@ func v2OfficialParameterCases() []v2OracleCase {
 }
 
 func TestStellarV2OfficialRendererOracle(t *testing.T) {
-	context := StellarRenderContext{Theme: map[string]any{"services": map[string]any{"siteInfo": map[string]any{"provider": "site_info_api", "site_info_api": map[string]any{"endpoint": "https://example.test/info?url={href}"}}}}, Data: map[string]any{"icons": map[string]any{}, "siteURL": "https://example.test/", "links": map[string]any{"group": []any{map[string]any{"url": "https://example.test/", "title": "Site", "description": "Desc"}}}, "wiki": map[string]any{"tree": map[string]any{"docs": map[string]any{"sections": []any{map[string]any{"title": "First", "pages": []any{map[string]any{"path": "/one", "title": "One"}}}, map[string]any{"title": "Second", "pages": []any{map[string]any{"path": "/two", "title": "Two"}}}}}, "single": map[string]any{"pages": []any{map[string]any{"path": "/one", "title": "One"}}}}}}}
+	context := StellarRenderContext{Theme: map[string]any{"services": map[string]any{"siteInfo": map[string]any{"provider": "site_info_api", "site_info_api": map[string]any{"endpoint": "https://example.test/info?url={href}"}}, "rating": map[string]any{"provider": "star_vote", "star_vote": map[string]any{"endpoint": "/api/rating"}}, "vote": map[string]any{"provider": "star_vote", "star_vote": map[string]any{"endpoint": "/api/vote"}}}}, Data: map[string]any{"icons": map[string]any{}, "siteURL": "https://example.test/", "links": map[string]any{"group": []any{map[string]any{"url": "https://example.test/", "title": "Site", "description": "Desc"}}}, "wiki": map[string]any{"tree": map[string]any{"docs": map[string]any{"sections": []any{map[string]any{"title": "First", "pages": []any{map[string]any{"path": "/one", "title": "One"}}}, map[string]any{"title": "Second", "pages": []any{map[string]any{"path": "/two", "title": "Two"}}}}}, "single": map[string]any{"pages": []any{map[string]any{"path": "/one", "title": "One"}}}}}}}
 	seen := map[string]bool{}
 	var strictDOM, decodedQuery, emptyRules int
 	for i, c := range v2OfficialCases() {

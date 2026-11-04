@@ -60,7 +60,7 @@ func fixtureAvatar(letter string) string {
 
 // ---------- rating ----------
 
-// previewRatingFixture GET /api/v1/preview/rating?id=xxx：旧版摘要端点，保留兼容。
+// previewRatingFixture GET /api/v1/preview/rating?id=xxx：rating.js 实际契约（原生评分形状 {avg, count}）。
 func (h *Handler) previewRatingFixture(c *gin.Context) {
 	switch fixtureState(c) {
 	case fixtureStateError:
@@ -68,17 +68,17 @@ func (h *Handler) previewRatingFixture(c *gin.Context) {
 	case fixtureStateEmpty:
 		c.JSON(http.StatusOK, gin.H{"avg": 0, "count": 0})
 	default:
-		c.JSON(http.StatusOK, gin.H{"avg": 4.6, "count": 128})
+		c.JSON(http.StatusOK, gin.H{"avg": 4.5, "count": 130})
 	}
 }
 
-// previewRatingFixtureSubmit POST /api/v1/preview/rating：旧版提交端点，接受动作但不落库。
+// previewRatingFixtureSubmit POST /api/v1/preview/rating：评分提交，接受动作但不落库。
 func (h *Handler) previewRatingFixtureSubmit(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"ok": true})
+	c.JSON(http.StatusOK, gin.H{"avg": 4.5, "count": 130})
 }
 
-// previewRatingInfoFixture GET /api/v1/preview/rating/info?id=xxx：rating.js 实际契约。
-// 形状为 {rating: {"5": count, ...}}，由前台 calculateAverage 计算均分，不写库。
+// previewRatingInfoFixture GET /api/v1/preview/rating/info?id=xxx：旧版 star_vote 摘要端点，保留兼容。
+// 形状为 {rating: {"5": count, ...}}，不写库；新的 rating.js 不再使用该端点。
 func (h *Handler) previewRatingInfoFixture(c *gin.Context) {
 	switch fixtureState(c) {
 	case fixtureStateError:

@@ -84,12 +84,8 @@ const help: Record<string, string> = {
   "theme.features.heti": "为中文正文加入更细致的中西文间距与排版处理。",
   "theme.features.math": "选择数学公式渲染服务；文章包含公式时才能看到渲染差异。",
   "theme.features.diagrams": "选择图表渲染服务；文章包含对应图表代码时生效。",
-  "theme.services": "配置正文组件所用的外部接口。保存只保存地址与参数，不代表服务已连通。",
   "theme.services.gravatar": "为使用 Gravatar 的头像选择请求地址，影响头像加载来源。",
   "theme.services.markdown": "为前台需要动态解析 Markdown 的组件提供渲染脚本。",
-  "theme.services.site_info": "为站点信息组件提供数据来源，需要页面实际放置对应组件。",
-  "theme.services.rating": "为评分组件提供服务地址，保存后需在实际评分区域检查。",
-  "theme.services.vote": "为投票组件提供服务地址，保存后需在实际投票区域检查。",
   "theme.services.contributors": "设置展示哪些 GitHub 仓库的贡献者。",
   "theme.services.github_card": "设置 GitHub 信息卡的数据服务，影响卡片内统计信息。",
   "theme.services.github": "调整 GitHub API、原始文件与 Gist 的访问来源。",
@@ -97,8 +93,6 @@ const help: Record<string, string> = {
   "theme.fallbacks.avatar": "没有独立头像时使用的默认头像。",
   "theme.fallbacks.link_card": "链接卡片缺少图片时使用的默认图片。",
   "theme.fallbacks.cover": "内容缺少封面时使用的默认封面。",
-  "theme.comments": "选择第三方评论服务并填写其参数；仅配置参数不会自动启用每类页面的评论。",
-  "theme.search.algolia": "使用 Algolia 搜索时所需的应用、索引和搜索 Key；切换其他服务不会使用这些参数。",
 };
 
 const profileLabels: Record<string, string> = {

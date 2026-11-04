@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveSettingsTab, settingsPages } from "../web/src/modules/settings/settings-pages.ts";
 
 const testsRoot = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(testsRoot, "../../..");
@@ -14,17 +15,19 @@ function read(relativePath: string): string {
 // v1.7.1：Feedback 组件设置从「主题设置 → 内容增强」一节迁出，
 // 成为「系统设置」专属 tab，并补服务连通性自测与入口位置示意。
 
-test("SettingsView registers a dedicated feedback tab wired to the feedback section", () => {
+test("SettingsView registers a dedicated feedback page wired to the feedback section", () => {
   const code = read("modules/console/web/src/modules/settings/SettingsView.vue");
-  // tab 定义：键、文案、图标
-  assert.match(code, /\{\s*key:\s*"feedback",\s*label:\s*"反馈",\s*icon:\s*"ri:feedback-line"/);
-  // 分段 → tab 的脏标记映射
-  assert.match(code, /feedback:\s*\["feedback"\]/);
+  // 页面定义：键、文案、独立保存的宿主分段（不进主题草稿）
+  assert.equal(settingsPages.feedback.key, "feedback");
+  assert.equal(settingsPages.feedback.label, "访客反馈");
+  assert.equal(settingsPages.feedback.host, "feedback");
+  // 分段 → 页面的脏标记映射：宿主页按其分段的 dirtySections 判定
+  assert.match(code, /if \(host\) return dirtySections\.value\.has\(host\)/);
   // 组件导入与渲染分支
   assert.match(code, /import FeedbackSettings from "\.\/tabs\/FeedbackSettings\.vue"/);
   assert.match(code, /<FeedbackSettings[\s\S]*?:data="data"[\s\S]*?@save="save"/);
-  // legacy 分段键改道到本 tab（不再落到主题设置）
-  assert.match(code, /feedback:\s*\{\s*path:\s*"\/settings",\s*tab:\s*"feedback"\s*\}/);
+  // legacy 分段键（?tab=feedback）直接落到本页，不再落到主题设置
+  assert.deepEqual(resolveSettingsTab("feedback"), { kind: "page", page: "feedback" });
 });
 
 test("FeedbackSettings tab owns the full feedback form, health check and launcher preview", () => {

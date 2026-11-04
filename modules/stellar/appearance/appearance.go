@@ -111,11 +111,6 @@ func BuildWithOptions(theme map[string]any, options Options) (template.CSS, erro
 		r.fail("appearance.backgrounds.page.backdrop.saturation", "CSS percentage")
 	}
 	rule(&b, "body > .site-background .site-background__blur", declarations{"--blur-px": r.length("appearance.backgrounds.page.backdrop.radius"), "--blur-sat": saturation, "--blur-bg": r.text("appearance.backgrounds.page.backdrop.overlay")})
-	border := "var(--block-border)"
-	if pageImage != "" {
-		border = "transparent"
-	}
-	rule(&b, ".cmt-body .artalk,.cmt-body .atk-layer-wrap,.cmt-body .artalk.atk-dark-mode,.cmt-body .atk-layer-wrap.atk-dark-mode", declarations{"--at-color-border": border})
 	background(&b, &r, preset, cssURLBase)
 	if r.err != nil {
 		return "", r.err
