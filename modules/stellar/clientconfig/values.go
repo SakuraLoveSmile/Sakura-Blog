@@ -80,17 +80,6 @@ func merged(base, override object) object {
 	return r
 }
 
-// 评论覆盖使用上游浅合并，null 不覆盖；options 则只在最终 provider 参数袋里合并。
-func mergeComments(base, override object) object {
-	r := obj(clone(base))
-	for k, v := range override {
-		if v != nil {
-			r[k] = clone(v)
-		}
-	}
-	return r
-}
-
 var scheme = regexp.MustCompile(`(?i)^(?:[a-z][a-z0-9+.-]*:|//)`)
 var snake = regexp.MustCompile(`_([a-z])`)
 
@@ -160,22 +149,5 @@ func mapJSON(v any) object {
 	b, _ := json.Marshal(v)
 	r := object{}
 	_ = json.Unmarshal(b, &r)
-	return r
-}
-
-func mergeConfig(base, override object) object {
-	r := obj(clone(base))
-	for key, value := range override {
-		if value == nil {
-			continue
-		}
-		if child, ok := value.(object); ok {
-			if previous, ok := r[key].(object); ok {
-				r[key] = mergeConfig(previous, child)
-				continue
-			}
-		}
-		r[key] = clone(value)
-	}
 	return r
 }

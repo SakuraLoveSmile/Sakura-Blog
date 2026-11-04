@@ -20,7 +20,6 @@ const descriptions: Record<string, string> = {
   story: "适合连续阅读的叙事内容",
   local: "在浏览器搜索静态索引",
   go: "请求站点服务进行搜索",
-  algolia: "使用已配置的 Algolia 索引",
   none: "不提供访客搜索服务",
 };
 const labels: Record<string, string> = {
@@ -31,7 +30,6 @@ const labels: Record<string, string> = {
   story: "叙事文章",
   local: "本地静态索引",
   go: "Go 服务搜索",
-  algolia: "Algolia",
   none: "关闭搜索",
 };
 const fieldLabels: Record<string, string> = {

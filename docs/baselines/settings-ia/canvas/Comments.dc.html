@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 评论</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#0a0a0b;color:#f4f4f6;font:13px/1.55 "DM Sans","PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea,summary{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid #2e8dff;outline-offset:2px}
+.mono{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+.app{display:flex;flex-wrap:wrap;background:#0a0a0b}
+
+.side{flex:0 0 224px;padding:16px 12px 12px;border-right:1px solid #242428;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:8px;padding:2px 8px 14px;font-size:15px;font-weight:600}
+.brand i{display:block;width:20px;height:20px;border-radius:6px;border:1.5px solid #8b8b91}
+.write{display:flex;align-items:center;justify-content:center;height:34px;margin-bottom:8px;border:1px solid #242428;border-radius:8px;background:#121214;font-weight:500}
+.sfind{display:flex;align-items:center;justify-content:space-between;height:34px;margin-bottom:6px;padding:0 10px;border-radius:8px;background:#121214;color:#8b8b91}
+.sgrp{padding:14px 8px 4px;font-size:12px;color:#8b8b91}
+.sitem{display:flex;align-items:center;height:32px;padding:0 8px;border-radius:6px;color:#b9b9bf}
+.sitem.on{background:#19191c;color:#f4f4f6}
+.suser{margin-top:auto;padding:12px 8px 0;border-top:1px solid #242428;color:#b9b9bf}
+
+.main{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 32px 14px;border-bottom:1px solid #242428}
+.hl{display:flex;align-items:center;gap:12px}
+.hl h1{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.unsaved{display:inline-flex;align-items:center;gap:6px;color:#ff9f0a;font-size:12px;font-weight:500}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border:1px solid #37373d;border-radius:6px;font-weight:500;color:#f4f4f6}
+.btn:hover{background:#19191c}
+.btn.pri{background:#e8e8ec;border-color:#e8e8ec;color:#000}
+.btn.pri:hover{background:#fff}
+.btn.pri:disabled{opacity:.4;cursor:default;background:#e8e8ec}
+.btn.ghost{border-color:transparent;color:#b9b9bf}
+
+.set{flex:1;display:flex;flex-wrap:wrap}
+.snav{flex:0 0 208px;padding:24px 12px 24px 20px;border-right:1px solid #1b1b1e;display:flex;flex-direction:column;gap:1px}
+.ngrp{padding:18px 10px 6px;font-size:11.5px;font-weight:500;letter-spacing:.04em;color:#8b8b91}
+.ngrp:first-child{padding-top:2px}
+.nitem{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 10px;border-radius:6px;color:#b9b9bf}
+.nitem:hover{background:#141416;color:#f4f4f6}
+.nitem.on{background:#19191c;color:#f4f4f6;font-weight:500}
+.nlink{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding:10px;border-top:1px solid #1b1b1e;color:#8b8b91;font-size:12.5px}
+.nlink:hover{color:#f4f4f6}
+
+.sbody{flex:999 1 460px;min-width:0;display:flex;flex-direction:column;padding:28px 36px 0}
+.wrap{width:100%;max-width:760px}
+.ptitle h2{font-size:22px;font-weight:600;letter-spacing:-.015em}
+.ptitle p{margin-top:6px;color:#b9b9bf}
+.anch{display:flex;flex-wrap:wrap;gap:4px;margin-top:18px;padding-bottom:14px;border-bottom:1px solid #242428}
+.anch a{padding:5px 10px;border-radius:6px;color:#b9b9bf;font-size:12.5px}
+.anch a:hover{background:#141416;color:#f4f4f6}
+
+.sec{padding:34px 0 4px;scroll-margin-top:12px}
+.sec + .sec{border-top:1px solid #1b1b1e;margin-top:30px}
+.sh{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.sh h3{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.sh p{margin-top:2px;color:#8b8b91;max-width:520px}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;padding:14px 0;border-top:1px solid #1b1b1e}
+.row.first{border-top:0;padding-top:4px}
+.rl{flex:1 1 240px;min-width:0}
+.rt{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+.rh{margin-top:2px;max-width:420px;color:#8b8b91;font-size:12.5px}
+.rc{flex:0 1 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.blk{padding:14px 0;border-top:1px solid #1b1b1e}
+.mod{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.reset{padding:3px 8px;border-radius:5px;color:#8b8b91;font-size:12px}
+.reset:hover{background:#19191c;color:#f4f4f6}
+.dim .rc{opacity:.4}
+.dim .rt{color:#b9b9bf}
+.chelp{color:#8b8b91;font-size:12.5px}
+
+.in{height:34px;padding:0 10px;border:1px solid #242428;border-radius:6px;background:#121214}
+.in:focus{border-color:#37373d}
+.w320{width:320px;max-width:100%}
+.w220{width:220px;max-width:100%}
+.num{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border:1px solid #242428;border-radius:6px;background:#121214}
+.num input{width:64px;padding:0;border:0;background:none;text-align:right;outline:0}
+.sw{position:relative;flex:none;width:38px;height:22px;border-radius:11px;background:#2a2a2f;transition:background .15s}
+.sw i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#f4f4f6;transition:transform .15s}
+.sw.on{background:#30d158}
+.sw.on i{transform:translateX(16px)}
+.sw:disabled{opacity:.6;cursor:default}
+.stt{display:inline-flex;align-items:center;gap:8px;flex:none;padding-top:2px;color:#b9b9bf;font-size:12.5px}
+.sdot{display:inline-block;width:6px;height:6px;border-radius:50%}
+
+.pvbox{padding:14px;border:1px solid #242428;border-radius:10px;background:#0d0d0f}
+.pvt{margin-bottom:12px;color:#8b8b91;font-size:12px}
+.cm-h{margin-bottom:12px;font-size:15px;font-weight:600}
+.cm{display:flex;gap:10px;padding:10px 0;border-top:1px solid #1b1b1e}
+.cm.pend{opacity:.75}
+.av{display:flex;align-items:center;justify-content:center;flex:none;width:30px;height:30px;border-radius:50%;background:#242428;color:#b9b9bf;font-weight:600;font-size:12px}
+.cm-b{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.cm-n{display:flex;align-items:center;gap:8px;font-weight:500}
+.cm-badge{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;background:#2a2a2f;color:#f4f4f6;font-size:11px;font-weight:600}
+.cm-t{color:#8b8b91;font-size:12px;font-weight:400}
+.cm-p{display:inline-flex;align-items:center;gap:6px;color:#ff9f0a;font-size:12px;font-weight:400}
+.bar{display:block;height:7px;border-radius:4px;background:#2a2a2f}
+.bar.s{width:55%}
+.cm-off{padding:14px 0;color:#8b8b91}
+.tp{display:flex;flex-direction:column;gap:2px;margin-top:12px;padding:10px 12px;border:1px dashed #37373d;border-radius:8px}
+.tp b{font-weight:500}
+.tp span{color:#8b8b91;font-size:12px}
+
+.provs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:6px}
+.pv{display:flex;flex-direction:column;gap:2px;padding:12px;border:1px solid #242428;border-radius:10px;background:#0d0d0f}
+.pv:hover{border-color:#37373d}
+.pv.on{border-color:#e8e8ec;box-shadow:0 0 0 1px #e8e8ec}
+.pv b{font-weight:600;font-size:13.5px}
+.pv span{color:#8b8b91;font-size:12px}
+.ta{display:block;width:100%;min-height:96px;padding:10px;border:1px solid #242428;border-radius:6px;background:#121214;resize:none;line-height:1.6;font-size:12px}
+
+.savebar{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px;margin:36px -36px 0;padding:14px 36px;border-top:1px solid #242428;background:#0a0a0b;margin-top:auto}
+.sbi{display:flex;align-items:center;gap:10px}
+.sbi .s{color:#8b8b91}
+.sbact{display:flex;gap:8px}
+</style>
+</helmet>
+
+<div class="app" style="min-height:2440px">
+  <aside class="side" aria-label="Console 导航（示意）">
+    <div class="brand"><i></i>Console</div>
+    <a href="#" class="write">开始写作</a>
+    <div class="sfind"><span>搜索内容与菜单</span><span class="mono">⌘K</span></div>
+    <a href="#" class="sitem">仪表盘</a>
+    <div class="sgrp">内容</div>
+    <a href="#" class="sitem">文章</a>
+    <a href="#" class="sitem">专栏</a>
+    <a href="#" class="sitem">笔记本</a>
+    <a href="#" class="sitem">页面</a>
+    <a href="#" class="sitem">文库</a>
+    <a href="#" class="sitem">作者</a>
+    <a href="#" class="sitem">瞬间</a>
+    <div class="sgrp">互动</div>
+    <a href="#" class="sitem">评论</a>
+    <a href="#" class="sitem">评论用户</a>
+    <a href="#" class="sitem">通知中心</a>
+    <a href="#" class="sitem">友链</a>
+    <a href="#" class="sitem">订阅</a>
+    <div class="sgrp">媒体</div>
+    <a href="#" class="sitem">媒体库</a>
+    <div class="sgrp">系统</div>
+    <a href="#" class="sitem on" aria-current="page">系统设置</a>
+    <div class="suser">管理员</div>
+  </aside>
+
+  <div class="main">
+    <header class="hdr">
+      <div class="hl">
+        <h1>系统设置</h1>
+        <sc-if value="{{dirty}}" hint-placeholder-val="{{false}}"><span class="unsaved"><span class="dot"></span>未保存修改</span></sc-if>
+      </div>
+      <button type="button" class="btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>前端预览</button>
+    </header>
+
+    <div class="set">
+      <nav class="snav" aria-label="设置分类">
+        <sc-for list="{{navRows}}" as="r" hint-placeholder-count="14">
+          <sc-if value="{{r.isHead}}" hint-placeholder-val="{{false}}"><div class="ngrp">{{r.text}}</div></sc-if>
+          <sc-if value="{{r.isItem}}" hint-placeholder-val="{{true}}"><a class="nitem {{r.cls}}" href="{{r.href}}" aria-current="{{r.current}}"><span>{{r.text}}</span><sc-if value="{{r.dirty}}" hint-placeholder-val="{{false}}"><span class="dot" role="img" aria-label="有未保存修改"></span></sc-if></a></sc-if>
+        </sc-for>
+        <a class="nlink" href="#"><span>AI 与知识库 · 在「助手」中设置</span><span aria-hidden="true">↗</span></a>
+      </nav>
+
+      <div class="sbody">
+        <div class="wrap">
+          <div class="ptitle">
+            <h2>评论</h2>
+            <p>访客如何在文章下参与讨论：原生评论、邮件通知，以及第三方评论服务。</p>
+          </div>
+          <nav class="anch" aria-label="本页分区">
+            <a href="#sec-native">原生评论</a>
+            <a href="#sec-mail">邮件通知</a>
+            <a href="#sec-third">第三方评论</a>
+          </nav>
+
+          <section class="sec" id="sec-native">
+            <div class="sh"><div><h3>原生评论</h3><p>Blog 自带的评论功能，与下方第三方评论分别配置。</p></div></div>
+            <div class="row first">
+              <div class="rl"><div class="rt">启用原生评论<sc-if value="{{cust.nat}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="与默认值不同"></span></sc-if></div><div class="rh">{{fx.nat}}</div></div>
+              <div class="rc"><sc-if value="{{cust.nat}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.nat}}">恢复默认</button></sc-if><button type="button" class="sw {{sw.nat.cls}}" role="switch" aria-checked="{{sw.nat.on}}" aria-label="启用原生评论" onClick="{{sw.nat.tog}}"><i></i></button></div>
+            </div>
+            <div class="{{nd.dim}}">
+              <div class="row">
+                <div class="rl"><div class="rt">首页启用原生评论<sc-if value="{{cust.home}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="与默认值不同"></span></sc-if></div><div class="rh">{{fx.home}}</div></div>
+                <div class="rc"><button type="button" class="sw {{sw.home.cls}}" role="switch" aria-checked="{{sw.home.on}}" aria-label="首页启用原生评论" disabled="{{nd.off}}" onClick="{{sw.home.tog}}"><i></i></button></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt">评论需要审核<sc-if value="{{cust.mod}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="与默认值不同"></span></sc-if></div><div class="rh">{{fx.mod}}</div></div>
+                <div class="rc"><sc-if value="{{cust.mod}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.mod}}">恢复默认</button></sc-if><button type="button" class="sw {{sw.mod.cls}}" role="switch" aria-checked="{{sw.mod.on}}" aria-label="评论需要审核" disabled="{{nd.off}}" onClick="{{sw.mod.tog}}"><i></i></button></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="c-title">评论区标题</label></div><div class="rh">读者在原生评论区顶部看到的标题。</div></div>
+                <div class="rc"><input id="c-title" class="in w220" value="{{title}}" disabled="{{nd.off}}" onChange="{{onTitle}}"></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="c-badge">管理员徽章</label></div><div class="rh">显示在管理员评论昵称旁。</div></div>
+                <div class="rc"><input id="c-badge" class="in w220" value="{{badge}}" disabled="{{nd.off}}" onChange="{{onBadge}}"></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="c-mail">管理员邮箱</label></div><div class="rh">用于识别管理员评论。</div></div>
+                <div class="rc"><input id="c-mail" class="in w320" value="" placeholder="admin@example.com" disabled="{{nd.off}}"></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="c-grav">Gravatar 镜像地址</label></div><div class="rh">头像服务地址；默认使用 WeAvatar。</div></div>
+                <div class="rc"><input id="c-grav" class="in w320 mono" value="https://weavatar.com/avatar" disabled="{{nd.off}}"></div>
+              </div>
+            </div>
+            <div class="blk">
+              <div class="pvbox">
+                <div class="pvt">前台预览</div>
+                <sc-if value="{{nd.on}}" hint-placeholder-val="{{true}}"><div>
+                  <div class="cm-h">{{title}}</div>
+                  <div class="cm" style="border-top:0"><span class="av">管</span><div class="cm-b"><div class="cm-n">管理员<span class="cm-badge">{{badge}}</span><span class="cm-t">刚刚</span></div><span class="bar"></span><span class="bar s"></span></div></div>
+                  <sc-if value="{{pend}}" hint-placeholder-val="{{true}}"><div class="cm pend"><span class="av">访</span><div class="cm-b"><div class="cm-n">访客<span class="cm-p"><span class="dot"></span>待审核 · 公开页不显示</span></div><span class="bar"></span></div></div></sc-if>
+                </div></sc-if>
+                <sc-if value="{{nd.off}}" hint-placeholder-val="{{false}}"><div class="cm-off">原生评论已关闭，前台不显示原生评论区。</div></sc-if>
+                <sc-if value="{{pThird}}" hint-placeholder-val="{{true}}"><div class="tp"><b>第三方评论 · {{provName}}</b><span>由该服务在前台加载，与原生评论分别生效。</span></div></sc-if>
+              </div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-mail">
+            <div class="sh">
+              <div><h3>评论邮件通知</h3><p>SMTP 主机留空时不发送通知；保存配置不会发送测试邮件。</p></div>
+              <span class="stt"><span class="sdot" style="background:{{mail.color}}"></span>{{mail.text}}</span>
+            </div>
+            <div class="row first">
+              <div class="rl"><div class="rt"><label for="m-host">SMTP 主机</label></div></div>
+              <div class="rc"><input id="m-host" class="in w320 mono" value="{{host}}" placeholder="smtp.example.com" onChange="{{onHost}}"></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="m-port">SMTP 端口</label></div><div class="rh">0–65535。</div></div>
+              <div class="rc"><span class="num"><input id="m-port" class="mono" value="" placeholder="465"></span></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="m-user">SMTP 用户名</label></div></div>
+              <div class="rc"><input id="m-user" class="in w320" value=""></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="m-pass">SMTP 密码</label></div><div class="rh">保留 **** 表示不修改原密码；清空输入可清除密码。</div></div>
+              <div class="rc"><input id="m-pass" type="password" class="in w320 mono" value="****"></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="m-from">发件人邮箱</label></div><div class="rh">留空使用用户名。</div></div>
+              <div class="rc"><input id="m-from" class="in w320" value="" placeholder="noreply@example.com"></div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-third">
+            <div class="sh"><div><h3>第三方评论</h3><p>用于 Giscus、Waline、Artalk 等主题评论服务，与原生评论分别配置。</p></div></div>
+            <div class="provs" role="group" aria-label="服务提供方">
+              <sc-for list="{{provs}}" as="p" hint-placeholder-count="7">
+                <button type="button" class="pv {{p.cls}}" aria-pressed="{{p.on}}" onClick="{{p.pick}}"><b>{{p.name}}</b><span>{{p.sub}}</span></button>
+              </sc-for>
+            </div>
+            <sc-if value="{{pNone}}" hint-placeholder-val="{{true}}"><div class="blk" style="border-top:0"><p class="chelp">未选择第三方评论服务；主题不加载第三方评论脚本。</p></div></sc-if>
+            <sc-if value="{{pGiscus}}" hint-placeholder-val="{{false}}"><div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="g-repo">仓库</label></div><div class="rh">GitHub 仓库，格式 owner/repo。</div></div>
+                <div class="rc"><input id="g-repo" class="in w320 mono" value="" placeholder="owner/repo"></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="g-rid">仓库 ID</label></div></div>
+                <div class="rc"><input id="g-rid" class="in w320 mono" value="" placeholder="R_…"></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="g-cat">分类</label></div></div>
+                <div class="rc"><input id="g-cat" class="in w320" value="" placeholder="Announcements"></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="g-cid">分类 ID</label></div></div>
+                <div class="rc"><input id="g-cid" class="in w320 mono" value="" placeholder="DIC_…"></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="g-map">匹配方式</label></div><div class="rh">用页面的哪个属性关联讨论。</div></div>
+                <div class="rc"><select id="g-map" class="in w220"><option value="pathname" selected>pathname</option><option value="url">url</option><option value="title">title</option><option value="og:title">og:title</option></select></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="g-lang">语言</label></div></div>
+                <div class="rc"><input id="g-lang" class="in w220 mono" value="" placeholder="zh-CN"></div>
+              </div>
+            </div></sc-if>
+            <sc-if value="{{pOther}}" hint-placeholder-val="{{false}}">
+              <div class="blk" style="border-top:0">
+                <div class="rt" style="margin-bottom:4px">服务参数</div>
+                <p class="chelp" style="margin-bottom:10px">按服务展开配置；未修改的开放参数按原文保留。</p>
+                <textarea class="ta mono" rows="4" aria-label="服务参数">{ }</textarea>
+              </div>
+            </sc-if>
+          </section>
+        </div>
+
+        <div class="savebar">
+          <div class="sbi"><span class="dot"></span><b>{{save.title}}</b><span class="s">{{save.detail}}</span></div>
+          <div class="sbact"><button type="button" class="btn ghost" onClick="{{discard}}">放弃本页修改</button><button type="button" class="btn pri" disabled="{{save.none}}">保存全部主题设置</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2440}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const D = { nat: false, home: false, mod: false, title: '评论', badge: '博主', host: '', prov: 'none' };
+    const INIT = { nat: true, home: false, mod: true, title: '评论', badge: '博主', host: '', prov: 'giscus' };
+    const v = (k) => (s[k] === undefined ? INIT[k] : s[k]);
+    const cust = {};
+    const uns = {};
+    Object.keys(D).forEach((k) => { cust[k] = v(k) !== D[k]; uns[k] = v(k) !== INIT[k]; });
+    const nUns = Object.keys(uns).filter((k) => uns[k]).length;
+
+    const swOf = (k) => ({ on: v(k), cls: v(k) ? 'on' : '', tog: () => this.setState({ [k]: !v(k) }) });
+    const sw = { nat: swOf('nat'), home: swOf('home'), mod: swOf('mod') };
+    const off = !v('nat');
+    const nd = { off, on: !off, dim: off ? 'dim' : '' };
+    const fx = {
+      nat: v('nat') ? '允许显示 Blog 原生评论区；单页开关和审核规则仍会影响实际展示。' : '关闭 Blog 原生评论；第三方评论由下方独立设置。',
+      home: v('home') ? '原生评论开启后，首页也允许显示评论区。' : '首页不展示原生评论区。',
+      mod: v('mod') ? '新评论需经审核后才公开显示。' : '新评论无需经过这项审核开关，其他评论校验仍会执行。',
+    };
+    const rst = (k) => () => this.setState({ [k]: D[k] });
+
+    const host = v('host');
+    const mail = host.trim() ? { text: '已配置 · 将发送评论通知', color: '#30d158' } : { text: '未配置 · 不发送评论通知', color: '#8b8b91' };
+
+    const prov = v('prov');
+    const provs = [
+      ['none', '不使用', '仅用原生评论'],
+      ['giscus', 'Giscus', 'GitHub Discussions'],
+      ['utterances', 'Utterances', 'GitHub Issues'],
+      ['beaudar', 'Beaudar', 'GitHub Issues'],
+      ['twikoo', 'Twikoo', '云函数 / 自托管'],
+      ['waline', 'Waline', '自托管 / Vercel'],
+      ['artalk', 'Artalk', '自托管'],
+    ].map((p) => ({ name: p[1], sub: p[2], on: prov === p[0], cls: prov === p[0] ? 'on' : '', pick: () => this.setState({ prov: p[0] }) }));
+
+    const navDef = [
+      ['站点', [['站点信息', 'Site.dc.html'], ['SEO 与搜索', '#']]],
+      ['外观与布局', [['主题外观', 'Main.dc.html'], ['导航与页脚', '#'], ['页面与侧栏', '#']]],
+      ['内容', [['文章页', 'Post.dc.html'], ['列表与卡片', '#'], ['作者与友链', '#']]],
+      ['互动', [['评论', 'Comments.dc.html'], ['访客反馈', '#']]],
+      ['扩展与高级', [['扩展与服务', '#'], ['代码与原文', '#']]],
+    ];
+    const navRows = [];
+    navDef.forEach((g) => {
+      navRows.push({ isHead: true, isItem: false, text: g[0] });
+      g[1].forEach((it) => {
+        const on = it[0] === '评论';
+        navRows.push({ isHead: false, isItem: true, text: it[0], href: it[1], cls: on ? 'on' : '', current: on ? 'page' : 'false', dirty: on ? nUns > 0 : it[0] === '文章页' });
+      });
+    });
+
+    return {
+      dirty: true, cust, sw, nd, fx, mail, provs, navRows,
+      pThird: prov !== 'none', provName: (provs.filter((p) => p.on)[0] || { name: '' }).name,
+      title: v('title'), badge: v('badge'), host,
+      pend: v('mod'),
+      pNone: prov === 'none', pGiscus: prov === 'giscus', pOther: prov !== 'none' && prov !== 'giscus',
+      onTitle: (e) => this.setState({ title: e.target.value }),
+      onBadge: (e) => this.setState({ badge: e.target.value }),
+      onHost: (e) => this.setState({ host: e.target.value }),
+      reset: { nat: rst('nat'), mod: rst('mod') },
+      save: { none: false, title: (1 + nUns) + ' 处未保存修改', detail: (nUns > 0 ? '评论 ' + nUns + ' · ' : '') + '文章页 1' },
+      discard: () => this.setState({ nat: undefined, home: undefined, mod: undefined, title: undefined, badge: undefined, host: undefined, prov: undefined }),
+    };
+  }
+}
+</script>
+</body>
+</html>

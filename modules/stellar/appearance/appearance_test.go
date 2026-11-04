@@ -273,9 +273,6 @@ func TestBackgroundAndArtalkTransitions(t *testing.T) {
 	if got[collapsedDecoration]["--blur-px"] != "20px" {
 		t.Fatal("collapsed blur not half")
 	}
-	if !strings.Contains(string(css), "--at-color-border:transparent") {
-		t.Fatal("Artalk background condition missing")
-	}
 	set(theme, "appearance.backgrounds.leftbar.type", "none")
 	set(theme, "appearance.backgrounds.page.image", nil)
 	css, e = Build(theme)
@@ -285,9 +282,6 @@ func TestBackgroundAndArtalkTransitions(t *testing.T) {
 	got = tokens(string(css))
 	if got[decoration]["display"] != "none" || got["body > .site-background"]["background-image"] != "none" {
 		t.Fatal("removing background did not clear it")
-	}
-	if !strings.Contains(string(css), "--at-color-border:var(--block-border)") {
-		t.Fatal("Artalk border not restored")
 	}
 }
 func TestUnsafeValuesNeverBecomeTrustedCSS(t *testing.T) {

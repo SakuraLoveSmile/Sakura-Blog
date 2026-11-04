@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 站点信息</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#0a0a0b;color:#f4f4f6;font:13px/1.55 "DM Sans","PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea,summary{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid #2e8dff;outline-offset:2px}
+.mono{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+.app{display:flex;flex-wrap:wrap;background:#0a0a0b}
+
+.side{flex:0 0 224px;padding:16px 12px 12px;border-right:1px solid #242428;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:8px;padding:2px 8px 14px;font-size:15px;font-weight:600}
+.brand i{display:block;width:20px;height:20px;border-radius:6px;border:1.5px solid #8b8b91}
+.write{display:flex;align-items:center;justify-content:center;height:34px;margin-bottom:8px;border:1px solid #242428;border-radius:8px;background:#121214;font-weight:500}
+.sfind{display:flex;align-items:center;justify-content:space-between;height:34px;margin-bottom:6px;padding:0 10px;border-radius:8px;background:#121214;color:#8b8b91}
+.sgrp{padding:14px 8px 4px;font-size:12px;color:#8b8b91}
+.sitem{display:flex;align-items:center;height:32px;padding:0 8px;border-radius:6px;color:#b9b9bf}
+.sitem.on{background:#19191c;color:#f4f4f6}
+.suser{margin-top:auto;padding:12px 8px 0;border-top:1px solid #242428;color:#b9b9bf}
+
+.main{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 32px 14px;border-bottom:1px solid #242428}
+.hl{display:flex;align-items:center;gap:12px}
+.hl h1{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.unsaved{display:inline-flex;align-items:center;gap:6px;color:#ff9f0a;font-size:12px;font-weight:500}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border:1px solid #37373d;border-radius:6px;font-weight:500;color:#f4f4f6}
+.btn:hover{background:#19191c}
+.btn.pri{background:#e8e8ec;border-color:#e8e8ec;color:#000}
+.btn.pri:hover{background:#fff}
+.btn.ghost{border-color:transparent;color:#b9b9bf}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+
+.set{flex:1;display:flex;flex-wrap:wrap}
+.snav{flex:0 0 208px;padding:24px 12px 24px 20px;border-right:1px solid #1b1b1e;display:flex;flex-direction:column;gap:1px}
+.ngrp{padding:18px 10px 6px;font-size:11.5px;font-weight:500;letter-spacing:.04em;color:#8b8b91}
+.ngrp:first-child{padding-top:2px}
+.nitem{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 10px;border-radius:6px;color:#b9b9bf}
+.nitem:hover{background:#141416;color:#f4f4f6}
+.nitem.on{background:#19191c;color:#f4f4f6;font-weight:500}
+.nlink{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding:10px;border-top:1px solid #1b1b1e;color:#8b8b91;font-size:12.5px}
+.nlink:hover{color:#f4f4f6}
+
+.sbody{flex:999 1 460px;min-width:0;display:flex;flex-direction:column;padding:28px 36px 0}
+.wrap{width:100%;max-width:760px}
+.ptitle h2{font-size:22px;font-weight:600;letter-spacing:-.015em}
+.ptitle p{margin-top:6px;color:#b9b9bf}
+.anch{display:flex;flex-wrap:wrap;gap:4px;margin-top:18px;padding-bottom:14px;border-bottom:1px solid #242428}
+.anch a{padding:5px 10px;border-radius:6px;color:#b9b9bf;font-size:12.5px}
+.anch a:hover{background:#141416;color:#f4f4f6}
+
+.sec{padding:34px 0 4px;scroll-margin-top:12px}
+.sec + .sec{border-top:1px solid #1b1b1e;margin-top:30px}
+.sh{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.sh h3{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.sh p{margin-top:2px;color:#8b8b91;max-width:520px}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;padding:14px 0;border-top:1px solid #1b1b1e}
+.row.first{border-top:0;padding-top:4px}
+.rl{flex:1 1 240px;min-width:0}
+.rt{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+.req{color:#ff9f0a}
+.rh{margin-top:2px;max-width:420px;color:#8b8b91;font-size:12.5px}
+.rc{flex:0 1 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.blk{padding:14px 0;border-top:1px solid #1b1b1e}
+.blk.first{border-top:0;padding-top:4px}
+.mod{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.reset{padding:3px 8px;border-radius:5px;color:#8b8b91;font-size:12px}
+.reset:hover{background:#19191c;color:#f4f4f6}
+.tg{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border:1px solid #4a4a52;border-radius:4px;color:#b9b9bf;font-size:11.5px;font-weight:400;letter-spacing:0;white-space:nowrap}
+.tg b{font-weight:600;color:#f4f4f6}
+
+.in{height:34px;padding:0 10px;border:1px solid #242428;border-radius:6px;background:#121214}
+.w320{width:320px;max-width:100%}
+.ta{display:block;width:100%;min-height:84px;padding:10px;border:1px solid #242428;border-radius:6px;background:#121214;resize:none;line-height:1.6}
+.fl{display:block;margin-bottom:8px;font-size:14px;font-weight:500}
+.fh{margin-bottom:8px;color:#8b8b91;font-size:12.5px}
+.cnt{margin-top:6px;color:#8b8b91;font-size:12px;text-align:right}
+
+.cols{display:flex;flex-wrap:wrap;gap:24px}
+.cols > .c1{flex:1 1 320px;min-width:0}
+.cols > .c2{flex:0 1 300px;min-width:0}
+.assets{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.asset{display:flex;flex-direction:column;gap:8px;width:120px}
+.abox{display:flex;align-items:center;justify-content:center;width:120px;height:120px;border:1px solid #242428;border-radius:10px;background:#0d0d0f;overflow:hidden}
+.abox.empty{border:1px dashed #37373d;color:#8b8b91;font-size:12.5px}
+.av{display:flex;align-items:center;justify-content:center;flex:none;border-radius:50%;background:#242428;color:#b9b9bf;font-weight:600}
+.alab{color:#b9b9bf;font-size:12.5px}
+.aact{display:flex;gap:6px}
+.pvbox{padding:14px;border:1px solid #242428;border-radius:10px;background:#0d0d0f}
+.pvt{margin-bottom:12px;color:#8b8b91;font-size:12px}
+.pvr{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end}
+.pi{display:flex;flex-direction:column;align-items:center;gap:8px;color:#8b8b91;font-size:11.5px}
+.hov{position:relative;width:64px;height:64px;border-radius:50%;overflow:hidden;background:repeating-linear-gradient(45deg,#2a2a2f 0 6px,#1b1b1e 6px 12px)}
+.hov span{position:absolute;inset:14px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#242428;color:#b9b9bf;font-weight:600;font-size:18px}
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:8px 8px 0;border-radius:8px 8px 0 0;background:#0a0a0b}
+.tabx{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:8px 8px 0 0;background:#1b1b1e;color:#f4f4f6;font-size:12.5px}
+.fav{display:block;width:16px;height:16px;border-radius:4px;background:#8b8b91}
+.hd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#141416}
+.hd b{font-size:13px;font-weight:600}
+.hd span.s{color:#8b8b91;font-size:12px}
+.home{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:15px;background:#242428;color:#b9b9bf;font-size:24px;font-weight:600}
+.serp{padding:14px 16px;border-radius:10px;background:#1b1b1e}
+.sr-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;color:#b9b9bf;font-size:12px}
+.sr-top .fav{width:18px;height:18px;border-radius:50%}
+.sr-url{color:#8b8b91}
+.sr-title{color:#8ab4f8;font-size:18px;line-height:1.3}
+.sr-desc{margin-top:4px;color:#8b8b91}
+.og{overflow:hidden;border:1px solid #242428;border-radius:10px;background:#141416}
+.og-img{display:flex;align-items:center;justify-content:center;height:130px;background:repeating-linear-gradient(45deg,#1b1b1e 0 10px,#17171a 10px 20px)}
+.og-body{padding:10px 14px 12px}
+.og-dom{color:#8b8b91;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+.og-t{margin-top:2px;font-size:14px;font-weight:600}
+.og-d{color:#8b8b91;font-size:12.5px}
+
+.savebar{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px;margin:36px -36px 0;padding:14px 36px;border-top:1px solid #242428;background:#0a0a0b;margin-top:auto}
+.sbi{display:flex;align-items:center;gap:10px}
+.sbi .s{color:#8b8b91}
+.sbact{display:flex;gap:8px}
+</style>
+</helmet>
+
+<div class="app" style="min-height:1860px">
+  <aside class="side" aria-label="Console 导航（示意）">
+    <div class="brand"><i></i>Console</div>
+    <a href="#" class="write">开始写作</a>
+    <div class="sfind"><span>搜索内容与菜单</span><span class="mono">⌘K</span></div>
+    <a href="#" class="sitem">仪表盘</a>
+    <div class="sgrp">内容</div>
+    <a href="#" class="sitem">文章</a>
+    <a href="#" class="sitem">专栏</a>
+    <a href="#" class="sitem">笔记本</a>
+    <a href="#" class="sitem">页面</a>
+    <a href="#" class="sitem">文库</a>
+    <a href="#" class="sitem">作者</a>
+    <a href="#" class="sitem">瞬间</a>
+    <div class="sgrp">互动</div>
+    <a href="#" class="sitem">评论</a>
+    <a href="#" class="sitem">评论用户</a>
+    <a href="#" class="sitem">通知中心</a>
+    <a href="#" class="sitem">友链</a>
+    <a href="#" class="sitem">订阅</a>
+    <div class="sgrp">媒体</div>
+    <a href="#" class="sitem">媒体库</a>
+    <div class="sgrp">系统</div>
+    <a href="#" class="sitem on" aria-current="page">系统设置</a>
+    <div class="suser">管理员</div>
+  </aside>
+
+  <div class="main">
+    <header class="hdr">
+      <div class="hl">
+        <h1>系统设置</h1>
+        <span class="unsaved"><span class="dot"></span>未保存修改</span>
+      </div>
+      <button type="button" class="btn" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>前端预览</button>
+    </header>
+
+    <div class="set">
+      <nav class="snav" aria-label="设置分类">
+        <sc-for list="{{navRows}}" as="r" hint-placeholder-count="14">
+          <sc-if value="{{r.isHead}}" hint-placeholder-val="{{false}}"><div class="ngrp">{{r.text}}</div></sc-if>
+          <sc-if value="{{r.isItem}}" hint-placeholder-val="{{true}}"><a class="nitem {{r.cls}}" href="{{r.href}}" aria-current="{{r.current}}"><span>{{r.text}}</span><sc-if value="{{r.dirty}}" hint-placeholder-val="{{false}}"><span class="dot" role="img" aria-label="有未保存修改"></span></sc-if></a></sc-if>
+        </sc-for>
+        <a class="nlink" href="#"><span>AI 与知识库 · 在「助手」中设置</span><span aria-hidden="true">↗</span></a>
+      </nav>
+
+      <div class="sbody">
+        <div class="wrap">
+          <div class="ptitle">
+            <h2>站点信息</h2>
+            <p>站点的名称、标识图片与对外描述；本页独立保存，保存后前台读取新值。</p>
+          </div>
+          <nav class="anch" aria-label="本页分区">
+            <a href="#sec-id">站点标识</a>
+            <a href="#sec-logo">Logo</a>
+            <a href="#sec-icon">浏览器与设备图标</a>
+            <a href="#sec-desc">描述与地址</a>
+          </nav>
+
+          <section class="sec" id="sec-id">
+            <div class="sh"><div><h3>站点标识</h3><p>显示在前台首页、导航栏与浏览器标签中。</p></div></div>
+            <div class="row first">
+              <div class="rl"><div class="rt"><label for="s-title">站点标题</label><span class="req" aria-hidden="true">*</span></div><div class="rh">必填，不能为空。</div></div>
+              <div class="rc"><input id="s-title" class="in w320" value="Stellar Demo"></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="s-sub">站点副标题</label><span class="mod" role="img" aria-label="已修改"></span></div><div class="rh">例如：热爱生活，保持微笑。</div></div>
+              <div class="rc"><button type="button" class="reset">恢复默认</button><input id="s-sub" class="in w320" value="Go 服务端渲染"></div>
+            </div>
+            <div class="blk">
+              <div class="pvbox">
+                <div class="pvt">显示效果</div>
+                <div class="pvr">
+                  <div class="pi" style="align-items:flex-start"><div class="tabs"><span class="tabx"><span class="fav"></span>Stellar Demo</span></div><span>浏览器标签</span></div>
+                  <div class="pi" style="align-items:flex-start"><div class="hd"><span class="av" style="width:28px;height:28px;font-size:13px">S</span><b>Stellar Demo</b><span class="s">Go 服务端渲染</span></div><span>前台页头</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-logo">
+            <div class="sh"><div><h3>Logo</h3><p>站点头像与 Logo 文案会显示在前台导航区域。</p></div></div>
+            <div class="blk first">
+              <div class="cols">
+                <div class="c1">
+                  <div class="assets">
+                    <div class="asset"><div class="abox"><span class="av" style="width:84px;height:84px;font-size:30px">S</span></div><span class="alab">Logo 主图</span><div class="aact"><button type="button" class="btn sm">替换</button><button type="button" class="btn sm ghost">移除</button></div></div>
+                    <div class="asset"><button type="button" class="abox empty">选择图片…</button><span class="alab">悬停背景图 · 可选</span><span class="fh" style="margin:0">留空则不启用</span></div>
+                  </div>
+                </div>
+                <div class="c2">
+                  <div class="pvbox">
+                    <div class="pvt">使用预览</div>
+                    <div class="pvr">
+                      <div class="pi"><span class="av" style="width:32px;height:32px;font-size:14px">S</span><span>导航栏 32</span></div>
+                      <div class="pi"><span class="av" style="width:64px;height:64px;font-size:24px;border-radius:12px">S</span><span>分享卡片 128</span></div>
+                      <div class="pi"><div class="hov"><span>S</span></div><span>悬停效果</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="s-lt">Logo 主标题</label></div></div>
+              <div class="rc"><input id="s-lt" class="in w320" value=""></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="s-ls">Logo 副标题</label></div><div class="rh">含 | 时拆分为悬停前后的两段文案。</div></div>
+              <div class="rc"><input id="s-ls" class="in w320" value="" placeholder="含 | 时拆分为悬停前后的两段文案"></div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-icon">
+            <div class="sh"><div><h3>浏览器与设备图标</h3><p>标签页、收藏夹与 iOS 主屏幕使用；留空时使用默认图标。</p></div></div>
+            <div class="blk first">
+              <div class="cols">
+                <div class="c1">
+                  <div class="assets">
+                    <div class="asset"><button type="button" class="abox empty">选择图片…</button><span class="alab">Favicon</span><span class="fh" style="margin:0">默认 /favicon.ico</span></div>
+                    <div class="asset"><button type="button" class="abox empty">选择图片…</button><span class="alab">Apple Touch Icon</span><span class="fh" style="margin:0">默认 /apple-touch-icon.png</span></div>
+                  </div>
+                </div>
+                <div class="c2">
+                  <div class="pvbox">
+                    <div class="pvt">使用预览</div>
+                    <div class="pvr">
+                      <div class="pi" style="align-items:flex-start"><div class="tabs"><span class="tabx"><span class="fav"></span>Stellar Demo</span></div><span>标签页</span></div>
+                      <div class="pi"><span class="home">S</span><span>主屏幕</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-desc">
+            <div class="sh"><div><h3>描述与地址 <span class="tg"><b>移自</b> SEO</span></h3><p>用于首页与未单独设置描述的页面，也是搜索结果和分享卡片的来源。</p></div></div>
+            <div class="blk first">
+              <label class="fl" for="s-desc">站点描述</label>
+              <textarea id="s-desc" class="ta" rows="3" placeholder="用于首页和未单独设置描述的页面"></textarea>
+              <div class="cnt mono">0 / 160</div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="s-url">站点 URL</label></div><div class="rh">含协议的完整地址，用于规范链接与分享。</div></div>
+              <div class="rc"><input id="s-url" class="in w320" value="" placeholder="https://example.com"></div>
+            </div>
+            <div class="blk">
+              <div class="cols">
+                <div class="c1">
+                  <div class="pvt" style="margin-bottom:8px">搜索结果预览</div>
+                  <div class="serp">
+                    <div class="sr-top"><span class="fav"></span><span>Stellar Demo</span><span class="sr-url">example.com</span></div>
+                    <div class="sr-title">Stellar Demo</div>
+                    <div class="sr-desc">[站点描述]</div>
+                  </div>
+                </div>
+                <div class="c2">
+                  <div class="pvt" style="margin-bottom:8px">分享卡片预览</div>
+                  <div class="og">
+                    <div class="og-img"><span class="av" style="width:56px;height:56px;font-size:22px">S</span></div>
+                    <div class="og-body"><div class="og-dom">example.com</div><div class="og-t">Stellar Demo</div><div class="og-d">[站点描述]</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="savebar">
+          <div class="sbi"><span class="dot"></span><b>1 处未保存修改</b><span class="s">仅保存本页；主题草稿另有 1 处未保存</span></div>
+          <div class="sbact"><button type="button" class="btn ghost">放弃本页修改</button><button type="button" class="btn pri">保存</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const navDef = [
+      ['站点', [['站点信息', 'Site.dc.html'], ['SEO 与搜索', '#']]],
+      ['外观与布局', [['主题外观', 'Main.dc.html'], ['导航与页脚', '#'], ['页面与侧栏', '#']]],
+      ['内容', [['文章页', 'Post.dc.html'], ['列表与卡片', '#'], ['作者与友链', '#']]],
+      ['互动', [['评论', 'Comments.dc.html'], ['访客反馈', '#']]],
+      ['扩展与高级', [['扩展与服务', '#'], ['代码与原文', '#']]],
+    ];
+    const navRows = [];
+    navDef.forEach((g) => {
+      navRows.push({ isHead: true, isItem: false, text: g[0] });
+      g[1].forEach((it) => {
+        const on = it[0] === '站点信息';
+        navRows.push({ isHead: false, isItem: true, text: it[0], href: it[1], cls: on ? 'on' : '', current: on ? 'page' : undefined, dirty: on || it[0] === '文章页' });
+      });
+    });
+    return { navRows };
+  }
+}
+</script>
+</body>
+</html>

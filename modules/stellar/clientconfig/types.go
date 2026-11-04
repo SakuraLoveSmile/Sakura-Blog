@@ -25,7 +25,6 @@ type ServiceBinding struct {
 type Bundle struct {
 	ClientData  map[string]any
 	Manifest    Manifest
-	Comments    CommentsModel
 	Styles      []StyleResource
 	CoreScripts []string
 	Bootstrap   string
@@ -73,13 +72,4 @@ type StyleResource struct {
 	Integrity string `json:"integrity,omitempty"`
 	PageStyle bool   `json:"pageStyle"`
 	Placement string `json:"placement"`
-}
-type CommentsModel struct {
-	Enabled   bool           `json:"enabled"`
-	Title     string         `json:"title"`
-	ID        string         `json:"id"`
-	Service   string         `json:"service"`
-	Options   map[string]any `json:"options"`
-	Assets    map[string]any `json:"assets"`
-	PageTitle string         `json:"pageTitle"`
 }

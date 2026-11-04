@@ -189,21 +189,8 @@ func TestStellarHeroEffectVideoAndTerminal(t *testing.T) {
 		}
 	}
 }
-func TestStellarOfficialCommentsAndNativeIdentityAreSeparate(t *testing.T) {
-	d := stellarTemplateFixture(t)
-	r := stellarTemplateRenderer{}
-	for _, provider := range []string{"artalk", "waline", "twikoo", "giscus", "beaudar", "utterances"} {
-		client := d.Stellar.Client.(clientconfig.Bundle)
-		client.Comments = clientconfig.CommentsModel{Enabled: true, Title: "", ID: `page<&>`, Service: provider, Options: map[string]any{"data-repo": "owner/repo", "onclick": "bad()"}}
-		d.Stellar.Client = client
-		source := string(r.comments(d))
-		if strings.Count(source, `id="comments"`) != 1 || !strings.Contains(source, provider) {
-			t.Fatalf("provider %s wrong container", provider)
-		}
-		if strings.Contains(source, "onclick") || strings.Contains(source, "cmt-title") {
-			t.Fatal("unsafe options or explicitly empty title lost")
-		}
-	}
+func TestStellarNativeCommentsTemplateIdentity(t *testing.T) {
+	// 第三方评论运行时已移除，原生评论区模板必须保留自己的身份与生命周期。
 	b, err := os.ReadFile("templates/partial/stellar/blog_comments.html")
 	if err != nil {
 		t.Fatal(err)

@@ -22,14 +22,15 @@ function read(relativePath: string): string {
   return readFileSync(join(repoRoot, relativePath), "utf8");
 }
 
-/** 承接 `saving` 并渲染保存按钮的设置/主题设置子表单。 */
+/**
+ * 承接 `saving` 并渲染保存按钮的设置/主题设置子表单。
+ * 站点信息（BasicSettings）与访客反馈（FeedbackSettings）的保存按钮已统一到 SettingsSaveBar，
+ * 由下面“统一保存栏”用例单独校验；SeoSettings 的宿主表单已并入站点信息后删除。
+ */
 const SAVE_BUTTON_FILES = [
-  "modules/console/web/src/modules/settings/tabs/BasicSettings.vue",
   "modules/console/web/src/modules/settings/tabs/PostSettings.vue",
   "modules/console/web/src/modules/settings/tabs/CommentSettings.vue",
-  "modules/console/web/src/modules/settings/tabs/SeoSettings.vue",
   "modules/console/web/src/modules/settings/tabs/SearchSettings.vue",
-  "modules/console/web/src/modules/settings/tabs/FeedbackSettings.vue",
   "modules/console/web/src/modules/settings/tabs/AdvancedSettings.vue",
   "modules/console/web/src/modules/settings/AuthorsTab.vue",
   "modules/console/web/src/modules/settings/WidgetsTab.vue",
@@ -97,7 +98,8 @@ test("所有设置与主题设置保存按钮都带全局保存禁用条件（�
     loadingButtons += (code.match(/:loading="saving[^"]*"/g) ?? []).length;
     globallyDisabled += (code.match(/:disabled="Boolean\(saving\)"/g) ?? []).length;
   }
-  assert.equal(loadingButtons, 21, "保存按钮数量应与受管子表单一致");
+  // 原 21 个：站点信息 1、SEO 宿主表单 2、访客反馈 1 已移入统一保存栏，其余 17 个保持不变。
+  assert.equal(loadingButtons, 17, "保存按钮数量应与受管子表单一致");
   assert.equal(globallyDisabled, loadingButtons, "每个保存按钮都必须带 Boolean(saving) 全局禁用条件");
 
   // 独立持有本地保存状态的子表单必须接线页面级 saving，否则不会参与全局禁用
@@ -118,6 +120,31 @@ test("所有设置与主题设置保存按钮都带全局保存禁用条件（�
   // 不改共享 VButton 的全局禁用语义：只在消费者侧传 disabled
   const vButton = read("packages/components/src/ui/VButton.vue");
   assert.match(vButton, /:disabled="disabled \|\| loading"/);
+});
+
+test("统一保存栏：所有设置页的保存按钮都经 SettingsSaveBar，并带全局保存禁用条件（结构检查）", () => {
+  const bar = read("modules/console/web/src/modules/settings/SettingsSaveBar.vue");
+  // 保存栏只有一个主按钮：原生 submit，没有改动、其他保存进行中或存在阻止原因时禁用，并显示本栏的保存中状态。
+  assert.equal((bar.match(/native-type="submit"/g) ?? []).length, 1);
+  assert.match(bar, /:disabled="!dirty \|\| busy \|\| Boolean\(blocked\)"/);
+  assert.match(bar, /:loading="saving"/);
+  // 放弃本页修改同样不能在任一保存请求进行中使用（否则会与回写的响应竞态）。
+  assert.match(bar, /:disabled="!pageDirty \|\| busy"/);
+
+  // 站点信息与访客反馈不再自带保存按钮，只通过 actions 插槽接入统一保存栏。
+  for (const name of ["BasicSettings", "FeedbackSettings"]) {
+    const form = read(`modules/console/web/src/modules/settings/tabs/${name}.vue`);
+    assert.match(form, /<slot name="actions" \/>/);
+    assert.doesNotMatch(form, /native-type="submit"|:loading="saving/);
+  }
+
+  // 页面渲染的每个保存栏都接线“任意保存进行中”(savingKey) 作为 busy，而不是只看自己的状态。
+  const view = read("modules/console/web/src/modules/settings/SettingsView.vue");
+  const bars = (view.match(/<SettingsSaveBar/g) ?? []).length;
+  assert.equal(bars, 3, "主题页、站点信息、访客反馈各一个保存栏");
+  assert.equal((view.match(/:busy="Boolean\(savingKey\)"/g) ?? []).length, bars);
+  // 表单内的主题保存栏经 CanonicalSettingsForm 的 actions 插槽接入，表单自身的提交仍受 saving 约束。
+  assert.match(view, /<CanonicalSettingsForm[\s\S]*?:saving="savingKey \|\| \(pendingInput \? 'pending-input' : ''\)"/);
 });
 
 test("稀疏及旧配置加载后经过 ensureSettingsDefaults 与快照初始化后无假脏态", () => {

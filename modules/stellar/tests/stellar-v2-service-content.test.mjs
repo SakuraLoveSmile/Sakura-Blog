@@ -31,19 +31,19 @@ function fixture(service = 'friends', api = '/fixture/friends', baseURI = 'https
   const sanitized = [];
   const window = Object.assign(new EventTarget(), { DOMPurify: () => ({ isSupported: true, addHook() {}, sanitize(html, config) { sanitized.push({ html, config }); return html; } }), utils, wrapLazyloadImages() {} });
   const sandbox = vm.createContext({ window, document, URL, AbortController, CustomEvent: class extends Event { constructor(type, options) { super(type); this.detail = options?.detail; } },
-    def: { avatar: '/avatar.png', cover: '/cover.png' }, ctx: { services: { siteinfo: {} }, icons: { 'default:to-comment': '<svg></svg>' } },
+    def: { avatar: '/avatar.png', cover: '/cover.png' }, ctx: { services: {}, icons: { 'default:to-comment': '<svg></svg>' } },
     marked: { parse: content => '<p>' + content + '</p>' }, console, setTimeout, clearTimeout, setInterval, clearInterval,
     IntersectionObserver: class { disconnect() {} },
     ...browserGlobals,
   });
-  vm.runInContext(source('services/' + (['giscus', 'waline', 'twikoo', 'artalk'].includes(service) ? service + '_latest_comment' : service) + '.js'), sandbox);
+  vm.runInContext(source('services/' + service + '.js'), sandbox);
   const script = document.currentScript;
   vm.runInContext(source('runtime/extensions/services.js').replace('export async function mount', 'async function mount'), sandbox);
   let controller;
   async function mount() {
     controller = new AbortController();
     const cleanup = await sandbox.mount(root, { signal: controller.signal, reportError: error => errors.push(error),
-      extension: { config: { marked: '/marked.js' } }, legacy: { ctx: { root: '/blog/', services: { siteinfo: { js: '/siteinfo.js' }, [service]: { js: '/' + service + '.js' } } } },
+      extension: { config: { marked: '/marked.js' } }, legacy: { ctx: { root: '/blog/', services: { [service]: { js: '/' + service + '.js' } } } },
       assets: { script: async url => url === '/' + service + '.js' ? script : {} },
     });
     return () => { controller.abort(); cleanup(); };
@@ -149,10 +149,8 @@ test('动态Markdown把最终完整HTML交给局部净化边界，普通字段�
   assert.equal(config.ALLOW_DATA_ATTR, false); cleanup();
 });
 
-test('第三方最新评论与微博保留默认图机制，昵称按文本处理；成功重挂不追加', async () => {
+test('微博保留默认图机制，昵称按文本处理；成功重挂不追加', async () => {
   for (const [service, data] of [
-    ['giscus', [{ author: { login: '<b>Author</b>', avatarUrl: 'javascript:bad' }, body: 'Text', createdAt: '2026-10-26', url: '/comment' }]],
-    ['waline', [{ nick: '<b>Author</b>', comment: '<p>Comment</p>', avatar: 'javascript:bad', time: '2026-10-26', url: '/comment', objectId: '1' }]],
     ['weibo', { user: { nick_name: '<b>Author</b>', avatar_hd: 'javascript:bad' }, tweets: [{ created_at: '2026-10-26', content: 'Tweet', url: '/tweet', reposts_count: 1, comments_count: 2, attitudes_count: 3 }] }],
   ]) {
     const f = fixture(service); let cleanup = await f.mount();
@@ -165,34 +163,14 @@ test('第三方最新评论与微博保留默认图机制，昵称按文本处�
   }
 });
 
-test('Twikoo最新评论保持只读POST协议并获得取消、成功重挂幂等行为', async () => {
-  const f = fixture('twikoo', 'https://twikoo.example.test'); let cleanup = await f.mount();
-  assert.equal(f.requests[0].options.method, 'POST');
-  assert.deepEqual(JSON.parse(f.requests[0].options.body), { event: 'GET_RECENT_COMMENTS', envId: 'https://twikoo.example.test', pageSize: 10, includeReply: true });
-  f.respond(0, { data: [{ commentText: '<img onerror=alert(1)>', nick: '<b>Author</b>', url: 'javascript:bad', id: '1', created: '2026-10-26' }] });
-  await flush(); await flush(); assert.equal(f.errors.length, 0); assert.equal(f.cells.length, 1);
-  assert.ok(f.cells[0].html.includes('&lt;b&gt;Author&lt;/b&gt;'));
-  assert.ok(!/href="javascript:/i.test(f.cells[0].html));
-  cleanup(); cleanup = await f.mount(); assert.equal(f.requests.length, 1); cleanup();
-  const late = fixture('twikoo', 'https://twikoo.example.test'); cleanup = await late.mount(); cleanup();
-  late.respond(0, { data: [{ commentText: 'Late', created: '2026-10-26' }] }); await flush(); await flush();
-  assert.equal(late.cells.length, 0); assert.equal(late.errors.length, 0);
-});
-
-test('JSON Feed与Artalk保留富正文，普通作者标题和解码后的预览文本不变成HTML', async () => {
-  const feed = fixture('rss'); let cleanup = await feed.mount();
+test('JSON Feed保留富正文，普通作者标题和解码后的预览文本不变成HTML', async () => {
+  const feed = fixture('rss'); const cleanup = await feed.mount();
   feed.respond(0, { version: 'https://jsonfeed.org/version/1.1', authors: [{ name: '<b>Author</b>' }], items: [{ id: '1" onload="alert(1)', title: '<img onerror=alert(2)>', url: 'javascript:bad', content_html: '<strong>Rich body</strong>', date_published: '2026-10-26' }] });
   await flush(); await flush(); assert.equal(feed.errors.length, 0); assert.equal(feed.cells.length, 1);
   assert.ok(feed.cells[0].html.includes('&lt;b&gt;Author&lt;/b&gt;'));
   assert.ok(feed.cells[0].html.includes('&lt;img onerror=alert(2)&gt;'));
   assert.ok(feed.sanitized[0].html.includes('<strong>Rich body</strong>'));
   assert.ok(!/href="javascript:|onload="/.test(feed.cells[0].html)); cleanup();
-
-  const artalk = fixture('artalk'); cleanup = await artalk.mount();
-  artalk.respond(0, { data: [{ nick: '<b>Author</b>', content_marked: '<p>&lt;img src=x onerror=alert(1)&gt;</p>', page_url: '/comment', id: '1', date: '2026-10-26' }] });
-  await flush(); await flush(); assert.equal(artalk.errors.length, 0); assert.equal(artalk.cells.length, 1);
-  assert.ok(artalk.cells[0].html.includes('&lt;b&gt;Author&lt;/b&gt;'));
-  assert.ok(artalk.cells[0].html.includes('&lt;img src=x onerror=alert(1)&gt;')); cleanup();
 });
 
 

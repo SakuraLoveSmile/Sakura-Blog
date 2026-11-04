@@ -205,13 +205,14 @@ func TestStellarV2ContextConcurrentIsolationAndJSONNumbers(t *testing.T) {
 				return
 			}
 			theme := parsed.Value
-			theme["services"].(map[string]any)["rating"] = map[string]any{"provider": "star_vote", "star_vote": map[string]any{"endpoint": "https://example.test/" + json.Number(fmt.Sprint(i)).String()}}
-			got, e := s.RenderStellarV2WithContext(`{% button Label /target %}`+"\n\n"+`{% copy word %}`+"\n\n"+`{% rating id:item %}`, StellarRenderContext{Theme: theme, Page: map[string]any{"count": json.Number("9007199254740993")}})
+			theme["services"].(map[string]any)["siteInfo"] = map[string]any{"provider": "site_info_api", "site_info_api": map[string]any{"endpoint": "https://example.test/" + json.Number(fmt.Sprint(i)).String() + "?url={href}"}}
+			got, e := s.RenderStellarV2WithContext(`{% button Label /target %}`+"\n\n"+`{% copy word %}`+"\n\n"+`{% rating id:item %}`+"\n\n"+`{% link https://example.com/page Example %}`, StellarRenderContext{Theme: theme, Page: map[string]any{"count": json.Number("9007199254740993")}})
 			if e != nil {
 				t.Error(e)
 				return
 			}
-			if !strings.Contains(got, `color="`+color+`"`) || !strings.Contains(got, `id="copy_1"`) || !strings.Contains(got, `data-api="https://example.test/`+fmt.Sprint(i)+`"`) {
+			// 评分固定走原生接口；link 的 siteInfo 地址用来验证主题上下文不跨并发渲染泄漏。
+			if !strings.Contains(got, `color="`+color+`"`) || !strings.Contains(got, `id="copy_1"`) || !strings.Contains(got, `data-api="/api/rating"`) || !strings.Contains(got, `https://example.test/`+fmt.Sprint(i)+`?url=`) {
 				t.Errorf("request leaked context: %s", got)
 			}
 			if v2String(theme["tags"].(map[string]any)["button"].(map[string]any)["defaultColor"]) != color {
@@ -340,21 +341,42 @@ func TestStellarV2BodyDepthAndErrorBound(t *testing.T) {
 }
 
 func TestStellarV2ConfiguredServicesAndEncodedMarkdownSource(t *testing.T) {
-	for _, services := range []map[string]any{
+	// 评分/投票已改走站内原生接口：主题里的 star_vote 配置不再影响渲染结果。
+	configs := []map[string]any{
 		{"rating": map[string]any{"provider": nil}, "vote": map[string]any{"provider": nil}},
 		{"rating": map[string]any{"provider": "star_vote", "star_vote": map[string]any{"endpoint": "https://example.test/rating?a=1&b=2"}}, "vote": map[string]any{"provider": "star_vote", "star_vote": map[string]any{"endpoint": "https://example.test/vote"}}, "github": map[string]any{"rawUrl": "https://mirror.test/github/"}},
-	} {
-		ctx := StellarRenderContext{Theme: map[string]any{"services": services}}
-		for _, c := range []v2OracleCase{{"rating", "id:record Rate", ""}, {"vote", "id:record Vote", ""}, {"md", "https://raw.githubusercontent.com/alice/blog/ref%2Ffeature/nested/my%20file.md wrap:false", ""}} {
+	}
+	for _, c := range []v2OracleCase{{"rating", "id:record Rate", ""}, {"vote", "id:record Vote", ""}} {
+		var first string
+		entry, _ := shortcodeV2Entry(c.name)
+		tokens, _ := v2Args(c.args)
+		for i, services := range configs {
+			ctx := StellarRenderContext{Theme: map[string]any{"services": services}}
 			oracle := newV2Oracle(t, ctx)
-			entry, _ := shortcodeV2Entry(c.name)
-			tokens, _ := v2Args(c.args)
 			got := oracle.r.render(c.name, v2MapArgs(tokens, entry.Params), c.body, c.args)
-			want := oracle.render(t, c.name, c.args, c.body)
-			if v2Canonical(t, got) != v2Canonical(t, want) {
-				t.Errorf("service case %s differs\n%s\n%s", c.name, got, want)
+			wantAPI := `data-api="/api/rating"`
+			if c.name == "vote" {
+				wantAPI = `data-api="/api/vote"`
+			}
+			if !strings.Contains(got, wantAPI) || strings.Contains(got, "is-disabled") || strings.Contains(got, "disabled") {
+				t.Fatalf("service case %s must use native endpoint: %s", c.name, got)
+			}
+			if i == 0 {
+				first = got
+			} else if first != got {
+				t.Fatalf("theme star_vote config still changes %s output", c.name)
 			}
 		}
+	}
+	// 其余服务配置仍按官方 oracle 差分。
+	ctx := StellarRenderContext{Theme: map[string]any{"services": map[string]any{"github": map[string]any{"rawUrl": "https://mirror.test/github/"}}}}
+	oracle := newV2Oracle(t, ctx)
+	entry, _ := shortcodeV2Entry("md")
+	tokens, _ := v2Args("https://raw.githubusercontent.com/alice/blog/ref%2Ffeature/nested/my%20file.md wrap:false")
+	got := oracle.r.render("md", v2MapArgs(tokens, entry.Params), "", "https://raw.githubusercontent.com/alice/blog/ref%2Ffeature/nested/my%20file.md wrap:false")
+	want := oracle.render(t, "md", "https://raw.githubusercontent.com/alice/blog/ref%2Ffeature/nested/my%20file.md wrap:false", "")
+	if v2Canonical(t, got) != v2Canonical(t, want) {
+		t.Errorf("service case md differs\n%s\n%s", got, want)
 	}
 }
 func TestStellarV2CatalogExamplesAndCopies(t *testing.T) {

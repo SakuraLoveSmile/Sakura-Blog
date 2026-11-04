@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openSettingsPage, openSettingsRaw, settingsNav } from "./support/settings";
 
 const endpoint = "/api/v1/settings/stellar";
 const activeForm = (page: Page) => page.locator(".canonical-settings-form:visible");
@@ -15,14 +16,6 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/\/console\/dashboard/, { timeout: 30_000 });
 }
 
-async function tab(page: Page, label: string) {
-  const keys: Record<string, string> = { "Stellar 2": "advanced", 基本: "basic", 文章: "post", 评论: "comments", SEO: "seo", 搜索: "search", 反馈: "feedback", 高级: "advanced" };
-  const target = page.locator(`#tab-${keys[label]}`);
-  await target.click();
-  await expect(target).toHaveAttribute("aria-selected", "true");
-  if (label === "Stellar 2") await page.locator(".settings-raw-editor").evaluate((el) => { (el as HTMLDetailsElement).open = true; });
-}
-
 async function toggle(page: Page, key: string, on: boolean) {
   const control = field(page, key).getByRole("switch");
   if ((await control.getAttribute("aria-checked")) !== String(on)) await control.click();
@@ -36,7 +29,7 @@ async function put(page: Page, raw: string) {
 
 test.beforeEach(async ({ page }) => { await login(page); });
 
-test("普通标签共用草稿并真实保存，重读和前台热更新使用新值", async ({ page }) => {
+test("各设置页共用主题草稿并真实保存，重读和前台热更新使用新值", async ({ page }) => {
   const original = await (await page.request.get(endpoint)).text();
   const slug = `settings-canonical-${Date.now()}`;
   try {
@@ -48,25 +41,26 @@ test("普通标签共用草稿并真实保存，重读和前台热更新使用�
     expect(post.ok(), await post.text()).toBeTruthy();
     await page.goto("/console/settings?tab=post");
     await field(page, "theme.article.style").locator('input[type="radio"][value="story"]').check();
-    await input(page, "theme.article.listing.cover_ratio").fill("1.6");
     await toggle(page, "blog_extensions.content.enabled", true);
     await toggle(page, "blog_extensions.content.reward.enabled", true);
     await input(page, "blog_extensions.content.reward.text").fill("设置测试打赏");
+    await openSettingsPage(page, "listing");
+    await input(page, "theme.article.listing.cover_ratio").fill("1.6");
 
-    // 未保存切换标签、完整原文和普通控件互相可见。
-    await tab(page, "Stellar 2");
+    // 未保存切换页面、完整原文和普通控件互相可见。
+    await openSettingsRaw(page);
     await expect(page.locator("#stellar2-document")).toHaveValue(/"style"\s*:\s*"story"/);
-    await tab(page, "评论");
+    await openSettingsPage(page, "comments");
     await expect(input(page, "blog_extensions.native_comments.notify.password")).toHaveValue("****");
     await toggle(page, "blog_extensions.native_comments.enabled", true);
     await input(page, "blog_extensions.native_comments.title").fill("设置测试评论");
-    await tab(page, "SEO");
+    // 站内搜索与搜索引擎设置同在“SEO 与搜索”。
+    await openSettingsPage(page, "seo");
     await input(page, "blog_extensions.seo.default_description").fill("设置测试描述");
     await toggle(page, "blog_extensions.seo.no_index", true);
-    await tab(page, "搜索");
     await field(page, "theme.search.provider").locator('input[type="radio"][value="local"]').check();
     await toggle(page, "theme.search.local.include_content", false);
-    await tab(page, "高级");
+    await openSettingsPage(page, "advanced");
     for (const position of ["head_begin", "head_end", "body_begin", "body_end"]) {
       await input(page, `theme.inject.${position}`).fill(`<meta name="settings-${position}" content="current">`);
     }
@@ -84,7 +78,7 @@ test("普通标签共用草稿并真实保存，重读和前台热更新使用�
     expect(document.blog_extensions.native_comments.title).toBe("设置测试评论");
 
     await page.reload();
-    await tab(page, "文章");
+    await openSettingsPage(page, "post");
     await expect(field(page, "theme.article.style").getByRole("radio", {name: "叙事文章", exact: true})).toBeChecked();
     await expect(input(page, "blog_extensions.content.reward.text")).toHaveValue("设置测试打赏");
     const publicPage = await page.request.get(`/post/${slug}`);
@@ -108,7 +102,7 @@ test("普通标签共用草稿并真实保存，重读和前台热更新使用�
 test("保存期间继续编辑，响应只更新提交基线；失败保留草稿", async ({ page }) => {
   const original = await (await page.request.get(endpoint)).text();
   try {
-    await page.goto("/console/settings?tab=post");
+    await page.goto("/console/settings?tab=listing");
     await input(page, "theme.article.listing.excerpt_length").fill("101");
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
@@ -123,12 +117,12 @@ test("保存期间继续编辑，响应只更新提交基线；失败保留草�
     await save(page).click();
     await expect.poll(() => submitted).toContain('"excerpt_length":101');
     await input(page, "theme.article.listing.excerpt_length").fill("202");
-    await tab(page, "搜索");
+    await openSettingsPage(page, "seo");
     await toggle(page, "theme.search.local.include_content", false);
     await expect(save(page)).toBeDisabled();
     release();
     await expect(save(page)).toBeEnabled();
-    await tab(page, "文章");
+    await openSettingsPage(page, "listing");
     await expect(input(page, "theme.article.listing.excerpt_length")).toHaveValue("202");
     await expect(page.locator(".settings-dirty-badge")).toBeVisible();
     await page.unroute(`**${endpoint}`);
@@ -140,7 +134,7 @@ test("保存期间继续编辑，响应只更新提交基线；失败保留草�
       }) });
     });
     await save(page).click();
-    await expect(page.locator("#tabpanel-post").getByText("测试保存失败", { exact: true })).toBeVisible();
+    await expect(page.locator("#settings-page-listing").getByText("测试保存失败", { exact: true })).toBeVisible();
     await expect(input(page, "theme.article.listing.excerpt_length")).toHaveValue("202");
     await expect(page.locator(".settings-dirty-badge")).toBeVisible();
     expect(await (await page.request.get(endpoint)).text()).toBe(original);
@@ -222,7 +216,7 @@ test("AI 设置写入独立 Blog 扩展，对话与向量接口分别保存且�
 
 test("有效普通草稿通过真实预览渲染，预览不写入数据库", async ({ page }) => {
   const original = await (await page.request.get(endpoint)).text();
-  await page.goto("/console/settings?tab=post");
+  await page.goto("/console/settings?tab=listing");
   await field(page, "theme.article.listing.card_layout").locator('input[type="radio"][value="classic"]').check();
   const response = page.waitForResponse((r) => r.url().endsWith("/api/v1/preview/site"));
   await page.getByRole("button", { name: "前端预览", exact: true }).click();
@@ -236,50 +230,58 @@ test("有效普通草稿通过真实预览渲染，预览不写入数据库", as
 });
 
 test("完整配置语法错误不显示可误写的普通表单，修正后保留可编辑值", async ({ page }) => {
+  // 旧的 ?tab=stellar2 链接落到“代码与原文”并展开完整配置。
   await page.goto("/console/settings?tab=stellar2");
+  await expect(settingsNav(page, "advanced")).toHaveAttribute("aria-current", "page");
   const document = page.locator("#stellar2-document");
+  await expect(document).toBeVisible();
   await expect(document).toBeEnabled();
   const original = await document.inputValue();
   await document.fill("{");
-  await tab(page, "文章");
+  await openSettingsPage(page, "post");
   await expect(activeForm(page)).toHaveCount(0);
-  await expect(page.locator("#tabpanel-post").getByRole("alert")).toContainText("完整配置暂时无法用于表单编辑");
-  await tab(page, "Stellar 2");
+  await expect(page.locator("#settings-page-post").getByRole("alert")).toContainText("完整配置暂时无法用于表单编辑");
+  await openSettingsRaw(page);
   await document.fill(original);
-  await tab(page, "文章");
-  await expect(save(page)).toBeEnabled();
+  await openSettingsPage(page, "post");
+  await expect(activeForm(page)).toHaveCount(1);
   await expect(page.locator(".settings-dirty-badge")).toHaveCount(0);
 });
 
-test("局部 JSON 和新增映射草稿跨标签保留，恢复默认解除保存锁", async ({ page }) => {
+test("局部 JSON 和新增映射草稿跨页面保留，恢复默认解除保存锁", async ({ page }) => {
   const original = await (await page.request.get(endpoint)).text();
   try {
-    await page.goto("/console/settings?tab=post");
+    await page.goto("/console/settings?tab=listing");
+    // 先制造一处真实修改，保存按钮因此可用；之后只有未完成的输入才会把它锁住。
+    await toggle(page, "theme.article.listing.show_tags", true);
+    await expect(save(page)).toBeEnabled();
     const mapping = field(page, "theme.article.category_colors");
     await mapping.getByRole("textbox", { name: "新增分类颜色名称", exact: true }).fill("测试分类");
     await expect(save(page)).toBeDisabled();
-    await tab(page, "评论");
+    await expect(page.locator(".settings-save-bar").getByRole("alert")).toContainText("请先添加或清空尚未加入的映射项");
+    await openSettingsPage(page, "comments");
     await expect(save(page)).toBeDisabled();
-    await tab(page, "Stellar 2");
+    await openSettingsRaw(page);
     await expect(page.locator("#stellar2-document")).toBeDisabled();
-    await tab(page, "文章");
+    await openSettingsPage(page, "listing");
     await expect(mapping.getByRole("textbox", { name: "新增分类颜色名称", exact: true })).toHaveValue("测试分类");
     await mapping.getByRole("button", { name: "分类颜色恢复默认", exact: true }).click();
     await expect(mapping.getByRole("textbox", { name: "新增分类颜色名称", exact: true })).toHaveValue("");
     await expect(save(page)).toBeEnabled();
-    await tab(page, "搜索");
-    // 完整原文仍可诊断无效输入；Algolia 普通参数现已改为结构化控件。
-    await tab(page, "Stellar 2");
+    await openSettingsPage(page, "seo");
+    // 完整原文仍可诊断无效输入；Algolia 参数已不在设置页提供结构化控件，但仍可通过完整原文保留和编辑
+    // （schema.json 未移除该节点，旧配置需要原样保存），这里验证的就是原文编辑链路。
+    await openSettingsRaw(page);
     const parameters = page.locator("#stellar2-document");
     const draft = await parameters.inputValue();
     await parameters.fill("{");
-    await tab(page, "搜索");
+    await openSettingsPage(page, "seo");
     await expect(activeForm(page)).toHaveCount(0);
-    await tab(page, "Stellar 2");
+    await openSettingsRaw(page);
     const next = JSON.parse(draft);
     next.theme.search = { ...(next.theme.search ?? {}), algolia: { large: "REPLACE_LARGE", optional: null } };
     await parameters.fill(JSON.stringify(next).replace('"REPLACE_LARGE"', '9007199254740993'));
-    await tab(page, "搜索");
+    await openSettingsPage(page, "seo");
     const response = page.waitForResponse((r) => r.url().endsWith(endpoint) && r.request().method() === "PUT");
     await save(page).click();
     expect((await response).ok()).toBeTruthy();
@@ -288,7 +290,7 @@ test("局部 JSON 和新增映射草稿跨标签保留，恢复默认解除保�
   } finally { await put(page, original); }
 });
 
-test("读取迁移门禁时保留宿主设置入口，普通标签不能写入默认配置", async ({ page }) => {
+test("读取迁移门禁时保留宿主设置入口，普通页面不能写入默认配置", async ({ page }) => {
   let writes = 0;
   await page.route(`**${endpoint}`, async (route) => {
     if (route.request().method() !== "GET") { writes++; return route.abort(); }
@@ -299,11 +301,11 @@ test("读取迁移门禁时保留宿主设置入口，普通标签不能写入�
     }) });
   });
   await page.goto("/console/settings?tab=post");
-  await expect(page.locator("#tabpanel-post")).toContainText("当前配置尚未迁移");
+  await expect(page.locator("#settings-page-post")).toContainText("当前配置尚未迁移");
   await expect(activeForm(page)).toHaveCount(0);
-  await tab(page, "基本");
+  await openSettingsPage(page, "site");
   await expect(page.locator("#settings-site-title")).toBeEditable();
-  await tab(page, "Stellar 2");
+  await openSettingsRaw(page);
   await expect(page.getByRole("button", { name: "保存 Stellar 2 配置", exact: true })).toBeDisabled();
   expect(writes).toBe(0);
 });
@@ -312,7 +314,9 @@ test("Go 搜索覆盖保留到用户显式切换，搜索接口随保存切换",
   const original = await (await page.request.get(endpoint)).text();
   try {
     await put(page, '{"version":2,"theme":{"search":{"provider":null}},"blog_extensions":{"search":{"provider":"go","custom":9007199254740993}}}');
+    // 旧的 ?tab=search 链接落到“SEO 与搜索”。
     await page.goto("/console/settings?tab=search");
+    await expect(settingsNav(page, "seo")).toHaveAttribute("aria-current", "page");
     const provider = field(page, "theme.search.provider");
     await expect(provider.locator('input[type="radio"][value="go"]')).toBeChecked();
     const persist = async () => {
@@ -339,13 +343,14 @@ test("Go 搜索覆盖保留到用户显式切换，搜索接口随保存切换",
   } finally { await put(page, original); }
 });
 
-test("旧文章链接定位普通表单，取消离开时保留未保存草稿", async ({ page }) => {
+test("旧文章链接定位文章页，取消离开时保留未保存草稿", async ({ page }) => {
   await page.goto("/console/settings?tab=article");
-  await expect(page.locator("#tab-post")).toHaveAttribute("aria-selected", "true");
-  const excerpt = input(page, "theme.article.listing.excerpt_length");
-  const original = await excerpt.inputValue();
-  const edited = original === "139" ? "140" : "139";
-  await excerpt.fill(edited);
+  await expect(settingsNav(page, "post")).toHaveAttribute("aria-current", "page");
+  await expect(page).toHaveURL(/\/console\/settings\?tab=post$/);
+  const related = input(page, "theme.article.related_posts_limit");
+  const original = await related.inputValue();
+  const edited = original === "7" ? "8" : "7";
+  await related.fill(edited);
   await expect(page.locator(".settings-dirty-badge")).toBeVisible();
 
   const dialogs: string[] = [];
@@ -355,7 +360,7 @@ test("旧文章链接定位普通表单，取消离开时保留未保存草稿",
   });
   await page.getByRole("link", { name: "仪表盘", exact: true }).click();
   await expect(page).toHaveURL(/\/console\/settings\?tab=post$/);
-  await expect(excerpt).toHaveValue(edited);
+  await expect(related).toHaveValue(edited);
   expect(dialogs).toEqual(["您有未保存的设置更改，离开后修改将丢失，是否确认离开？"]);
 
   page.once("dialog", (dialog) => dialog.accept());
@@ -363,33 +368,31 @@ test("旧文章链接定位普通表单，取消离开时保留未保存草稿",
   await expect(page).toHaveURL(/\/console\/dashboard$/);
 });
 
-test("普通设置在六种宽度保持单卡片、正确边距和完整可用标签", async ({ page }, testInfo) => {
+test("普通设置在六种宽度保持无卡片外框、正确边距和完整可用页面", async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   await page.goto("/console/settings?tab=post");
   for (const width of [390, 640, 641, 767, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const [label, key] of [["文章", "post"], ["评论", "comments"], ["SEO", "seo"], ["搜索", "search"], ["高级", "advanced"]]) {
-      await tab(page, label);
-      const panel = page.locator(`#tabpanel-${key}`);
+    for (const key of ["post", "comments", "seo", "listing", "advanced"]) {
+      await openSettingsPage(page, key);
+      const panel = page.locator(`#settings-page-${key}`);
       await expect(panel).toBeVisible();
-      await expect(save(page)).toBeEnabled();
+      await expect(panel.getByRole("button", { name: "保存全部主题设置", exact: true })).toBeVisible();
       await expect(panel.locator(".card-wrapper")).toHaveCount(0);
-      const styles = await panel.locator(".settings-section").evaluateAll((sections) => sections.map((section) => {
-        const body = section.querySelector(".settings-section-body")!;
-        const style = getComputedStyle(body);
-        return { padding: getComputedStyle(section).paddingLeft, background: style.backgroundColor,
-          border: style.borderWidth, radius: style.borderRadius, shadow: style.boxShadow, bodyPadding: style.paddingLeft };
+      const styles = await panel.locator(".settings-sec").evaluateAll((sections) => sections.map((section) => {
+        const style = getComputedStyle(section);
+        return { paddingX: [style.paddingLeft, style.paddingRight], background: style.backgroundColor,
+          borderX: [style.borderLeftWidth, style.borderRightWidth], borderBottom: style.borderBottomWidth,
+          radius: style.borderRadius, shadow: style.boxShadow };
       }));
-      // 方向 A：横向页面边距由 .settings-container 承担（手机 16px / 桌面 32px），
-      // 分区自身不再叠加横向 padding，因此这里断言 0 并单独校验容器边距。
+      // 横向页面边距由 .settings-container 承担（手机 16px / 桌面 32px），分区自身不再叠加横向 padding、外框或背景。
       const containerPadding = await page.locator(".settings-container").evaluate((el) => getComputedStyle(el).paddingLeft);
       expect(containerPadding).toBe(width < 768 ? "16px" : "32px");
       expect(styles.length).toBeGreaterThan(0);
-      for (const style of styles) expect(style).toEqual({ padding: "0px",
-        background: "rgba(0, 0, 0, 0)", border: "0px", radius: "0px", shadow: "none", bodyPadding: "0px" });
+      for (const style of styles) expect(style).toEqual({ paddingX: ["0px", "0px"],
+        background: "rgba(0, 0, 0, 0)", borderX: ["0px", "0px"], borderBottom: "0px", radius: "0px", shadow: "none" });
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       if (width === 390 || width === 1280) {
-        await page.locator(".settings-card-tabs").scrollIntoViewIfNeeded();
         // 测试不得覆写受跟踪基线目录，证据统一写入 Playwright 输出目录。
         await page.screenshot({ path: testInfo.outputPath(`settings-${key}-${width}.png`) });
       }
@@ -397,11 +400,12 @@ test("普通设置在六种宽度保持单卡片、正确边距和完整可用�
   }
 });
 
-test("规范保存条与预览面板不透明，横向边距由容器统一提供", async ({ page }, testInfo) => {
+test("统一保存条与预览面板不透明，横向边距由容器统一提供", async ({ page }, testInfo) => {
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/console/settings?tab=appearance");
-    const actions = page.locator(".settings-canonical-actions").first();
+    // 十个主题页的表单同时挂载（非当前页 hidden），只检查当前可见页的保存栏。
+    const actions = page.locator(".settings-save-bar:visible").first();
     await expect(actions).toBeVisible();
     const bar = await actions.evaluate((el) => {
       const style = getComputedStyle(el);
@@ -422,7 +426,7 @@ test("规范保存条与预览面板不透明，横向边距由容器统一提�
     const containerPadding = await page.locator(".settings-container").evaluate((el) => getComputedStyle(el).paddingLeft);
     expect(containerPadding).toBe(width < 768 ? "16px" : "32px");
 
-    await page.getByRole("button", { name: "查看草稿效果", exact: true }).click();
+    await page.getByRole("button", { name: "前端预览", exact: true }).click();
     const panel = page.locator(".preview-panel");
     await expect(panel).toBeVisible();
     const preview = await panel.evaluate((el) => {

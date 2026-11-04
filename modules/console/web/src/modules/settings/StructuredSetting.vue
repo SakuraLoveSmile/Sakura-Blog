@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch, useId, onBeforeUnmount } from "vue";
+import { Icon } from "@iconify/vue";
 import { VButton, VSwitch } from "@/components/ui";
 import StructuredSettingChoices from "./StructuredSettingChoices.vue";
 import SettingColorEditor from "./SettingColorEditor.vue";
-import {
-  structuredSettingHelp,
-  structuredSettingChoicesAvailable,
-  isStructuredColor,
-} from "./structured-setting-guidance";
+import { structuredSettingHelp, structuredSettingChoicesAvailable, isStructuredColor } from "./structured-setting-guidance";
 import {
   openSettingSchema,
   schemaDefault,
@@ -219,11 +216,14 @@ function updateNumber(event: Event) {
           v-for="key in keys"
           :key="`${revision}-${key}-${keyRevisions[key] ?? 0}`"
           class="structured-item"
-          :open="depth === 0 && path === 'theme.appearance' && key === 'colors'"
+          :open="isGroup(key) || undefined"
         >
           <summary v-if="isGroup(key)">
-            <span class="structured-summary-name">{{ settingLabel(key) }}</span>
-            <span class="structured-value-state">{{ modelValue?.[key] === undefined ? "继承默认" : "已自定义" }}</span>
+            <Icon icon="ri:arrow-right-s-line" class="structured-chevron" aria-hidden="true" />
+            <span class="structured-summary-title">
+              <span class="structured-summary-name">{{ settingLabel(key) }}</span>
+              <span class="structured-value-state">{{ modelValue?.[key] === undefined ? "继承默认" : "已自定义" }}</span>
+            </span>
             <button
               type="button"
               class="settings-reset"
@@ -370,6 +370,22 @@ function updateNumber(event: Event) {
   flex: 1;
   margin: 0;
   color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+/* 布尔节点：名称与说明在左、开关在右，与规范行（左名称、右控件）一致；只改排布，不动模板结构与子节点关系。 */
+.structured-setting:has(> button[role="switch"]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 24px;
+}
+.structured-setting:has(> button[role="switch"]) > button[role="switch"] {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.structured-setting:has(> button[role="switch"]) > .settings-error {
+  grid-column: 1 / -1;
 }
 .structured-value-state {
   display: inline-block;
@@ -382,9 +398,6 @@ function updateNumber(event: Event) {
   line-height: 1.5;
   vertical-align: middle;
 }
-.structured-summary-name + .structured-value-state {
-  margin-left: 8px;
-}
 .structured-guidance,
 .structured-summary-help {
   color: var(--color-text-tertiary);
@@ -395,11 +408,6 @@ function updateNumber(event: Event) {
 }
 .structured-guidance {
   margin: 0 0 12px;
-}
-.structured-summary-help {
-  display: block;
-  margin-top: 6px;
-  padding-right: 20px;
 }
 .structured-children {
   display: grid;
@@ -422,21 +430,63 @@ details.structured-item {
   font-size: 12px;
   cursor: pointer;
 }
-summary .settings-reset {
-  float: right;
-  margin-left: 12px;
-}
 .structured-setting > :is(.apple-input, .apple-select, .apple-textarea) {
   width: 100%;
 }
-.structured-item summary {
+/* 分组标题行：箭头 | 名称与状态 | 恢复默认；说明在名称正下方，与名称左对齐。
+   分组默认全部展开，箭头只表示可以收起。名称比下面各字段的标签更醒目，层级才读得出来。 */
+details.structured-item > summary {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  list-style: none;
   cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: 13px;
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
   overflow-wrap: anywhere;
+}
+details.structured-item > summary::-webkit-details-marker {
+  display: none;
+}
+.structured-chevron {
+  grid-column: 1;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-tertiary);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+details.structured-item > summary:hover .structured-chevron {
+  color: var(--color-foreground);
+}
+details.structured-item[open] > summary .structured-chevron {
+  transform: rotate(90deg);
+}
+.structured-summary-title {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+details.structured-item > summary > .settings-reset {
+  grid-column: 3;
+}
+details.structured-item > summary > .structured-summary-help {
+  grid-column: 2 / -1;
+  margin-top: 4px;
 }
 .structured-item[open] > summary {
   margin-bottom: 12px;
+}
+/* 宽屏：分组里的内容缩进到与名称对齐，嵌套的分组一层一层退进去，谁属于谁一眼可见。手机宽度不缩进，留给控件。 */
+@media (min-width: 768px) {
+  details.structured-item[open] > :not(summary) {
+    margin-left: 24px;
+  }
 }
 .structured-actions {
   margin-top: 10px;
@@ -455,6 +505,10 @@ summary .settings-reset {
 @media (max-width: 767px) {
   .structured-item {
     padding: 8px 0 8px 8px;
+  }
+  /* 手机：嵌套的分组每层退进 8px，窄屏上也看得出谁属于谁；不像宽屏那样整块缩进，宽度留给控件。 */
+  details.structured-item details.structured-item {
+    margin-left: 8px;
   }
 }
 </style>

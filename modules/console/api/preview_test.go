@@ -44,7 +44,8 @@ func TestPreviewMarkdownNormalUnchanged(t *testing.T) {
 	cookie := authCookie(user)
 	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% rating id:demo-post %}\n\n{% friends %}"}`)
 	for _, want := range []string{
-		`class="tag-plugin ds-rating is-disabled"`,
+		`class="tag-plugin ds-rating"`,
+		`data-api="/api/rating"`,
 		`data-id="demo-post"`,
 		`class="tag-plugin users-wrap"`,
 	} {
@@ -194,8 +195,8 @@ func TestPreviewFixtureRatingVoteNoDBWrite(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &rating); err != nil {
 		t.Fatalf("decode fixture rating: %v", err)
 	}
-	if rating.Avg != 4.6 || rating.Count != 128 {
-		t.Errorf("fixture rating = %+v, want avg 4.6 / count 128", rating)
+	if rating.Avg != 4.5 || rating.Count != 130 {
+		t.Errorf("fixture rating = %+v, want avg 4.5 / count 130", rating)
 	}
 
 	// rating POST（评分动作）→ 200 且不落库

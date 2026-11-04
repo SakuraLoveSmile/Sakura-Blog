@@ -13,9 +13,9 @@ import (
 type oracleFile struct {
 	Tag, Commit string
 	Fixtures    []struct {
-		Name                           string
-		Input                          Input
-		Manifest, ClientData, Comments any
+		Name                 string
+		Input                Input
+		Manifest, ClientData any
 	}
 	Navigation []struct {
 		Name, HTML string
@@ -66,6 +66,71 @@ func assertJSON(t *testing.T, got, want any) {
 		t.Fatalf("actual: %s\nexpected: %s", g, w)
 	}
 }
+
+// normalizeManifest 去掉产品已移除的扩展，并按产品的选择器集合归一 oracle 期望值。
+func normalizeManifest(t *testing.T, manifest any, drop map[string]bool) any {
+	t.Helper()
+	raw, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	exts, _ := m["extensions"].([]any)
+	filtered := make([]any, 0, len(exts))
+	for _, entry := range exts {
+		obj, ok := entry.(map[string]any)
+		if !ok {
+			filtered = append(filtered, entry)
+			continue
+		}
+		id, _ := obj["id"].(string)
+		if drop[id] {
+			continue
+		}
+		if id == "services" {
+			if when, ok := obj["when"].(map[string]any); ok {
+				if selector, ok := when["selector"].(string); ok {
+					selector = strings.TrimPrefix(selector, "#artalk_container, #twikoo_container, #waline_container, ")
+					when["selector"] = strings.Replace(selector, ", a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api]", "", 1)
+				}
+			}
+		}
+		filtered = append(filtered, entry)
+	}
+	m["extensions"] = filtered
+	return m
+}
+
+func themeSearchProvider(theme map[string]any) string {
+	search, _ := theme["search"].(map[string]any)
+	provider, _ := search["provider"].(string)
+	return provider
+}
+
+// normalizeClientData 把已移除的站点信息外部 API 归一为 null（产品不再向客户端暴露）。
+func normalizeClientData(t *testing.T, data any) any {
+	t.Helper()
+	raw, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	if ctx, ok := m["ctx"].(map[string]any); ok {
+		if services, ok := ctx["services"].(map[string]any); ok {
+			if siteinfo, ok := services["siteinfo"].(map[string]any); ok {
+				siteinfo["api"] = nil
+			}
+		}
+	}
+	return m
+}
+
 func TestOfficialProjectionOracle(t *testing.T) {
 	for _, fixture := range loadOracle(t).Fixtures {
 		t.Run(fixture.Name, func(t *testing.T) {
@@ -82,9 +147,14 @@ func TestOfficialProjectionOracle(t *testing.T) {
 					official.Extensions = append(official.Extensions, entry)
 				}
 			}
-			assertJSON(t, official, fixture.Manifest)
-			assertJSON(t, bundle.ClientData, fixture.ClientData)
-			assertJSON(t, bundle.Comments, fixture.Comments)
+			// 产品已移除第三方评论/Algolia：官方 oracle 对应的扩展不再生成，
+			// 其中 Algolia 旧配置在产品侧回退到本地索引。
+			drop := map[string]bool{"comments": true}
+			if themeSearchProvider(fixture.Input.Theme) == "algolia" {
+				drop["search"] = true
+			}
+			assertJSON(t, normalizeManifest(t, official, drop), normalizeManifest(t, fixture.Manifest, drop))
+			assertJSON(t, normalizeClientData(t, bundle.ClientData), normalizeClientData(t, fixture.ClientData))
 			after, _ := json.Marshal(fixture.Input)
 			if string(before) != string(after) {
 				t.Fatal("Build mutated input")
@@ -230,7 +300,7 @@ func TestHostStylesFollowActiveFeaturesAndKeepAppearanceLast(t *testing.T) {
 }
 
 func TestStylesAndUseNumber(t *testing.T) {
-	d := json.NewDecoder(strings.NewReader(`{"appearance":{"preset":"minimal","color_scheme":"light"},"features":{"card_hover":{"spotlight":true,"tilt":true},"lazy_loading":{"transition":"blur"},"math":{"provider":"katex","katex":{"css":"https://custom.test/katex.css","css_integrity":"sha384-custom"}},"reveal":{"duration":123}},"search":{"provider":"algolia","algolia":{"extra":9007199254740993}}}`))
+	d := json.NewDecoder(strings.NewReader(`{"appearance":{"preset":"minimal","color_scheme":"light"},"features":{"card_hover":{"spotlight":true,"tilt":true},"lazy_loading":{"transition":"blur"},"math":{"provider":"katex","katex":{"css":"https://custom.test/katex.css","css_integrity":"sha384-custom"}},"reveal":{"duration":123}},"search":{"provider":"local","local":{"cache_ttl_seconds":9007199254740993}}}`))
 	d.UseNumber()
 	var raw map[string]any
 	if err := d.Decode(&raw); err != nil {
@@ -255,7 +325,7 @@ func TestStylesAndUseNumber(t *testing.T) {
 	}
 	for _, e := range bundle.Manifest.Extensions {
 		if e.ID == "search" {
-			v := at(e.Config, "options.extra")
+			v := at(e.Config, "options.cacheTtlSeconds")
 			if v != json.Number("9007199254740993") {
 				t.Fatalf("large parameter integer lost: %#v", v)
 			}
@@ -335,22 +405,6 @@ func TestLanguageDefaultsAndExplicitMessages(t *testing.T) {
 		t.Fatal("invalid message bag accepted")
 	}
 }
-func TestCommentsHomePaginationAndExplicitDisable(t *testing.T) {
-	theme := stellarv2.DefaultTheme()
-	theme["comments"].(map[string]any)["provider"] = "waline"
-	theme["profiles"].(map[string]any)["home"].(map[string]any)["comments"] = map[string]any{"enabled": false}
-	first, err := Build(Input{Theme: theme, Profile: "home"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	later, err := Build(Input{Theme: theme, Profile: "home", Data: map[string]any{"isHomeFirstPage": false}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first.Comments.Enabled || !later.Comments.Enabled {
-		t.Fatal("home comment policy incorrectly applied to pagination")
-	}
-}
 func TestBlogServiceBoundaryAndConcurrentBuild(t *testing.T) {
 	_, err := Build(Input{Blog: BlogConfig{Services: map[string]ServiceBinding{"bad": {Module: "/assets/js/blog/services/../bad.js", Selector: ".x"}}}})
 	if err == nil {
@@ -410,9 +464,10 @@ func TestMetadataSearchProviderSelection(t *testing.T) {
 				if stock == nil {
 					t.Fatal("missing provider")
 				}
+				// Algolia 已移除，旧配置回退本地索引，行为与 local 相同。
 				expected := "/assets/js/runtime/extensions/search.js"
 				asset := at(stock.Config, "assets.provider")
-				if provider == "local" && !include {
+				if !include {
 					expected = "/assets/js/runtime/extensions/blog-title-search.js"
 					if asset != "/assets/js/blog/search/title-search.js" {
 						t.Fatal("metadata provider asset missing")
@@ -420,6 +475,9 @@ func TestMetadataSearchProviderSelection(t *testing.T) {
 				}
 				if stock.Module != expected {
 					t.Fatal(provider, include, stock.Module)
+				}
+				if at(stock.Config, "provider") != "local" {
+					t.Fatal(provider, "did not fall back to local")
 				}
 			}
 		}

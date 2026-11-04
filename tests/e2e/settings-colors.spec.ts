@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import path from "node:path";
+import { openSettingsPage } from "./support/settings";
 
 const endpoint = "/api/v1/settings/stellar";
 const node = (page: Page, key: string) => page.locator(`[data-structured-path="${key}"]`);
@@ -43,7 +43,7 @@ test("颜色取色、色板、透明度跟随草稿，预览不保存，恢复�
     await expect(text).toHaveValue("rgba(175, 82, 222, 0.4)");
     await primary.getByRole("slider", { name: "主题色不透明度", exact: true }).fill("65");
     await expect(text).toHaveValue("rgba(175, 82, 222, 0.65)");
-    await page.getByRole("button", { name: "查看草稿效果", exact: true }).click();
+    await page.getByRole("button", { name: "前端预览", exact: true }).click();
     await expect
       .poll(() =>
         page
@@ -59,7 +59,7 @@ test("颜色取色、色板、透明度跟随草稿，预览不保存，恢复�
     await expect(text).toHaveValue("var(--custom-color)");
     await primary.getByRole("button", { name: "主题色恢复默认", exact: true }).click();
     await expect(text).toHaveValue("hsl(192 98% 55%)");
-    await page.getByRole("button", { name: "主题外观恢复默认", exact: true }).first().click();
+    await page.getByRole("button", { name: "恢复主题外观默认", exact: true }).click();
     await expect(page.locator(".settings-dirty-badge")).toHaveCount(0);
     expect(await (await page.request.get(endpoint)).text()).toBe(baseline);
 
@@ -95,7 +95,8 @@ test("分类与 AI 颜色使用 HEX 色板，新增待添加状态和无损保�
       page,
       '{"version":2,"theme":{},"blog_extensions":{"unrelated":{"large":9007199254740993},"content":{"enabled":true,"ai_label":{"reviewed":{"color":"4caf50","icon":"default:shield-check"}}}}}',
     );
-    await page.goto("/console/settings?tab=post");
+    // 分类颜色在“列表与卡片”，AI 创作标记在“文章页”；两页共用同一份草稿。
+    await page.goto("/console/settings?tab=listing");
     const categories = field(page, "theme.article.category_colors");
     await categories.getByRole("textbox", { name: "新增分类颜色名称", exact: true }).fill("调色板验收");
     const newColor = categories
@@ -106,6 +107,7 @@ test("分类与 AI 颜色使用 HEX 色板，新增待添加状态和无损保�
     await expect(newColor.getByRole("slider")).toHaveCount(0);
     await categories.getByRole("button", { name: "添加", exact: true }).click();
     await expect(save(page)).toBeEnabled();
+    await openSettingsPage(page, "post");
     const ai = field(page, "blog_extensions.content.ai_label.reviewed");
     await expect(ai.getByRole("textbox", { name: "AI 辅助审阅颜色", exact: true })).toHaveValue("4caf50");
     await expect(ai.locator('input[type="color"]')).toHaveValue("#4caf50");
@@ -115,10 +117,11 @@ test("分类与 AI 颜色使用 HEX 色板，新增待添加状态和无损保�
     await save(page).click();
     expect((await response).ok()).toBeTruthy();
     await page.reload();
+    await expect(ai.getByRole("textbox", { name: "AI 辅助审阅颜色", exact: true })).toHaveValue("#ff9500");
+    await openSettingsPage(page, "listing");
     await expect(categories.getByRole("textbox", { name: "分类颜色值 调色板验收", exact: true })).toHaveValue(
       "#af52de",
     );
-    await expect(ai.getByRole("textbox", { name: "AI 辅助审阅颜色", exact: true })).toHaveValue("#ff9500");
     const raw = await (await page.request.get(endpoint)).text();
     expect(raw).toContain("9007199254740993");
     expect(JSON.parse(raw).blog_extensions.content.ai_label.reviewed.icon).toBe("default:shield-check");
@@ -127,7 +130,7 @@ test("分类与 AI 颜色使用 HEX 色板，新增待添加状态和无损保�
   }
 });
 
-test("桌面与手机色板可达、键盘可操作且无横向溢出", async ({ page }) => {
+test("桌面与手机色板可达、键盘可操作且无横向溢出", async ({ page }, testInfo) => {
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/console/settings?tab=appearance");
@@ -144,14 +147,15 @@ test("桌面与手机色板可达、键盘可操作且无横向溢出", async ({
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
-    await page.screenshot({ path: path.resolve(`docs/baselines/settings-effects/after-color-${width}.png`) });
+    // 截图写入 Playwright 输出目录，不覆写受跟踪的 docs/baselines。
+    await page.screenshot({ path: testInfo.outputPath(`after-color-${width}.png`) });
     await primary.getByRole("button", { name: "主题色恢复默认", exact: true }).click();
-    await page.locator("#tab-post").click();
+    await openSettingsPage(page, "listing");
     const categories = field(page, "theme.article.category_colors");
     await categories.scrollIntoViewIfNeeded();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth),
     ).toBeLessThanOrEqual(1);
-    await page.screenshot({ path: path.resolve(`docs/baselines/settings-effects/after-category-color-${width}.png`) });
+    await page.screenshot({ path: testInfo.outputPath(`after-category-color-${width}.png`) });
   }
 });

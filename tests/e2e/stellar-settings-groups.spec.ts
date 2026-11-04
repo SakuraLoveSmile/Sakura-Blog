@@ -1,15 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
-import path from "node:path";
+import { openSettingsPage } from "./support/settings";
 
 const endpoint = "/api/v1/settings/stellar";
 const form = (page: Page) => page.locator(".canonical-settings-form:visible");
 const save = (page: Page) => form(page).getByRole("button", { name: "保存全部主题设置", exact: true });
-async function tab(page: Page, key: string) {
-  await page.locator(`#tab-${key}`).click();
-  await expect(page.locator(`#tab-${key}`)).toHaveAttribute("aria-selected", "true");
-}
+// 外观预设与配色模式是版式“行”（data-setting-path）；其余项仍是结构化节点（data-structured-path）。
+const ROW_KEYS = new Set(["theme.appearance.preset", "theme.appearance.color_scheme"]);
 async function node(page: Page, key: string) {
-  const target = form(page).locator(`[data-structured-path="${key}"]`);
+  const target = form(page).locator(`[${ROW_KEYS.has(key) ? "data-setting-path" : "data-structured-path"}="${key}"]`);
   await target.evaluate((el) => {
     for (let parent = el.parentElement; parent; parent = parent.parentElement)
       if (parent instanceof HTMLDetailsElement) parent.open = true;
@@ -41,24 +39,25 @@ test.beforeEach(async ({ page }) => {
   await expect(page).toHaveURL(/\/console\/dashboard/, { timeout: 30_000 });
 });
 
-test("分类共用原文草稿，保存重读后外观与页脚在前台生效", async ({ page }) => {
+test("各页共用原文草稿，保存重读后外观与页脚在前台生效", async ({ page }) => {
   const original = await (await page.request.get(endpoint)).text();
   try {
     const initial = '{"version":2,"theme":{},"blog_extensions":{"unrelated":{"large":9007199254740993,"nil":null,"flag":false},"ai":{"api_key":"fixture-secret"}}}';
     await put(page, initial);
     await page.goto("/console/settings?tab=appearance");
     await expect(page.locator(".settings-dirty-badge")).toHaveCount(0);
-    // 仅打开所有新增分组不会把显示默认值写入服务器。
-    for (const key of ["navigation", "layout", "plugins", "services", "community", "appearance"]) await tab(page, key);
+    // 仅逐页打开全部设置页不会把显示默认值写入服务器。
+    for (const key of ["navigation", "layout", "post", "listing", "community", "comments", "feedback", "seo", "extensions", "advanced", "site", "appearance"])
+      await openSettingsPage(page, key);
     expect(JSON.parse(await (await page.request.get(endpoint)).text()).theme).toEqual({});
     for (const preset of ["卡片", "玻璃", "极简", "平面"]) {
       await select(page, "theme.appearance.preset", preset);
       await expect((await node(page, "theme.appearance.preset")).getByRole("radio", { name: preset, exact: true })).toBeChecked();
     }
     await select(page, "theme.appearance.color_scheme", "浅色");
-    await tab(page, "navigation");
+    await openSettingsPage(page, "navigation");
     await (await text(page, "theme.footer.content")).fill("分组设置验收页脚");
-    await tab(page, "services");
+    await openSettingsPage(page, "extensions");
     await (await text(page, "theme.services.github.api_url")).fill("https://api.github.com");
     await persist(page);
     const stored = await (await page.request.get(endpoint)).text();
@@ -66,7 +65,7 @@ test("分类共用原文草稿，保存重读后外观与页脚在前台生效",
     expect(JSON.parse(stored).blog_extensions.ai.api_key).toBe("****");
     expect(JSON.parse(stored).theme.appearance).toEqual({ preset: "flat", color_scheme: "light" });
     await page.reload();
-    await tab(page, "appearance");
+    await openSettingsPage(page, "appearance");
     await expect((await node(page, "theme.appearance.preset")).getByRole("radio", { name: "平面", exact: true })).toBeChecked();
     const html = await (await page.request.get("/")).text();
     expect(html).toContain("分组设置验收页脚");
@@ -102,7 +101,7 @@ test("组件列表增删排序保留开放参数的大整数与空值，字典�
     expect(JSON.parse(raw).theme.leftbar.widgets[1]).toMatchObject({ optional: null, flag: false });
     const uncertain = await node(page, "theme.leftbar.widgets.1.large_values");
     await uncertain.getByRole("button", { name: "large_values第 2 项上移", exact: true }).click();
-    await expect(page.locator("#tabpanel-navigation")).toContainText("此项未修改");
+    await expect(page.locator("#settings-page-navigation")).toContainText("此项未修改");
     expect(await (await page.request.get(endpoint)).text()).toBe(raw);
     await list.getByRole("button", { name: "移除侧栏组件第 2 项", exact: true }).click();
     await list.getByRole("button", { name: "添加侧栏组件", exact: true }).click();
@@ -125,34 +124,43 @@ test("继承、空列表、关闭和未完成子表单相互区分，恢复整�
     expect(stored.theme.profiles.home.leftbar).toEqual({ widgets: null, enabled: false });
     expect(stored.theme.profiles.home.rightbar.widgets).toEqual([]);
     expect(stored.theme.topbar.brand).toBe(false);
-    await tab(page, "appearance");
+    await openSettingsPage(page, "appearance");
+    // 主题外观没有任何显式覆盖时不提供页面级“恢复默认”。
+    await expect(page.getByRole("button", { name: "恢复主题外观默认", exact: true })).toHaveCount(0);
     await (await node(page, "theme.appearance.backgrounds.leftbar.opacity")).locator("input").fill("2");
     await expect(save(page)).toBeDisabled();
-    await tab(page, "comments");
+    await expect(page.locator(".settings-save-bar").getByRole("alert")).toBeVisible();
+    await openSettingsPage(page, "comments");
     await expect(save(page)).toBeDisabled();
-    await tab(page, "appearance");
-    await form(page).locator('[data-setting-path="theme.appearance"]').getByRole("button", { name: "主题外观恢复默认", exact: true }).first().click();
-    await expect(save(page)).toBeEnabled();
+    await openSettingsPage(page, "appearance");
+    // 页面级恢复默认移除本页全部显式覆盖，同时清掉未同步的输入状态。
+    await page.locator('[data-setting-path="theme.appearance"]').getByRole("button", { name: "恢复主题外观默认", exact: true }).click();
+    await expect(page.locator(".settings-save-bar").getByRole("alert")).toHaveCount(0);
     await expect(form(page).getByRole("alert")).toHaveCount(0);
+    await expect(page.locator(".settings-dirty-badge")).toHaveCount(0);
+    // 恢复后草稿与已保存配置一致；再做一处真实修改并保存，确认没有残留空的 appearance 对象。
+    await openSettingsPage(page, "comments");
+    const moderation = form(page).locator('[data-setting-path="blog_extensions.native_comments.moderation"]').getByRole("switch");
+    await moderation.click();
     await persist(page);
     expect(JSON.parse(await (await page.request.get(endpoint)).text()).theme).not.toHaveProperty("appearance");
     await page.goto("/console/settings?tab=stellar2");
-    await expect(page.locator("#tab-advanced")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(`.settings-nav:visible [data-settings-page="advanced"]`)).toHaveAttribute("aria-current", "page");
     await expect(page.locator("#stellar2-document")).toBeVisible();
   } finally { await put(page, original); }
 });
 
-test("新增设置在移动与桌面宽度保持可达、单层卡片及当前构建产物", async ({ page }) => {
+test("新增设置在移动与桌面宽度保持可达、无卡片外框及当前构建产物", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
   await page.goto("/console/settings?tab=appearance");
   for (const width of [390, 640, 641, 767, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const key of ["appearance", "navigation", "layout", "plugins", "services", "community"]) {
-      await tab(page, key);
+    for (const key of ["appearance", "navigation", "layout", "extensions", "community"]) {
+      await openSettingsPage(page, key);
       await expect(form(page)).toHaveAttribute("data-settings-tab", key);
-      await expect(save(page)).toBeEnabled();
-      // 方向 A：横向页边距由 .settings-container 提供，分区自身横向 padding 为 0。
-      const padding = await form(page).locator(".settings-section").first().evaluate(el => getComputedStyle(el).paddingLeft);
+      await expect(save(page)).toBeVisible();
+      // 横向页边距由 .settings-container 提供，分区自身横向 padding 为 0。
+      const padding = await form(page).locator(".settings-sec").first().evaluate(el => getComputedStyle(el).paddingLeft);
       expect(padding).toBe("0px");
       const containerPadding = await page.locator(".settings-container").evaluate(el => getComputedStyle(el).paddingLeft);
       expect(containerPadding).toBe(width < 768 ? "16px" : "32px");
@@ -160,9 +168,9 @@ test("新增设置在移动与桌面宽度保持可达、单层卡片及当前�
     }
     if (width === 390 || width === 1280) {
       for (const key of ["appearance", "navigation", "layout"]) {
-        await tab(page, key);
-        await page.locator(".settings-card-tabs").scrollIntoViewIfNeeded();
-        await page.screenshot({ path: path.resolve(`docs/baselines/stellar-settings/after-${key}-${width}.png`) });
+        await openSettingsPage(page, key);
+        // 截图写入 Playwright 输出目录，不覆写受跟踪的 docs/baselines。
+        await page.screenshot({ path: testInfo.outputPath(`after-${key}-${width}.png`) });
       }
     }
   }

@@ -58,29 +58,19 @@ function setupHoverEffect(el) {
   });
 }
 
-function calculateAverage(rating = {}) {
-  const validScores = Object.entries(rating).filter(([k]) => !isNaN(Number(k)));
-  const total = validScores.reduce((sum, [k, c]) => sum + Number(k) * c, 0);
-  const votes = validScores.reduce((sum, [, c]) => sum + c, 0);
-  return votes > 0 ? (total / votes).toFixed(1) : '0.0';
-}
-
 async function loadRating(el) {
   const id = el.dataset.id;
   const api = el.dataset.api;
   if (!id || !api) return;
 
   try {
-    const res = await fetch(`${api}/info?id=${encodeURIComponent(id)}`);
+    // 原生评分接口：GET /api/rating?id=xxx → {avg, count}
+    const res = await fetch(`${api}?id=${encodeURIComponent(id)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     context.signal.throwIfAborted();
-    const rating = data.rating || {};
-    const avg = calculateAverage(rating);
-
-    // 计算评分人数
-    const validScores = Object.entries(rating).filter(([k]) => !isNaN(Number(k)));
-    const totalVotes = validScores.reduce((sum, [, c]) => sum + c, 0);
+    const avg = (Number(data.avg) || 0).toFixed(1);
+    const totalVotes = Number(data.count) || 0;
 
     // 设置平均分
     let avgEl = el.querySelector('.avg');
@@ -115,8 +105,11 @@ async function submitRating(el, value) {
   el.classList.add('rated');
 
   try {
-    const res = await fetch(`${api}/update?id=${encodeURIComponent(id)}&value=${value}`, {
-      method: 'POST'
+    // 原生评分接口：POST /api/rating，JSON {id, score}
+    const res = await fetch(api, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, score: Number(value) })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (!context.signal.aborted) loadRating(el);

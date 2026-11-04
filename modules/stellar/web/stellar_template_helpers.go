@@ -39,7 +39,6 @@ func StellarTemplateFunctions(reg *settings.IconRegistry) template.FuncMap {
 		"sf_hero": r.hero, "sf_head_meta": stellarHeadMeta,
 		"sf_page_title": stellarPageTitle, "sf_loading_css": stellarLoadingCSS,
 		"sf_footer": r.footer, "sf_content": r.content,
-		"sf_comments":   r.comments,
 		"sf_blog_share": r.blogShare, "sf_blog_detail": stellarBlogDetail,
 		"sf_reading_content": func(d *StellarRenderData) bool {
 			return stellarBlogDetail(d) && strings.TrimSpace(stellarText(stellarFirst(stellarItemGet(d, "content"), stellarRenderGet(d, "article.readmeHtml"), d.Content))) != ""

@@ -390,47 +390,10 @@ func stellarMarkdownLink(s string) (string, string) {
 	}
 	return s, s
 }
-func (r stellarTemplateRenderer) comments(d *StellarRenderData) template.HTML {
-	model := stellarGet(d.Stellar.Client, "Comments")
-	if !stellarTruth(stellarGet(model, "enabled")) {
-		return ""
-	}
-	service := stellarText(stellarGet(model, "service"))
-	if service != "artalk" && service != "waline" && service != "twikoo" && service != "giscus" && service != "beaudar" && service != "utterances" {
-		return ""
-	}
-	title := stellarGet(model, "title")
-	if title == nil {
-		title = stellarTranslate(d, "btn.comments")
-	}
-	var b strings.Builder
-	fmt.Fprintf(&b, `<div class="related-wrap md-text%s" id="comments">`, r.reveal(d))
-	if stellarTruth(title) {
-		fmt.Fprintf(&b, `<section class="header cmt-title cap theme">%s</section>`, stellarMarkdown(d, title))
-	}
-	fmt.Fprintf(&b, `<section class="body cmt-body %s">`, service)
-	id := stellarText(stellarGet(model, "id"))
-	if service == "artalk" || service == "waline" || service == "twikoo" {
-		class := map[string]string{"artalk": "artalk with-fancybox", "waline": "waline_thread with-fancybox", "twikoo": "with-fancybox"}[service]
-		fmt.Fprintf(&b, `<div id="%s_container" class="%s"`, service, class)
-		if id != "" {
-			fmt.Fprintf(&b, ` comment_id="%s"`, stellarEscape(id))
-		}
-		b.WriteString(`><div class="lazy-icon"></div></div>`)
-	} else {
-		fmt.Fprintf(&b, `<div class="lazy-icon"></div><div id="%s"`, service)
-		options := stellarMap(stellarGet(model, "options"))
-		for key, value := range options {
-			if value != nil && stellarCommentAttr(key) {
-				fmt.Fprintf(&b, ` %s="%s"`, key, stellarEscape(value))
-			}
-		}
-		b.WriteString(`></div>`)
-	}
-	b.WriteString(`</section></div>`)
-	return template.HTML(b.String())
-}
-func stellarCommentAttr(name string) bool {
+
+// stellarSafeAttrName 拒绝事件处理器、style/id/class 与非安全字符，用于把配置里的
+// 附加键原样输出成 DOM 属性（timeline/ghissues 等数据服务容器）。
+func stellarSafeAttrName(name string) bool {
 	if strings.HasPrefix(strings.ToLower(name), "on") || name == "style" || name == "id" || name == "class" {
 		return false
 	}
