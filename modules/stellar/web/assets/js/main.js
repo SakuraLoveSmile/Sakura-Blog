@@ -416,9 +416,7 @@ function openSearch(trigger, restoreFocus = true) {
   searchDialogTrigger = trigger || document.activeElement;
   searchDialogRestoreFocus = restoreFocus;
   input.value = '';
-  if (!configureSearchScope(dialog, trigger)) {
-    input.dataset.algoliaFilterPath = trigger?.dataset?.algoliaFilterPath || '';
-  }
+  configureSearchScope(dialog, trigger);
   if (wrapper) {
     wrapper.setAttribute('searching', 'false');
     wrapper.classList.remove('noresult');

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openSettingsPage, settingsNav } from "./support/settings";
 
 /**
  * 设置保存竞态的行为验收（拦截式）。
@@ -86,16 +87,9 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/\/console\/dashboard/, { timeout: 30_000 });
 }
 
-function settingsTab(page: Page, label: string) {
-  return page.locator('[role="tab"]').filter({ hasText: label });
-}
-
-async function openSettingsTab(page: Page, label: string) {
-  await settingsTab(page, label).click();
-  await expect(settingsTab(page, label)).toHaveAttribute("aria-selected", "true");
-}
-
-const basicSaveButton = (page: Page) => page.locator(".settings-basic-actions button[type='submit']");
+// 站点信息独立保存：保存按钮在本页底部保存栏，主题页共用另一枚“保存全部主题设置”。
+const basicSaveButton = (page: Page) => page.locator("#settings-page-site").getByRole("button", { name: "保存", exact: true });
+const navDot = (page: Page, key: string) => settingsNav(page, key).locator(".settings-nav-dot");
 const dirtyBadge = (page: Page) => page.locator(".settings-dirty-badge");
 const siteTitle = (page: Page) => page.locator("#settings-site-title");
 // 规范表单（文章、评论等）的字段按 data-setting-path 定位，保存按钮统一为“保存全部主题设置”。
@@ -106,7 +100,7 @@ const canonicalSaveButton = (page: Page) =>
 test.describe("设置保存竞态（拦截式行为验收）", () => {
   test("系统设置普通保存期间改表单：请求体对应提交值，页面保留新输入且快照不污染", async ({ page }) => {
     await login(page);
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(siteTitle(page)).toBeVisible();
 
     const gate = await installGate(page, "site");
@@ -133,32 +127,34 @@ test.describe("设置保存竞态（拦截式行为验收）", () => {
 
   test("保存 A 分区时 B 分区已有修改：B 的输入与提示不变", async ({ page }) => {
     await login(page);
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(siteTitle(page)).toBeVisible();
     await siteTitle(page).fill("A-section-title");
 
-    await openSettingsTab(page, "文章");
+    await openSettingsPage(page, "post");
     const rewardInput = canonicalField(page, "blog_extensions.content.reward.text");
     await rewardInput.fill("B-section-reward");
 
-    await openSettingsTab(page, "基本");
+    await openSettingsPage(page, "site");
+    // 站点信息只保存本页，保存栏明确说明主题草稿另有未保存修改。
+    await expect(page.locator("#settings-page-site .settings-save-bar")).toContainText("主题草稿另有 1 处未保存");
     const gate = await installGate(page, "site");
     await basicSaveButton(page).click();
     await gate.waitForRequest(1);
     gate.releaseOk();
 
-    // site 已保存 → 基本/SEO 黄点消失；文章分区仍为未保存
-    await expect(settingsTab(page, "基本").locator(".settings-tab-dirty-dot")).toHaveCount(0);
-    await expect(settingsTab(page, "文章").locator(".settings-tab-dirty-dot")).toHaveCount(1);
+    // site 已保存 → “站点信息”未保存点消失；“文章页”属于主题草稿，仍为未保存
+    await expect(navDot(page, "site")).toHaveCount(0);
+    await expect(navDot(page, "post")).toHaveCount(1);
     await expect(dirtyBadge(page)).toBeVisible();
 
-    await openSettingsTab(page, "文章");
+    await openSettingsPage(page, "post");
     await expect(rewardInput).toHaveValue("B-section-reward");
   });
 
   test("保存失败并重试：输入不丢失、失败不更新快照、按钮可重试", async ({ page }) => {
     await login(page);
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(siteTitle(page)).toBeVisible();
 
     const gate = await installGate(page, "site");
@@ -218,17 +214,24 @@ test.describe("设置保存竞态（拦截式行为验收）", () => {
     await canonicalSaveButton(page).click();
     await gate.waitForRequest(1);
 
-    await openSettingsTab(page, "评论");
+    await openSettingsPage(page, "comments");
     await expect(canonicalSaveButton(page)).toBeDisabled();
-    await expect(canonicalField(page, "blog_extensions.native_comments.title")).toBeEditable();
+    const commentTitle = canonicalField(page, "blog_extensions.native_comments.title");
+    await expect(commentTitle).toBeEditable();
+    // 保存进行中又产生新修改：按钮仍因“保存中”保持禁用，新输入不丢。
+    await commentTitle.fill("B-while-saving");
+    await expect(canonicalSaveButton(page)).toBeDisabled();
 
     gate.releaseOk();
+    // 保存栏在没有未保存修改时本来就禁用，所以“结束后恢复”要用保存期间产生的新修改来验证：
+    // 请求结束后按钮不再因保存中禁用，且这处新修改保留为未保存、可再次保存。
     await expect(canonicalSaveButton(page)).toBeEnabled();
+    await expect(commentTitle).toHaveValue("B-while-saving");
   });
 
   test("请求未完成时用 Enter 提交：全局防重入不产生第二个请求", async ({ page }) => {
     await login(page);
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(siteTitle(page)).toBeVisible();
 
     const gate = await installGate(page, "site");
@@ -246,7 +249,7 @@ test.describe("设置保存竞态（拦截式行为验收）", () => {
 
   test("隔离服务真实保存：不拦截响应，刷新后重新读取提交值", async ({ page }) => {
     await login(page);
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(siteTitle(page)).toBeVisible();
 
     const marker = `e2e-persist-${Date.now()}`;

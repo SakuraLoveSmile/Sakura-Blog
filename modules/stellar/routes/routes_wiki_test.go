@@ -96,9 +96,8 @@ func TestWikiDocFrontendChain(t *testing.T) {
 		"related-summary-widget", `data-layout="list"`, `data-variant="summary"`, "更多：主题", "/wiki/go-blog",
 		// 显式 wiki 菜单下，最近更新显示全部可索引 Wiki 集合的文档。
 		"widget-instance--recent",
-		// 右栏 TOC widget：目录 + footer 回到顶部/参与讨论（对齐原版 toc.ejs layoutDiv）
+		// 右栏 TOC widget：目录 + footer 回到顶部（第三方评论已移除，评论区入口不再来自该服务）
 		`id="data-toc"`, `class="top ui-interactive" onclick="util.scrollTop()"`,
-		`class="buttom ui-interactive" onclick="util.scrollComment()"`, "参与讨论",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("wiki-doc page missing %q", want)

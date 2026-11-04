@@ -2,12 +2,14 @@ import { computed, onBeforeUnmount, ref, watch, type Ref } from "vue";
 import { getApiErrorMessage, previewApi } from "@/api";
 import { readJSONFieldRaw } from "@/components/editor/stellar-form-json";
 
+// 以设置页的页面键（settings-pages.ts）为索引。
 const PREVIEW_FOCUS: Record<string, { label: string; page: string }> = {
-  basic: { label: "站点标识与页脚", page: "index" },
+  site: { label: "站点标识与页脚", page: "index" },
   appearance: { label: "整站外观", page: "index" },
   navigation: { label: "顶栏、侧栏与页脚", page: "index" },
   layout: { label: "当前页面布局", page: "index" },
-  post: { label: "文章与卡片", page: "post" },
+  post: { label: "文章页", page: "post" },
+  listing: { label: "文章列表卡片", page: "index" },
 };
 
 export const settingsPreviewPages = [
@@ -31,7 +33,8 @@ export function useSettingsPreview(
 ) {
   const previewOpen = ref(false);
   const previewViewport = ref<"desktop" | "tablet" | "mobile">("desktop");
-  const previewPage = ref("index");
+  // 直接打开 ?tab=post 时 active 从一开始就是该页、不会触发下方 watch(active)，所以初始页要按聚焦页设定。
+  const previewPage = ref(PREVIEW_FOCUS[active.value]?.page ?? "index");
   const previewHtml = ref("");
   const previewLoading = ref(false);
   const previewError = ref("");
@@ -93,7 +96,7 @@ export function useSettingsPreview(
     previewError.value = "";
     if (blocked?.value) {
       previewLoading.value = false;
-      previewError.value = "部分设置尚未填写完成或存在错误，请先修正，再查看草稿效果。";
+      previewError.value = "部分设置尚未填写完成或存在错误，请先修正，再查看前端预览。";
       return;
     }
     previewLoading.value = true;

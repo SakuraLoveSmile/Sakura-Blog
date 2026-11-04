@@ -84,13 +84,15 @@ test("标签脏标记包含所有表单路径与 Go 搜索覆盖，不包含停�
 });
 
 test("组合搜索控件尊重 Go 覆盖及显式 null，切换官方服务只清除 provider 覆盖", () => {
-  assert.equal(effectiveSearchProvider("algolia", "go"), "go");
+  assert.equal(effectiveSearchProvider("future", "go"), "go");
   assert.equal(effectiveSearchProvider(null, undefined), "none");
   assert.equal(effectiveSearchProvider(undefined, undefined), "local");
   assert.equal(effectiveSearchProvider("future", undefined), "future");
+  // Algolia 已不在搜索服务选项中，但 schema.json 仍保留该节点：设置页移除结构化控件后，
+  // 完整原文里的旧参数（含超精度整数）仍必须原样保留，不被切换服务清掉。
   const raw =
     '{"version":2,"theme":{"search":{"provider":"algolia","algolia":{"indexId":9007199254740993,"optional":null}}},"blog_extensions":{"search":{"provider":"go","option":9007199254740995}}}';
-  for (const provider of ["local", "algolia", "none", "go"]) {
+  for (const provider of ["local", "none", "go"]) {
     const next = searchProviderChanges(provider).reduce(
       (document, [path, value]) => patchJSONField(document, path, value),
       raw,
@@ -106,10 +108,48 @@ test("组合搜索控件尊重 Go 覆盖及显式 null，切换官方服务只�
 });
 
 
+test("设置目录不再提供第三方评论与 Algolia 控件，外部服务拆成 5 个独立字段", () => {
+  assert.deepEqual(
+    canonicalSettingsGroups.comments.map((group) => group.title),
+    ["原生评论", "评论邮件通知"],
+  );
+  assert.deepEqual(
+    canonicalSettingsGroups.search.map((group) => group.title),
+    ["搜索服务", "索引说明"],
+  );
+  const provider = canonicalSettingsGroups.search[0].fields.find((item) => item.path === "theme.search.provider");
+  assert.deepEqual(
+    provider?.options?.map(([value]) => value),
+    ["local", "go", "none"],
+  );
+  assert.deepEqual(
+    canonicalSettingsGroups.services[0].fields.map((item) => [item.path, item.label, item.kind]),
+    [
+      ["theme.services.gravatar", "Gravatar 头像", "structured"],
+      ["theme.services.markdown", "Markdown 渲染", "structured"],
+      ["theme.services.contributors", "GitHub 贡献者", "structured"],
+      ["theme.services.github_card", "GitHub 卡片", "structured"],
+      ["theme.services.github", "GitHub 接口", "structured"],
+    ],
+  );
+  const paths = tabs.flatMap((tab) => canonicalSettingsPaths(tab));
+  for (const removed of ["theme.comments", "theme.search.algolia"])
+    assert.ok(!paths.some((path) => path === removed || path.startsWith(`${removed}.`)), removed);
+  // 整个 theme.services 节点不再作为字段，只有下面 5 个子项是设置页可编辑字段。
+  assert.ok(!paths.includes("theme.services"));
+});
+
+
 test("Stellar 全部分组可从设置表单定位，新增联合列表项初值满足类型", async () => {
   const { themeSettingSchema, schemaDefault, settingLabel, settingValueLabel } = await import("../web/src/modules/settings/stellar-theme-schema.ts");
   const paths = new Set(tabs.flatMap(tab => canonicalSettingsPaths(tab)));
+  // 第三方评论已由原生评论替代并从设置页移除；schema 节点仍保留，旧配置继续由完整原文承载。
+  const schemaOnlyGroups = new Set(["comments"]);
   for (const key of Object.keys(schema.theme.properties)) {
+    if (schemaOnlyGroups.has(key)) {
+      assert.ok(![...paths].some((path) => path === `theme.${key}` || path.startsWith(`theme.${key}.`)), key);
+      continue;
+    }
     assert.ok([...paths].some(path => path === `theme.${key}` || path.startsWith(`theme.${key}.`)), key);
   }
   const item = themeSettingSchema("theme.leftbar.widgets").items!;

@@ -92,6 +92,30 @@ export function readJSONField(raw: string, path: string): unknown {
   if (current) markSource(current.value, current, raw);
   return current?.value;
 }
+// 语义规范形：忽略空白、键顺序和重复键（取最后一个），保留超出 Number 精度的整数原文。
+// 用于判断两份草稿是否表达同一份配置，不能用于写回。
+export function canonicalDocument(raw: string): string {
+  function walk(node: JSONNode): string {
+    if (node.entries) {
+      const last = new Map<string, JSONNode>();
+      for (const entry of node.entries) last.set(entry.key, entry.node);
+      return (
+        "{" +
+        [...last.keys()]
+          .sort()
+          .map((key) => JSON.stringify(key) + ":" + walk(last.get(key)!))
+          .join(",") +
+        "}"
+      );
+    }
+    if (node.items) return "[" + node.items.map(walk).join(",") + "]";
+    const value = node.value;
+    if (typeof value === "number" && Number.isInteger(value) && !Number.isSafeInteger(value))
+      return raw.slice(node.start, node.end);
+    return JSON.stringify(value);
+  }
+  return walk(document(raw));
+}
 export function readJSONFieldRaw(raw: string, path: string): string | undefined {
   let current: JSONNode | undefined = document(raw);
   for (const key of path.split("."))

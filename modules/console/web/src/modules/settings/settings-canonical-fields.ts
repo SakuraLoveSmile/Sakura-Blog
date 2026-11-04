@@ -40,6 +40,8 @@ export interface CanonicalSettingsField {
   step?: number | "any";
 }
 export interface CanonicalSettingsGroup {
+  /** 页内锚点；设置页注册表生成的分区带有稳定 id。 */
+  id?: string;
   title: string;
   description: string;
   fields: CanonicalSettingsField[];
@@ -67,9 +69,53 @@ const list = (path: string, label: string, value: string[] = []) =>
 export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSettingsGroup[]> = {
   appearance: [
     {
-      title: "外观与配色",
-      description: "选择预设、配色与字体；恢复默认会移除当前覆盖。",
-      fields: [field("theme.appearance", "主题外观", "structured")],
+      title: "外观预设",
+      description: "决定卡片、侧栏与导航的整体质感，并选择明暗配色。",
+      fields: [
+        field("theme.appearance.preset", "预设", "select", {
+          default: "card",
+          options: [
+            ["card", "卡片"],
+            ["glass", "玻璃"],
+            ["minimal", "极简"],
+            ["flat", "平面"],
+          ],
+        }),
+        field("theme.appearance.color_scheme", "配色模式", "select", {
+          default: "auto",
+          options: [
+            ["auto", "自动"],
+            ["light", "浅色"],
+            ["dark", "深色"],
+          ],
+        }),
+      ],
+    },
+    {
+      title: "颜色",
+      description: "主题色用于导航与强调元素，强调色用于标签与高亮，链接色用于正文链接；渐变用于主要操作与搜索栏。",
+      fields: [
+        field("theme.appearance.colors", "主题颜色", "structured"),
+        field("theme.appearance.gradients", "渐变", "structured"),
+      ],
+    },
+    {
+      title: "字体与排版",
+      description: "正文与代码的字体、字号和对齐方式。",
+      fields: [
+        field("theme.appearance.typography", "正文排版", "structured"),
+        field("theme.appearance.code_block", "代码块", "structured"),
+      ],
+    },
+    {
+      title: "形状与圆角",
+      description: "不同元素使用不同圆角，数值越大越圆润。",
+      fields: [field("theme.appearance.shape", "形状与圆角", "structured")],
+    },
+    {
+      title: "背景",
+      description: "左侧栏与页面的背景。",
+      fields: [field("theme.appearance.backgrounds", "背景", "structured")],
     },
   ],
   navigation: [
@@ -119,8 +165,15 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
   services: [
     {
       title: "外部服务",
-      description: "设置头像、站点信息、评分、贡献者与 GitHub 接口。",
-      fields: [field("theme.services", "服务配置", "structured")],
+      description:
+        "设置头像、Markdown 渲染、贡献者与 GitHub 接口。站点信息、评分与投票已由站内原生功能提供，不再从这里配置。",
+      fields: [
+        field("theme.services.gravatar", "Gravatar 头像", "structured"),
+        field("theme.services.markdown", "Markdown 渲染", "structured"),
+        field("theme.services.contributors", "GitHub 贡献者", "structured"),
+        field("theme.services.github_card", "GitHub 卡片", "structured"),
+        field("theme.services.github", "GitHub 接口", "structured"),
+      ],
     },
     {
       title: "默认图片",
@@ -298,7 +351,7 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
   comments: [
     {
       title: "原生评论",
-      description: "管理 Blog 自带的评论功能，与下方第三方评论分别配置。",
+      description: "管理 Blog 自带的评论功能；单页开关与审核规则仍会影响前台实际展示。",
       fields: [
         toggle(`${comments}.enabled`, "启用原生评论"),
         toggle(`${comments}.home.enabled`, "首页启用原生评论"),
@@ -320,15 +373,6 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
           help: "保留 **** 表示不修改原密码；清空输入可清除密码。",
         }),
         text(`${comments}.notify.from`, "发件人邮箱"),
-      ],
-    },
-    {
-      title: "第三方评论",
-      description: "用于 Giscus、Waline、Artalk 等主题评论服务，与原生评论独立。仅编辑需要调整的服务参数。",
-      fields: [
-        field("theme.comments", "第三方评论参数", "structured", {
-          help: "按服务展开配置；未修改的开放参数按原文保留。",
-        }),
       ],
     },
   ],
@@ -369,7 +413,6 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
           options: [
             ["local", "本地静态索引"],
             ["go", "Go 服务搜索"],
-            ["algolia", "Algolia"],
             ["none", "关闭搜索"],
           ],
         }),
@@ -384,15 +427,6 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
         toggle("theme.search.local.include_content", "本地索引包含正文", true),
         number("theme.search.local.cache_ttl_seconds", "本地索引缓存时长（秒）", 86400, {
           help: "设为 0 时不缓存。此项仅用于静态索引，对 Go 服务搜索无效。",
-        }),
-      ],
-    },
-    {
-      title: "Algolia",
-      description: "仅使用 Algolia 时需要配置此对象；切换服务会保留已有参数。",
-      fields: [
-        field("theme.search.algolia", "Algolia 参数", "structured", {
-          help: "仅在使用 Algolia 时生效，未修改的开放参数按原文保留。",
         }),
       ],
     },
@@ -483,6 +517,13 @@ export const canonicalSettingsGroups: Record<CanonicalSettingsTab, CanonicalSett
     },
   ],
 };
+
+// 全部字段按路径索引：页面注册表只引用路径，字段定义始终只有这一份。
+export const canonicalFieldByPath: ReadonlyMap<string, CanonicalSettingsField> = new Map(
+  Object.values(canonicalSettingsGroups).flatMap((groups) =>
+    groups.flatMap((group) => group.fields.map((item) => [item.path, item] as const)),
+  ),
+);
 
 export function canonicalSettingsPaths(tab: CanonicalSettingsTab): string[] {
   const paths = canonicalSettingsGroups[tab].flatMap((group) => group.fields.map((item) => item.path));

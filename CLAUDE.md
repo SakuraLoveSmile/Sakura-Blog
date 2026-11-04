@@ -55,8 +55,13 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 - Go API struct 是可生成接口的真值。新增响应 schema 用具名 struct，修改后若该类型应供前端使用，更新 `tygo.yaml` 并执行 `go generate ./modules/console/api`；生成的 `packages/api-client/src/generated.d.ts` 不可手改。
 - `gin.H` 只存在于历史或不可生成的局部响应中；它不能作为新 API 的模式。新增 endpoint 时先确定稳定的请求/响应 struct 与错误语义。
 - 前端 workspace 依赖由根 `pnpm-lock.yaml` 统一锁定。不要在单个 package 目录单独安装依赖或绕过 `pnpm --filter`。
-- 系统设置的主题分类通过 `useStellarSettings` 共用原文草稿与完整文档 API；`StructuredSetting` 直接消费 `internal/stellarv2/schema.json` 的类型、默认值和枚举，只写用户修改的节点。站点与 Feedback 仍用宿主分段接口；旧 `tab=stellar2` 定位高级原文。
-- 设置效果说明由 `settings-category-guide.ts`、`structured-setting-guidance.ts` 和 `settings-field-effects.ts` 提供展示文案，类型/默认值/保存契约仍以原有 schema 与 API 为准。`useSettingsPreview` 使用当前草稿请求只读整页预览，支持选择页面与实际视口宽度；静态 iframe 移除脚本并展开懒加载图片，不代替真实交互或外部服务验证。
+- Console 的 `ri:` 图标来自受跟踪的 `modules/console/web/src/icons/ri-subset.json`，由 `node modules/stellar/web/scripts/gen-ri-subset.mjs` 按源码用法生成。增删图标用法（包括删掉旧页面或组件）后要重新生成；`make test` 的 `assets-test` 会同时校验“用到的都在子集里”和“子集里没有未使用图标”。
+- 系统设置按 5 组 12 页组织（`modules/settings/settings-pages.ts` 是页面注册表：分组、页面、分区、字段归属和旧 `?tab=` 映射；字段本身只在 `settings-canonical-fields.ts` 定义，每个字段路径只属于一页）。桌面是左侧纵向导航，手机是“分组列表 → 详情”。除站点信息、访客反馈外的 10 页共用同一份主题草稿（`useStellarSettings` 的原文草稿与完整文档 API），由统一保存栏“保存全部主题设置”提交；`StructuredSetting` 直接消费 `internal/stellarv2/schema.json` 的类型、默认值和枚举，只写用户修改的节点。站点信息与访客反馈仍用宿主分段接口，各自独立保存；两类页面都有“放弃本页修改”，只还原本页。旧 `tab=stellar2` 落到「代码与原文」并展开完整配置原文，`ai`/`security` 仍跳转原目标。
+- 行内橙点只表示相对上次保存有未保存修改；“恢复默认”就是移除草稿里的显式覆盖，只在存在覆盖时出现；总开关关闭时依赖项变淡但仍可编辑。浏览或切换页面不得写入配置、补写默认值。
+- 设置页的 sticky 页头与底部保存栏会盖住滚到它们下面的内容。`SettingsView` 量取两者的实际尺寸（手机上页头会换行，保存栏随文字变高），以 `--settings-sticky-offset`、`--settings-bar-offset` 注入；分区锚点和内容区里可聚焦的控件用 `scroll-margin` 让出这两块，换页（含手机列表 ↔ 详情）后回到内容起点。Playwright 的可见性断言不看遮挡，验证锚点、换页与键盘聚焦要用 `tests/e2e/support/settings.ts` 的 `expectClearOfHeader` 或命中测试，不要只断言“在视口内”。
+- 设置页在手机（≤767px）上每个可点击控件的点击区要 ≥44px，但沿用的小控件（共享 `VSwitch`、结构化编辑器里的“恢复默认”与折叠摘要）视觉不变：`settings-form.css` 末尾的“手机点击区”块用透明伪元素补上下空白，只往空白处延伸、不抢相邻控件的点击，上下各补多少按量到的真实空隙定；不透明度滑块在 `SettingColorEditor.vue` 里加高再用负外边距抵回。`boundingBox` 看不到伪元素补出来的点击区，验收用 `tests/e2e/support/settings.ts` 的 `measureTouchTargets`（逐控件命中测试，同时查被抢的点击）；新增小控件或调整结构化编辑器的间距时，同步看那组用例。
+- 设置项的效果说明由 `structured-setting-guidance.ts` 和 `settings-field-effects.ts` 提供展示文案，类型/默认值/保存契约仍以原有 schema 与 API 为准；页面标题下只有一句话说明，不再有单独的“效果说明条”。`useSettingsPreview` 使用当前草稿请求只读整页预览（入口是页头的“前端预览”），支持选择页面与实际视口宽度；静态 iframe 移除脚本并展开懒加载图片，不代替真实交互或外部服务验证。
+- 结构化编辑器的分组（`details.structured-item`）默认全部展开，不按路径设“默认折叠”白名单；收起只是用户的临时操作，不写入任何设置。宽屏下分组内容每层缩进 24px，手机只让嵌套的分组每层退进 8px，宽度留给控件。只有“代码与原文”里的完整配置原文是有意默认折叠的。
 - Console 的局部 UI 变更除了类型/行为测试外，还需要加载真实服务后的浏览器验收；SPA 构建成功不证明后端仍在服务当前入口。
 
 ## 数据、配置与内容生命周期

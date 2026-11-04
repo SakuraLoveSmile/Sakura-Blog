@@ -437,3 +437,430 @@
 }
 
 
+
+/* ================= 设置页：分区、行与状态点 =================
+   名称与说明在左、控件在右的“行”；大型编辑器与视觉选项卡则名称在上、控件在下。
+   橙点只表示相对上次保存有未保存修改，不表示偏离默认值。 */
+.settings-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-state-warning);
+}
+
+.settings-sec {
+  padding: 28px 0 8px;
+  /* 页头 sticky：跳转到分区时让出它的高度（SettingsView 量取后注入），再留 12px，露出分区分隔线。 */
+  scroll-margin-top: calc(var(--settings-sticky-offset, 72px) + 12px);
+}
+/* 键盘聚焦时浏览器只会把控件滚进内容区，并不知道 sticky 的页头与底部保存栏会盖住它：让出这两块的高度
+   （SettingsView 量取后注入）。只作用于内容区；左侧分类导航在自己的列里，不会被它们盖住。 */
+.settings-content :is(a[href], button, input, select, textarea, summary, [tabindex]) {
+  scroll-margin-top: calc(var(--settings-sticky-offset, 72px) + 8px);
+  scroll-margin-bottom: calc(var(--settings-bar-offset, 72px) + 8px);
+}
+.settings-sec + .settings-sec {
+  margin-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+.settings-sec-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 860px;
+  margin-bottom: 6px;
+}
+.settings-sec-title {
+  min-width: 0;
+}
+.settings-sec-title h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.settings-sec-title p {
+  max-width: 620px;
+  margin: 4px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.settings-sec-actions {
+  flex: 0 0 auto;
+}
+.settings-solo {
+  min-width: 0;
+  max-width: 860px;
+  padding-top: 8px;
+}
+/* 单字段分区的标题栏已经说明用途，不再重复结构化编辑器顶部的同义说明。 */
+.settings-solo > .structured-setting > .structured-guidance {
+  display: none;
+}
+
+.settings-rows {
+  max-width: 860px;
+}
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  gap: 8px 24px;
+  padding: 14px 0;
+}
+.settings-rows > .settings-row + .settings-row {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+}
+.settings-row-label {
+  min-width: 0;
+}
+.settings-row-label > p {
+  max-width: 460px;
+  margin: 4px 0 0;
+}
+.settings-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.settings-row-title label {
+  display: inline;
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 500;
+}
+.settings-row-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+/* 定宽而不是 min(…, 100%)：百分比宽度会让自适应的控件列塌缩到输入框的固有宽度。 */
+.settings-row-control .settings-control-text {
+  width: 320px;
+  max-width: 100%;
+}
+.settings-row-control .settings-control-select {
+  width: 260px;
+  max-width: 100%;
+}
+.settings-row-control .settings-control-number {
+  width: 140px;
+}
+.settings-row-error,
+.settings-indent-sample {
+  grid-column: 1 / -1;
+}
+.settings-row-error {
+  margin: 0;
+}
+
+/* 宽屏：控件与“恢复默认”始终同排，空间不足时由输入框收窄，而不是让按钮掉到下一行。 */
+@media (min-width: 768px) {
+  .settings-row:not(.is-block) .settings-row-control {
+    flex-wrap: nowrap;
+  }
+}
+
+/* 名称在上、控件在下：整行宽度都给编辑器。 */
+.settings-row.is-block {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.settings-row.is-block .settings-row-title {
+  justify-content: flex-start;
+}
+.settings-row.is-block .settings-row-title .settings-row-reset {
+  margin-left: auto;
+}
+.settings-row.is-block .settings-row-control {
+  display: block;
+}
+
+/* 依赖项：总开关关闭时变淡，仍可编辑，说明保留在名称下方。 */
+.settings-row.is-dim .settings-row-control {
+  opacity: 0.5;
+}
+.settings-row.is-dim .settings-row-title label {
+  color: var(--color-text-secondary);
+}
+
+.settings-field-effect,
+.settings-dependency {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.settings-dependency {
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+.settings-dependency.is-quiet {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.settings-field-effect svg,
+.settings-dependency svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.settings-field-effect svg {
+  color: var(--color-primary);
+}
+.settings-error {
+  margin: 8px 0 0;
+  color: var(--color-state-error);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings-row-reset {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.settings-row-reset:hover {
+  background: var(--color-accent);
+  color: var(--color-foreground);
+}
+.settings-row-reset:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* 分段选择：用原生 radio 提供方向键与分组语义，视觉上是一排紧凑按钮。 */
+.settings-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.settings-seg label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.settings-seg label:hover {
+  color: var(--color-foreground);
+}
+.settings-seg label.is-on {
+  border-color: var(--color-border-strong);
+  background: var(--color-accent);
+  color: var(--color-foreground);
+}
+.settings-seg input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.settings-seg label:has(input:focus-visible) {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* 段落缩进示意 */
+.settings-indent-sample {
+  margin-top: 2px;
+  padding: 12px 14px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.settings-indent-sample p {
+  max-width: none;
+  margin: 0;
+  text-indent: 0;
+}
+.settings-indent-sample p.is-indented {
+  text-indent: 2em;
+}
+.settings-indent-caption {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+/* 页面标题、分区锚点（SettingsView 与独立保存页共用） */
+.settings-page-head {
+  padding: 24px 0 0;
+}
+.settings-page-head h2 {
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.settings-page-head > p {
+  max-width: 620px;
+  margin: 6px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.settings-anchors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.settings-anchor {
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.settings-anchor:hover {
+  background: var(--color-accent);
+  color: var(--color-foreground);
+}
+.settings-anchor:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .settings-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 16px 0;
+  }
+  /* 开关、数字与名称同行；其他控件上下堆叠，控件占满宽度。 */
+  .settings-row.is-compact {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .settings-row-control {
+    justify-content: flex-start;
+  }
+  .settings-row.is-compact .settings-row-control {
+    justify-content: flex-end;
+  }
+  .settings-row-control .settings-control-text,
+  .settings-row-control .settings-control-select {
+    width: 100%;
+  }
+  /* 分段选择占满整行，选项按文字宽度分配并均分剩余空间；名称与说明保持完整宽度，选项命中区 ≥44px。 */
+  .settings-row-control .settings-seg {
+    display: flex;
+    width: 100%;
+  }
+  .settings-seg label {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 44px;
+    text-align: center;
+  }
+  .settings-row-reset,
+  .settings-anchor {
+    min-height: 44px;
+  }
+  .settings-page-head {
+    padding-top: 16px;
+  }
+  .settings-sec {
+    padding-top: 24px;
+  }
+}
+
+/* 手机点击区：下面这些小控件（共享开关、结构化编辑器里的“恢复默认”与折叠摘要）视觉保持不变，只把可点击区域补到 ≥44px。
+   补的是控件上下各一条透明伪元素，不占布局、不画任何东西；点中它们等同点中控件本身。
+   只往空白处延伸，不盖住相邻控件，上下各补多少按手机宽度下量到的真实空隙定：
+   - 标题行里的“恢复默认”（18px 高）：下方紧跟输入框或下拉，只有 9.5px，所以向下补 9px、向上补 17px；
+   - 折叠摘要里的“恢复默认”：上方至少 26px 空白、下方是 12px 外边距再加下一项的内边距，所以向上补 24px、向下补 2px，
+     把下方留给紧跟其后的子项标题里的“恢复默认”（它们竖向相距约 25px，放不下两个都向两侧补满的点击区，所以各自按上面的数取舍；实测都 ≥44px，规格按 44px 判定）；
+   - 折叠摘要（21px 高）：上下是 14px 的分组内边距与 12px 的间距，各补 12px；
+   - 开关（31px 高）：上下是行内边距，各补 7px。
+   tests/e2e/console-settings-ia.spec.ts 的“手机点击区”用例逐控件做命中测试；新增小控件时同步补进这里。 */
+@media (max-width: 767px) {
+  .settings-content :is(.settings-reset:not(.settings-row-reset), details.structured-item > summary, button[role="switch"]) {
+    position: relative;
+  }
+  .settings-content :is(.settings-reset:not(.settings-row-reset), details.structured-item > summary, button[role="switch"])::before,
+  .settings-content :is(.settings-reset:not(.settings-row-reset), details.structured-item > summary, button[role="switch"])::after {
+    content: "";
+    position: absolute;
+    left: var(--hit-inline, 0);
+    right: var(--hit-inline, 0);
+  }
+  .settings-content :is(.settings-reset:not(.settings-row-reset), details.structured-item > summary, button[role="switch"])::before {
+    bottom: 100%;
+    height: var(--hit-top);
+  }
+  .settings-content :is(.settings-reset:not(.settings-row-reset), details.structured-item > summary, button[role="switch"])::after {
+    top: 100%;
+    height: var(--hit-bottom);
+  }
+  .settings-content .settings-reset:not(.settings-row-reset) {
+    --hit-top: 17px;
+    --hit-bottom: 9px;
+  }
+  .settings-content details.structured-item > summary > .settings-reset {
+    --hit-top: 24px;
+    --hit-bottom: 2px;
+  }
+  /* 标题行后面紧跟嵌套子项（如列表项）：约 23px 之下就是子项标题里的“恢复默认”，所以向下只留 6px，向上多补到 20px。 */
+  .settings-content .structured-heading:has(~ .structured-children) > .settings-reset {
+    --hit-top: 20px;
+    --hit-bottom: 6px;
+  }
+  .settings-content details.structured-item > summary {
+    --hit-top: 12px;
+    --hit-bottom: 12px;
+  }
+  /* 共享 VSwitch：31px 高、2px 透明边框。伪元素相对内边距框定位，所以上下各补 9px（超出边框 7px），左右各补 2px 对齐边框外缘。 */
+  .settings-content button[role="switch"] {
+    --hit-top: 9px;
+    --hit-bottom: 9px;
+    --hit-inline: -2px;
+  }
+}

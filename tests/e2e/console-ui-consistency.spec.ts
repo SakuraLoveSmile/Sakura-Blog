@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 async function login(page: Page) {
   await page.goto("/console/login");
@@ -11,32 +11,6 @@ async function login(page: Page) {
 interface PostFixture {
   slug: string;
   title: string;
-}
-
-function parseColor(value: string): [number, number, number] {
-  const hex = value.trim().match(/^#([0-9a-f]{6})$/i);
-  if (hex) {
-    const n = Number.parseInt(hex[1], 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
-  const match = value.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/);
-  if (!match) return [0, 0, 0];
-  return [Number(match[1]), Number(match[2]), Number(match[3])];
-}
-
-/** WCAG 相对亮度对比度，用于确认弱化说明仍达到正文可读阈值。 */
-function contrastRatio(foreground: string, background: string): number {
-  const channel = (value: number) => {
-    const c = value / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  const luminance = (color: string) => {
-    const [r, g, b] = parseColor(color).map(channel);
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  const a = luminance(foreground);
-  const b = luminance(background);
-  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
 /** 创建带唯一 token 的隔离文章夹具，返回 slug 与标题的对应关系。 */
@@ -519,14 +493,14 @@ test.describe("Console UI 一致性测试", () => {
     await expect(page.getByRole("button", { name: /保存 site JSON/ })).toHaveCount(0);
   });
 
-  test("系统设置基本分区初始加载无未保存黄点误报，真实修改后出现黄点并可保存恢复", async ({ page }) => {
+  test("系统设置站点信息初始加载无未保存黄点误报，真实修改后出现黄点并可保存恢复", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
 
     // 初始状态：无黄点、无未保存告警徽章
-    const dirtyDots = page.locator(".settings-tab-dirty-dot");
+    const dirtyDots = page.locator(".settings-nav:visible .settings-nav-dot");
     await expect(dirtyDots).toHaveCount(0);
     const dirtyBadge = page.locator(".settings-dirty-badge");
     await expect(dirtyBadge).toHaveCount(0);
@@ -536,13 +510,12 @@ test.describe("Console UI 一致性测试", () => {
     await expect(titleInput).toBeVisible();
     await titleInput.fill("E2E Dirty Dot Title");
 
-    // 此时出现黄点与脏标记
-    // 基本与 SEO 共享站点字段，两个分区都会提示未保存
-    await expect(dirtyDots).toHaveCount(2);
+    // 此时出现黄点与脏标记：站点信息独立保存，只有“站点信息”一项带点
+    await expect(dirtyDots).toHaveCount(1);
     await expect(dirtyBadge).toBeVisible();
 
-    // 点击基本分区保存按钮
-    const saveBtn = page.locator(".settings-basic-actions button[type='submit']");
+    // 点击站点信息保存按钮
+    const saveBtn = page.locator("#settings-page-site").getByRole("button", { name: "保存", exact: true });
     await saveBtn.click();
 
     // 保存成功后，黄点消失
@@ -633,25 +606,31 @@ test.describe("Console UI 一致性测试", () => {
     expect(backupFirstBox!.height).toBeLessThanOrEqual(88);
   });
 
-  test("设置页具有合法 tabpanel 容器与 aria-labelledby 联动，非活动 panel 保持 hidden", async ({ page }) => {
+  test("设置页导航与页面区域语义：当前页 aria-current、区域由标题命名，非活动页保持 hidden", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
+    // 旧链接 ?tab=basic 落到“站点信息”。
     await page.goto("/console/settings?tab=basic");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
 
-    const basicPanel = page.locator('#tabpanel-basic[role="tabpanel"]');
-    await expect(basicPanel).toBeVisible();
-    const labelledby = await basicPanel.getAttribute("aria-labelledby");
-    expect(labelledby).toBe("tab-basic");
+    const nav = page.getByRole("navigation", { name: "设置分类" });
+    await expect(nav).toBeVisible();
+    // 分组导航：每个分组由自己的标题命名。
+    for (const group of ["站点", "外观与布局", "内容", "互动", "扩展与高级"]) {
+      await expect(nav.getByText(group, { exact: true })).toBeVisible();
+    }
+    const current = nav.locator('[aria-current="page"]');
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveAttribute("data-settings-page", "site");
 
-    const tab = page.locator("#tab-basic");
-    await expect(tab).toBeVisible();
-    const controls = await tab.getAttribute("aria-controls");
-    expect(controls).toBe("tabpanel-basic");
+    const sitePage = page.locator("#settings-page-site");
+    await expect(sitePage).toBeVisible();
+    expect(await sitePage.getAttribute("aria-labelledby")).toBe("settings-page-title-site");
+    await expect(page.locator("#settings-page-title-site")).toHaveText("站点信息");
 
-    // 验证其他未激活的 tabpanel 也存在且带有 hidden 属性
-    const postPanel = page.locator("#tabpanel-post");
-    await expect(postPanel).toHaveAttribute("hidden", "");
+    // 其他页面区域保留草稿但保持 hidden。
+    await expect(page.locator("#settings-page-post")).toHaveAttribute("hidden", "");
+    await expect(page.locator("#settings-page-comments")).toHaveAttribute("hidden", "");
   });
 
   test("SEO 二级导航高度（桌面 36px / 手机 44px）、字号 13px 与深灰选中样式对齐", async ({ page }) => {
@@ -692,23 +671,24 @@ test.describe("Console UI 一致性测试", () => {
   test("系统设置保存时支持持续编辑且保留新内容与未保存提示", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
 
     const titleInput = page.locator("#settings-site-title");
     await expect(titleInput).toBeVisible();
 
     // 初始清空脏标记
-    const dirtyDots = page.locator(".settings-tab-dirty-dot");
+    const dirtyDots = page.locator(".settings-nav:visible .settings-nav-dot");
     const dirtyBadge = page.locator(".settings-dirty-badge");
 
-    // 修改标题（由于 basic 与 seo 标签均涉及 site 分区，两者均会出现黄点提示）
+    // 修改标题：未保存点只落在“站点信息”一项（SEO 与搜索属于主题草稿，不再与站点信息共用同一分区）
     await titleInput.fill("E2E Test Site");
-    await expect(dirtyDots).toHaveCount(2);
+    await expect(dirtyDots).toHaveCount(1);
+    await expect(page.locator('.settings-nav:visible [data-settings-page="site"] .settings-nav-dot')).toHaveCount(1);
     await expect(dirtyBadge).toBeVisible();
 
-    // 保存基本设置
-    const saveBtn = page.locator(".settings-basic-actions button[type='submit']");
+    // 保存站点信息
+    const saveBtn = page.locator("#settings-page-site").getByRole("button", { name: "保存", exact: true });
     await saveBtn.click();
     await expect(page.locator(".apple-toast-item")).toBeVisible();
 
@@ -718,97 +698,37 @@ test.describe("Console UI 一致性测试", () => {
 
     // 再次修改，黄点立即出现
     await titleInput.fill("E2E Test Site In-Flight");
-    await expect(dirtyDots).toHaveCount(2);
+    await expect(dirtyDots).toHaveCount(1);
     await expect(dirtyBadge).toBeVisible();
   });
 
-  test("评论分区第三方参数名称重复时前置拦截：错误提示可见且保存按钮禁用", async ({ page }) => {
+  test("结构化数字输入越界时前置拦截：错误提示可见且保存按钮禁用", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/settings?tab=comments");
+    await page.goto("/console/settings?tab=navigation");
     const original = await (await page.request.get("/api/v1/settings/stellar")).text();
+    const saveButton = page
+      .locator(".canonical-settings-form:visible")
+      .getByRole("button", { name: "保存全部主题设置", exact: true });
 
-    // 评论已改为结构化参数表单，直接验证当前控件的无效输入；原文 JSON 语法门禁另有专项覆盖。
-    const comments = page.locator('[data-setting-path="theme.comments"]');
-    await comments.locator("summary").filter({ hasText: "giscus" }).click();
-    const giscus = comments.locator('[data-structured-path="theme.comments.giscus"]');
-    await giscus.getByRole("textbox", { name: "新增giscus名称", exact: true }).fill("js");
-    await giscus.getByRole("button", { name: "添加项目", exact: true }).click();
+    // 第三方评论参数与站点信息/评分/投票已从系统设置移除（改由站点原生能力承载），
+    // 这里改用仍存在的结构化字段验证通用的无效输入前置拦截：出错时提示可见、保存禁用、不发请求，恢复后解除。
+    // 先制造一处真实修改，让保存按钮在修复输入错误后处于可用状态。
+    await page.locator('[data-structured-path="theme.topbar.enabled"]').getByRole("switch").click();
+    await expect(saveButton).toBeEnabled();
 
-    await expect(giscus.getByRole("alert")).toHaveText("名称已存在。");
-    await expect(
-      page.locator(".canonical-settings-form:visible").getByRole("button", { name: "保存全部主题设置", exact: true }),
-    ).toBeDisabled();
+    // 菜单列数在 schema 中限定为 1–5，填 9 必须被结构化表单拦下。
+    const columns = page.locator('[data-structured-path="theme.leftbar.menu_columns"]');
+    await columns.locator('input[type="number"]').fill("9");
+    await expect(columns.getByRole("alert")).toHaveText("请输入范围内的有效数字。");
+    await expect(saveButton).toBeDisabled();
     expect(await (await page.request.get("/api/v1/settings/stellar")).text()).toBe(original);
-    await comments.getByRole("button", { name: "giscus恢复默认", exact: true }).click();
-    await expect(giscus.getByRole("alert")).toHaveCount(0);
-    await expect(
-      page.locator(".canonical-settings-form:visible").getByRole("button", { name: "保存全部主题设置", exact: true }),
-    ).toBeEnabled();
+
+    await columns.getByRole("button", { name: "菜单列数恢复默认", exact: true }).click();
+    await expect(columns.getByRole("alert")).toHaveCount(0);
+    await expect(saveButton).toBeEnabled();
   });
 });
-
-/** 活动标签是否完整落在 tabbar 横向滚动区域内。 */
-async function activeTabVisibility(tabbar: Locator): Promise<string> {
-  return tabbar.evaluate((el) => {
-    const active = el.querySelector("[role='tab'][aria-selected='true']") as HTMLElement | null;
-    if (!active) return "no-active-tab";
-    const container = el.getBoundingClientRect();
-    const target = active.getBoundingClientRect();
-    if (target.right - container.right > 1) return `overflow-right:${Math.round(target.right - container.right)}`;
-    if (container.left - target.left > 1) return `overflow-left:${Math.round(container.left - target.left)}`;
-    return "visible";
-  });
-}
-
-/** 断言 autoReveal 的 Tabs 由组件自身滚动，且显露不改变纵向滚动位置。 */
-async function assertTabRevealContract(page: Page, containerSelector: string, firstLabel: string, lastLabel: string) {
-  const outer = page.locator(containerSelector);
-  const tabbar = outer.locator("[role='tablist']");
-  await expect(tabbar).toBeVisible();
-
-  // 外层容器只负责宽度与裁切，不再承担横向滚动
-  expect(await outer.evaluate((el) => window.getComputedStyle(el).overflowX)).toBe("hidden");
-  expect(await outer.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(false);
-
-  // 内部根元素是唯一横向滚动区域，且在当前视口下真实溢出
-  const inner = await tabbar.evaluate((el) => ({
-    overflowX: window.getComputedStyle(el).overflowX,
-    scrollWidth: el.scrollWidth,
-    clientWidth: el.clientWidth,
-    autoreveal: el.classList.contains("tabbar-autoreveal"),
-  }));
-  expect(inner.autoreveal, "autoReveal 必须落在专用修饰类上").toBe(true);
-  expect(inner.overflowX).toBe("auto");
-  expect(inner.scrollWidth, "390px 下必须真实溢出").toBeGreaterThan(inner.clientWidth);
-
-  // 纵向基准归零后再比较，避免内容高度变化被浏览器夹紧造成假阳性
-  await page.evaluate(() => {
-    window.scrollTo(0, 0);
-    const main = document.querySelector("main.content") as HTMLElement | null;
-    if (main) main.scrollTop = 0;
-  });
-  const verticalBefore = await page.evaluate(() => ({
-    windowY: window.scrollY,
-    mainScrollTop: (document.querySelector("main.content") as HTMLElement | null)?.scrollTop ?? 0,
-  }));
-
-  // 末尾标签：完整可见，且容器确实发生横向位移
-  await tabbar.locator("[role='tab']").filter({ hasText: lastLabel }).click();
-  await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
-  await expect.poll(() => tabbar.evaluate((el) => el.scrollLeft), { timeout: 8_000 }).toBeGreaterThan(0);
-
-  // 首标签：完整可见，容器回到起点
-  await tabbar.locator("[role='tab']").filter({ hasText: firstLabel }).click();
-  await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
-  await expect.poll(() => tabbar.evaluate((el) => el.scrollLeft), { timeout: 8_000 }).toBe(0);
-
-  const verticalAfter = await page.evaluate(() => ({
-    windowY: window.scrollY,
-    mainScrollTop: (document.querySelector("main.content") as HTMLElement | null)?.scrollTop ?? 0,
-  }));
-  expect(verticalAfter).toEqual(verticalBefore);
-}
 
 const LIST_EMPTY_CASES: Array<{
   path: string;
@@ -855,15 +775,22 @@ const LIST_EMPTY_CASES: Array<{
   },
 ];
 
-test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
-  test("候选验收截图：设置与主题设置 Tabs（390 溢出 / 1280 桌面）", async ({ page }, testInfo) => {
+// 系统设置已由“13 个横向页签”改为“分组导航 → 设置页”：桌面是左侧导航，手机是分组列表 → 详情。
+// 原先对设置页 VTabbar(autoReveal) 的横向显露断言随页签一并退役，对应契约改为下面的导航断言；
+// VTabbar autoReveal 组件自身的源码契约仍由 modules/console/tests/components-a11y.test.ts 覆盖。
+test.describe("Console 设置导航与空列表选择入口", () => {
+  test("候选验收截图：设置导航（390 分组列表 / 详情，1280 桌面）与主题设置", async ({ page }, testInfo) => {
     await login(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/console/settings?tab=advanced");
+    await page.goto("/console/settings");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
-    await expect.poll(() => activeTabVisibility(page.locator(".settings-tabs [role='tablist']"))).toBe("visible");
-    await page.screenshot({ path: testInfo.outputPath("tabs-settings-390.png") });
+    await expect(page.locator(".settings-nav.is-list")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("settings-list-390.png") });
+
+    await page.goto("/console/settings?tab=advanced");
+    await expect(page.locator("#settings-page-advanced")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("settings-detail-390.png") });
 
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/appearance?tab=appearance");
@@ -871,44 +798,82 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await page.screenshot({ path: testInfo.outputPath("tabs-appearance-1280.png") });
   });
 
-  test("390px 真实溢出下系统设置 Tabs 由组件自身滚动，首尾标签完整可见且纵向位置不变", async ({ page }) => {
+  test("390px 系统设置为“分组列表 → 详情”：列表与详情均无横向溢出，进入详情聚焦标题，返回后回到列表", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
-    await assertTabRevealContract(page, ".settings-tabs", "基本", "高级");
+
+    const overflow = () =>
+      page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    const list = page.locator(".settings-nav.is-list");
+    await expect(list).toBeVisible();
+    // 列表阶段只显示分组列表，不渲染任何一页的内容。
+    await expect(page.locator(".settings-content")).toBeHidden();
+    const items = list.locator(".settings-nav-item");
+    await expect(items).toHaveCount(12);
+    // 每一项都是整行点击区（≥56px），并带一句说明。
+    for (const height of await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height)))
+      expect(height).toBeGreaterThanOrEqual(56);
+    await expect(items.first().locator(".settings-nav-summary")).toBeVisible();
+    expect(await overflow(), "分组列表不得横向溢出").toBeLessThanOrEqual(1);
+
+    // 选择末尾一项进入详情：路由带 ?tab=，焦点落在页面标题，列表隐藏，出现“返回设置”。
+    await list.locator('[data-settings-page="advanced"]').click();
+    await expect(page).toHaveURL(/tab=advanced/);
+    await expect(page.locator("#settings-page-advanced")).toBeVisible();
+    await expect(page.locator("#settings-page-title-advanced")).toBeFocused();
+    await expect(list).toBeHidden();
+    expect(await overflow(), "详情页不得横向溢出").toBeLessThanOrEqual(1);
+
+    await page.getByRole("button", { name: "返回设置", exact: true }).click();
+    await expect(list).toBeVisible();
+    await expect(page.locator(".settings-content")).toBeHidden();
+    await expect(page).not.toHaveURL(/tab=/);
+    expect(await overflow()).toBeLessThanOrEqual(1);
   });
 
-  test("390px 真实溢出下系统设置 Tabs 由组件自身滚动，基本首标签与高级末标签完整可达且纵向位置不变", async ({ page }) => {
+  test("query 直接命中末尾页面时初始加载即进入详情；桌面短屏下导航自行滚动并显露当前页", async ({ page }) => {
     await login(page);
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/console/settings?tab=basic");
-    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
-    await assertTabRevealContract(page, ".settings-tabs", "基本", "高级");
-  });
 
-  test("query 直接命中末尾标签时初始加载即完成显露，Home/End 切换保持显露与焦点", async ({ page }) => {
-    await login(page);
+    // 手机：带 ?tab= 的链接直接进入详情，而不是停在分组列表。
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/settings?tab=advanced");
-    const tabbar = page.locator(".settings-tabs [role='tablist']");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+    await expect(page.locator("#settings-page-advanced")).toBeVisible();
+    await expect(page.locator(".settings-nav.is-list")).toBeHidden();
+    await expect(page.getByRole("button", { name: "返回设置", exact: true })).toBeVisible();
 
-    // 初始加载（query 驱动）即显露活动标签
-    await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
-    await expect(tabbar.locator("#tab-advanced")).toHaveAttribute("aria-selected", "true");
-
-    // Home/End 切换同样触发显露，且焦点停留在被激活的标签上
-    await tabbar.locator("#tab-advanced").focus();
-    await page.keyboard.press("Home");
-    await expect(tabbar.locator("#tab-basic")).toHaveAttribute("aria-selected", "true");
-    await expect(tabbar.locator("#tab-basic")).toBeFocused();
-    await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
-
-    await page.keyboard.press("End");
-    await expect(tabbar.locator("#tab-advanced")).toHaveAttribute("aria-selected", "true");
-    await expect(tabbar.locator("#tab-advanced")).toBeFocused();
-    await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
+    // 桌面短屏：侧栏有自己的纵向滚动区，初始加载就把当前页显露在侧栏可视范围内，整页纵向位置不被带动。
+    await page.setViewportSize({ width: 1280, height: 560 });
+    await page.goto("/console/settings?tab=advanced");
+    const sidebar = page.locator(".settings-sidebar");
+    const current = page.locator('.settings-nav:visible [data-settings-page="advanced"]');
+    await expect(current).toHaveAttribute("aria-current", "page");
+    const reveal = () =>
+      sidebar.evaluate((aside) => {
+        const item = aside.querySelector('[aria-current="page"]') as HTMLElement;
+        const view = aside.getBoundingClientRect();
+        const box = item.getBoundingClientRect();
+        return {
+          scrollable: aside.scrollHeight > aside.clientHeight,
+          scrollTop: aside.scrollTop,
+          hiddenAbove: Math.round(view.top - box.top),
+          hiddenBelow: Math.round(box.bottom - view.bottom),
+        };
+      });
+    await expect.poll(async () => (await reveal()).scrollable, { message: "560px 高的桌面视口下侧栏应可滚动" }).toBe(true);
+    await expect.poll(async () => (await reveal()).scrollTop, { timeout: 8_000 }).toBeGreaterThan(0);
+    const shown = await reveal();
+    expect(shown.hiddenAbove).toBeLessThanOrEqual(1);
+    expect(shown.hiddenBelow).toBeLessThanOrEqual(1);
+    // 显露只滚动侧栏自己：窗口与应用主滚动区的纵向位置都不变。
+    expect(
+      await page.evaluate(() => ({
+        windowY: window.scrollY,
+        mainScrollTop: (document.querySelector("main.content") as HTMLElement | null)?.scrollTop ?? 0,
+      })),
+    ).toEqual({ windowY: 0, mainScrollTop: 0 });
   });
 
   test("空列表不渲染任何选择入口：五类列表默认视图", async ({ page }) => {
@@ -1163,7 +1128,7 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     await page.screenshot({ path: testInfo.outputPath("poster-selected-390.png") });
   });
 
-  test("方向 A 图形与文字可访问性：设置导读、头像圆形、标签插件重试对比度、模块/菜单单层", async ({ page }) => {
+  test("方向 A 图形与文字可访问性：设置页标题唯一、头像圆形、标签插件重试对比度、模块/菜单单层", async ({ page }) => {
     await login(page);
     const allSettings = await page.request.get("/api/v1/settings");
     expect(allSettings.ok(), await allSettings.text()).toBeTruthy();
@@ -1176,29 +1141,12 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
     });
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/console/settings?tab=basic");
-    await expect(page.getByRole("heading", { name: "站点身份", exact: true })).toBeVisible();
-    await expect(page.locator(".guide-title")).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "站点身份", exact: true })).toHaveCount(1);
-    const guide = await page.locator(".settings-effect-guide").evaluate((el) => {
-      const summary = el.querySelector(".guide-explanation summary") as HTMLElement;
-      const result = el.querySelector(".guide-result") as HTMLElement;
-      const save = el.querySelector(".guide-save") as HTMLElement;
-      return {
-        summaryHeight: summary.getBoundingClientRect().height,
-        summaryColor: getComputedStyle(summary).color,
-        resultColor: getComputedStyle(result).color,
-        saveColor: getComputedStyle(save).color,
-        background: getComputedStyle(document.documentElement).getPropertyValue("--color-background").trim(),
-      };
-    });
-    expect(guide.summaryHeight).toBeGreaterThanOrEqual(32);
-    expect(guide.summaryColor).toBe(guide.resultColor);
-    expect(guide.saveColor, "导读保存说明必须使用与正文说明一致的 tertiary").toBe(guide.resultColor);
-    expect(
-      contrastRatio(guide.saveColor, guide.background),
-      `.guide-save 对比度不足：${guide.saveColor} on ${guide.background}`,
-    ).toBeGreaterThanOrEqual(4.5);
+    await page.goto("/console/settings?tab=site");
+    // 页面标题只由页面头部提供；标题下只有一句话说明，没有单独的“效果说明条”，也就没有重复的同义标题。
+    // 设置页文字的对比度由 console-settings-ia 的 Q2 逐项断言。
+    await expect(page.getByRole("heading", { name: "站点信息", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "站点信息", exact: true })).toHaveCount(1);
+    await expect(page.locator(".settings-effect-guide")).toHaveCount(0);
     const avatar = await page.locator(".settings-avatar-128").evaluate((el) => {
       const style = getComputedStyle(el);
       return { radius: style.borderTopLeftRadius, width: el.getBoundingClientRect().width };
@@ -1207,10 +1155,6 @@ test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
       avatar.radius === "50%" || Math.abs(parseFloat(avatar.radius) * 2 - avatar.width) < 1,
       `头像预览必须保持圆形，实际 ${avatar.radius}`,
     ).toBe(true);
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/console/settings?tab=basic");
-    expect((await page.locator(".guide-explanation summary").boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
     await page.route("**/api/v1/plugins/catalog", (route) => route.fulfill({ status: 500, json: { error: "fixture catalog failure" } }));
     await page.setViewportSize({ width: 1280, height: 900 });

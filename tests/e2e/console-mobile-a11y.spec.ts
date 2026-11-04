@@ -355,27 +355,24 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await expect(dialog).toContainText(target!.name);
   });
 
-  test("键盘可达性：真实 Tab 进入 Tabs、可见焦点环、方向键/Home/End 联动面板", async ({ page }) => {
+  // 设置导航是一组原生链接（不是 tablist）：Tab 顺序即视觉顺序，Enter 激活，不使用方向键/Home/End 的漫游焦点。
+  test("键盘可达性：真实 Tab 进入设置导航、可见焦点环、Tab 顺序与分组一致、Enter 联动页面区域", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/settings?tab=basic");
+    await page.goto("/console/settings?tab=site");
     await expect(page.getByRole("heading", { name: "系统设置", exact: true })).toBeVisible();
 
-    // 真实 Tab 遍历页面，必须能进入 Tabs
+    const focusedPage = () =>
+      page.evaluate(() => (document.activeElement as HTMLElement | null)?.getAttribute("data-settings-page") ?? "");
+
+    // 真实 Tab 遍历页面，必须能进入设置导航
     await page.locator("body").click({ position: { x: 5, y: 400 } });
-    let reachedTab = false;
-    for (let i = 0; i < 40; i++) {
+    let first = "";
+    for (let i = 0; i < 40 && !first; i++) {
       await page.keyboard.press("Tab");
-      const active = await page.evaluate(() => {
-        const el = document.activeElement as HTMLElement | null;
-        return el ? { role: el.getAttribute("role") ?? "", id: el.id } : { role: "", id: "" };
-      });
-      if (active.role === "tab") {
-        reachedTab = true;
-        break;
-      }
+      first = await focusedPage();
     }
-    expect(reachedTab, "真实 Tab 遍历必须能进入设置 Tabs").toBe(true);
+    expect(first, "真实 Tab 遍历必须能进入设置导航").toBe("site");
 
     // 键盘聚焦必须有可见焦点环
     const ring = await page.evaluate(() => {
@@ -386,23 +383,27 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     expect(ring.style, "键盘聚焦必须显示焦点环").not.toBe("none");
     expect(parseFloat(ring.width), "焦点环宽度必须清晰（≥2px）").toBeGreaterThanOrEqual(2);
 
-    // 方向键切换选中项并联动 tabpanel
-    await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#tab-appearance")).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#tabpanel-appearance")).toBeVisible();
-    await expect(page.locator("#tabpanel-basic")).toBeHidden();
-    await expect(page.locator("#tab-appearance")).toBeFocused();
+    // Tab 顺序与分组导航的视觉顺序一致，之后才是“AI 与知识库”外链。
+    const order = [first];
+    for (let i = 0; i < 11; i++) {
+      await page.keyboard.press("Tab");
+      order.push(await focusedPage());
+    }
+    expect(order).toEqual([
+      "site", "seo", "appearance", "navigation", "layout", "post",
+      "listing", "community", "comments", "feedback", "extensions", "advanced",
+    ]);
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => document.activeElement?.classList.contains("settings-nav-link"))).toBe(true);
+    await page.keyboard.press("Shift+Tab");
+    expect(await focusedPage()).toBe("advanced");
 
-    await page.keyboard.press("End");
-    await expect(page.locator("#tab-advanced")).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#tabpanel-advanced")).toBeVisible();
-    await expect(page.locator("#tab-advanced")).toBeFocused();
-
-    // 基本是系统设置的首个标签（默认标签），Home 应回到它。
-    await page.keyboard.press("Home");
-    await expect(page.locator("#tab-basic")).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#tabpanel-basic")).toBeVisible();
-    await expect(page.locator("#tab-basic")).toBeFocused();
+    // Enter 激活当前导航项并联动页面区域，焦点停留在被激活的导航项上。
+    await page.keyboard.press("Enter");
+    await expect(page.locator('.settings-nav:visible [data-settings-page="advanced"]')).toHaveAttribute("aria-current", "page");
+    await expect(page.locator("#settings-page-advanced")).toBeVisible();
+    await expect(page.locator("#settings-page-site")).toBeHidden();
+    await expect(page.locator('.settings-nav:visible [data-settings-page="advanced"]')).toBeFocused();
   });
 
   test("主操作与危险操作三态对比度 ≥ 4.5:1", async ({ page }) => {
@@ -586,47 +587,80 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     { width: 1280, height: 800 },
   ];
 
-  const settingTabs = [
-    { url: "/console/settings?tab=basic", title: "系统设置", hasBodies: true },
-    { url: "/console/settings?tab=post", title: "系统设置", hasBodies: true },
-    { url: "/console/settings?tab=comments", title: "系统设置", hasBodies: true },
-    { url: "/console/settings?tab=seo", title: "系统设置", hasBodies: true },
-    { url: "/console/settings?tab=search", title: "系统设置", hasBodies: true },
-    { url: "/console/settings?tab=advanced", title: "系统设置", hasBodies: true },
+  // 系统设置的 12 个页面（旧链接 basic/search 等经重定向落到这些页面，由 console-settings-ia 专项覆盖）。
+  const settingPages = [
+    { key: "site", form: ".settings-basic-form" },
+    { key: "seo", form: ".canonical-settings-form" },
+    { key: "appearance", form: ".canonical-settings-form" },
+    { key: "navigation", form: ".canonical-settings-form" },
+    { key: "layout", form: ".canonical-settings-form" },
+    { key: "post", form: ".canonical-settings-form" },
+    { key: "listing", form: ".canonical-settings-form" },
+    { key: "community", form: ".canonical-settings-form" },
+    { key: "comments", form: ".canonical-settings-form" },
+    { key: "feedback", form: ".settings-feedback-form" },
+    { key: "extensions", form: ".canonical-settings-form" },
+    { key: "advanced", form: ".canonical-settings-form" },
   ];
+  const settingTabs = settingPages.map(({ key, form }) => ({
+    url: `/console/settings?tab=${key}`,
+    key,
+    form,
+    title: "系统设置",
+  }));
 
   // 每个设置页保留完整视口矩阵，避免所有页面共用一次测试的 30 秒预算。
+  // “单卡片层级”随新布局调整为“页面本身不再套卡片”：导航 + 内容直接铺在页面上，分区只靠留白与分隔线，
+  // 因此原先对外层 .settings-basic-panel 卡片和 .settings-section-body 的断言改为：外层卡片不存在，分区/行不带框、阴影与圆角。
   for (const tab of settingTabs) {
-    test(`设置页单卡片层级与边距：${tab.url} 在 390/640/641/767/768/1280px 下保留全部布局断言`, async ({ page }) => {
+    test(`设置页无嵌套卡片与边距：${tab.url} 在 390/640/641/767/768/1280px 下保留全部布局断言`, async ({ page }) => {
       await login(page);
       for (const vp of checkViewports) {
         await page.setViewportSize(vp);
         await page.goto(tab.url);
         await expect(page.getByRole("heading", { name: tab.title, exact: true })).toBeVisible();
 
-        // 系统设置：必须确认请求的 tab 真的被激活，否则 query 失效退回 basic 会让后续断言空覆盖
-        const settingsTab = new URLSearchParams(tab.url.split("?")[1] ?? "").get("tab");
-        if (tab.url.startsWith("/console/settings") && settingsTab) {
-          await expect(
-            page.locator(`#tabpanel-${settingsTab}`),
-            `${tab.url} 在 ${vp.width}px 必须激活 #tabpanel-${settingsTab}`,
-          ).toBeVisible();
-          await expect(
-            page.locator(`#tabpanel-${settingsTab} ${settingsTab === "basic" ? ".settings-basic-form" : ".canonical-settings-form"}`),
-            `${tab.url} 在 ${vp.width}px 必须加载活动表单`,
-          ).toBeVisible();
-        }
+        // 必须确认请求的页面真的被激活，否则 query 失效退回默认页会让后续断言空覆盖
+        await expect(
+          page.locator(`#settings-page-${tab.key}`),
+          `${tab.url} 在 ${vp.width}px 必须激活 #settings-page-${tab.key}`,
+        ).toBeVisible();
+        await expect(
+          page.locator(`#settings-page-${tab.key} ${tab.form}`),
+          `${tab.url} 在 ${vp.width}px 必须加载活动表单`,
+        ).toBeVisible();
 
-        // 外层只有一个主卡片面板 .settings-basic-panel
-        const outerCard = page.locator(".settings-basic-panel");
-        await expect(outerCard).toBeVisible();
+        // 页面不再包一层主卡片面板：导航与内容直接铺在页面容器里。
+        await expect(page.locator(".settings-basic-panel"), `${tab.url} ${vp.width}px 不应再有外层主卡片`).toHaveCount(0);
+        const shell = await page.locator(".settings-content").evaluate((el) => {
+          const cs = window.getComputedStyle(el);
+          return {
+            bg: cs.backgroundColor,
+            borderWidth: cs.borderTopWidth,
+            boxShadow: cs.boxShadow,
+            borderRadius: cs.borderTopLeftRadius,
+          };
+        });
+        expect(shell.bg === "transparent" || shell.bg === "rgba(0, 0, 0, 0)", `${tab.url} ${vp.width}px 内容区背景必须透明`).toBe(true);
+        expect(parseFloat(shell.borderWidth), `${tab.url} ${vp.width}px 内容区不得有边框`).toBe(0);
+        expect(shell.boxShadow, `${tab.url} ${vp.width}px 内容区不得有阴影`).toBe("none");
+        expect(parseFloat(shell.borderRadius), `${tab.url} ${vp.width}px 内容区不得有圆角`).toBe(0);
 
         // 验证表单分区容器存在，且必须遍历所有匹配项，不可为 0
-        const sections = page.locator(".settings-basic-section, .settings-section, .settings-post-section");
-        // 批量读取全部分区（含保留草稿的隐藏标签页），避免逐节点跨浏览器往返耗尽测试预算。
+        const sections = page.locator(".settings-sec");
+        // 批量读取全部分区（含保留草稿的隐藏页面），避免逐节点跨浏览器往返耗尽测试预算。
         const sectionStylesList = await sections.evaluateAll((elements) => elements.map((el) => {
           const cs = window.getComputedStyle(el);
-          return { paddingLeft: cs.paddingLeft, paddingRight: cs.paddingRight };
+          return {
+            paddingLeft: cs.paddingLeft,
+            paddingRight: cs.paddingRight,
+            bg: cs.backgroundColor,
+            borderLeft: cs.borderLeftWidth,
+            borderRight: cs.borderRightWidth,
+            borderBottom: cs.borderBottomWidth,
+            boxShadow: cs.boxShadow,
+            borderRadius: cs.borderTopLeftRadius,
+          };
         }));
         const sectionCount = sectionStylesList.length;
         expect(sectionCount, `${tab.url} 在 ${vp.width}px 必须存在表单分区容器`).toBeGreaterThan(0);
@@ -657,42 +691,39 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
             parseFloat(sectionStyles.paddingRight),
             `${tab.url} ${vp.width}px 表单分区[${s}] 不再承担横向边距，右边距必须为0（实测 ${sectionStyles.paddingRight}）`,
           ).toBe(0);
+          // 分区不是卡片：透明背景、无左右/下边框（上边框是分区之间的分隔线）、无阴影、无圆角。
+          expect(
+            sectionStyles.bg === "transparent" || sectionStyles.bg === "rgba(0, 0, 0, 0)",
+            `${tab.url} ${vp.width}px 表单分区[${s}] 背景必须透明（实际为 ${sectionStyles.bg}）`,
+          ).toBe(true);
+          expect(parseFloat(sectionStyles.borderLeft), `${tab.url} ${vp.width}px 表单分区[${s}] 不得有左边框`).toBe(0);
+          expect(parseFloat(sectionStyles.borderRight), `${tab.url} ${vp.width}px 表单分区[${s}] 不得有右边框`).toBe(0);
+          expect(parseFloat(sectionStyles.borderBottom), `${tab.url} ${vp.width}px 表单分区[${s}] 不得有下边框`).toBe(0);
+          expect(sectionStyles.boxShadow, `${tab.url} ${vp.width}px 表单分区[${s}] 不得有阴影`).toBe("none");
+          expect(parseFloat(sectionStyles.borderRadius), `${tab.url} ${vp.width}px 表单分区[${s}] 不得有圆角`).toBe(0);
         }
 
-        // 针对包含 .settings-section-body 的表单页，明确遍历断言背景透明、无重复边框、内边距为0
-        const bodies = page.locator(".settings-section-body");
-        const bodyStylesList = await bodies.evaluateAll((elements) => elements.map((el) => {
+        // 分区里的“行”同样不带卡片外观：透明背景、无阴影、无圆角、左右内边距为 0。
+        const rowStylesList = await page.locator(".settings-row").evaluateAll((elements) => elements.map((el) => {
           const cs = window.getComputedStyle(el);
           return {
             bg: cs.backgroundColor,
-            borderWidth: cs.borderWidth,
-            borderStyle: cs.borderStyle,
-            borderRadius: cs.borderRadius,
             boxShadow: cs.boxShadow,
+            borderRadius: cs.borderTopLeftRadius,
             paddingLeft: cs.paddingLeft,
             paddingRight: cs.paddingRight,
-            paddingTop: cs.paddingTop,
-            paddingBottom: cs.paddingBottom,
           };
         }));
-        const bodyCount = bodyStylesList.length;
-        if (tab.hasBodies) {
-          expect(bodyCount, `${tab.url} 在 ${vp.width}px 预期存在 .settings-section-body 容器，缺失必须失败`).toBeGreaterThan(0);
-          for (let i = 0; i < bodyCount; i++) {
-            const bodyStyles = bodyStylesList[i];
-            expect(
-              bodyStyles.bg === "transparent" || bodyStyles.bg === "rgba(0, 0, 0, 0)",
-              `${tab.url} ${vp.width}px .settings-section-body[${i}] 背景必须透明（实际为 ${bodyStyles.bg}）`,
-            ).toBe(true);
-            expect(
-              bodyStyles.borderStyle === "none" || bodyStyles.borderWidth === "0px",
-              `${tab.url} ${vp.width}px .settings-section-body[${i}] 不得有可见边框`,
-            ).toBe(true);
-            expect(bodyStyles.boxShadow, `${tab.url} ${vp.width}px .settings-section-body[${i}] 不得有阴影`).toBe("none");
-            expect(parseFloat(bodyStyles.borderRadius), `${tab.url} ${vp.width}px .settings-section-body[${i}] 不得有额外圆角`).toBe(0);
-            expect(parseFloat(bodyStyles.paddingLeft), `${tab.url} ${vp.width}px .settings-section-body[${i}] 左内边距必须为0`).toBe(0);
-            expect(parseFloat(bodyStyles.paddingRight), `${tab.url} ${vp.width}px .settings-section-body[${i}] 右内边距必须为0`).toBe(0);
-          }
+        for (let i = 0; i < rowStylesList.length; i++) {
+          const rowStyles = rowStylesList[i];
+          expect(
+            rowStyles.bg === "transparent" || rowStyles.bg === "rgba(0, 0, 0, 0)",
+            `${tab.url} ${vp.width}px .settings-row[${i}] 背景必须透明（实际为 ${rowStyles.bg}）`,
+          ).toBe(true);
+          expect(rowStyles.boxShadow, `${tab.url} ${vp.width}px .settings-row[${i}] 不得有阴影`).toBe("none");
+          expect(parseFloat(rowStyles.borderRadius), `${tab.url} ${vp.width}px .settings-row[${i}] 不得有圆角`).toBe(0);
+          expect(parseFloat(rowStyles.paddingLeft), `${tab.url} ${vp.width}px .settings-row[${i}] 左内边距必须为0`).toBe(0);
+          expect(parseFloat(rowStyles.paddingRight), `${tab.url} ${vp.width}px .settings-row[${i}] 右内边距必须为0`).toBe(0);
         }
 
         // 不出现无意横向溢出
@@ -704,7 +735,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     });
   }
 
-  test("设置页单卡片层级与边距：控件边界与验收截图", async ({ page }, testInfo) => {
+  test("设置页无嵌套卡片与边距：控件边界与验收截图", async ({ page }, testInfo) => {
     await login(page);
 
     // 重点验证控件保留必要边界：输入框（原高级页警告框随 AdvancedSettings 退役，不再断言）
@@ -726,9 +757,9 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await page.screenshot({ path: testInfo.outputPath("t1-settings-advanced-390.png") });
 
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/settings?tab=basic");
-    await expect(page.locator(".settings-tabs")).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath("t3-settings-tabs-desktop-1280.png") });
+    await page.goto("/console/settings?tab=site");
+    await expect(page.locator(".settings-nav:visible")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("t3-settings-nav-desktop-1280.png") });
 
     // 768px 概览截图（文章管理）
     await page.setViewportSize({ width: 768, height: 1024 });

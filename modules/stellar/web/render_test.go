@@ -134,7 +134,6 @@ func TestBaseInjectsRuntimeConfigAndTagPluginOverrides(t *testing.T) {
 		Title:     "运行时配置",
 		Search:    settings.SearchConfig{LocalSearch: settings.LocalSearchConfig{LazyLoad: &searchLazy, CacheTTL: &searchTTL}},
 		DataCache: settings.DataCacheConfig{Enable: &cacheEnabled, DefaultTTL: &cacheTTL, MaxEntries: &cacheMax, TTL: map[string]int{"sites": 0}},
-		Services:  settings.ServicesConfig{SiteInfo: settings.SiteInfoConfig{API: `https://api.example.test?url={href}&x="quoted"`}},
 		TagPlugins: settings.TagPluginsConfig{
 			Note:     settings.TagPluginNote{Border: boolPtr(false)},
 			Checkbox: settings.TagPluginCheckbox{Interactive: false},
@@ -148,7 +147,6 @@ func TestBaseInjectsRuntimeConfigAndTagPluginOverrides(t *testing.T) {
 		`default_ttl:  0`,
 		`"sites":0`,
 		`max_entries:  7`,
-		`api: "https://api.example.test?url={href}\u0026x=\"quoted\""`,
 		`.md-text .tag-plugin.note{border:0}`,
 		`.md-text .tag-plugin.okr{border:0}`,
 		`.md-text .tag-plugin.checkbox input{pointer-events:none}`,

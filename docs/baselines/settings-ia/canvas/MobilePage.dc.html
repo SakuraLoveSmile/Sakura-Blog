@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 手机文章页</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#0a0a0b;color:#f4f4f6;font:14px/1.5 "DM Sans","PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,a{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
+a{text-decoration:none}
+h1,h2,p{margin:0}
+:focus-visible{outline:2px solid #2e8dff;outline-offset:-2px}
+.mono{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+
+.phone{position:relative;display:flex;flex-direction:column;width:390px;height:844px;overflow:hidden;background:#0a0a0b}
+
+.top{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:52px;padding:0 6px;border-bottom:1px solid #242428}
+.top h1{font-size:16px;font-weight:600}
+.back{display:inline-flex;align-items:center;justify-self:start;gap:2px;height:44px;padding:0 10px 0 6px;border-radius:8px;color:#b9b9bf;font-size:15px}
+.back:active,.ib:active{background:#19191c}
+.ib{display:inline-flex;align-items:center;justify-content:center;justify-self:end;width:44px;height:44px;border-radius:8px;color:#b9b9bf}
+
+.chips{flex:none;display:flex;align-items:center;gap:6px;height:48px;padding:0 12px;overflow-x:auto;border-bottom:1px solid #1b1b1e;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips a{flex:none;display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;color:#b9b9bf;font-size:13px;font-weight:500;white-space:nowrap}
+.chips a.on{background:#19191c;color:#f4f4f6;box-shadow:inset 0 0 0 1px #2a2a2f}
+
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:0 16px 16px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.sh{padding:18px 0 6px}
+.sh h2{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.sh p{margin-top:2px;color:#8b8b91;font-size:13px}
+.fld{padding:14px 0;border-top:1px solid #1b1b1e}
+.fh{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid #1b1b1e}
+.rl{flex:1;min-width:0}
+.rt{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:500}
+.rh{margin-top:2px;color:#8b8b91;font-size:13px}
+.fld .seg{margin-top:10px}
+.mod{display:inline-block;flex:none;width:5px;height:5px;border-radius:50%;background:#ff9f0a}
+.reset{flex:none;height:32px;padding:0 8px;border-radius:6px;color:#8b8b91;font-size:12.5px}
+.reset:active{background:#19191c;color:#f4f4f6}
+
+.seg{display:flex;gap:2px;padding:2px;border:1px solid #242428;border-radius:8px;background:#121214}
+.seg button{flex:1 1 0;min-height:40px;padding:0 4px;border-radius:6px;color:#b9b9bf;font-weight:500;text-align:center}
+.seg button.on{background:#2a2a2f;color:#f4f4f6;box-shadow:inset 0 0 0 1px #37373d}
+
+.para{margin-top:10px;padding:12px 14px;border:1px dashed #242428;border-radius:8px;color:#b9b9bf;font-size:13px;line-height:1.8}
+.para p + p{margin-top:2px}
+.pcap{margin-top:8px;color:#8b8b91;font-size:12px}
+
+.sw{position:relative;flex:none;width:48px;height:28px;border-radius:14px;background:#2a2a2f}
+.sw i{position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#f4f4f6}
+.sw.on{background:#30d158}
+.sw.on i{transform:translateX(20px)}
+.num{display:inline-flex;align-items:center;flex:none;gap:6px;height:40px;padding:0 12px;border:1px solid #242428;border-radius:6px;background:#121214}
+.num:focus-within{border-color:#37373d}
+.num input{width:44px;padding:0;border:0;background:none;text-align:right;outline:0}
+.num em{font-style:normal;color:#8b8b91}
+
+.save{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px;padding:0 10px 0 16px;border-top:1px solid #242428;background:#0a0a0b}
+.sm{display:flex;flex-direction:column;min-width:0}
+.sm b{font-size:13.5px;font-weight:600;line-height:19px}
+.sm span{color:#8b8b91;font-size:12px;line-height:16px}
+.pbtn{display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:72px;height:38px;padding:0 16px;border-radius:6px;background:#e8e8ec;color:#000;font-weight:500}
+
+.nav{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:57px;border-top:1px solid #242428;background:#121214}
+.nav a,.nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#b9b9bf;font-size:12px;text-align:center}
+</style>
+</helmet>
+
+<div class="phone">
+  <header class="top">
+    <a class="back" href="MobileList.dc.html" aria-label="返回设置列表"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>设置</a>
+    <h1>文章页</h1>
+    <a class="ib" href="#" aria-label="前端预览"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+  </header>
+
+  <nav class="chips" aria-label="本页分区">
+    <a class="on" href="#read" aria-current="location">阅读体验</a>
+    <a href="#foot">页脚与许可</a>
+    <a href="#ext">文章扩展</a>
+    <a href="#ai">AI 创作标记</a>
+  </nav>
+
+  <main class="scroll">
+    <section id="read" aria-labelledby="h-read">
+      <div class="sh"><h2 id="h-read">阅读体验</h2><p>单篇文章可以覆盖其中支持的默认项。</p></div>
+
+      <div class="fld">
+        <div class="rt">文章风格</div>
+        <div class="rh">采用适合技术内容的文章排版；首行缩进仍可由下一项单独指定。</div>
+        <div class="seg" role="group" aria-label="文章风格"><button type="button" class="on" aria-pressed="true">技术文章</button><button type="button" aria-pressed="false">叙事文章</button></div>
+      </div>
+
+      <div class="fld">
+        <div class="fh"><div class="rt">段落首行缩进<span class="mod" role="img" aria-label="已修改"></span></div><button type="button" class="reset">恢复默认</button></div>
+        <div class="rh">按文章风格自动：技术文章不缩进，叙事文章缩进两字。</div>
+        <div class="seg" role="group" aria-label="段落首行缩进"><button type="button" aria-pressed="false">按风格自动</button><button type="button" class="on" aria-pressed="true">始终缩进</button><button type="button" aria-pressed="false">不缩进</button></div>
+        <div class="para" role="img" aria-label="段落缩进效果示意">
+          <p style="text-indent:2em">第一段正文示例：段落首行是否缩进，取决于上面的选择。</p>
+          <p style="text-indent:2em">第二段正文示例：技术类文章通常不缩进，叙事类文章通常缩进。</p>
+        </div>
+        <div class="pcap">当前效果：首行缩进两字</div>
+      </div>
+
+      <div class="row">
+        <div class="rl"><div class="rt">显示文章横幅背景</div><div class="rh">文章顶部显示横幅背景，让标题区更突出。</div></div>
+        <button type="button" class="sw on" role="switch" aria-checked="true" aria-label="显示文章横幅背景"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="rl"><div class="rt">显示阅读时长</div><div class="rh">文章信息中隐藏预计阅读时长。</div></div>
+        <button type="button" class="sw" role="switch" aria-checked="false" aria-label="显示阅读时长"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="rl"><div class="rt"><label for="m-related">相关文章数量</label></div><div class="rh">设为 0 时不显示相关文章。</div></div>
+        <span class="num"><input id="m-related" class="mono" value="0" inputmode="numeric"><em>篇</em></span>
+      </div>
+    </section>
+
+    <section id="foot" aria-labelledby="h-foot">
+      <div class="sh" style="padding-top:28px"><h2 id="h-foot">页脚与许可</h2><p>正文结束后的标签、许可协议和分享入口。</p></div>
+      <div class="row">
+        <div class="rl"><div class="rt">页脚显示标签</div><div class="rh">正文结束后显示文章标签，读者可继续浏览同类内容。</div></div>
+        <button type="button" class="sw on" role="switch" aria-checked="true" aria-label="页脚显示标签"><i></i></button>
+      </div>
+    </section>
+  </main>
+
+  <div class="save" role="region" aria-label="未保存的修改">
+    <div class="sm"><b>1 处未保存修改</b><span>文章页 1</span></div>
+    <button type="button" class="pbtn">保存</button>
+  </div>
+
+  <nav class="nav" aria-label="移动端底部导航">
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg><span>仪表盘</span></a>
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13z"></path><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13z"></path></svg><span>文章</span></a>
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg><span>评论</span></a>
+    <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-12z"></path></svg><span>媒体库</span></a>
+    <button type="button" aria-label="更多导航"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg><span>更多</span></button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

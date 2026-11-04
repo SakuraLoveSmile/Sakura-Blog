@@ -1,0 +1,116 @@
+{
+  "task": "BLG-20261103-02 AI 助手标签合并 — v2.0.7-beta05 发布与生产升级",
+  "date": "2026-11-03",
+  "preflight": {
+    "host": "blog-prod (ssh alias, 124.220.55.80)",
+    "sampled_at": "2026-11-03T16:11:25+08:00",
+    "container_before": {
+      "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta04",
+      "image_id": "sha256:1f6612a75e4fa05811178f60821c31e0e9336be92409a3a95ca71b2d4897da36",
+      "running": true,
+      "restarts": 0,
+      "started_at": "2026-11-02T17:23:55.510004652Z"
+    },
+    "host_readyz": "200 (1.288ms)",
+    "public_readyz": "200 (110ms)",
+    "public_version": "Blog v2.0.7-beta04",
+    "public_console": 200,
+    "ghcr_tags_baseline": {
+      "latest": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "2": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "2.0": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "2.0.6": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "2.0.7-beta04": "sha256:1f6612a75e4fa05811178f60821c31e0e9336be92409a3a95ca71b2d4897da36"
+    },
+    "backup": {
+      "directory": "/home/ubuntu/blog-release-v2.0.7-beta05 (0700, root)",
+      "files": ["blog.db", "blog.db-wal", "blog.db-shm", "docker-compose.yml.bak-before-2.0.7-beta05"],
+      "db_md5_source_and_copy": "a0430d5ffa87945a47fc3243c7c20175",
+      "db_size_bytes": 13127680
+    }
+  },
+  "release_gate": {
+    "dev_sync": "origin/main 805d86df 经临时 worktree + make merge-check 合回 dev（c5c04f25），内容零差异，worktree 与本地分支已清理",
+    "dev_push": "ce8d7e6c..c5c04f25 dev -> dev",
+    "pr_dev_to_main": {
+      "number": 44,
+      "merge_commit": "f54131466a00c2e7fd52963da64c9b08f9d04e9a",
+      "checks": {
+        "go": "4m42s pass", "lint": "2m20s pass", "security": "3m31s pass",
+        "console": "1m3s pass", "e2e": "13m43s pass", "build": "2m2s pass"
+      }
+    },
+    "pr_main_to_release": {
+      "number": 45,
+      "merge_commit": "1a106f7d24eaa0be762e13979f4244c88837d318",
+      "checks": {
+        "go": "4m37s pass", "lint": "2m3s pass", "security": "2m37s pass",
+        "console": "1m0s pass", "e2e": "10m50s pass", "build": "1m5s pass",
+        "release-source": "11s pass", "image": "1m37s pass"
+      }
+    }
+  },
+  "tag_and_image": {
+    "tag": "v2.0.7-beta05",
+    "tag_object": "signed (GPG key 979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989, good signature)",
+    "target_commit": "1a106f7d24eaa0be762e13979f4244c88837d318",
+    "docker_release_run": 41605144627,
+    "docker_release_conclusion": "success",
+    "docker_release_window": "2026-11-03T08:41:25Z -> 2026-11-03T08:47:11Z",
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta05",
+    "digest": "sha256:c2afa6ddeb7add2d5410a262030746178466edf189d8050b965f0177eba046c6",
+    "sha_tag": "sha-1a106f7 -> same digest",
+    "labels": {
+      "org.opencontainers.image.version": "2.0.7-beta05",
+      "org.opencontainers.image.revision": "1a106f7d24eaa0be762e13979f4244c88837d318"
+    },
+    "platform": "linux/amd64",
+    "github_release": {
+      "tag": "v2.0.7-beta05",
+      "prerelease": true,
+      "latest_tag_still": "v2.0.6",
+      "assets": []
+    },
+    "stable_tags_unchanged": {
+      "latest": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "2": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "2.0": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392",
+      "2.0.6": "sha256:944df8d864c54c9021bcf4b284b00317be676946b6f89cc3b5f1d1849a734392"
+    },
+    "aliases": {
+      "2.0.7": "not published (404, prerelease policy)",
+      "2.0.7-beta04": "sha256:1f6612a75e4fa05811178f60821c31e0e9336be92409a3a95ca71b2d4897da36 (unchanged)"
+    },
+    "server_start_check": "docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta05 -h -> exit 0 (Usage of blog: -config ...)"
+  },
+  "deploy": {
+    "compose_path": "/opt/1panel/docker/compose/blog/docker-compose.yml",
+    "image_change": "ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta04 -> :2.0.7-beta05 (仅该行)",
+    "commands": "sudo docker compose pull && sudo docker compose up -d",
+    "container_after": {
+      "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta05",
+      "image_id": "sha256:c2afa6ddeb7add2d5410a262030746178466edf189d8050b965f0177eba046c6",
+      "running": true,
+      "restarts": 0,
+      "started_at": "2026-11-03T08:48:42.26289302Z"
+    },
+    "host_readyz": ["200 0.980ms", "200 0.821ms", "200 0.834ms"],
+    "public_readyz": "200 (88.9ms)",
+    "public_settings_version": "Blog v2.0.7-beta05",
+    "public_routes": {"/": 200, "/console/": 200, "/uc/": 200},
+    "startup_log_errors": 0,
+    "console_assets": {
+      "entry": "/console/assets/index-DiGlT8fC.js",
+      "entry_sha256": "ed6d6bcdb0aac3df81c4e138f9ebb31a606475be156599834ae388f0abd2530d",
+      "assistant_chunk": "/console/assets/AssistantView-RKaBL5H_.js",
+      "assistant_chunk_sha256": "a6223f844afa6a2b9194a314262866a78aff0803ea7bbd6fd0dcbc91eaaa6efa",
+      "matches_local_dist_build": true,
+      "merged_tabs_present": "'对话' tab label and 'AI 助手分类' present; no '\"知识库\"' tab button label (只保留知识库状态/重建等正文文案)"
+    },
+    "rollback": "compose image 改回 ghcr.io/sakuralovesmile/sakura-blog:2.0.7-beta04 → sudo docker compose up -d；本次无数据库 schema 迁移；停服前备份在 /home/ubuntu/blog-release-v2.0.7-beta05/"
+  },
+  "unverified": [
+    "生产 Console 登录态人工点选（无生产后台凭据）：以实际下发入口/AssistantView chunk 哈希与内容、HTTP 200 作为上线证据",
+    "未演练数据库恢复（本次无 schema 迁移，备份仅作保护）"
+  ]
+}

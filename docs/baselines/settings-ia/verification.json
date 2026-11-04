@@ -1,0 +1,1871 @@
+{
+  "task": "BLG-20261103-01",
+  "status": "待体验",
+  "user_decisions": [
+    {
+      "date": "2026-11-04",
+      "question": "“代码与原文”里的完整配置原文也要默认展开吗？（用户要求“设置项全部展开”，完整配置原文不是结构化分组，被有意留作折叠的例外）",
+      "answer": "保持折叠",
+      "effect": "完整配置原文仍默认折叠，无需改代码；这不是验收，也不是提交、合并、推送或发布的授权，状态仍是待体验"
+    }
+  ],
+  "checked_at": "2026-11-04T13:05:30+08:00",
+  "head": "ce8d7e6c88147535156a283b66e295481b64f531",
+  "branch": "codex/feat/20261103-blg-20261103-01-settings-ia",
+  "uncommitted_source_sha256": {
+    "CLAUDE.md": "c26c5efa4dbc0cde15678f4ac870d4b581ecea8d13da579eef021b42640854ee",
+    "modules/console/tests/feedback-settings.test.ts": "5ecd3b2f0e33a964eede8085b6a03cd2c41af91bb9d645d4474a959ec3bf5f85",
+    "modules/console/tests/settings-center.test.ts": "406921656f14daa9ee4fb2f95f103ad97c3616153a823f4a830fae3302857327",
+    "modules/console/tests/settings-save-race.test.ts": "232d7b0fa8e58bc9aeeee0adc9e1a7ae3a68da7afce8f7b59dfbe800f962aef0",
+    "modules/console/web/src/components/editor/stellar-form-json.ts": "492ffaf47f8304d81dd1e8609770cac8d8e02731673cd83c9a094855f01b9032",
+    "modules/console/web/src/icons/ri-subset.json": "81e313cf75d8cd73609bd96363b809131a3516da0e2217efc01a6f3ab1c8c00a",
+    "modules/console/web/src/modules/settings/CanonicalSettingsForm.vue": "0e2a60e8f34c7ea753a9282ad35148992077210990b600559470c59160d791fb",
+    "modules/console/web/src/modules/settings/SettingColorEditor.vue": "83b617754446c08ed0ea41a07fb76b60a219c0d1248e7c552c7acdddf79d891c",
+    "modules/console/web/src/modules/settings/SettingsView.vue": "56065cd7a70df9b1e64c73e14659c7e6f6355fe5458dee3ed91e55205c56a7d0",
+    "modules/console/web/src/modules/settings/StructuredSetting.vue": "c54b3aa0a9c324ee1dd91f226eab6dd8edc5a7f0630255a967280f0655d64af2",
+    "modules/console/web/src/modules/settings/settings-canonical-fields.ts": "7c0fe10b771a0e99bb4e9110de378897977dea550f722dd11104fb7e53b42056",
+    "modules/console/web/src/modules/settings/settings-form.css": "24952678d85856a7a23e9c267406eef02d8e262fa3d7856e9299bdef5134865d",
+    "modules/console/web/src/modules/settings/tabs/BasicSettings.vue": "a64bf60d639d75bc2e9eeec7112cac5f9a9817838d8e16e0ce13fe250927ff39",
+    "modules/console/web/src/modules/settings/tabs/FeedbackSettings.vue": "0cd04895b02459d97dfe747aaa3cc6ec9ef7ae4b56613bbc0d746f4800fd6e3d",
+    "modules/console/web/src/modules/settings/useSettingsPreview.ts": "82547b7d906f61d3cd4c9426ef7cd9a9d5b59e42be8b3f9d07aa6f7e93f2b622",
+    "tests/e2e/console-mobile-a11y.spec.ts": "dee874ed2ec0b10f595d6f15a1616607081bafe76f8c9b6c62da74cb39598130",
+    "tests/e2e/console-settings-canonical.spec.ts": "0386ced9a47dbb610042736e7f47678f5b66ec14fd756e37ba883bad4051f332",
+    "tests/e2e/console-settings-save-race.spec.ts": "020622ffebe2a3d7d18f0df870a8aa76b8ad5f0d6205878ed152d1d3d8d90ab7",
+    "tests/e2e/console-ui-consistency.spec.ts": "523dce0d238210b8526d416316b6cd671444f98a12dcbf6094772f8337d79bae",
+    "tests/e2e/settings-colors.spec.ts": "ef1d85fe604b4871f4878e9da2873242f79d9ebbb2668ac12c8c3bf56cf4c5ed",
+    "tests/e2e/settings-effects.spec.ts": "5b34a0490700e9decf6642941604d3c145f834ef7eb0733183236c2cc3b2f87c",
+    "tests/e2e/stellar-settings-groups.spec.ts": "ee174405a0046a0f50412eb66a05f1938cb5fe34dfd1266e96d733672a5f3b3c",
+    "modules/console/tests/settings-page-state.test.ts": "fa95742590a5975b0e0f16254e73cf11b8cd869fb8a6f78dfdad63e2889d9aa4",
+    "modules/console/tests/settings-pages.test.ts": "6a241be1b30b126d821b37e38f2f80002dc891d3e4a890473ea770e68ce0c902",
+    "modules/console/web/src/modules/settings/SettingsNav.vue": "2564f327640bfb3409813731797db156f549e1354ac243fbe0382ce284c7e84c",
+    "modules/console/web/src/modules/settings/SettingsRawEditor.vue": "40bd9c303d86d4db4912c40db1d6ca218050698a1e8c81d4e67a8985e32e7046",
+    "modules/console/web/src/modules/settings/SettingsSaveBar.vue": "7d1f8c3350bb4343336ed0d01f658b89048a8e42e622be51ef06479b9d401991",
+    "modules/console/web/src/modules/settings/settings-page-state.ts": "3da6d2e1fe1700924fe0acf1cf071455bd80cb3724c9f6a4fc48fe9b400b75a1",
+    "modules/console/web/src/modules/settings/settings-pages.ts": "5e17aaf2c21edf0d99cda3c7f947c567fd0f99fceea404ac44943e6a227df3c7",
+    "tests/e2e/console-settings-ia.spec.ts": "47565dee173970f15608c1f3c1904cabc9113480f8b1350c448f391d8e30c76a",
+    "tests/e2e/support/settings.ts": "c28b812066e76ba4305b7db9d19a3576dd6a63f24a033abfb2db6d106d773300"
+  },
+  "deleted_files": [
+    "modules/console/web/src/modules/settings/SettingsEffectGuide.vue",
+    "modules/console/web/src/modules/settings/settings-category-guide.ts",
+    "modules/console/web/src/modules/settings/tabs/SeoSettings.vue"
+  ],
+  "checks": {
+    "console_unit_and_types": {
+      "command": "make test → console-test（vue-tsc -b + tsx --test）",
+      "tests": 450,
+      "pass": 450
+    },
+    "make_test": {
+      "exit_code": 0,
+      "stellar_assets_tests": "241",
+      "go_packages_ok": 46,
+      "also_ran": [
+        "release-source-test",
+        "module-check",
+        "go vet",
+        "staticcheck v0.7.0"
+      ]
+    },
+    "make_build": {
+      "exit_code": 0,
+      "outputs": [
+        "Console",
+        "User Center",
+        "Go binary"
+      ]
+    },
+    "feedback_round3": {
+      "user_feedback": "图一这个去掉 图二这个需要有一点间距 图三这里还能再优化一下 设置项全部展开",
+      "interpretation": {
+        "1": "页面标题下的“效果说明条”（一句结果说明、查看草稿效果、折叠的影响位置与检查方法）整条删除；预览入口是页头的“前端预览”",
+        "2": "左侧目录项之间由 1px 改为 4px，目录右侧留 8px（选中项不贴滚动条），目录本身仍 208px 宽",
+        "3": "结构化分组（details.structured-item）全部默认展开；分组标题行重排；完整配置原文不是结构化分组，有意保持折叠"
+      },
+      "browser_probe_on_final_build": {
+        "390px": {
+          "pages_measured": 12,
+          "groups_total": 177,
+          "groups_closed": 0,
+          "effect_guide_elements": 0,
+          "effect_guide_text_found_on_pages": 0,
+          "raw_editor_open": false,
+          "help_not_left_aligned_with_name": 0,
+          "nested_indent_px": [
+            8
+          ],
+          "max_horizontal_overflow_px": 0,
+          "groups_by_page": {
+            "appearance": 11,
+            "navigation": 11,
+            "layout": 107,
+            "comments": 6,
+            "extensions": 42
+          },
+          "content_scroll_height_px": {
+            "appearance": 11713,
+            "layout": 43693,
+            "extensions": 12635
+          },
+          "nav": null
+        },
+        "768px": {
+          "pages_measured": 12,
+          "groups_total": 177,
+          "groups_closed": 0,
+          "effect_guide_elements": 0,
+          "effect_guide_text_found_on_pages": 0,
+          "raw_editor_open": false,
+          "help_not_left_aligned_with_name": 0,
+          "nested_indent_px": [
+            24
+          ],
+          "max_horizontal_overflow_px": 0,
+          "groups_by_page": {
+            "appearance": 11,
+            "navigation": 11,
+            "layout": 107,
+            "comments": 6,
+            "extensions": 42
+          },
+          "content_scroll_height_px": {
+            "appearance": 12950,
+            "layout": 47829,
+            "extensions": 13069
+          },
+          "nav": {
+            "gaps_between_items_px": [
+              4
+            ],
+            "active_item_right_edge_to_scroll_area_px": 8,
+            "sidebar_width_px": 216,
+            "nav_width_px": 208,
+            "first_nav_link_height_px": 39,
+            "sidebar_scrolls": false
+          }
+        },
+        "1024px": {
+          "pages_measured": 12,
+          "groups_total": 177,
+          "groups_closed": 0,
+          "effect_guide_elements": 0,
+          "effect_guide_text_found_on_pages": 0,
+          "raw_editor_open": false,
+          "help_not_left_aligned_with_name": 0,
+          "nested_indent_px": [
+            24
+          ],
+          "max_horizontal_overflow_px": 0,
+          "groups_by_page": {
+            "appearance": 11,
+            "navigation": 11,
+            "layout": 107,
+            "comments": 6,
+            "extensions": 42
+          },
+          "content_scroll_height_px": {
+            "appearance": 10043,
+            "layout": 40329,
+            "extensions": 11652
+          },
+          "nav": {
+            "gaps_between_items_px": [
+              4
+            ],
+            "active_item_right_edge_to_scroll_area_px": 8,
+            "sidebar_width_px": 216,
+            "nav_width_px": 208,
+            "first_nav_link_height_px": 39,
+            "sidebar_scrolls": true
+          }
+        },
+        "1280px": {
+          "pages_measured": 12,
+          "groups_total": 177,
+          "groups_closed": 0,
+          "effect_guide_elements": 0,
+          "effect_guide_text_found_on_pages": 0,
+          "raw_editor_open": false,
+          "help_not_left_aligned_with_name": 0,
+          "nested_indent_px": [
+            24
+          ],
+          "max_horizontal_overflow_px": 0,
+          "groups_by_page": {
+            "appearance": 11,
+            "navigation": 11,
+            "layout": 107,
+            "comments": 6,
+            "extensions": 42
+          },
+          "content_scroll_height_px": {
+            "appearance": 9813,
+            "layout": 39779,
+            "extensions": 11621
+          },
+          "nav": {
+            "gaps_between_items_px": [
+              4
+            ],
+            "active_item_right_edge_to_scroll_area_px": 8,
+            "sidebar_width_px": 216,
+            "nav_width_px": 208,
+            "first_nav_link_height_px": 39,
+            "sidebar_scrolls": false
+          }
+        }
+      },
+      "other_collapsed_disclosures": {
+        "method": "只读：12 页 × {1280, 390}，在可见的设置页面板里数 details（含未展开的）、可见的 aria-expanded=false 元素、文字含“展开/更多/显示全部/查看全部/收起/折叠”且不超过 12 个字的按钮与链接",
+        "details_total_1280": {
+          "appearance": 11,
+          "navigation": 11,
+          "layout": 107,
+          "comments": 6,
+          "extensions": 42,
+          "advanced": 1
+        },
+        "closed_details": [
+          "advanced:完整配置原文"
+        ],
+        "closed_details_rows": 2,
+        "words_buttons_found": 0,
+        "aria_expanded_false_visible": [
+          {
+            "width": 1280,
+            "page": "site",
+            "count": 4
+          },
+          {
+            "width": 1280,
+            "page": "post",
+            "count": 2
+          },
+          {
+            "width": 390,
+            "page": "site",
+            "count": 4
+          },
+          {
+            "width": 390,
+            "page": "post",
+            "count": 2
+          }
+        ],
+        "aria_expanded_false_kind": [
+          "button.attachment-preview.attachment-preview-empty「添加图片」"
+        ],
+        "aria_expanded_false_explained": "站点信息与文章页里“添加图片”按钮（AttachmentField.vue，aria-haspopup=menu 的选择菜单触发器），不是收起的内容区"
+      },
+      "specs_in_full_suite": {
+        "ia_U1_to_U4_passed": {
+          "U1": true,
+          "U2": true,
+          "U3": true,
+          "U4": true
+        },
+        "other_touched_specs_passed_counts": {
+          "settings-effects": 4,
+          "settings-colors": 3,
+          "console-settings-canonical": 11,
+          "stellar-settings-groups": 4,
+          "console-settings-save-race": 8,
+          "console-ui-consistency": 37,
+          "console-mobile-a11y": 22
+        }
+      },
+      "negative_control": {
+        "all_three_reverted_together": {
+          "failed_specs": [
+            "Q2b",
+            "U1",
+            "U2",
+            "U3",
+            "U4"
+          ],
+          "first_error_messages": [
+            "分组默认展开",
+            "站点信息不应有效果说明条",
+            "主题外观里不应有收起的分组",
+            "相邻导航项的间隔",
+            "expect(locator).toBeVisible() failed"
+          ],
+          "passed": 0
+        },
+        "variants_reverting_one_thing": {
+          "b_help_alignment_and_both_indents": {
+            "failed_specs": [
+              "U4"
+            ],
+            "first_error_messages": [
+              "1280px 说明与名称左对齐"
+            ],
+            "passed": 0
+          },
+          "c_sidebar_right_gutter_removed": {
+            "failed_specs": [
+              "U3"
+            ],
+            "first_error_messages": [
+              "选中项右缘到滚动条之间的空隙"
+            ],
+            "passed": 0
+          },
+          "d_sidebar_width_back_to_208_but_gutter_kept": {
+            "failed_specs": [
+              "U3"
+            ],
+            "first_error_messages": [
+              "“AI 与知识库”入口不换行"
+            ],
+            "passed": 0
+          },
+          "e_desktop_indent_removed": {
+            "failed_specs": [
+              "U4"
+            ],
+            "first_error_messages": [
+              "宽屏每层缩进"
+            ],
+            "passed": 0
+          },
+          "f_phone_indent_removed": {
+            "failed_specs": [
+              "U4"
+            ],
+            "first_error_messages": [
+              "手机每层缩进"
+            ],
+            "passed": 0
+          }
+        },
+        "restore_checks": {
+          "all_three": {
+            "restored_at": "2026-11-04T01:42:12+08:00",
+            "files": {
+              "SettingsView.vue": {
+                "sha256": "56065cd7a70df9b1e64c73e14659c7e6f6355fe5458dee3ed91e55205c56a7d0",
+                "byte_identical_to_final_backup": true
+              },
+              "SettingsNav.vue": {
+                "sha256": "2564f327640bfb3409813731797db156f549e1354ac243fbe0382ce284c7e84c",
+                "byte_identical_to_final_backup": true
+              },
+              "StructuredSetting.vue": {
+                "sha256": "c54b3aa0a9c324ee1dd91f226eab6dd8edc5a7f0630255a967280f0655d64af2",
+                "byte_identical_to_final_backup": true
+              },
+              "SettingsEffectGuide.vue": {
+                "exists_after_restore": false
+              },
+              "settings-category-guide.ts": {
+                "exists_after_restore": false
+              }
+            }
+          },
+          "b_c_d": {
+            "variants": {
+              "b": {
+                "restored_at": "2026-11-04T01:42:53+08:00",
+                "files": {
+                  "SettingsView.vue": {
+                    "sha256": "56065cd7a70df9b1e64c73e14659c7e6f6355fe5458dee3ed91e55205c56a7d0",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "SettingsNav.vue": {
+                    "sha256": "2564f327640bfb3409813731797db156f549e1354ac243fbe0382ce284c7e84c",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "StructuredSetting.vue": {
+                    "sha256": "c54b3aa0a9c324ee1dd91f226eab6dd8edc5a7f0630255a967280f0655d64af2",
+                    "byte_identical_to_final_backup": true
+                  }
+                }
+              },
+              "c": {
+                "restored_at": "2026-11-04T01:43:08+08:00",
+                "files": {
+                  "SettingsView.vue": {
+                    "sha256": "56065cd7a70df9b1e64c73e14659c7e6f6355fe5458dee3ed91e55205c56a7d0",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "SettingsNav.vue": {
+                    "sha256": "2564f327640bfb3409813731797db156f549e1354ac243fbe0382ce284c7e84c",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "StructuredSetting.vue": {
+                    "sha256": "c54b3aa0a9c324ee1dd91f226eab6dd8edc5a7f0630255a967280f0655d64af2",
+                    "byte_identical_to_final_backup": true
+                  }
+                }
+              },
+              "d": {
+                "restored_at": "2026-11-04T01:43:23+08:00",
+                "files": {
+                  "SettingsView.vue": {
+                    "sha256": "56065cd7a70df9b1e64c73e14659c7e6f6355fe5458dee3ed91e55205c56a7d0",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "SettingsNav.vue": {
+                    "sha256": "2564f327640bfb3409813731797db156f549e1354ac243fbe0382ce284c7e84c",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "StructuredSetting.vue": {
+                    "sha256": "c54b3aa0a9c324ee1dd91f226eab6dd8edc5a7f0630255a967280f0655d64af2",
+                    "byte_identical_to_final_backup": true
+                  }
+                }
+              }
+            }
+          },
+          "e_f": {
+            "variants": {
+              "e": {
+                "restored_at": "2026-11-04T01:43:48+08:00",
+                "files": {
+                  "SettingsView.vue": {
+                    "sha256": "56065cd7a70df9b1e64c73e14659c7e6f6355fe5458dee3ed91e55205c56a7d0",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "SettingsNav.vue": {
+                    "sha256": "2564f327640bfb3409813731797db156f549e1354ac243fbe0382ce284c7e84c",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "StructuredSetting.vue": {
+                    "sha256": "c54b3aa0a9c324ee1dd91f226eab6dd8edc5a7f0630255a967280f0655d64af2",
+                    "byte_identical_to_final_backup": true
+                  }
+                }
+              },
+              "f": {
+                "restored_at": "2026-11-04T01:44:04+08:00",
+                "files": {
+                  "SettingsView.vue": {
+                    "sha256": "56065cd7a70df9b1e64c73e14659c7e6f6355fe5458dee3ed91e55205c56a7d0",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "SettingsNav.vue": {
+                    "sha256": "2564f327640bfb3409813731797db156f549e1354ac243fbe0382ce284c7e84c",
+                    "byte_identical_to_final_backup": true
+                  },
+                  "StructuredSetting.vue": {
+                    "sha256": "c54b3aa0a9c324ee1dd91f226eab6dd8edc5a7f0630255a967280f0655d64af2",
+                    "byte_identical_to_final_backup": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "census_control_count_change": {
+        "round2_final_controls": 1915,
+        "round3_controls": 1897,
+        "difference": 18,
+        "per_page_difference": {
+          "site": 2,
+          "seo": 1,
+          "appearance": 2,
+          "navigation": 2,
+          "layout": 2,
+          "post": 2,
+          "listing": 2,
+          "community": 1,
+          "comments": 1,
+          "feedback": 1,
+          "extensions": 1,
+          "advanced": 1,
+          "(列表)": 0
+        },
+        "box_under_44px_per_page_unchanged": true,
+        "why": "每个设置页少了说明条里的折叠摘要（12 页各 1 个）；其中有固定预览页面的 6 页（站点信息、主题外观、导航与页脚、页面与侧栏、文章页、列表与卡片）还少了“查看草稿效果”链接（6 个），所以这 6 页各少 2 个、另 6 页各少 1 个、手机分组列表不变，共 18 个（逐页差值见 per_page_difference）。盒子不足 44px 的控件数逐页都不变（726），因为被删的控件本来就是 ≥44px 的"
+      }
+    },
+    "mobile_touch_targets_390": {
+      "method": "390×844 触屏，12 页 + 手机分组列表，展开全部折叠分组后，对每个可见、可用的可点击控件做命中测试（tests/e2e/support/settings.ts 的 measureTouchTargets）：自身盒子宽或高不足 44px 的方向，从控件边缘向两侧逐像素用 elementFromPoint 探测，数连续仍落在该控件（或它的 label）上的像素，加上盒子尺寸即点击区，取左中右（或上中下）三条线的最小值；再查每个控件自身区域有没有被别的元素（常见是相邻控件的扩大区）抢走。boundingBox 看不到透明伪元素补出来的点击区，所以不用它",
+      "after_change": {
+        "total": {
+          "controls": 1897,
+          "box_under_44px": 726,
+          "hit_area_reaches_44px": 726,
+          "uncovered": 0,
+          "blocked_by_neighbour": 0,
+          "stolen_clicks": 0
+        },
+        "per_page": {
+          "site": {
+            "controls": 16,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "seo": {
+            "controls": 33,
+            "box_under_44px": 7,
+            "hit_area_reaches_44px": 7,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "appearance": {
+            "controls": 272,
+            "box_under_44px": 60,
+            "hit_area_reaches_44px": 60,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "navigation": {
+            "controls": 213,
+            "box_under_44px": 83,
+            "hit_area_reaches_44px": 83,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "layout": {
+            "controls": 788,
+            "box_under_44px": 355,
+            "hit_area_reaches_44px": 355,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "post": {
+            "controls": 89,
+            "box_under_44px": 11,
+            "hit_area_reaches_44px": 11,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "listing": {
+            "controls": 41,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "community": {
+            "controls": 17,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "comments": {
+            "controls": 133,
+            "box_under_44px": 65,
+            "hit_area_reaches_44px": 65,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "feedback": {
+            "controls": 13,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "extensions": {
+            "controls": 256,
+            "box_under_44px": 142,
+            "hit_area_reaches_44px": 142,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "advanced": {
+            "controls": 12,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "(列表)": {
+            "controls": 14,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          }
+        }
+      },
+      "round2_final_before_round3": {
+        "total": {
+          "controls": 1915,
+          "box_under_44px": 726,
+          "hit_area_reaches_44px": 726,
+          "uncovered": 0,
+          "blocked_by_neighbour": 0,
+          "stolen_clicks": 0
+        },
+        "per_page": {
+          "site": {
+            "controls": 18,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "seo": {
+            "controls": 34,
+            "box_under_44px": 7,
+            "hit_area_reaches_44px": 7,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "appearance": {
+            "controls": 274,
+            "box_under_44px": 60,
+            "hit_area_reaches_44px": 60,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "navigation": {
+            "controls": 215,
+            "box_under_44px": 83,
+            "hit_area_reaches_44px": 83,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "layout": {
+            "controls": 790,
+            "box_under_44px": 355,
+            "hit_area_reaches_44px": 355,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "post": {
+            "controls": 91,
+            "box_under_44px": 11,
+            "hit_area_reaches_44px": 11,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "listing": {
+            "controls": 43,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "community": {
+            "controls": 18,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "comments": {
+            "controls": 134,
+            "box_under_44px": 65,
+            "hit_area_reaches_44px": 65,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "feedback": {
+            "controls": 14,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "extensions": {
+            "controls": 257,
+            "box_under_44px": 142,
+            "hit_area_reaches_44px": 142,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "advanced": {
+            "controls": 13,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "(列表)": {
+            "controls": 14,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          }
+        }
+      },
+      "after_change_hit_area_px_by_kind": {
+        "恢复默认": {
+          "n": 617,
+          "min_px": 44,
+          "max_px": 45,
+          "histogram": {
+            "44": 75,
+            "45": 542
+          }
+        },
+        "开关": {
+          "n": 43,
+          "min_px": 46,
+          "max_px": 46,
+          "histogram": {
+            "46": 43
+          }
+        },
+        "折叠摘要": {
+          "n": 66,
+          "min_px": 46,
+          "max_px": 46,
+          "histogram": {
+            "46": 66
+          }
+        }
+      },
+      "before_change_same_helper": {
+        "total": {
+          "controls": 1915,
+          "box_under_44px": 738,
+          "hit_area_reaches_44px": 0,
+          "uncovered": 561,
+          "blocked_by_neighbour": 177,
+          "stolen_clicks": 0
+        },
+        "per_page": {
+          "site": {
+            "controls": 18,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "seo": {
+            "controls": 34,
+            "box_under_44px": 7,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 7,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "appearance": {
+            "controls": 274,
+            "box_under_44px": 71,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 60,
+            "blocked_by_neighbour": 11,
+            "stolen_clicks": 0
+          },
+          "navigation": {
+            "controls": 215,
+            "box_under_44px": 83,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 72,
+            "blocked_by_neighbour": 11,
+            "stolen_clicks": 0
+          },
+          "layout": {
+            "controls": 790,
+            "box_under_44px": 355,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 248,
+            "blocked_by_neighbour": 107,
+            "stolen_clicks": 0
+          },
+          "post": {
+            "controls": 91,
+            "box_under_44px": 12,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 12,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "listing": {
+            "controls": 43,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 1,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "community": {
+            "controls": 18,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 1,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "comments": {
+            "controls": 134,
+            "box_under_44px": 65,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 59,
+            "blocked_by_neighbour": 6,
+            "stolen_clicks": 0
+          },
+          "feedback": {
+            "controls": 14,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 1,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "extensions": {
+            "controls": 257,
+            "box_under_44px": 142,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 100,
+            "blocked_by_neighbour": 42,
+            "stolen_clicks": 0
+          },
+          "advanced": {
+            "controls": 13,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "(列表)": {
+            "controls": 14,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          }
+        }
+      },
+      "before_change_by_kind": {
+        "button.settings-reset 48×18": 617,
+        "summary 358×21": 66,
+        "button.relative 51×31": 43,
+        "input 246×28": 11,
+        "label 29×44": 1
+      },
+      "embedded_mode_after_change": {
+        "total": {
+          "controls": 1897,
+          "box_under_44px": 726,
+          "hit_area_reaches_44px": 726,
+          "uncovered": 0,
+          "blocked_by_neighbour": 0,
+          "stolen_clicks": 0
+        },
+        "per_page": {
+          "site": {
+            "controls": 16,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "seo": {
+            "controls": 33,
+            "box_under_44px": 7,
+            "hit_area_reaches_44px": 7,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "appearance": {
+            "controls": 272,
+            "box_under_44px": 60,
+            "hit_area_reaches_44px": 60,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "navigation": {
+            "controls": 213,
+            "box_under_44px": 83,
+            "hit_area_reaches_44px": 83,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "layout": {
+            "controls": 788,
+            "box_under_44px": 355,
+            "hit_area_reaches_44px": 355,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "post": {
+            "controls": 89,
+            "box_under_44px": 11,
+            "hit_area_reaches_44px": 11,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "listing": {
+            "controls": 41,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "community": {
+            "controls": 17,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "comments": {
+            "controls": 133,
+            "box_under_44px": 65,
+            "hit_area_reaches_44px": 65,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "feedback": {
+            "controls": 13,
+            "box_under_44px": 1,
+            "hit_area_reaches_44px": 1,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "extensions": {
+            "controls": 256,
+            "box_under_44px": 142,
+            "hit_area_reaches_44px": 142,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "advanced": {
+            "controls": 12,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          },
+          "(列表)": {
+            "controls": 14,
+            "box_under_44px": 0,
+            "hit_area_reaches_44px": 0,
+            "uncovered": 0,
+            "blocked_by_neighbour": 0,
+            "stolen_clicks": 0
+          }
+        }
+      },
+      "earlier_count_correction": {
+        "earlier_reported_under_44px": 756,
+        "earlier_by_kind": {
+          "恢复默认": 617,
+          "折叠摘要": 66,
+          "开关": 43,
+          "滑块": 12,
+          "取色器原生输入": 18
+        },
+        "same_helper_before_change": 738,
+        "why_different": [
+          "旧统计把 18 个取色器的原生 input 也算成小控件，它们其实叠在 52×44 的“取色”标签里，可点击的是标签",
+          "旧统计只量高度，漏掉宽 29px 的“X”平台标签（+1）",
+          "旧统计的滑块是 12 个，命中测试是 11 个：命中测试不统计 disabled 的控件，disabled 滑块数见 opacity_slider_probe"
+        ]
+      },
+      "status": "达标（Chromium 命中测试）：盒子不足 44px 的控件点击区都已补到 44px，没有一个被相邻控件挡住，也没有点击被抢走；视觉没有放大（开关、恢复默认、折叠摘要的外观尺寸没有变）"
+    },
+    "mobile_touch_targets_negative_control_round2": {
+      "method": "在最终源码上（含最后一处注释改动）把 settings-form.css、SettingColorEditor.vue、CanonicalSettingsForm.vue 临时回退到改动前（只删掉本次追加的块，不新增任何行），先于门禁跑两条 Q2b 规格，必须都失败；随后从备份恢复并逐字节核对",
+      "specs_failed_without_the_change": 2,
+      "specs_passed_with_the_change_in_full_suite": 2,
+      "restore_check": {
+        "restored_at": "2026-11-04T00:27:01+08:00",
+        "files": {
+          "settings-form.css": {
+            "sha256": "24952678d85856a7a23e9c267406eef02d8e262fa3d7856e9299bdef5134865d",
+            "byte_identical_to_final_backup": true
+          },
+          "SettingColorEditor.vue": {
+            "sha256": "83b617754446c08ed0ea41a07fb76b60a219c0d1248e7c552c7acdddf79d891c",
+            "byte_identical_to_final_backup": true
+          },
+          "CanonicalSettingsForm.vue": {
+            "sha256": "0e2a60e8f34c7ea753a9282ad35148992077210990b600559470c59160d791fb",
+            "byte_identical_to_final_backup": true
+          }
+        }
+      }
+    },
+    "appearance_changed_by_design": {
+      "note": "第三轮（用户体验反馈）有意改变了每一页的外观：页面标题下的效果说明条被删除、左侧目录项间距与右侧留白变化、结构化分组全部默认展开且标题行重排，所以没有再做逐像素的“前后一致”比较；25 张页面图与 9 张状态图已在最终构建上整套重拍并替换。手机点击区本身的视觉（开关、恢复默认、折叠摘要的外观尺寸）没有变，由命中测试守住。",
+      "retaken": [
+        "after-advanced-1280.png",
+        "after-advanced-390.png",
+        "after-appearance-1280.png",
+        "after-appearance-390.png",
+        "after-comments-1280.png",
+        "after-comments-390.png",
+        "after-community-1280.png",
+        "after-community-390.png",
+        "after-extensions-1280.png",
+        "after-extensions-390.png",
+        "after-feedback-1280.png",
+        "after-feedback-390.png",
+        "after-layout-1280.png",
+        "after-layout-390.png",
+        "after-list-390.png",
+        "after-listing-1280.png",
+        "after-listing-390.png",
+        "after-navigation-1280.png",
+        "after-navigation-390.png",
+        "after-post-1280.png",
+        "after-post-390.png",
+        "after-seo-1280.png",
+        "after-seo-390.png",
+        "after-site-1280.png",
+        "after-site-390.png",
+        "after-state-focus-clear-of-save-bar-1280.png",
+        "after-state-keyboard-focus-1280.png",
+        "after-state-list-unsaved-390.png",
+        "after-state-section-jump-1280.png",
+        "after-state-section-jump-390.png",
+        "after-state-site-with-theme-draft-1280.png",
+        "after-state-unsaved-appearance-1280.png",
+        "after-state-unsaved-appearance-390.png",
+        "after-state-unsaved-post-1280.png",
+        "before-appearance-1280.png",
+        "before-basic-1280.png",
+        "before-comments-1280.png",
+        "before-post-1280.png",
+        "before-post-390.png",
+        "feedback3-band-1280.png",
+        "feedback3-groups-1280.png",
+        "feedback3-groups-390.png",
+        "feedback3-nav-1280.png"
+      ]
+    },
+    "font_swap_census": {
+      "method": "同一份命中测试普查，页面里临时把字体栈换成别的（DM Sans 是随 Console 打包的，换掉的主要是 CJK 回退字体与 Latin 宽度）：用来判断固定 px 的扩大区在别的平台（CI 的 Ubuntu、Android）上是否仍够 44px。不是 Linux 实测",
+      "results": {
+        "DM Sans + 宋体系 CJK": {
+          "controls": 1897,
+          "boxUnder44": 726,
+          "reached44": 726,
+          "uncovered": 0,
+          "blocked": 0,
+          "blockedMin": 999,
+          "stolen": 0
+        },
+        "DM Sans + Arial Unicode MS": {
+          "controls": 1897,
+          "boxUnder44": 726,
+          "reached44": 726,
+          "uncovered": 0,
+          "blocked": 0,
+          "blockedMin": 999,
+          "stolen": 0
+        },
+        "Verdana + 宋体系 CJK（Latin 偏宽）": {
+          "controls": 1897,
+          "boxUnder44": 726,
+          "reached44": 726,
+          "uncovered": 0,
+          "blocked": 0,
+          "blockedMin": 999,
+          "stolen": 0
+        }
+      },
+      "fixed_by_design": "“恢复默认”高度恒为 18px（line-height 1.5 × 12px，8 种字体栈下 312 个全是 18px）；折叠摘要的高度在 8 种字体栈下完全不变（没有说明的 21px = 14px × 1.5，有说明的 44.19px / 63.38px，见 fontsense-r3.txt）；“X”标签宽度在 7 种字体栈下最窄 44.7px（页面原样 45.5px，见 fontsense2-r3.txt）"
+    },
+    "opacity_slider_probe": {
+      "method": "390 宽触屏，外观页第一个可用的不透明度滑块：量盒子高度与行高，再用鼠标与触屏点在盒子上缘 2px、下缘 42px 处（离轨道 14px 以外），看值是否改变；并统计各页 input[type=range] 与 disabled 个数",
+      "range_inputs_in_settings_dom": 12,
+      "disabled": 1,
+      "note": "设置页把 12 页的内容都放在 DOM 里（非活动页隐藏），每页数到的是同一批滑块，所以不求和",
+      "geometry": {
+        "boxTop": 366.21875,
+        "boxHeight": 44,
+        "boxLeft": 82,
+        "boxWidth": 246,
+        "rowHeight": 28,
+        "marginTop": "-8px",
+        "marginBottom": "-8px",
+        "value": "100"
+      },
+      "taps": [
+        {
+          "label": "上缘（离盒子顶 2px）",
+          "how": "mouse",
+          "fraction": 0.8,
+          "dy": 2,
+          "boxHeight": 44,
+          "hit": "input#v-9-opacity",
+          "before": "100",
+          "after": "82",
+          "changed": true
+        },
+        {
+          "label": "下缘（离盒子顶 42px）",
+          "how": "mouse",
+          "fraction": 0.2,
+          "dy": 42,
+          "boxHeight": 44,
+          "hit": "input#v-9-opacity",
+          "before": "82",
+          "after": "18",
+          "changed": true
+        },
+        {
+          "label": "上缘（触屏）",
+          "how": "touch",
+          "fraction": 0.6,
+          "dy": 2,
+          "boxHeight": 44,
+          "hit": "input#v-9-opacity",
+          "before": "18",
+          "after": "61",
+          "changed": true
+        },
+        {
+          "label": "下缘（触屏）",
+          "how": "touch",
+          "fraction": 0.4,
+          "dy": 42,
+          "boxHeight": 44,
+          "hit": "input#v-9-opacity",
+          "before": "61",
+          "after": "39",
+          "changed": true
+        }
+      ]
+    },
+    "feedback_page_discard_check": {
+      "method": "一次性浏览器核实，只改草稿、不点保存",
+      "field": "settings-feedback-api-base",
+      "originalLength": 0,
+      "barBefore": "没有未保存修改 仅保存本页 放弃本页修改 保存",
+      "barAfterEdit": "1 处未保存修改 仅保存本页 放弃本页修改 保存",
+      "navDotAfterEdit": 1,
+      "valueRestored": true,
+      "barAfterDiscard": "没有未保存修改 仅保存本页 放弃本页修改 保存",
+      "navDotAfterDiscard": 0,
+      "serverUnchanged": true
+    },
+    "embedded_mode_run": {
+      "how": "make build 产出的 ./blog，不带 -dev；根目录 .tmp/embed-root-4 没有 modules，SPA 只能来自 go:embed；全新夹具库（scripts/e2e/prepare.go）+ 启动前写好的最小 site.yml，监听 8099，核对后已停止",
+      "spa_loaded_from_embed_log": true,
+      "entry_matches_disk": true,
+      "requested_asset_count": 31,
+      "asset_mismatches": [],
+      "settings_chunks": [
+        {
+          "path": "/console/assets/SettingsView-3GTwedGF.css",
+          "sha256": "f1b1f8150681d733972319cfa65f6dde5306192257e85b651358d6f389cf09c2"
+        },
+        {
+          "path": "/console/assets/SettingsView-DGwIHbFy.js",
+          "sha256": "b6ac9f715e76cb07da16234bda30af80dade3ea3b7e90719c71614c2c9a7e921"
+        }
+      ],
+      "enter_from_scrolled_page_probe": [
+        {
+          "width": 1280,
+          "enteredFrom": "/console/dashboard",
+          "scrollTopBefore": 399,
+          "scrollTop": 0,
+          "target": "页面标题",
+          "targetTop": 96,
+          "headerBottom": 72,
+          "covered": false
+        },
+        {
+          "width": 390,
+          "enteredFrom": "/console/dashboard",
+          "scrollTopBefore": 1057,
+          "scrollTop": 0,
+          "target": "分组标题",
+          "targetTop": 126,
+          "headerBottom": 118,
+          "covered": false
+        }
+      ],
+      "browser_console_messages": 0,
+      "section_jump_probe": {
+        "pages": [
+          "appearance",
+          "post",
+          "comments",
+          "advanced"
+        ],
+        "headings_measured": 26,
+        "covered_by_sticky_header": 0,
+        "min_gap_below_header_px": 36
+      },
+      "keyboard_focus_probe": {
+        "pages": [
+          "appearance",
+          "comments",
+          "site"
+        ],
+        "sweeps": 6,
+        "total_stops": 620,
+        "covered_total": 0
+      },
+      "not_rerun_in_embedded_mode": "逐页截图与其余探针（换页、全部 12 页的分区/焦点、像素比较、滑块探针、换字体实验）只在 8098 的开发模式服务上做；嵌入模式只复核了资源哈希、点击区普查、进入与控制台扫描、4 页分区跳转、3 页键盘聚焦",
+      "earlier_failed_attempt": "上一轮（点击区改动之前的最终构建）第一次启动失败是自己造成的：用了 config/site.example.yml（含 wiki 项目 frontend，要求内容迁移），启动后该项目写进了库；换最小 site.yml 的第二次复用了同一个库，所以同样失败。这一轮直接用全新的根与启动前写好的最小 site.yml，一次启动成功；因此不能说成夹具库在生产模式下无法启动"
+    },
+    "embedded_binary_content": {
+      "method": "把 make build 产出的二进制整个读入内存，逐个在其中按字节检索 dist 与 dist-uc 的每个文件；对其中一个文件改动一个字节作负向对照，检索必须失败",
+      "binary_sha256": "623dcef42f3a7c5461679aae48968c240c191ec63850d8425933ee576904424a",
+      "dist": {
+        "files_searched": 280,
+        "empty_files_skipped": 0,
+        "bytes": 3882452,
+        "missing": []
+      },
+      "dist_uc": {
+        "files_searched": 38,
+        "empty_files_skipped": 0,
+        "bytes": 1098181,
+        "missing": []
+      },
+      "negative_control": {
+        "file": "modules/console/web/dist/assets/AppearanceView-B8myq5al.js",
+        "original_found": true,
+        "one_byte_changed_found": false
+      }
+    },
+    "playwright_full_suite": {
+      "command": "pnpm run e2e",
+      "exit_code": 0,
+      "passed": 205
+    },
+    "browser_acceptance_script": {
+      "overflow": [],
+      "touch": {
+        "button": {
+          "count": 1036,
+          "minH": 18,
+          "minW": 44,
+          "shortest": "seo:脚本地址恢复默认"
+        },
+        "input": {
+          "count": 299,
+          "minH": 42,
+          "minW": 50,
+          "shortest": "appearance:主题色取色器"
+        },
+        "textarea": {
+          "count": 11,
+          "minH": 61,
+          "minW": 350,
+          "shortest": "site:"
+        },
+        "choice-card": {
+          "count": 17,
+          "minH": 64,
+          "minW": 114,
+          "shortest": "seo:本地静态索引✓在浏览器搜索静态索引"
+        },
+        "segmented": {
+          "count": 6,
+          "minH": 44,
+          "minW": 94.3,
+          "shortest": "seo:全部内容"
+        },
+        "switch": {
+          "count": 43,
+          "minH": 31,
+          "minW": 51,
+          "shortest": "seo:本地索引包含正文"
+        },
+        "select": {
+          "count": 335,
+          "minH": 44,
+          "minW": 283,
+          "shortest": "seo:脚本地址取值方式"
+        },
+        "summary": {
+          "count": 178,
+          "minH": 21,
+          "minW": 334,
+          "shortest": "appearance:浅色继承默认 恢复默认"
+        },
+        "nav-list-row": {
+          "count": 12,
+          "minH": 57
+        }
+      },
+      "presetsByScheme": [
+        {
+          "preset": "card",
+          "scheme": "auto",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": null
+        },
+        {
+          "preset": "card",
+          "scheme": "light",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "light"
+        },
+        {
+          "preset": "card",
+          "scheme": "dark",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "dark"
+        },
+        {
+          "preset": "glass",
+          "scheme": "auto",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": null
+        },
+        {
+          "preset": "glass",
+          "scheme": "light",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "light"
+        },
+        {
+          "preset": "glass",
+          "scheme": "dark",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "dark"
+        },
+        {
+          "preset": "minimal",
+          "scheme": "auto",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": null
+        },
+        {
+          "preset": "minimal",
+          "scheme": "light",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "light"
+        },
+        {
+          "preset": "minimal",
+          "scheme": "dark",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "dark"
+        },
+        {
+          "preset": "flat",
+          "scheme": "auto",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": null
+        },
+        {
+          "preset": "flat",
+          "scheme": "light",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "light"
+        },
+        {
+          "preset": "flat",
+          "scheme": "dark",
+          "checked": true,
+          "previewStylesheet": true,
+          "previewTheme": "dark"
+        }
+      ],
+      "guard": {
+        "routeLeave": {
+          "dialogs": [
+            {
+              "type": "confirm",
+              "message": "您有未保存的设置更改，离开后修改将丢失，是否确认离开？"
+            }
+          ],
+          "stayedOnSettings": true
+        },
+        "beforeunloadPrevented": true
+      },
+      "keyboard": {
+        "tabFromSiteLandsOn": "seo",
+        "afterEnter": {
+          "page": "seo",
+          "outlineWidth": "2px",
+          "outlineStyle": "solid"
+        },
+        "url": "http://127.0.0.1:8098/console/settings?tab=seo"
+      }
+    },
+    "section_jump_probe": {
+      "chips_clicked": 78,
+      "headings_measured": 76,
+      "covered_by_sticky_header": 0,
+      "min_gap_below_header_px": 36,
+      "not_measured_by_probe": [
+        "1280px advanced:完整配置原文",
+        "390px advanced:完整配置原文"
+      ],
+      "probe_wait_fix": {
+        "what_happened": "第一次跑最终构建时，探针点击后固定等 1.1 秒再取样：页面与侧栏全部展开后约 39,800px（390 宽约 43,700px），点到“右侧栏”“侧栏组件定义”两个靠后的锚点，平滑滚动要约 1.5 秒才落定，取样落在动画中途（滚动到 37,720 / 37,723，标题还在视口下方 1,403 / 1,764px），4 次被记为“被盖住”（by=null，即点不在视口内，不是被页头遮住）。这是探针的等待方式不对，不是页面的问题",
+        "first_run_with_fixed_wait_1100ms": {
+          "chips_clicked": 78,
+          "headings_measured": 76,
+          "covered": [
+            "1280px layout:右侧栏（标题顶边 1403px，滚动到 37720/38879）",
+            "1280px layout:侧栏组件定义（标题顶边 1764px，滚动到 37723/38879）",
+            "390px layout:右侧栏（标题顶边 1373px，滚动到 41540/42793）",
+            "390px layout:侧栏组件定义（标题顶边 1759px，滚动到 41531/42793）"
+          ]
+        },
+        "fix": "chipprobe.js 改为等 main.content 的滚动位置连续 3 次读数不变（150ms 一次，至多约 8 秒）再取样；重跑 12 页后 0 个被盖、最小间隙 36px（即本节上面的数字）",
+        "scroll_trace": [
+          {
+            "width": 1280,
+            "anchor": "右侧栏",
+            "end_scroll_top": 38879,
+            "heading_top_px": 244,
+            "header_bottom_px": 72,
+            "scroll_height_px": 39779,
+            "settled_after_ms": 1536
+          },
+          {
+            "width": 1280,
+            "anchor": "侧栏组件定义",
+            "end_scroll_top": 38879,
+            "heading_top_px": 608,
+            "header_bottom_px": 72,
+            "scroll_height_px": 39779,
+            "settled_after_ms": 1540
+          },
+          {
+            "width": 390,
+            "anchor": "右侧栏",
+            "end_scroll_top": 42758,
+            "heading_top_px": 155,
+            "header_bottom_px": 118,
+            "scroll_height_px": 43693,
+            "settled_after_ms": 1540
+          },
+          {
+            "width": 390,
+            "anchor": "侧栏组件定义",
+            "end_scroll_top": 42793,
+            "heading_top_px": 497,
+            "header_bottom_px": 118,
+            "scroll_height_px": 43693,
+            "settled_after_ms": 1565
+          }
+        ],
+        "user_visible_effect": "页面与侧栏很长，点靠后的页内锚点时平滑滚动约 1.5 秒；落定后标题在页头下方，没有被盖住"
+      }
+    },
+    "page_switch_probe": [
+      {
+        "width": 1280,
+        "step": "after switching to navigation",
+        "scrollTop": 0,
+        "title_top": 96,
+        "header_bottom": 72,
+        "title_clear": true
+      },
+      {
+        "width": 1280,
+        "step": "after switching to layout",
+        "scrollTop": 0,
+        "title_top": 96,
+        "header_bottom": 72,
+        "title_clear": true
+      },
+      {
+        "width": 390,
+        "step": "after switching to navigation",
+        "scrollTop": 0,
+        "title_top": 178,
+        "header_bottom": 118,
+        "title_clear": true
+      }
+    ],
+    "enter_from_scrolled_page_probe": [
+      {
+        "width": 1280,
+        "entered_from": "/console/dashboard",
+        "scroll_top_before": 399,
+        "scroll_top_after": 0,
+        "target": "页面标题",
+        "target_top": 96,
+        "header_bottom": 72,
+        "covered": false
+      },
+      {
+        "width": 390,
+        "entered_from": "/console/dashboard",
+        "scroll_top_before": 1057,
+        "scroll_top_after": 0,
+        "target": "分组标题",
+        "target_top": 126,
+        "header_bottom": 118,
+        "covered": false
+      }
+    ],
+    "browser_console_scan": {
+      "messages": 0,
+      "sample": []
+    },
+    "keyboard_focus_probe": {
+      "method": "从页面标题起按 Tab 遍历内容区，每一站在控件可见部分的中心做命中测试；落在页头、保存栏或手机底部导航上即记为被盖住",
+      "pages": [
+        {
+          "width": 1280,
+          "page": "appearance",
+          "focusStops": 160,
+          "covered": 0
+        },
+        {
+          "width": 1280,
+          "page": "post",
+          "focusStops": 86,
+          "covered": 0
+        },
+        {
+          "width": 1280,
+          "page": "comments",
+          "focusStops": 132,
+          "covered": 0
+        },
+        {
+          "width": 1280,
+          "page": "extensions",
+          "focusStops": 160,
+          "covered": 0
+        },
+        {
+          "width": 1280,
+          "page": "site",
+          "focusStops": 18,
+          "covered": 0
+        },
+        {
+          "width": 1280,
+          "page": "feedback",
+          "focusStops": 12,
+          "covered": 0
+        },
+        {
+          "width": 1280,
+          "page": "seo",
+          "focusStops": 27,
+          "covered": 0
+        },
+        {
+          "width": 390,
+          "page": "appearance",
+          "focusStops": 160,
+          "covered": 0
+        },
+        {
+          "width": 390,
+          "page": "post",
+          "focusStops": 86,
+          "covered": 0
+        },
+        {
+          "width": 390,
+          "page": "comments",
+          "focusStops": 132,
+          "covered": 0
+        },
+        {
+          "width": 390,
+          "page": "extensions",
+          "focusStops": 160,
+          "covered": 0
+        },
+        {
+          "width": 390,
+          "page": "site",
+          "focusStops": 18,
+          "covered": 0
+        },
+        {
+          "width": 390,
+          "page": "feedback",
+          "focusStops": 12,
+          "covered": 0
+        },
+        {
+          "width": 390,
+          "page": "seo",
+          "focusStops": 27,
+          "covered": 0
+        }
+      ],
+      "total_stops": 1190,
+      "covered_total": 0
+    }
+  },
+  "preview": {
+    "url": "http://127.0.0.1:8098/console/settings?tab=appearance",
+    "root": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261103-feat-blg-20261103-01-settings-ia/.tmp/e2e-server.5oeGIY",
+    "fixture": "scripts/e2e/prepare.go 隔离种子（本地测试账号，不含生产数据）",
+    "service": "COMMAND   PID      USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\nblog    45791 sakurasep   13u  IPv6 0x91d85c241b329979      0t0  TCP *:8098 (LISTEN)",
+    "binary_sha256": "623dcef42f3a7c5461679aae48968c240c191ec63850d8425933ee576904424a",
+    "entry_matches_disk": true,
+    "requested_asset_count": 31,
+    "asset_mismatches": [],
+    "settings_chunks": [
+      {
+        "path": "/console/assets/SettingsView-3GTwedGF.css",
+        "sha256": "f1b1f8150681d733972319cfa65f6dde5306192257e85b651358d6f389cf09c2"
+      },
+      {
+        "path": "/console/assets/SettingsView-DGwIHbFy.js",
+        "sha256": "b6ac9f715e76cb07da16234bda30af80dade3ea3b7e90719c71614c2c9a7e921"
+      }
+    ]
+  },
+  "screenshots": {
+    "after-advanced-1280.png": "837fc686298c912889d2793761bcd6ff0f5e88e597f8ebdcc6a42ac374c0ba7b",
+    "after-advanced-390.png": "9469955e1f654123315b717cebefae4504194f0dfb045e80ea7cd685c34c269a",
+    "after-appearance-1280.png": "9a4f865bcf76cd7f5ea9cfdfff949e3e2c2a9bfc2a6c27ca2a4cb6d9931623cf",
+    "after-appearance-390.png": "b3b04c0f6b8649addec361d5a4bb965027f3683b882a0400e2ed41f718881b32",
+    "after-comments-1280.png": "bbe457a2e05e6f9b97563f32e10f0c5082b41bdedd8ef051fc9d97dd1afb7df5",
+    "after-comments-390.png": "287f0ef06a38021dcc8d7d5ceb36f16ac139451912aa197957000b9b65eb631b",
+    "after-community-1280.png": "1af5210491221c98d519d4351b9c6a16abaa7540e8c3cfbb575f803c19f95278",
+    "after-community-390.png": "bf70f89ac12d2374065d1fce333d9d415d6eb46360c96938eb8b3bc1b7d6e6df",
+    "after-extensions-1280.png": "2107fbcea87a8eb25e3856c81828b225b8a0d6418de66e2f87e6fa0d40296840",
+    "after-extensions-390.png": "2f6e3ad138babb2ccebead8d491810206147ab30379c4fe8aa6f348d9724cda5",
+    "after-feedback-1280.png": "db6deda81b74a1b04d7fb8eaa12e1af78495c671ffbccab434fc30ae1deb3ede",
+    "after-feedback-390.png": "67a042eaeefed909db1260422bb940f5b0e9ea4b5316592b1699930835a80751",
+    "after-layout-1280.png": "7316b70263829be91aea0788d04284172b0f552a3b346fe97cc283e78e66b499",
+    "after-layout-390.png": "f26fac7a3679471861df72ced6692d4a71cc9fcddac64715f06fe43db16a16ac",
+    "after-list-390.png": "2b7436d6492e95564f2784ac7615aae2fb0c530ec5e5a947b4f2a1305156a5bb",
+    "after-listing-1280.png": "d716448b87f5258e52ffe158a50e644635336f6441929e73fde3a34a136e5d3c",
+    "after-listing-390.png": "1cc85d927454457bd0da72ed742f0d2143f96fb9ddd2cf7ac6fc2b82ff21880f",
+    "after-navigation-1280.png": "be39e7ca0746830bc0f3674ecba46bfd387de3c2cc25af1d50e21b169f145ee0",
+    "after-navigation-390.png": "c35c1bcc9c1e58e6c1af37a8c50e89552a52fba55e6791e0dc98d3126059e998",
+    "after-post-1280.png": "9efe5f4bdf1f9593b41b33477f012e0ab8beb9931b613d269572c95e7bfca2ee",
+    "after-post-390.png": "4ad88549f3c2d7d6d89b7120aa2e29c5f8f385796e48070e29ae233f2b3b9eb8",
+    "after-seo-1280.png": "97176ecff738467f22910746caafb291be5fa232de79f4c0217f318dc896a49b",
+    "after-seo-390.png": "25e62bc67bb8236e3c7394e111ed5936f30c38932ca7021731d95bc9884600b2",
+    "after-site-1280.png": "120d4a6493ffe3c417bc92a1b99b0bb0fdd8c080a560d717ff0cccf2785785cf",
+    "after-site-390.png": "21e7d89be864ac4cabc04392da4b608e2e6c3c0651ed891eb6f05e36bdafbf6a",
+    "after-state-focus-clear-of-save-bar-1280.png": "bb50b0eea730bae468b6b0a32f659670872c69194fc6b91d397c6183188a1cc1",
+    "after-state-keyboard-focus-1280.png": "ac49b2c567bac9eddd086934d3b1bc944b4f7384d2e521280c1af2bb75ead1a5",
+    "after-state-list-unsaved-390.png": "459c221a91176135be8374c1692f4a3bdad805bb78b4b40fef36266cb4500f56",
+    "after-state-section-jump-1280.png": "d67d0a8f58f7a57a08887d17dcdec43f42b95f2fbe58a9cd98a5af0c887004fe",
+    "after-state-section-jump-390.png": "ba1ddc6a30aea253e3b2be23129d8349fa1090b55676f885e2e429d718353c4a",
+    "after-state-site-with-theme-draft-1280.png": "26ebc22a0869e249730eeeecf217f210372488def45ae8a9c9392c62113dacdb",
+    "after-state-unsaved-appearance-1280.png": "502d1ce420c69652052c459a2382502134ea2d3a6d756df9148f8b11e0a1a49d",
+    "after-state-unsaved-appearance-390.png": "6b04095e61bb54dd4d4b1448619fc91b33c3887edb4f168f8acce775b58d9f06",
+    "after-state-unsaved-post-1280.png": "5d1eb188a75643333bc552fc13adf4ee9b0c5782d906141818dab0f8db547dfd",
+    "before-appearance-1280.png": "7dfe9434d834f874b2027f71054c8784299eb2b40835c39c0efc18a573f47253",
+    "before-basic-1280.png": "53c2c9ce716b213d5fda0edf38bbcaae086466d4930e7e674b521a47c9a57648",
+    "before-comments-1280.png": "7a42e0b6e63e1ec32a46b4c9ae399196ab96ebf41abd7c0e892b82aee971aa88",
+    "before-post-1280.png": "ad33b9f850dec172c527f382812166356626b2428c3f3d06d00ad4755aabece9",
+    "before-post-390.png": "c1c2d060d7383ab01610300ab250ffbb035a51ce9f4cb3070135cc7a59031a57",
+    "feedback3-band-1280.png": "bbe892008cfb2cd04b5b0dc91721f7a30f8f403e498279dc42cadabf65bbdfcc",
+    "feedback3-groups-1280.png": "06904e4f38425e3e716f90efdc06c25c857b768413a0169c1bf0c583f00a9ba4",
+    "feedback3-groups-390.png": "e4827d7e09bdd72f5e02ea90a78ce9f2ddb51003b40896a44fb2b3b90bf0a7d7",
+    "feedback3-nav-1280.png": "08638ed1986a90f40b46f46c7338630a50d93c8b475bc918cb5a3591362981e0"
+  },
+  "logs": {
+    "make-test-r3.log": {
+      "sha256": "fd6e1246a42c95f01f22ff00a6b2f99ae37dfdef602e813b5c4b38dc39780456"
+    },
+    "make-build-r3.log": {
+      "sha256": "069e355d9cab02e4e476512d89934a982027b6ed2dd042d97f90cf69a7622ebd"
+    },
+    "e2e-full-r3.log": {
+      "sha256": "439bd72a93900bd3750b4f7f1ff7caee75bf49f709e7d58c670e054807ec2b82"
+    },
+    "chipprobe-r3.txt": {
+      "sha256": "f48d21dea9a084f45c6b13b3ae1525963bf20c2057aad1e02e0688d5807fdd07"
+    },
+    "scrollprobe-r3.txt": {
+      "sha256": "af768d8f2a6422ed9fe1603bbb1fac0ff63c1bfaca2f9733b4552151f62f39f0"
+    },
+    "focusprobe-r3.txt": {
+      "sha256": "96b239e915ea5b0e9674ef8e33ca5e4870dc5913f698c0e5a701722b1fc5f787"
+    },
+    "entryprobe-r3.txt": {
+      "sha256": "4a51d50d6f5c8e1a666e66ad622a101ad74f31865e27a7a3ec2d1ccdb522b572"
+    },
+    "feedbackdiscard-r3.txt": {
+      "sha256": "2fdbd0c5869bdd15e7f9c552db439476c1502e67f1fa8d2d71bedadd7b8b0a9b"
+    },
+    "hitrun-before-final.json": {
+      "sha256": "a32e2285c9da059504d44f0fe9643ffda3cfb442290a770620cbcc485322763a"
+    },
+    "hitrun-before-final.txt": {
+      "sha256": "075e274507a1ead11418c43a0a3ab57d37290cf5dd0c0f4d062e7fa9824d6651"
+    },
+    "hittotals-r3.json": {
+      "sha256": "615941f662d4d3b40b590955b46d4beba82c525da2583b80c6801a21555c2551"
+    },
+    "hittotals-r3.txt": {
+      "sha256": "4b6fa354d88458a12b01593520c8bcdbbc3ae1f8cdb2d3b8fcb6add85b57d52c"
+    },
+    "disclosure-r3.txt": {
+      "sha256": "1e25b01c2a4aa31ffd75c97146db7183eaed8422271199fdf9281300cbbee0b1"
+    },
+    "jumptrace-r3.txt": {
+      "sha256": "8a70fe3867ae58165ccc1dbf7a4d9ace337130d6a65b7d3655b571ab3b7008be"
+    },
+    "chipprobe-r3.fixed-wait-1100.txt": {
+      "sha256": "4595f4c10d7fb5324145ecaa33afc8ae842bb4927d6fc7bb47902bbb383e4f95"
+    },
+    "finalprobes-r3.out": {
+      "sha256": "e72c3974ad6ac9cf7b134eea00fc29558340887cb40b9aed6a558d67237feacf"
+    },
+    "post-probes-r3.out": {
+      "sha256": "91c21ebf955b3c88c16b8fe12c419d456f168b25ba4d23bcee7121dd401e0db2"
+    },
+    "pxshots-r3-final.log": {
+      "sha256": "11fffbd845f75a2e77d2d782380e7490b680ee7db0e39338ebf7e6ff3554bd33"
+    },
+    "hitrun-after-hit.json": {
+      "sha256": "dab72a26454169f5e2f3fa6568aacc0d57e8dda6f195a34ddfd74d1fa4aa3d9f"
+    },
+    "hitrun-after-hit.txt": {
+      "sha256": "a6b81c9a184f0f08e1f1cd447e8b728fe3ba2b1274483a17c240a9a3e13f6aea"
+    },
+    "hitrun-after-r3.json": {
+      "sha256": "f9574fd91914a4d39af75cc72ff8d5fecbf3ff494e7bbd95ef385d4212c957af"
+    },
+    "hitrun-after-r3.txt": {
+      "sha256": "bcfc9b2a8be14c671f3801c21a4bb3775ba70e36e756a9672ee061030466b7bc"
+    },
+    "r3probe-r3.txt": {
+      "sha256": "fb8fa1aee06d8ecf61e83c76c589349edf56a43d3e89b404a74532d6f66ec506"
+    },
+    "hitrun-embedded-r3.json": {
+      "sha256": "f9574fd91914a4d39af75cc72ff8d5fecbf3ff494e7bbd95ef385d4212c957af"
+    },
+    "hitrun-embedded-r3.txt": {
+      "sha256": "bcfc9b2a8be14c671f3801c21a4bb3775ba70e36e756a9672ee061030466b7bc"
+    },
+    "sliderprobe-r3.json": {
+      "sha256": "25b75af0ad68b8c217aa85092206a78ef4501407009f1ef5082ec206120dcf7c"
+    },
+    "e2e-q2b-negative-2.log": {
+      "sha256": "00572e610fa0e9bb21005c9aaf84a0b2a784403eceb5fea228402839426a3129"
+    },
+    "negative-control-restore.json": {
+      "sha256": "d31079121056072464e0226975080b3440c889a66a6757863b25a1ce40e5178b"
+    },
+    "e2e-r3-negative.log": {
+      "sha256": "11e77b8c4c3828fe5a7502e862c03ea1e48b38e708bb38d271cb530065596bf9"
+    },
+    "e2e-r3-negative-b.log": {
+      "sha256": "5b445b4c9f5f3ee73af5d18db2f2786c72db1c7d6c66f6483df81216220c39a8"
+    },
+    "e2e-r3-negative-c.log": {
+      "sha256": "4e4a2336efc1de797ef55a1adaaab19b35cb56528673ba13fbe36f8bc5632611"
+    },
+    "e2e-r3-negative-d.log": {
+      "sha256": "c550ca66dc118e8a28257e77d3807d5ee48354530c9b7b52343e65f806c3ae8c"
+    },
+    "e2e-r3-negative-e.log": {
+      "sha256": "8aca9039cf4f35c54bbb1e13094384cc15c2d14dfa825256b9910741ebc6ff76"
+    },
+    "e2e-r3-negative-f.log": {
+      "sha256": "524204bb273575d744625d1adb92acbbf212fa8ba3370691b3bad0bc94172a77"
+    },
+    "negative-control-r3-restore.json": {
+      "sha256": "232e42522fb0b1b341f332eb8766f6659377003cd877b28027a0449133f9d3d8"
+    },
+    "negative-control-r3b-restore.json": {
+      "sha256": "6b01cf8d72c31d1590da2d4d470a076bc77f31ffd7450fe54c13028a3e7e2bb9"
+    },
+    "negative-control-r3c-restore.json": {
+      "sha256": "975fe661f0eb76e16671728e37f89253135df65fa061623f72db24ed1e464bdd"
+    },
+    "hitfont-songti-r3.txt": {
+      "sha256": "bcfc9b2a8be14c671f3801c21a4bb3775ba70e36e756a9672ee061030466b7bc"
+    },
+    "hitfont-arialuni-r3.txt": {
+      "sha256": "bcfc9b2a8be14c671f3801c21a4bb3775ba70e36e756a9672ee061030466b7bc"
+    },
+    "hitfont-verdana-r3.txt": {
+      "sha256": "bcfc9b2a8be14c671f3801c21a4bb3775ba70e36e756a9672ee061030466b7bc"
+    },
+    "fontsense-r3.txt": {
+      "sha256": "879a419b3959b9c9038289bf4b82cac22a660410c2d95d6df4214a33241c3b0c"
+    },
+    "fontsense2-r3.txt": {
+      "sha256": "cf54bbb1cc2b02ae92dc0e165eab4c7ec712eeee6f92579841088d6e621daf13"
+    },
+    "embedded-binary-check-r3.json": {
+      "sha256": "e0163bd29ff271d960dc8d8fccf5a2b049ccf037a9a347aa1540e6be196f0b9d"
+    },
+    "embed-server-4.log": {
+      "sha256": "38f56aa41e2d600b3efaa63fcbaa9680ff10a339666e6279fbf5b2536d3bc66d"
+    },
+    "assets-8099-embedded-r3.json": {
+      "sha256": "206ec530303259ab00ed8566f04ed79fdbe12e15e82ac3673a132d7406f4be86"
+    },
+    "entryprobe-embedded-r3.txt": {
+      "sha256": "4a51d50d6f5c8e1a666e66ad622a101ad74f31865e27a7a3ec2d1ccdb522b572"
+    },
+    "chipprobe-embedded-r3.txt": {
+      "sha256": "065f9d3538b6f4c2de91e2cf303ccacddf1c5274a2c4abf3b1d7f67fc5cafa54"
+    },
+    "focusprobe-embedded-r3.txt": {
+      "sha256": "d5510272ba25a0f2df0fbe5e1ce828eb3a9c3f48adbea1483c58ddce9d5beb0f"
+    }
+  },
+  "limits": [
+    "未提交、未合并、未推送、未发布；未碰用户的根 dev 工作树改动，也未改共享 resource/",
+    "截图与交互只来自本机隔离服务（8098）与 Playwright Chromium：不代表生产，也不代表 Safari/Firefox 或真机触屏",
+    "Console 恒为深色，没有浅色/自动界面；“浅色/深色/自动”是前台主题配色选项，预览为静态页，不执行脚本",
+    "对比度由页面内取色计算（canvas 取色），未做色盲或高对比度系统模式验证",
+    "未用屏幕阅读器实机验证，仅核对了无障碍名称、角色和键盘路径",
+    "手机宽度下打开底部停靠的前端预览（占 65vh）时，页头 + 保存栏 + 预览面板已占满视口，没有可用的聚焦区域；关闭预览即可。键盘聚焦检查覆盖桌面的预览停靠，不含手机的预览停靠",
+    "预览为静态页，自动配色模式下预览 <html> 只有 lang、没有 data-theme，不能代替前台真实的深浅色切换",
+    "手机点击区 ≥44px 指命中区域而不是视觉尺寸：开关（51×31）、标题行与摘要里的“恢复默认”（48×18）、折叠摘要（21px 高）等沿用的小控件看上去仍是原来的大小，点击区用透明伪元素补上下空白（只往空白处延伸）；验证是 Chromium 里的 elementFromPoint 命中测试与鼠标点击，不是真机触屏，也不是读屏器或辅助触控",
+    "点击区上下各补多少是按量到的真实空隙定的（标题行“恢复默认”上 20 下 6，摘要里的“恢复默认”上 24 下 2，等等）；以后调整结构化编辑器的间距或新增小控件，需要重跑规格 console-settings-ia 的两条 Q2b 用例，它们会报告点击区不足或被抢的控件",
+    "旧文档里手机“756 个控件小于 44px”的统计口径有误（多算了 18 个取色器原生输入、漏了宽 29px 的“X”标签、滑块多算 1 个），已按命中测试重新统计：改动前盒子不足 44px 的是 738 个，见 checks.mobile_touch_targets_390.earlier_count_correction",
+    "不透明度滑块在手机宽度下的键盘聚焦环由 28px 高变为 44px 高，是点击区改动带来的外观差异（只在键盘聚焦时可见；第二轮用逐像素比较确认过，第三轮页面外观整体有意改变，没有再比较）",
+    "访客反馈页“放弃本页修改”只有一次性的浏览器核实（checks.feedback_page_discard_check），没有进入自动化规格",
+    "取证脚本（资产对比、验收、分区/换页/进入/焦点探针、截图与像素比较、滑块探针、嵌入模式检查）是一次性的、不入库；同一性质由规格 console-settings-ia 的 N2/N6/N7 与两条 Q2b 用例长期守住",
+    "第三轮：结构化分组全部默认展开后页面明显变长——共 177 个分组（页面与侧栏 107 个、扩展与服务 42 个、外观 11 个、导航与页脚 11 个、评论 6 个）；页面与侧栏的内容区在 1280 宽时 39779px、390 宽时 43693px。没有“全部收起 / 全部展开”控件，只能逐个点分组标题；收起只是页面上的临时状态，不写入设置，刷新、换页或放弃本页修改后回到默认展开",
+    "第三轮：“代码与原文”里的完整配置原文不是结构化分组，有意保持默认折叠（整份原文是一个大文本框，默认展开会增加误改风险）；这是对“设置项全部展开”的有意例外，已问过用户，答复“保持折叠”（2026-11-04）",
+    "第三轮：整页截图把视口拉高到内容高度，上限 13000px；只有超过上限的页面被截断——1280 宽：layout（39779px 只拍到前 13000px）；390 宽：layout（43693px 只拍到前 13000px）。其余页面的图是完整整页。页面与侧栏的图只能看到开头的分组形态，不能代替整页检查；整页没有溢出、分组全部展开等结论来自探针与规格 U1–U4，不是来自截图",
+    "第三轮：页面外观整体有意改变（说明条删除、目录间距、分组全部展开与标题行重排），没有再做逐像素的前后比较；前后对照图只用于说明改动，不是自动比较的结果",
+    "第三轮：手机上嵌套分组每层只退进 8px（宽屏每层 24px），是为了把宽度留给控件；嵌套很深的页面（页面与侧栏最深 4 层）在手机上层级的区分主要靠分组标题的字重与箭头，没有做真机核对",
+    "主浏览器验收与截图在开发模式（-dev，从磁盘读取同一份 dist）的 8098 服务上做；嵌入模式（make build 的二进制，无 -dev）另在隔离的全新夹具根上启动并复核了资源哈希、点击区普查、进入与控制台扫描、4 页分区跳转、3 页键盘聚焦（checks.embedded_mode_run），没有在嵌入模式下逐页重拍截图或重跑全部探针；嵌入模式用的是全新库，不代表有迁移历史的真实库"
+  ]
+}

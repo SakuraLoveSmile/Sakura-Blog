@@ -22,7 +22,7 @@ const switchEffects: Record<string, [string, string]> = {
   ],
   "blog_extensions.native_comments.enabled": [
     "允许显示 Blog 原生评论区；单页开关和审核规则仍会影响实际展示。",
-    "关闭 Blog 原生评论；第三方评论由下方独立设置。",
+    "关闭 Blog 原生评论；前台不再展示评论区，已保存的评论仍保留。",
   ],
   "blog_extensions.native_comments.home.enabled": ["原生评论开启后，首页也允许显示评论区。", "首页不展示原生评论区。"],
   "blog_extensions.native_comments.moderation": [
@@ -63,7 +63,6 @@ const effects: Record<string, Record<string, string>> = {
   "theme.search.provider": {
     local: "访客浏览器加载静态索引搜索；下方索引范围、正文与缓存设置生效。",
     go: "访客搜索直接请求 Blog 服务；下方本地静态索引设置不影响此模式。",
-    algolia: "访客搜索交给 Algolia，需要下方参数和可用的远程索引。",
     none: "停用主题搜索服务；访客无法通过该搜索服务查询内容。",
   },
 };

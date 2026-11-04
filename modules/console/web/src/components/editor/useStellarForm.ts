@@ -83,6 +83,7 @@ export function useStellarForm(
         // 任一原文不合法时不以控件值覆盖；服务端保存校验返回具体诊断。
         readJSONField(form[configKey], "");
         readJSONField(form[blogKey], "");
+        const written = new Set<number>();
         fields.forEach((field, index) => {
           const rawKey = field.blog ? blogKey : configKey;
           if (fieldSourceChanged(field, configChanged, blogChanged)) {
@@ -101,6 +102,7 @@ export function useStellarForm(
               );
               clearMigratedField(field, form, configKey, blogKey);
               rawDraftErrors.delete(field.form);
+              written.add(index);
             } catch (problem) {
               if (!field.raw) throw problem;
               rawDraftErrors.set(
@@ -111,8 +113,10 @@ export function useStellarForm(
           }
         });
         // 多个旧控件消费同一个上游字段时同步回显（例如 Hero 与集合 headline）。
-        fields.forEach((field) => {
-          if (rawDraftErrors.has(field.form)) return;
+        // 本轮刚写入上游的控件跳过回显：read() 可能是有损格式化（如标签用 ", " 连接、去掉尾逗号），
+        // 回写会把用户正在输入的原文改掉，导致逗号/输入法组合输入被吞。
+        fields.forEach((field, index) => {
+          if (written.has(index) || rawDraftErrors.has(field.form)) return;
           const value = readField(field, form, configKey, blogKey);
           if (value === undefined && field.host) return;
           set(form, field.form, field.read ? field.read(value) : (value ?? field.fallback ?? ""));

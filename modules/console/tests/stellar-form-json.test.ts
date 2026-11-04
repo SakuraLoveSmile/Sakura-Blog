@@ -133,6 +133,29 @@ test("scalar post categories submit as a list without rewriting raw configuratio
     assert.equal(error.value, "");
   }));
 
+test("tag input keeps the user's raw text while typing (no lossy read-back loop)", () =>
+  inScope(() => {
+    const form = ref<any>({
+      stellar_version: 2,
+      stellar_config: "{}",
+      blog_extensions: "{}",
+      title: "",
+      categories: [],
+      authors: [],
+      tags: "",
+    });
+    useStellarForm(() => form.value, postFields);
+    form.value.tags = "测试,";
+    assert.equal(form.value.tags, "测试,", "尾逗号不能被回显吞掉");
+    assert.deepEqual(JSON.parse(form.value.stellar_config).tags, ["测试"]);
+    form.value.tags = "测试,abc";
+    assert.equal(form.value.tags, "测试,abc");
+    assert.deepEqual(JSON.parse(form.value.stellar_config).tags, ["测试", "abc"]);
+    // 编辑其他字段时，标签仍按配置回显为规范化格式。
+    form.value.title = "标题";
+    assert.equal(form.value.tags, "测试, abc");
+  }));
+
 test("post category lists, empty values and replaced records keep an array in the form", () =>
   inScope(() => {
     const form = ref<any>({ stellar_version: 2, stellar_config: "{}", blog_extensions: "{}", categories: [] });

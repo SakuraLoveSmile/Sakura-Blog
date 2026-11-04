@@ -23,10 +23,11 @@ test('runtime按服务TTL缓存并只淘汰自己的缓存；禁用缓存不写�
   assert.equal(storage.getItem(REQUEST_CACHE_PREFIX + '/disabled'), null);
 });
 test('Blog动态服务经统一request client传递服务ID与可取消signal', async () => {
-  for (const name of ['sites', 'friends', 'friends_and_posts', 'siteinfo']) {
+  // siteinfo 外部服务已移除，只保留本地数据服务。
+  for (const name of ['sites', 'friends', 'friends_and_posts']) {
     const calls = [];
     const element = { nodeType: 1, dataset: { api: '/fixture/' + name, siteinfoApi: '/fixture/siteinfo' }, querySelector() { return null; } };
-    const document = { querySelectorAll: selector => selector.includes(name) || name === 'siteinfo' ? [element] : [],
+    const document = { querySelectorAll: selector => selector.includes(name) ? [element] : [],
       createElement() { return { innerHTML: '', querySelector() { return null; } }; }, getElementsByClassName() { return [element]; } };
     const window = { wrapLazyloadImages() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent() {} };
     const sandbox = { window, document, def: { avatar: '/avatar', cover: '/cover' }, ctx: { services: { siteinfo: {} } },

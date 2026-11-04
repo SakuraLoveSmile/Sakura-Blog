@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 文章页</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#0a0a0b;color:#f4f4f6;font:13px/1.55 "DM Sans","PingFang SC","Noto Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea,summary{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid #2e8dff;outline-offset:2px}
+.mono{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+.app{display:flex;flex-wrap:wrap;background:#0a0a0b}
+
+.side{flex:0 0 224px;padding:16px 12px 12px;border-right:1px solid #242428;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:8px;padding:2px 8px 14px;font-size:15px;font-weight:600}
+.brand i{display:block;width:20px;height:20px;border-radius:6px;border:1.5px solid #8b8b91}
+.write{display:flex;align-items:center;justify-content:center;height:34px;margin-bottom:8px;border:1px solid #242428;border-radius:8px;background:#121214;font-weight:500}
+.sfind{display:flex;align-items:center;justify-content:space-between;height:34px;margin-bottom:6px;padding:0 10px;border-radius:8px;background:#121214;color:#8b8b91}
+.sgrp{padding:14px 8px 4px;font-size:12px;color:#8b8b91}
+.sitem{display:flex;align-items:center;height:32px;padding:0 8px;border-radius:6px;color:#b9b9bf}
+.sitem.on{background:#19191c;color:#f4f4f6}
+.suser{margin-top:auto;padding:12px 8px 0;border-top:1px solid #242428;color:#b9b9bf}
+
+.main{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 32px 14px;border-bottom:1px solid #242428}
+.hl{display:flex;align-items:center;gap:12px}
+.hl h1{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.unsaved{display:inline-flex;align-items:center;gap:6px;color:#ff9f0a;font-size:12px;font-weight:500}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border:1px solid #37373d;border-radius:6px;font-weight:500;color:#f4f4f6}
+.btn:hover{background:#19191c}
+.btn.pri{background:#e8e8ec;border-color:#e8e8ec;color:#000}
+.btn.pri:hover{background:#fff}
+.btn.ghost{border-color:transparent;color:#b9b9bf}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px}
+
+.set{flex:1;display:flex;flex-wrap:wrap}
+.snav{flex:0 0 208px;padding:24px 12px 24px 20px;border-right:1px solid #1b1b1e;display:flex;flex-direction:column;gap:1px}
+.ngrp{padding:18px 10px 6px;font-size:11.5px;font-weight:500;letter-spacing:.04em;color:#8b8b91}
+.ngrp:first-child{padding-top:2px}
+.nitem{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 10px;border-radius:6px;color:#b9b9bf}
+.nitem:hover{background:#141416;color:#f4f4f6}
+.nitem.on{background:#19191c;color:#f4f4f6;font-weight:500}
+.nlink{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding:10px;border-top:1px solid #1b1b1e;color:#8b8b91;font-size:12.5px}
+.nlink:hover{color:#f4f4f6}
+
+.sbody{flex:999 1 460px;min-width:0;display:flex;flex-direction:column;padding:28px 36px 0}
+.wrap{width:100%;max-width:760px}
+.ptitle h2{font-size:22px;font-weight:600;letter-spacing:-.015em}
+.ptitle p{margin-top:6px;color:#b9b9bf}
+.anch{display:flex;flex-wrap:wrap;gap:4px;margin-top:18px;padding-bottom:14px;border-bottom:1px solid #242428}
+.anch a{padding:5px 10px;border-radius:6px;color:#b9b9bf;font-size:12.5px}
+.anch a:hover{background:#141416;color:#f4f4f6}
+
+.sec{padding:34px 0 4px;scroll-margin-top:12px}
+.sec + .sec{border-top:1px solid #1b1b1e;margin-top:30px}
+.sh{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.sh h3{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.sh p{margin-top:2px;color:#8b8b91;max-width:520px}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px;padding:14px 0;border-top:1px solid #1b1b1e}
+.row.first{border-top:0;padding-top:4px}
+.rl{flex:1 1 240px;min-width:0}
+.rt{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+.rh{margin-top:2px;max-width:420px;color:#8b8b91;font-size:12.5px}
+.rc{flex:0 1 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.blk{padding:14px 0;border-top:1px solid #1b1b1e}
+.blk .bt{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.mod{display:inline-block;width:5px;height:5px;border-radius:50%;background:#ff9f0a;flex:none}
+.reset{padding:3px 8px;border-radius:5px;color:#8b8b91;font-size:12px}
+.reset:hover{background:#19191c;color:#f4f4f6}
+.dim .rc,.dim .chips2,.dim .tiles,.dim .ta,.dim .mp{opacity:.4}
+.dim .rt{color:#b9b9bf}
+
+.in{height:34px;padding:0 10px;border:1px solid #242428;border-radius:6px;background:#121214}
+.w220{width:220px;max-width:100%}
+.num{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border:1px solid #242428;border-radius:6px;background:#121214}
+.num:focus-within{border-color:#37373d}
+.num input{width:52px;padding:0;border:0;background:none;text-align:right;outline:0}
+.num em{font-style:normal;color:#8b8b91}
+.seg{display:inline-flex;gap:2px;padding:2px;border:1px solid #242428;border-radius:8px;background:#121214}
+.seg button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:6px;color:#b9b9bf;font-weight:500}
+.seg button:hover{color:#f4f4f6}
+.seg button.on{background:#2a2a2f;color:#f4f4f6;box-shadow:inset 0 0 0 1px #37373d}
+.sw{position:relative;flex:none;width:38px;height:22px;border-radius:11px;background:#2a2a2f;transition:background .15s}
+.sw i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#f4f4f6;transition:transform .15s}
+.sw.on{background:#30d158}
+.sw.on i{transform:translateX(16px)}
+.sw:disabled{opacity:.6;cursor:default}
+
+.para{margin-top:10px;padding:12px 14px;border:1px dashed #242428;border-radius:8px;color:#b9b9bf;line-height:1.8}
+.para p + p{margin-top:2px}
+.pcap{margin-top:8px;color:#8b8b91;font-size:12px}
+.ta{display:block;width:100%;min-height:78px;padding:10px;border:1px solid #242428;border-radius:6px;background:#121214;resize:none;line-height:1.6}
+.lp{margin-top:8px;padding:10px 12px;border:1px dashed #242428;border-radius:6px;color:#b9b9bf}
+.u{color:#f4f4f6;text-decoration:underline;text-underline-offset:3px}
+.chips2{display:flex;flex-wrap:wrap;gap:8px}
+.ch{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px 0 8px;border:1px solid #242428;border-radius:6px;color:#8b8b91;font-weight:500}
+.ch:hover{border-color:#37373d;color:#f4f4f6}
+.ch.on{background:#19191c;border-color:#37373d;color:#f4f4f6}
+.ch:disabled{cursor:default}
+.ck{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid #4a4a52;border-radius:4px}
+.ck svg{opacity:0}
+.ch.on .ck{background:#e8e8ec;border-color:#e8e8ec;color:#000}
+.ch.on .ck svg{opacity:1}
+.mp{border:1px solid #242428;border-radius:8px;overflow:hidden}
+.mp-h{display:grid;grid-template-columns:1fr 2fr;gap:12px;padding:8px 12px;border-bottom:1px solid #242428;color:#8b8b91;font-size:12px}
+.mp-e{padding:14px 12px;color:#8b8b91}
+.tiles{display:flex;flex-wrap:wrap;gap:16px}
+.tw{display:flex;flex-direction:column;gap:6px}
+.tile{display:flex;align-items:center;justify-content:center;width:120px;height:120px;border:1px dashed #37373d;border-radius:8px;color:#8b8b91;font-size:12.5px}
+.tile:hover{border-color:#8b8b91;color:#f4f4f6}
+.tl{color:#b9b9bf;font-size:12.5px}
+.tier{display:grid;grid-template-columns:minmax(150px,1.2fr) 1.4fr auto auto;align-items:center;gap:16px;padding:10px 0;border-top:1px solid #1b1b1e}
+.bdg{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:6px;font-size:12.5px;font-weight:500}
+.tier .k{color:#8b8b91;font-size:12px}
+.tier .cv{display:inline-flex;align-items:center;gap:6px;color:#b9b9bf;font-size:12px}
+.tier .cv i{display:block;width:12px;height:12px;border-radius:3px}
+
+.savebar{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px;margin:36px -36px 0;padding:14px 36px;border-top:1px solid #242428;background:#0a0a0b;margin-top:auto}
+.sbi{display:flex;align-items:center;gap:10px}
+.sbi .s{color:#8b8b91}
+.sbact{display:flex;gap:8px}
+</style>
+</helmet>
+
+<div class="app" style="min-height:2560px">
+  <aside class="side" aria-label="Console 导航（示意）">
+    <div class="brand"><i></i>Console</div>
+    <a href="#" class="write">开始写作</a>
+    <div class="sfind"><span>搜索内容与菜单</span><span class="mono">⌘K</span></div>
+    <a href="#" class="sitem">仪表盘</a>
+    <div class="sgrp">内容</div>
+    <a href="#" class="sitem">文章</a>
+    <a href="#" class="sitem">专栏</a>
+    <a href="#" class="sitem">笔记本</a>
+    <a href="#" class="sitem">页面</a>
+    <a href="#" class="sitem">文库</a>
+    <a href="#" class="sitem">作者</a>
+    <a href="#" class="sitem">瞬间</a>
+    <div class="sgrp">互动</div>
+    <a href="#" class="sitem">评论</a>
+    <a href="#" class="sitem">评论用户</a>
+    <a href="#" class="sitem">通知中心</a>
+    <a href="#" class="sitem">友链</a>
+    <a href="#" class="sitem">订阅</a>
+    <div class="sgrp">媒体</div>
+    <a href="#" class="sitem">媒体库</a>
+    <div class="sgrp">系统</div>
+    <a href="#" class="sitem on" aria-current="page">系统设置</a>
+    <div class="suser">管理员</div>
+  </aside>
+
+  <div class="main">
+    <header class="hdr">
+      <div class="hl">
+        <h1>系统设置</h1>
+        <sc-if value="{{dirty}}" hint-placeholder-val="{{true}}"><span class="unsaved"><span class="dot"></span>未保存修改</span></sc-if>
+      </div>
+      <button type="button" class="btn" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>前端预览</button>
+    </header>
+
+    <div class="set">
+      <nav class="snav" aria-label="设置分类">
+        <sc-for list="{{navRows}}" as="r" hint-placeholder-count="14">
+          <sc-if value="{{r.isHead}}" hint-placeholder-val="{{false}}"><div class="ngrp">{{r.text}}</div></sc-if>
+          <sc-if value="{{r.isItem}}" hint-placeholder-val="{{true}}"><a class="nitem {{r.cls}}" href="{{r.href}}" aria-current="{{r.current}}"><span>{{r.text}}</span><sc-if value="{{r.dirty}}" hint-placeholder-val="{{false}}"><span class="dot" role="img" aria-label="有未保存修改"></span></sc-if></a></sc-if>
+        </sc-for>
+        <a class="nlink" href="#"><span>AI 与知识库 · 在「助手」中设置</span><span aria-hidden="true">↗</span></a>
+      </nav>
+
+      <div class="sbody">
+        <div class="wrap">
+          <div class="ptitle">
+            <h2>文章页</h2>
+            <p>文章页面的阅读体验、页脚与扩展；列表上的卡片样式在「列表与卡片」。</p>
+          </div>
+          <nav class="anch" aria-label="本页分区">
+            <a href="#sec-read">阅读体验</a>
+            <a href="#sec-foot">页脚与许可</a>
+            <a href="#sec-ext">文章扩展</a>
+            <a href="#sec-ai">AI 创作标记</a>
+          </nav>
+
+          <section class="sec" id="sec-read">
+            <div class="sh"><div><h3>阅读体验</h3><p>单篇文章可以覆盖其中支持的默认项。</p></div></div>
+            <div class="row first">
+              <div class="rl">
+                <div class="rt">文章风格<sc-if value="{{m.style}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div>
+                <div class="rh">{{fx.style}}</div>
+              </div>
+              <div class="rc">
+                <div class="seg" role="group" aria-label="文章风格">
+                  <sc-for list="{{styleOpts}}" as="o" hint-placeholder-count="2"><button type="button" class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for>
+                </div>
+                <sc-if value="{{m.style}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.style}}">恢复默认</button></sc-if>
+              </div>
+            </div>
+            <div class="blk">
+              <div class="bt">
+                <div class="rl">
+                  <div class="rt">段落首行缩进<sc-if value="{{m.indent}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div>
+                  <div class="rh">按文章风格自动：技术文章不缩进，叙事文章缩进两字。</div>
+                </div>
+                <div class="rc">
+                  <div class="seg" role="group" aria-label="段落首行缩进">
+                    <sc-for list="{{indentOpts}}" as="o" hint-placeholder-count="3"><button type="button" class="{{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for>
+                  </div>
+                  <sc-if value="{{m.indent}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.indent}}">恢复默认</button></sc-if>
+                </div>
+              </div>
+              <div class="para" role="img" aria-label="段落缩进效果示意">
+                <p style="text-indent:{{indent.ti}}">第一段正文示例：段落首行是否缩进，取决于上面的选择。</p>
+                <p style="text-indent:{{indent.ti}}">第二段正文示例：技术类文章通常不缩进，叙事类文章通常缩进。</p>
+              </div>
+              <div class="pcap">当前效果：{{indent.cap}}</div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt">显示文章横幅背景<sc-if value="{{m.banner}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">{{fx.banner}}</div></div>
+              <div class="rc"><sc-if value="{{m.banner}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.banner}}">恢复默认</button></sc-if><button type="button" class="sw {{sw.banner.cls}}" role="switch" aria-checked="{{sw.banner.on}}" aria-label="显示文章横幅背景" onClick="{{sw.banner.tog}}"><i></i></button></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt">显示阅读时长<sc-if value="{{m.reading}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">{{fx.reading}}</div></div>
+              <div class="rc"><sc-if value="{{m.reading}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.reading}}">恢复默认</button></sc-if><button type="button" class="sw {{sw.reading.cls}}" role="switch" aria-checked="{{sw.reading.on}}" aria-label="显示阅读时长" onClick="{{sw.reading.tog}}"><i></i></button></div>
+            </div>
+            <div class="row">
+              <div class="rl"><div class="rt"><label for="n-related">相关文章数量</label></div><div class="rh">设为 0 时不显示相关文章。</div></div>
+              <div class="rc"><span class="num"><input id="n-related" class="mono" value="0"><em>篇</em></span></div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-foot">
+            <div class="sh"><div><h3>页脚与许可</h3><p>正文结束后的标签、许可协议和分享入口。</p></div></div>
+            <div class="row first">
+              <div class="rl"><div class="rt">页脚显示标签<sc-if value="{{m.foot}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">{{fx.foot}}</div></div>
+              <div class="rc"><sc-if value="{{m.foot}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.foot}}">恢复默认</button></sc-if><button type="button" class="sw {{sw.foot.cls}}" role="switch" aria-checked="{{sw.foot.on}}" aria-label="页脚显示标签" onClick="{{sw.foot.tog}}"><i></i></button></div>
+            </div>
+            <div class="blk">
+              <div class="bt"><div class="rl"><div class="rt"><label for="t-license">文章许可协议</label></div><div class="rh">支持 Markdown；留空使用主题默认文案。</div></div></div>
+              <textarea id="t-license" class="ta mono" rows="3" style="font-size:12px">本文采用 [署名-非商业性使用-相同方式共享 4.0 国际](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可协议，转载请注明出处。</textarea>
+              <div class="lp">本文采用 <span class="u">署名-非商业性使用-相同方式共享 4.0 国际</span> 许可协议，转载请注明出处。</div>
+            </div>
+            <div class="blk">
+              <div class="bt">
+                <div class="rl"><div class="rt">主题分享平台<sc-if value="{{m.ts}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">页脚分享入口，可多选；与「文章扩展」里的扩展分享相互独立。</div></div>
+                <sc-if value="{{m.ts}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.ts}}">恢复默认</button></sc-if>
+              </div>
+              <div class="chips2" role="group" aria-label="主题分享平台">
+                <sc-for list="{{themeShare}}" as="c" hint-placeholder-count="6">
+                  <button type="button" class="ch {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.pick}}"><span class="ck"><svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7"></path></svg></span>{{c.label}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-ext">
+            <div class="sh"><div><h3>文章扩展</h3><p>启用后下列功能才会在前台生效；关闭时保留已填写的配置。</p></div></div>
+            <div class="row first">
+              <div class="rl"><div class="rt">启用文章扩展<sc-if value="{{m.extOn}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">{{fx.extOn}}</div></div>
+              <div class="rc"><sc-if value="{{m.extOn}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.extOn}}">恢复默认</button></sc-if><button type="button" class="sw {{sw.extOn.cls}}" role="switch" aria-checked="{{sw.extOn.on}}" aria-label="启用文章扩展" onClick="{{sw.extOn.tog}}"><i></i></button></div>
+            </div>
+            <div class="{{ext.dim}}">
+              <div class="row">
+                <div class="rl"><div class="rt">显示下一篇文章<sc-if value="{{m.readNext}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">{{fx.readNext}}</div></div>
+                <div class="rc"><button type="button" class="sw {{sw.readNext.cls}}" role="switch" aria-checked="{{sw.readNext.on}}" aria-label="显示下一篇文章" disabled="{{ext.off}}" onClick="{{sw.readNext.tog}}"><i></i></button></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="n-expire">过期提醒天数</label></div><div class="rh">未设置时不提醒；设为 0 或负数时使用 180 天。</div></div>
+                <div class="rc"><span class="num"><input id="n-expire" class="mono" value="" placeholder="不提醒" disabled="{{ext.off}}"><em>天</em></span></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt"><label for="n-ratio">文章横幅宽高比</label></div><div class="rh">设为 0 时沿用默认比例。</div></div>
+                <div class="rc"><span class="num"><input id="n-ratio" class="mono" value="" placeholder="默认" disabled="{{ext.off}}"></span></div>
+              </div>
+              <div class="blk">
+                <div class="bt"><div class="rl"><div class="rt">编辑文章链接</div><div class="rh">来源路径对应仓库编辑地址；路径中的点号会完整保留。</div></div><button type="button" class="btn sm" disabled="{{ext.off}}">添加映射</button></div>
+                <div class="mp"><div class="mp-h"><span>来源路径</span><span>仓库编辑地址</span></div><div class="mp-e">尚未添加映射</div></div>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt">扩展分享<sc-if value="{{m.extShare}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">{{fx.extShare}}</div></div>
+                <div class="rc"><button type="button" class="sw {{sw.extShare.cls}}" role="switch" aria-checked="{{sw.extShare.on}}" aria-label="启用扩展分享" disabled="{{ext.off}}" onClick="{{sw.extShare.tog}}"><i></i></button></div>
+              </div>
+              <div class="chips2" role="group" aria-label="扩展分享平台" style="padding-bottom:14px">
+                <sc-for list="{{extShareChips}}" as="c" hint-placeholder-count="4">
+                  <button type="button" class="ch {{c.cls}}" aria-pressed="{{c.on}}" disabled="{{ext.off}}" onClick="{{c.pick}}"><span class="ck"><svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7"></path></svg></span>{{c.label}}</button>
+                </sc-for>
+              </div>
+              <div class="row">
+                <div class="rl"><div class="rt">打赏<sc-if value="{{m.reward}}" hint-placeholder-val="{{false}}"><span class="mod" role="img" aria-label="已修改"></span></sc-if></div><div class="rh">{{fx.reward}}</div></div>
+                <div class="rc"><button type="button" class="sw {{sw.reward.cls}}" role="switch" aria-checked="{{sw.reward.on}}" aria-label="启用打赏" disabled="{{ext.off}}" onClick="{{sw.reward.tog}}"><i></i></button></div>
+              </div>
+              <div class="{{rw.dim}}">
+                <div class="row">
+                  <div class="rl"><div class="rt"><label for="t-reward">打赏文案</label></div></div>
+                  <div class="rc"><input id="t-reward" class="in w220" value="" placeholder="例如：请我喝杯咖啡" disabled="{{rw.off}}"></div>
+                </div>
+                <div class="blk">
+                  <div class="tiles">
+                    <div class="tw"><button type="button" class="tile" disabled="{{rw.off}}">选择图片…</button><span class="tl">微信收款码</span></div>
+                    <div class="tw"><button type="button" class="tile" disabled="{{rw.off}}">选择图片…</button><span class="tl">支付宝收款码</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sec" id="sec-ai">
+            <div class="sh"><div><h3>AI 创作标记</h3><p>设置文章默认标记与各档位外观；关闭某个档位会隐藏该档位的标记。</p></div>
+              <sc-if value="{{m.tr}}" hint-placeholder-val="{{false}}"><button type="button" class="reset" onClick="{{reset.tr}}">恢复本节默认</button></sc-if>
+            </div>
+            <div class="row first">
+              <div class="rl"><div class="rt"><label for="s-ailabel">默认创作标记</label></div><div class="rh">文章没有单独设置时使用。</div></div>
+              <div class="rc"><select id="s-ailabel" class="in w220" value=""><option value="">无默认标记</option><option value="manual">人工创作</option><option value="reviewed">AI 辅助审阅</option><option value="polished">AI 润色</option><option value="generated">AI 生成</option></select></div>
+            </div>
+            <sc-for list="{{tiers}}" as="t" hint-placeholder-count="4">
+              <div class="tier">
+                <span><span class="bdg" style="white-space:nowrap;{{t.css}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"></path></svg>{{t.label}}</span></span>
+                <span class="k mono">{{t.icon}}</span>
+                <span class="cv mono"><i style="background:{{t.color}}"></i>{{t.color}}</span>
+                <button type="button" class="sw {{t.cls}}" role="switch" aria-checked="{{t.on}}" aria-label="显示{{t.label}}标记" onClick="{{t.tog}}"><i></i></button>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+
+        <div class="savebar">
+          <div class="sbi"><span class="dot"></span><b>{{save.title}}</b><span class="s">{{save.detail}}</span></div>
+          <div class="sbact"><button type="button" class="btn ghost" onClick="{{discard}}">放弃本页修改</button><button type="button" class="btn pri">保存全部主题设置</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const D = { style: 'tech', indent: 'auto', banner: true, reading: false, foot: true, extOn: false, readNext: true, extShare: false, reward: false };
+    const INIT = Object.assign({}, D, { indent: 'always' });
+    const v = (k) => (s[k] !== undefined ? s[k] : (s.fresh === false ? D[k] : INIT[k]));
+    const ts = Object.assign({ qrcode: true, weibo: true, x: true, telegram: true, whatsapp: true, email: true }, s.ts || {});
+    const es = Object.assign({ wechat: false, link: false, weibo: false, email: false }, s.es || {});
+    const tr = Object.assign({ manual: true, reviewed: true, polished: true, generated: true }, s.tr || {});
+    const rst = (k) => () => this.setState({ [k]: D[k] });
+
+    const m = {};
+    Object.keys(D).forEach((k) => { m[k] = v(k) !== D[k]; });
+    m.ts = Object.keys(ts).some((k) => !ts[k]);
+    m.es = Object.keys(es).some((k) => es[k]);
+    m.tr = Object.keys(tr).some((k) => !tr[k]);
+    const nPost = Object.keys(m).filter((k) => m[k]).length;
+    const nOther = 0;
+    const total = nPost + nOther;
+
+    const swOf = (k) => ({ on: v(k), cls: v(k) ? 'on' : '', tog: () => this.setState({ [k]: !v(k) }) });
+    const sw = { banner: swOf('banner'), reading: swOf('reading'), foot: swOf('foot'), extOn: swOf('extOn'), readNext: swOf('readNext'), extShare: swOf('extShare'), reward: swOf('reward') };
+
+    const styleOpts = [['tech', '技术文章'], ['story', '叙事文章']].map((o) => ({ label: o[1], on: v('style') === o[0], cls: v('style') === o[0] ? 'on' : '', pick: () => this.setState({ style: o[0] }) }));
+    const indentOpts = [['auto', '按风格自动'], ['always', '始终缩进'], ['never', '不缩进']].map((o) => ({ label: o[1], on: v('indent') === o[0], cls: v('indent') === o[0] ? 'on' : '', pick: () => this.setState({ indent: o[0] }) }));
+    const indented = v('indent') === 'always' || (v('indent') === 'auto' && v('style') === 'story');
+    const indent = { ti: indented ? '2em' : '0', cap: indented ? '首行缩进两字' : '首行不缩进' };
+
+    const fx = {
+      style: v('style') === 'tech' ? '采用适合技术内容的文章排版；首行缩进仍可由下一项单独指定。' : '采用叙事文章排版；自动缩进会随文章风格调整。',
+      banner: v('banner') ? '文章顶部显示横幅背景，让标题区更突出。' : '文章顶部不显示横幅背景。',
+      reading: v('reading') ? '文章信息中显示预计阅读时长。' : '文章信息中隐藏预计阅读时长。',
+      foot: v('foot') ? '正文结束后显示文章标签，读者可继续浏览同类内容。' : '文章页脚不显示标签。',
+      extOn: v('extOn') ? '文章扩展已启用，下方分享、打赏等已开启功能可在前台显示。' : '文章扩展已关闭；下方配置会保留，启用后才生效。',
+      readNext: v('readNext') ? '启用文章扩展后，正文结束处可显示下一篇文章入口。' : '正文结束处隐藏扩展的下一篇文章入口。',
+      extShare: v('extShare') ? '启用文章扩展后显示所选平台的分享入口。' : '不显示扩展分享入口，已选平台仍保留。',
+      reward: v('reward') ? '启用文章扩展并配置收款码后，文章可显示打赏入口。' : '隐藏打赏入口，保留文案与收款码配置。',
+    };
+    const off = !v('extOn');
+    const ext = { off, dim: off ? 'dim' : '' };
+    const rw = { off: off || !v('reward'), dim: off || !v('reward') ? 'dim' : '' };
+
+    const themeShare = [['qrcode', '二维码'], ['weibo', '微博'], ['x', 'X'], ['telegram', 'Telegram'], ['whatsapp', 'WhatsApp'], ['email', '邮件']].map((c) => ({
+      label: c[1], on: ts[c[0]], cls: ts[c[0]] ? 'on' : '', pick: () => this.setState({ ts: Object.assign({}, ts, { [c[0]]: !ts[c[0]] }) }),
+    }));
+    const extShareChips = [['wechat', '微信'], ['link', '复制链接'], ['weibo', '微博'], ['email', '邮件']].map((c) => ({
+      label: c[1], on: es[c[0]], cls: es[c[0]] ? 'on' : '', pick: () => this.setState({ es: Object.assign({}, es, { [c[0]]: !es[c[0]] }) }),
+    }));
+
+    const hex2rgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)].join(',');
+    const tiers = [
+      ['manual', '人工创作', '#03a9f4', 'default:shield-user'],
+      ['reviewed', 'AI 辅助审阅', '#4caf50', 'default:shield-check'],
+      ['polished', 'AI 润色', '#4caf50', 'default:shield-up'],
+      ['generated', 'AI 生成', '#ff9800', 'default:shield-warning'],
+    ].map((t) => ({
+      label: t[1], color: t[2], icon: t[3], on: tr[t[0]], cls: tr[t[0]] ? 'on' : '',
+      css: 'color:' + t[2] + ';background:rgba(' + hex2rgb(t[2]) + ',.12);border:1px solid rgba(' + hex2rgb(t[2]) + ',.4);' + (tr[t[0]] ? '' : 'opacity:.4'),
+      tog: () => this.setState({ tr: Object.assign({}, tr, { [t[0]]: !tr[t[0]] }) }),
+    }));
+
+    const navDef = [
+      ['站点', [['站点信息', 'Site.dc.html'], ['SEO 与搜索', '#']]],
+      ['外观与布局', [['主题外观', 'Main.dc.html'], ['导航与页脚', '#'], ['页面与侧栏', '#']]],
+      ['内容', [['文章页', 'Post.dc.html'], ['列表与卡片', '#'], ['作者与友链', '#']]],
+      ['互动', [['评论', 'Comments.dc.html'], ['访客反馈', '#']]],
+      ['扩展与高级', [['扩展与服务', '#'], ['代码与原文', '#']]],
+    ];
+    const navRows = [];
+    navDef.forEach((g) => {
+      navRows.push({ isHead: true, isItem: false, text: g[0] });
+      g[1].forEach((it) => {
+        const on = it[0] === '文章页';
+        navRows.push({ isHead: false, isItem: true, text: it[0], href: it[1], cls: on ? 'on' : '', current: on ? 'page' : undefined, dirty: on && nPost > 0 });
+      });
+    });
+
+    return {
+      dirty: total > 0, m, sw, fx, ext, rw, indent, styleOpts, indentOpts, themeShare, extShareChips, tiers, navRows,
+      reset: {
+        style: rst('style'), indent: rst('indent'), banner: rst('banner'), reading: rst('reading'), foot: rst('foot'), extOn: rst('extOn'),
+        ts: () => this.setState({ ts: {} }), tr: () => this.setState({ tr: {} }),
+      },
+      save: { title: total > 0 ? total + ' 处未保存修改' : '没有未保存修改', detail: (nPost > 0 ? '文章页 ' + nPost + ' · ' : '') + '草稿在各页共享' },
+      discard: () => this.setState({ fresh: false, style: undefined, indent: undefined, banner: undefined, reading: undefined, foot: undefined, extOn: undefined, readNext: undefined, extShare: undefined, reward: undefined, ts: {}, es: {}, tr: {} }),
+    };
+  }
+}
+</script>
+</body>
+</html>

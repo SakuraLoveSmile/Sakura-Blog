@@ -245,13 +245,13 @@ func (r *shortcodeV2Renderer) ghcard(a map[string]string) string {
 	return `<div class="tag-plugin ghcard"><a class="ghcard" rel="external nofollow noopener noreferrer"` + v2Attr("href", "https://github.com/"+repo) + `><img` + v2Attr("src", image) + `/></a></div>`
 }
 func (r *shortcodeV2Renderer) reaction(name string, a map[string]string) string {
-	endpoint := r.endpoint(name)
+	// 评分/投票使用 Blog 自带的原生数据接口，不再依赖第三方 star_vote 服务。
+	endpoint := "/api/rating"
+	if name == "vote" {
+		endpoint = "/api/vote"
+	}
 	disabled := ""
 	cl := ""
-	if endpoint == "" {
-		cl = " is-disabled"
-		disabled = " disabled"
-	}
 	id := a["id"]
 	if id == "" {
 		id = "default"

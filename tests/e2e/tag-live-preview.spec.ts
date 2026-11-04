@@ -623,7 +623,7 @@ test.describe("BLG-20261031-03 标签实时预览", () => {
     await login(page);
     await page.goto("/console/plugins/shortcodes");
 
-    // rating：rating.js 实际契约 `/info`，均分 4.5、130 人。
+    // rating：rating.js 走站内原生形状（GET /api/v1/preview/rating → {avg,count}），均分 4.5、130 人。
     await page.getByPlaceholder("搜索插件...").fill("rating");
     await page.locator(".studio-list-item").first().click();
     const ratingFrame = page.frameLocator(".studio-preview-iframe");
@@ -632,17 +632,19 @@ test.describe("BLG-20261031-03 标签实时预览", () => {
     await expect(ratingFrame.locator(".avg").first()).toHaveText("(4.5)", { timeout: 25_000 });
     await expect(ratingFrame.locator(".count").first()).toHaveText("130");
     await expect
-      .poll(() => previewResponse(diag, "/api/v1/preview/rating/info").length, { timeout: 20_000 })
+      .poll(() => previewResponse(diag, "/api/v1/preview/rating").length, { timeout: 20_000 })
       .toBeGreaterThan(0);
-    const ratingInfo = previewResponse(diag, "/api/v1/preview/rating/info");
+    const ratingInfo = previewResponse(diag, "/api/v1/preview/rating");
     expect(ratingInfo.every((item) => item.status === 200 && item.cors === "*")).toBe(true);
 
     await ratingFrame.locator('.star[data-value="5"]').click({ force: true });
     await expect
-      .poll(() => previewResponse(diag, "/api/v1/preview/rating/update").length, { timeout: 20_000 })
-      .toBeGreaterThan(0);
-    const ratingUpdate = previewResponse(diag, "/api/v1/preview/rating/update");
+      .poll(() => previewResponse(diag, "/api/v1/preview/rating").length, { timeout: 20_000 })
+      .toBeGreaterThan(1);
+    const ratingUpdate = previewResponse(diag, "/api/v1/preview/rating");
     expect(ratingUpdate.every((item) => item.status === 200 && item.cors === "*")).toBe(true);
+    // 预览写请求只允许命中 /api/v1/preview/*，真实 /api/rating 必须 0 次。
+    expect(diag.realWrites).toEqual([]);
 
     // vote：fixture 计数 86/12，点赞后乐观更新为 87。
     await page.getByPlaceholder("搜索插件...").fill("vote");
