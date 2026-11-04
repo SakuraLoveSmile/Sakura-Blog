@@ -3,7 +3,7 @@
 <!-- 状态词只用 未开始 / 实现中 / 待体验 / 已验收；已验收须用户明确确认。 -->
 
 - 项目 / 任务编号：Blog / BLG-20261103-01
-- 状态：待体验
+- 状态：已验收（用户 2026-11-04 确认“可以了 先这样”，随后随 v2.0.7 发布）
 - 创建日期（Asia/Taipei）：2026-11-03
 - 权威记录：本文件；视觉与验收依据见 [docs/baselines/settings-ia/README.md](../baselines/settings-ia/README.md)
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Blog`（根 `dev` 工作树，保留用户原有未提交改动，不触碰）/ `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261103-feat-blg-20261103-01-settings-ia`
@@ -223,3 +223,10 @@
 - `console-settings-ia` 的分区标题数组已按新结构更新；Q2b 手机点击区用例的控件数量因移除而下降，需在实际运行中确认阈值仍成立（未降低标准）。
 - 本文件「测试预期变更与依据」中仍按当时状态记录 giscus 用例与第三方评论段；以本节的后续变更为准。
 - `docs/baselines/settings-ia/after-comments-*.png`、`after-extensions-*.png` 与 `verification.json` 的源码指纹早于本次移除、已过期；IA 任务最终验收时需重拍/重新生成。
+
+## 发布记录（v2.0.7，2026-11-04）
+
+- 用户 2026-11-04 晚间确认验收（“可以了 先这样”），并授权发布新版本与更新线上。
+- 本任务改动与 BLG-20261104-01、编辑器标签修复一起提交：`e8eb8a26`（feat）、`b0ae24cb`（fix）；经 `make merge-check` 合入 `dev`，`dev` 推送后 PR #46 `dev → main` 合并为 `82611cfd`，PR #47 `main → release` 合并为 `69cad0f8`。
+- tag `v2.0.7`（GPG 签名）打在 `69cad0f8`；Docker Release run `41860531679` success（5m7s），镜像 digest `sha256:839f243d…a615ed6`。生产升级与验收见 `docs/plans/release-v2.0.7.md`。
+- 本任务 worktree 已收尾清理；后续设置页改动以本文件“后续变更”与后续任务记录为准。
