@@ -1,0 +1,21 @@
+{
+  "task": "BLG-RSS01",
+  "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.8",
+  "imageID": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+  "version": "2.0.8",
+  "revision": "5db4dac339e23e1424108d7f45ca6702b0ee9264",
+  "readyzHost": 200,
+  "restarts": 0,
+  "imageHelpExitCode": 0,
+  "pullCompletedBeforeStop": true,
+  "backup": "/home/ubuntu/blog-release-v2.0.8-blg-rss01",
+  "backupSHA256": "508b4dd93833ef6c6708d8833b0dd60506e24d03831c8c90d135b8b3f8bb4ed0",
+  "links": {
+    "count": 8,
+    "changedFields": [
+      "12.rss",
+      "6.url"
+    ],
+    "otherFieldsUnchanged": true
+  }
+}

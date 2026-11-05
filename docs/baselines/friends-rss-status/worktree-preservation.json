@@ -1,0 +1,12 @@
+{
+  "task": "BLG-RSS01",
+  "verifiedAt": "2026-11-05T05:20:07.587693+00:00",
+  "originalUserUntrackedCount": 298,
+  "originalUserUntrackedSHA256Unchanged": true,
+  "originalTrackedUserDiffIdentical": true,
+  "taskWorktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261105-fix-blg-rss01-friend-feed-status",
+  "taskWorktreeRemoved": true,
+  "taskLocalBranchRemoved": true,
+  "isolatedPreviewService": "stopped before worktree cleanup",
+  "sharedResourceDirectory": "unchanged"
+}
