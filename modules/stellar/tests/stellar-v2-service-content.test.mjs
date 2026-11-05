@@ -2,23 +2,26 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { createRequestClient } from '../web/assets/js/runtime/request-cache.js';
+import { createRequestClient, REQUEST_CACHE_PREFIX } from '../web/assets/js/runtime/request-cache.js';
 import { installLegacyRequestAdapter } from '../web/assets/js/runtime/legacy-request-adapter.js';
 
 const source = path => readFileSync(new URL('../web/assets/js/' + path, import.meta.url), 'utf8');
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
-function fixture(service = 'friends', api = '/fixture/friends', baseURI = 'https://example.test/blog/post/demo', browserGlobals = {}) {
+function fixture(service = 'friends', api = '/fixture/friends', baseURI = 'https://example.test/blog/post/demo', browserGlobals = {}, cachedData) {
   const requests = [], errors = [], cells = [], failures = [];
   const attributes = new Map();
-  const element = { nodeType: 1, className: 'ds-' + service, dataset: { api }, baseURI,
+  const elements = (Array.isArray(api) ? api : [api]).map(api => ({ nodeType: 1, className: 'ds-' + service, dataset: { api }, baseURI,
     getAttribute: key => attributes.get(key) ?? null,
     querySelectorAll: () => [],
     classList: { contains: () => false, add() {}, remove() {} },
-  };
-  const root = { getElementsByClassName: name => name === 'ds-' + service ? [element] : [], querySelectorAll: () => [], contains: node => node === element, querySelector: selector => selector === '.ds-' + service ? element : null };
+  }));
+  const element = elements[0];
+  const root = { getElementsByClassName: name => name === 'ds-' + service ? elements : [], querySelectorAll: () => [], contains: node => elements.includes(node), querySelector: selector => selector === '.ds-' + service ? element : null };
   const policy = { retries: 0, timeoutMs: 5000, idleTimeoutMs: 100, maxCacheEntryBytes: 1024 };
-  const client = createRequestClient({ policy, cache: { enabled: false, defaultTtl: 0, ttl: {}, maxEntries: 0 },
+  const cached = new Map(cachedData ? [[REQUEST_CACHE_PREFIX + api, JSON.stringify({ text: JSON.stringify(cachedData), ts: Date.now(), ttl: 86400 })]] : []);
+  const storage = { getItem: key => cached.get(key) || null };
+  const client = createRequestClient({ policy, storage, cache: { enabled: !!cachedData, defaultTtl: 86400, ttl: {}, maxEntries: 10 },
     fetch: (url, options) => new Promise(resolve => requests.push({ url, options, resolve })) });
   const dom = target => ({
     find: () => dom(target),
@@ -53,6 +56,42 @@ function fixture(service = 'friends', api = '/fixture/friends', baseURI = 'https
   }
   return { requests, errors, cells, failures, element, attributes, sanitized, mount, respond };
 }
+
+test('本站友链绕过旧持久缓存读取更新后的文章，外部数据源保留缓存', async () => {
+  const cachedData = { content: [{ title: 'Cached friend', url: '/friend', posts: [], feed: [] }] };
+  for (const api of ['/blog/api/friends', '/blog/api/friends-aggregated?source=page', 'https://example.test/blog/api/friends-aggregated']) {
+    const f = fixture('friends_and_posts', api, undefined, {}, cachedData);
+    const cleanup = await f.mount();
+    assert.equal(f.requests.length, 1, api);
+    f.respond(0, { content: [{ title: 'Fresh friend', url: '/friend', posts: [{ title: 'New article', link: '/new' }] }] });
+    await flush(); await flush();
+    assert.equal(f.errors.length, 0);
+    assert.match(f.cells[0].html, /New article/);
+    assert.doesNotMatch(f.cells[0].html, /Cached friend/);
+    cleanup();
+  }
+  for (const api of ['https://remote.test/blog/api/friends-aggregated', '/blog/api/friends-extra']) {
+    const f = fixture('friends_and_posts', api, undefined, {}, cachedData);
+    const cleanup = await f.mount();
+    await flush(); await flush();
+    assert.equal(f.requests.length, 0, api);
+    assert.match(f.cells[0].html, /Cached friend/);
+    cleanup();
+  }
+});
+
+test('无效友链数据源只显示自身失败，不阻断后续正常组件', async () => {
+  const f = fixture('friends_and_posts', ['http://[', '/blog/api/friends-aggregated']);
+  const cleanup = await f.mount();
+  assert.equal(f.requests.length, 2);
+  f.respond(0, {}, 400);
+  f.respond(1, { content: [{ title: 'Following friend', url: '/friend', posts: [] }] });
+  await flush(); await flush();
+  assert.equal(f.errors.length, 1);
+  assert.equal(f.failures.length, 1);
+  assert.match(f.cells[0].html, /Following friend/);
+  cleanup();
+});
 
 test('官方friends成功后保留DOM重挂不重复，错误正文解析后仍允许重新挂载重试', async () => {
   const loaded = fixture();

@@ -41,7 +41,7 @@ func linkUnavailable(l *store.Link) bool {
 	if label == "失效" || label == "失联" {
 		return true
 	}
-	return l.LastCheckedAt > 0 && (l.LastStatus < http.StatusOK || l.LastStatus >= http.StatusMultipleChoices)
+	return l.LastCheckedAt > 0 && (l.LastStatus < http.StatusOK || l.LastStatus >= http.StatusBadRequest)
 }
 
 // KnownSections 返回可编辑的分段名（顺序固定，供 GET 返回与校验）。
