@@ -89,8 +89,8 @@ document.currentScript.stellarMount = function (root, context) {
               cell += `<span class="date">${escapeHTML(post.published || '')}</span>`;
               cell += `</a>`;
             }
-          } else {
-            cell += `<span class="no-post">${item.feed?.length > 0 ? 'RSS 解析失败' : '未设置 RSS 链接'}</span>`;
+          } else if (item.feed?.length > 0) {
+            cell += `<span class="no-post">动态暂不可用</span>`;
           }
           }
           cell += `</div>`;
