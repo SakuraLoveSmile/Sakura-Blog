@@ -3,7 +3,7 @@
 <!-- 状态词只用 未开始 / 实现中 / 待体验 / 已验收；已验收须用户明确确认。 -->
 
 - 项目 / 任务编号：Blog / BLG-20261104-01
-- 状态：待体验（`make test` 与 `make build` 已通过，Playwright 见下方记录）
+- 状态：已验收（用户 2026-11-04 确认“可以了 先这样”，随后随 v2.0.7 发布）
 - 创建日期（Asia/Taipei）：2026-11-04
 - 叠加关系：本任务叠在未提交的 BLG-20261103-01（系统设置页 IA）工作树上做，沿用同一个 worktree 与分支；两项都未提交、未合并。
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Blog`（根 `dev`，保留用户原有未提交改动，不触碰）/ `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261103-feat-blg-20261103-01-settings-ia`
@@ -93,3 +93,9 @@
 
 1. 用户打开 8098 预览验收本任务与 IA 改动。
 2. 提交 / 合并 / 重拍基线 / 清理 worktree 均需用户明确授权。
+
+## 发布记录（v2.0.7，2026-11-04）
+
+- 与设置页 IA 同一分支提交：`e8eb8a26`（feat，包含本任务的设置页与运行时移除）、`b0ae24cb`（fix，编辑器相关）；`make merge-check` 合入 `dev`，PR #46 → main `82611cfd`，PR #47 → release `69cad0f8`。
+- tag `v2.0.7` 镜像 digest `sha256:839f243d…a615ed6`；生产升级后公网 `/post/who-am-i` 无 siteinfo/algolia/第三方评论请求、无第三方评论节点，原生评论区正常。
+- 完整发布与生产验收见 `docs/plans/release-v2.0.7.md`。
