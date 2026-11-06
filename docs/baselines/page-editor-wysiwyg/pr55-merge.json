@@ -1,0 +1,91 @@
+{
+  "headRefOid": "4ecf80f2f303f10984ae2a7e40e780d09f1e2470",
+  "mergeCommit": {
+    "oid": "a0aa6114e98cf069edcfe68aea3d85ef4987cc08"
+  },
+  "mergedAt": "2026-11-06T12:03:10Z",
+  "state": "MERGED",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T11:42:42Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871527912",
+      "name": "go",
+      "startedAt": "2026-11-06T11:37:49Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T11:40:37Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871528098",
+      "name": "lint",
+      "startedAt": "2026-11-06T11:37:49Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T11:41:47Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871527895",
+      "name": "security",
+      "startedAt": "2026-11-06T11:37:50Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T11:39:11Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871527875",
+      "name": "console",
+      "startedAt": "2026-11-06T11:37:50Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T12:01:00Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871527913",
+      "name": "e2e",
+      "startedAt": "2026-11-06T11:37:50Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T11:38:49Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871527743",
+      "name": "build",
+      "startedAt": "2026-11-06T11:37:49Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T11:39:59Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871528131",
+      "name": "image",
+      "startedAt": "2026-11-06T11:37:50Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-06T11:38:00Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42211666269/job/127871527924",
+      "name": "release-source",
+      "startedAt": "2026-11-06T11:37:49Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ],
+  "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/55"
+}

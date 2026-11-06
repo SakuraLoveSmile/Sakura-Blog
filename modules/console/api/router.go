@@ -21,6 +21,7 @@ import (
 	ghpkg "blog/internal/github"
 	"blog/internal/identity"
 	"blog/internal/linkwatch"
+	"blog/internal/llm"
 	"blog/internal/module"
 	"blog/internal/notify"
 	"blog/internal/plugin"
@@ -50,7 +51,9 @@ type Handler struct {
 	storageManager *attachmentstorage.Manager
 	plugins        *plugin.Runtime
 	rag            *rag.Service
-	maxUpload      int64 // 单文件上限字节
+	// llmClient 写作助手调用对话模型用的客户端；nil 时使用带 SSRF 防护的生产客户端，仅测试注入。
+	llmClient *llm.Client
+	maxUpload int64 // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
 	onLinksChanged func()
@@ -601,6 +604,8 @@ func (h *Handler) register(r *gin.Engine) {
 		// AI 属性生成（OpenAI 兼容代理，配置在 settings "ai" 段）：
 		// 消耗 admin 配置的第三方 key，仅 admin 可用（安全审计 2026-08-16 收进 sys）。
 		sys.POST("/ai/generate", h.aiGenerate)
+		// 编辑器写作助手：对选中文字润色/改写等，SSE 流式返回；同样消耗 admin 的 key，仅 admin 可用。
+		sys.POST("/ai/assist", h.aiAssist)
 		sys.GET("/rag/status", h.ragStatus)
 		sys.POST("/rag/ask", h.ragAsk)
 		sys.POST("/rag/rebuild", h.ragRebuild)

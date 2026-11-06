@@ -12,6 +12,10 @@
       "default": "./src/index.ts"
     },
     "./RichTextEditor.vue": "./src/RichTextEditor.vue",
+    "./assistant-bridge": {
+      "types": "./src/assistant-bridge.ts",
+      "import": "./src/assistant-bridge.ts"
+    },
     "./search-replace": "./src/search-replace.ts",
     "./code-block": "./src/code-block.ts"
   },
