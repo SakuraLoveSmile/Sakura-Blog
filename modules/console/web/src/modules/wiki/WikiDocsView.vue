@@ -2,10 +2,11 @@
 import { useStellarForm } from "@/components/editor/useStellarForm";
 import { wikiDocFields } from "@/components/editor/stellar-form-fields";
 import { provide, ref, computed, onMounted, watch } from "vue";
-import { wikiApi, type WikiProject } from "@/api";
+import { wikiApi, type WikiDocImportResponse, type WikiProject } from "@/api";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import ContentEditor from "@/components/ContentEditor.vue";
+import WikiImportModal from "./WikiImportModal.vue";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, Toast, Dialog, VModal } from "@/components/ui";
 
@@ -292,6 +293,21 @@ async function handleCreate() {
   }
 }
 
+// ---------- 从文章导入 ----------
+const importOpen = ref(false);
+
+const existingSlugs = computed(() => docs.value.map((d) => d.slug));
+const importParentOptions = computed(() =>
+  docs.value.map((d) => ({ id: d.id, title: d.title || d.slug, slug: d.slug })),
+);
+
+async function handleImported(result: WikiDocImportResponse) {
+  // 导入后刷新文档树，并直接打开第一篇新文档，方便继续编排。
+  await loadDocs();
+  const first = result.imported[0];
+  if (first?.slug) await selectDoc(first.slug);
+}
+
 // ---------- 数据加载 ----------
 async function loadProjects() {
   settingsLoading.value = true;
@@ -423,6 +439,11 @@ onMounted(loadProjects);
           <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.title || p.name || p.id }}</option>
         </select>
 
+        <VButton :disabled="!activeProject" @click="importOpen = true">
+          <template #icon><Icon icon="ri:import-line" /></template>
+          导入文章
+        </VButton>
+
         <VButton :route="{ path: '/wiki/projects' }">
           <template #icon><Icon icon="ri:settings-3-line" /></template>
           项目设置
@@ -526,7 +547,7 @@ onMounted(loadProjects);
             <VLoading v-if="docsLoading" />
 
             <div v-else-if="!flatTree.length" class="py-12 text-center text-xs text-text-quaternary">
-              暂无文档<br />点击右上角「新建文档」创建
+              暂无文档<br />点击右上角「新建文档」或「导入文章」创建
             </div>
 
             <!-- 树形导轨节点列表 -->
@@ -620,6 +641,10 @@ onMounted(loadProjects);
                 <VButton type="primary" @click="openCreate(0)">
                   <template #icon><Icon icon="ri:add-line" /></template>
                   新建文档
+                </VButton>
+                <VButton :disabled="!activeProject" @click="importOpen = true">
+                  <template #icon><Icon icon="ri:import-line" /></template>
+                  导入文章
                 </VButton>
               </div>
             </VCard>
@@ -737,8 +762,18 @@ onMounted(loadProjects);
         </div>
       </template>
     </VModal>
+
+    <!-- 从文章导入 -->
+    <WikiImportModal
+      :open="importOpen"
+      :project-id="activeProject"
+      :project-title="currentProject?.title || currentProject?.name || activeProject"
+      :existing-slugs="existingSlugs"
+      :docs="importParentOptions"
+      @close="importOpen = false"
+      @imported="handleImported"
+    />
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

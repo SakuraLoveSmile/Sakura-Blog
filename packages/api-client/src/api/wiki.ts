@@ -1,5 +1,8 @@
 import { http } from "../transport";
+import type { WikiDocImportRequest, WikiDocImportResponse } from "../generated";
 import type { StellarContentMetadata, WikiDocPayload } from "./contracts";
+
+export type { WikiDocImportRequest, WikiDocImportItem, WikiDocImportResponse } from "../generated";
 
 // --- Wiki 项目与文档（Spec 35a） ---
 export interface WikiHeroPreview {
@@ -68,4 +71,7 @@ export const wikiApi = {
     http.put(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`, data),
   deleteDoc: (project: string, slug: string) =>
     http.delete(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`),
+  // 从「文章」导入文档：只读文章，逐条创建；同名 Slug 跳过，不覆盖已有文档。
+  importDocs: (project: string, data: WikiDocImportRequest) =>
+    http.post<WikiDocImportResponse>(`/wiki/${encodeURIComponent(project)}/docs/import`, data),
 };
