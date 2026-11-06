@@ -1,6 +1,6 @@
 # BLG-EDIT02：页面编辑与正式页面一致
 
-- 状态：实现中。2026-11-06（Asia/Taipei）。用户在 BLG-FRIEND02 体验后新增页面编辑的四项修复要求，本记录独立维护该施工事项。已完成本地实现、构建、回归及受影响界面核验；本次用户已要求按流程发布新版本并更新线上，发布执行进展见下文。
+- 状态：待体验。2026-11-06（Asia/Taipei）。用户在 BLG-FRIEND02 体验后新增页面编辑的四项修复要求，本记录独立维护该施工事项。已完成实现、本地与远端回归，正式版 `v2.0.9` 已按流程发布并更新线上，生产界面核验通过；用户体验确认仍未完成。
 - 目标：页面编辑不再显示 Stellar 2 原文配置入口；真实友链可加载；去掉 shortcode 预览外围额外底色；可编辑正文复用当前正式页面的实际主题、排版及友链页居中标题，并显示只读本站资料。
 - 工作区：复用当前会话工作树 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-fix-blg-friend02-friends-page`，分支 `codex/fix/20261106-blg-friend02-friends-page`，实现起点 HEAD `2ad23a6225708675a7917cd718d5f92e399cee3d`。原因是此次验收直接依赖尚未集成的 BLG-FRIEND02 样式与本站资料，避免在两个工作树复制未提交的依赖；原任务已完成部分作为本任务输入，未迁移或改名。两项工作由主 agent 顺序接续，不并行运行另一份来源。根 dev 的用户改动及 editor-writing-assistant 工作树不操作。集成目标 dev。
 - 唯一目标参照是同一代码与设置下的公开正式页面（本地 `http://127.0.0.1:18086/friends`，BLG-FRIEND02）；用户现状截图在 `docs/baselines/page-editor-wysiwyg/before-user.png`。保留页面编辑工具栏、基本表单、原始 Markdown 和未知配置，不换 Console 风格。
@@ -35,7 +35,7 @@
 
 预览及工作树在两项任务集成验证前保留；后续明确授权集成后统一停服并按项目保全规则清理。BLG-FRIEND02 的历史通过不能当成本任务证据。
 
-## 当前核验记录
+## 实现阶段核验（发布前历史）
 
 - 首轮真实构建并重启后，已实测友链/失联分组加载、标题使用正式页样式、属性输入与 Escape 关闭、富文本/Markdown 往返及保存重开。即时输入“验收”已保存并读回，随后通过原文编辑恢复夹具；本站信息未进入 Markdown。`save-roundtrip.json` 证明最终正文逐字与起点相同、配置语义不变（旧空 blog_extensions 按既有保存入口规范为 `{}`）。
 - 独立审查发现空白页样式、跨文档拖拽结束、代码块/表格结构及旧测试 harness 缺口，已修正。原高度/source/token 断言保留，新增实际父窗口监听迁移与解绑验证；没有删除用例、降低门槛或跳过。新增代码及 CSS 层隔离也已独立复审，无新增可操作缺陷。
@@ -53,8 +53,14 @@
 - 用户明确要求“按照流程发布新版本，然后更新线上”，授权本任务必要的提交、集成、推送、两级 PR、正式 tag/镜像发布及生产更新。版本定为 `v2.0.9`；不把发布授权当作用户体验验收。
 - 开始发布时，dev/origin/dev 为 `515ed89a487976a05536d182c1418f23bfeeadbb`，origin/main 为 `214c7009b64f594b97cec65f8ec2744f78c002cf`，origin/release 为 `7e930138dd73bebfdc52b235346fb934edcb55cc`。main 有 4 条 dev 缺少的发布合并记录，先在同一任务工作树建立临时同步分支，经 merge-check 回到 dev，再将实现分支 rebase dev 并重新验证；不操作其他活跃工作树。
 - 生产只读预检：当前容器固定 `2.0.9-beta01`、running、RestartCount 0，宿主 `/readyz` 200。部署前保全当前 compose、配置、数据及内容，仅升级镜像，不改站点正文或友链资料。
-- 当前下一步：提交本任务实现与既有验收证据，同步最新 dev，完成组合态门禁与真实构建，再执行 dev→main→release、Docker Release 和生产核验。最终结果与资源收尾继续记在本节。
+- 发布结果：PR [#54](https://github.com/SakuraLoveSmile/Sakura-Blog/pull/54)（dev→main）及 [#55](https://github.com/SakuraLoveSmile/Sakura-Blog/pull/55)（main→release）均已在完整 CI 成功后合并，release 为 `a0aa6114e98cf069edcfe68aea3d85ef4987cc08`，完整树与实现 `ac0a64eda6349916b7640167289121513328b9ed` 相同。签名 tag `v2.0.9` 已验证并推送，[Docker Release 42214877675](https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42214877675) 成功，正式 GitHub Release 非预发布、无附件；镜像是唯一发布产物。
+- PR #54 的 E2E 为 210 passed，无 flaky；PR #55 为 209 passed、1 flaky，既有 `console-mobile-a11y.spec.ts:825` 手机评论命中区用例首次在第 881 行未读到快捷链接（links.length 为 0），按原重试配置恢复，最终 CI 成功。与前轮观察到的波动属于同一用例，未修改断言、重试或检查强度；原始摘要及各项成功状态见 `pr54-e2e-result.json`、`pr55-e2e-result.json`、`pr55-ci.json`。
 - 发布前补查既有端到端对比度场景时发现，共用 NodeView 无条件采用透明表面会影响未使用正式页画布的文章编辑器；已将透明表面限定为 `layout=page`，其他编辑器保留原独立表面。行为测试分别挂载页面/文章上下文，保留原高度、来源与 token 断言，并新增两种表面的明确断言；不改旧端到端可读性标准。
 - 此兼容修正经独立只读复核无新增阻塞；既有两项 Playwright 可读性用例通过，浅色 12.27:1、深色 10.97:1，无页面错误或横向溢出。未改变原用例或对比度门槛；测试产物归档在 `docs/baselines/page-editor-wysiwyg/surface-compatibility/`，原 tag-live-preview 的 38 份基线已逐文件恢复。首轮 PR CI 在 e2e 未完成时主动取消，修正后重新运行全套。
 - 远端首轮完整 CI（`42205001100`，源码 `3dd20a75`）的 Go/Console/assets/lint/security/build 均通过；E2E 为 206 passed、3 failed、1 flaky。三项失败均为 tag-plugin-parity 的 pages 场景在父文档定位 contenteditable，未进入新增受控画布；仅调整这些正文定位到 `iframe[title="页面编辑画布"]`，保持全部原保存拒绝、源码保真、交互和 API 断言。手机评论命中区用例重试后通过，属于本轮观察到的 flaky，未修改其门槛。新定位本地验证与远端全套通过前，不合并 PR 或发布。
 - iframe 定位适配经独立只读审查通过；隔离 8096 夹具完整执行 `tests/e2e/tag-plugin-parity.spec.ts`，11/11 passed（32.9s，exit 0），包含三项 pages 场景及原 posts、动态净化、主题与源码保真检查。没有放宽任何断言或增加等待/重试；原8份 tag-plugin-parity 基线已恢复，本次证据放在 `parity-compatibility/`。
+- 生产于台北时间 20:13 完成升级，compose 固定 `ghcr.io/sakuralovesmile/sakura-blog:2.0.9`；镜像 digest 为 `sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e`，OCI revision 与 release/tag 提交一致，镜像内 `-h` 退出 0。升级前冷停完整备份 compose/config/content/data 到服务器 `/home/ubuntu/blog-release-v2.0.9/site-state.tar`（864450560 字节，SHA256 `d69c9cd1ba319707cf7443b7a7f8a9e3bbd2bb788d26ec2dc7f56e2d1eb6189c`），逐项与冷态源对比成功，备份目录 0700、归档 0600。维护 58.33 秒；宿主 `/readyz` 200、容器 running/RestartCount 0、SQLite quick_check 为 ok；配置、5 个页面的原文、user_version 和实际 schema hash 均未改变，app/site 配置权限仍为 0600。
+- 公网首页、友链、设置、Console、User Center、Atom 与 sitemap 均为 200，设置页显示正式 2.0.9；两条公开友链 GET 的 Origin:null 读取成功、仅开放无凭据 CORS。生产实际友链 CSS、friends_and_posts 脚本及 Console 入口字节与冻结构建一致。证据见 `production-image-verification.json`、`production-deploy-verification.json`、`production-public-verification.json`。
+- 生产真实浏览器桌面核验：旧配置入口不存在，页面编辑画布加载真实友链及失联分组，未出现原“加载失败”提示；本站资料恰好一份，四个标题与公开页的字体、字号、行高、颜色、居中和装饰相同，两个组件宿主均透明，页面无横向溢出。Console 强制刷新后运行版本与最新 GHCR 标签均为 2.0.9，并显示对应更新日志。未在生产编辑或保存测试正文；手机、四种 appearance 及自动配色完整矩阵仍以本地隔离验证为证，不冒充生产全矩阵。截图为 `production-editor-desktop.jpg`、`production-friends-desktop.jpg`、`production-version.jpg`，度量见 `production-browser-verification.json`。个别外部站点动态暂不可用及 feed 中的 localhost 链接沿外部来源现状保留，未修改友链资料。
+- 收尾保全：已停止本任务 PID 11104 的本地预览，18086 监听已关闭，本地预览标签已关闭、保留线上友链及版本标签。根工作区原有 321 份用户文件逐一 hash 均保持原样，其他任务工作树未操作。唯一夹具、日志、脚本及运行记录已归档并逐文件核验，位置为 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/.archives/20261106-blg-edit02-friends-page/`；详见 `worktree-preservation.json`，本地 worktree/分支的实际移除结果及文档组合门禁日志由该归档目录的 `cleanup-result.json` 记录。共享 resource 未解引用归档或改动，node_modules/dist/blog 为可再生产物。
+- 线上体验入口：[页面编辑](https://blog.xn--fhqths51enha.cn/console/pages/edit/friends)、[公开友链](https://blog.xn--fhqths51enha.cn/friends)。下一步仅为用户体验确认，尤其保留前述指针自动化限制下的连续鼠标操作体验；未经用户确认不标已验收。

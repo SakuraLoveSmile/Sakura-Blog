@@ -1,0 +1,11 @@
+{
+  "verifiedAt": "2026-11-06T12:12:07.650707+00:00",
+  "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.9",
+  "imageId": "sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e",
+  "revision": "a0aa6114e98cf069edcfe68aea3d85ef4987cc08",
+  "repoDigests": [
+    "ghcr.io/sakuralovesmile/sakura-blog@sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e"
+  ],
+  "helpExitCode": 0,
+  "helpUsagePresent": true
+}

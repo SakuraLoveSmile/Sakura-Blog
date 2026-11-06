@@ -1,0 +1,125 @@
+{
+  "verifiedAt": "2026-11-06T12:18:56.551Z",
+  "runningVersion": "2.0.9",
+  "latestGHCRVersion": "2.0.9",
+  "public": {
+    "friendScriptResources": [
+      "https://blog.xn--fhqths51enha.cn/assets/js/services/friends_and_posts.js?v=1f141c54"
+    ],
+    "headings": [
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "友链列表"
+      },
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "失联友链"
+      },
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "如何交换友链？"
+      },
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "本站信息"
+      }
+    ],
+    "horizontalOverflow": -8,
+    "siteInfoCount": 1,
+    "url": "https://blog.xn--fhqths51enha.cn/friends"
+  },
+  "editor": {
+    "componentFrames": [
+      {
+        "class": "block max-w-none border-0 bg-transparent transition-[height] duration-150 pointer-events-none",
+        "hostBackground": "rgba(0, 0, 0, 0)",
+        "title": "标签预览"
+      },
+      {
+        "class": "block max-w-none border-0 bg-transparent transition-[height] duration-150 pointer-events-none",
+        "hostBackground": "rgba(0, 0, 0, 0)",
+        "title": "标签预览"
+      }
+    ],
+    "consoleEntry": "https://blog.xn--fhqths51enha.cn/console/assets/index-CDgqgH-T.js",
+    "editingCanvasPresent": true,
+    "headings": [
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "友链列表"
+      },
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "如何交换友链？"
+      },
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "本站信息"
+      }
+    ],
+    "horizontalOverflow": 0,
+    "legacyConfigEntryVisible": false,
+    "url": "https://blog.xn--fhqths51enha.cn/console/pages/edit/friends",
+    "siteInfoCount": 1,
+    "nestedFriendHeadings": [
+      {
+        "after": "\"\"",
+        "align": "center",
+        "before": "\"\"",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "lineHeight": "36.45px",
+        "size": "27px",
+        "text": "失联友链"
+      }
+    ],
+    "realFriendVisible": true,
+    "unavailableGroupVisible": true,
+    "loadFailureMessageVisible": false
+  },
+  "allFourHeadingsMatch": true,
+  "productionContentWritesPerformed": false,
+  "scope": "desktop production verification; full appearance and mobile matrix is isolated local evidence"
+}
