@@ -27,7 +27,8 @@ const preview = usePluginPreview(() => ({ capability: "static", height: 64 }), u
   delayMs: 150,
   queue: sharedPreviewQueue,
   cache: new PreviewCache(20),
-  surface: "embedded",
+  // 页面画布已提供真实主题背景；其他编辑器仍需要独立表面保证文字对比度。
+  surface: stellarContext?.value.layout === "page" ? "embedded" : "standalone",
   frame: { minHeight: 32, maxHeight: Number.MAX_SAFE_INTEGER, margin: 0 },
 });
 const contentWidth = ref(0);

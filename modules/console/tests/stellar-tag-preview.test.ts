@@ -38,7 +38,7 @@ const previewApi = {
 };
 const usePluginPreview = loadUsePluginPreview(previewApi);
 
-test("标签预览按内容增减高度，拒绝其他窗口、过期 token 和无效尺寸", async (t) => {
+for (const layout of ["page", "post"] as const) test(`${layout} 标签预览保留对应表面，按内容增减高度并拒绝无效消息`, async (t) => {
   const listeners = new Map<string, (event: any) => void>();
   const canvasListeners = new Map<string, (event: any) => void>();
   const canvasWindow = {
@@ -110,6 +110,9 @@ test("标签预览按内容增减高度，拒绝其他窗口、过期 token 和�
       return () => null;
     },
   });
+  app.provide(stellarEditorContextKey, Vue.computed(() => ({
+    stellar_version: 2, stellar_config: "{}", blog_extensions: "{}", layout,
+  })));
   app.mount({});
   // 确定性等待真实 composable 的 0ms 调度：轮询 token + 宏任务推进，不依赖墙钟延时。
   for (let i = 0; i < 100 && state.preview.previewToken.value !== "current-token"; i++) {
@@ -117,6 +120,8 @@ test("标签预览按内容增减高度，拒绝其他窗口、过期 token 和�
     await new Promise<void>((resolve) => setImmediate(resolve));
   }
   assert.equal(state.preview.previewToken.value, "current-token", "首次预览 token 未在确定轮询内就绪");
+  assert.equal(state.preview.srcdoc.value.includes('data-preview-surface="1"'), layout === "post",
+    "页面画布使用透明嵌入，文章编辑保留独立表面及文字对比度");
   assert.ok(nodeCache instanceof renderGate.PreviewCache);
   assert.notEqual(nodeCache, renderGate.sharedPreviewCache, "NodeView 重新挂载后应取得当前主题文档");
   const frame = {};

@@ -54,3 +54,5 @@
 - 开始发布时，dev/origin/dev 为 `515ed89a487976a05536d182c1418f23bfeeadbb`，origin/main 为 `214c7009b64f594b97cec65f8ec2744f78c002cf`，origin/release 为 `7e930138dd73bebfdc52b235346fb934edcb55cc`。main 有 4 条 dev 缺少的发布合并记录，先在同一任务工作树建立临时同步分支，经 merge-check 回到 dev，再将实现分支 rebase dev 并重新验证；不操作其他活跃工作树。
 - 生产只读预检：当前容器固定 `2.0.9-beta01`、running、RestartCount 0，宿主 `/readyz` 200。部署前保全当前 compose、配置、数据及内容，仅升级镜像，不改站点正文或友链资料。
 - 当前下一步：提交本任务实现与既有验收证据，同步最新 dev，完成组合态门禁与真实构建，再执行 dev→main→release、Docker Release 和生产核验。最终结果与资源收尾继续记在本节。
+- 发布前补查既有端到端对比度场景时发现，共用 NodeView 无条件采用透明表面会影响未使用正式页画布的文章编辑器；已将透明表面限定为 `layout=page`，其他编辑器保留原独立表面。行为测试分别挂载页面/文章上下文，保留原高度、来源与 token 断言，并新增两种表面的明确断言；不改旧端到端可读性标准。
+- 此兼容修正经独立只读复核无新增阻塞；既有两项 Playwright 可读性用例通过，浅色 12.27:1、深色 10.97:1，无页面错误或横向溢出。未改变原用例或对比度门槛；测试产物归档在 `docs/baselines/page-editor-wysiwyg/surface-compatibility/`，原 tag-live-preview 的 38 份基线已逐文件恢复。首轮 PR CI 在 e2e 未完成时主动取消，修正后重新运行全套。
