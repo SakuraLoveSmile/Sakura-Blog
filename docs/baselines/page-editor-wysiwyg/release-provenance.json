@@ -1,0 +1,12 @@
+{
+  "recordedAt": "2026-11-06T12:03:47.628642+00:00",
+  "version": "v2.0.9",
+  "releaseRevision": "a0aa6114e98cf069edcfe68aea3d85ef4987cc08",
+  "implementationRevision": "ac0a64eda6349916b7640167289121513328b9ed",
+  "sourceTree": "8811736a7a70b0e9dc07716400944eba5c6975eb",
+  "releaseTreeMatchesImplementation": true,
+  "tagAbsentBeforeCreate": true,
+  "signatureVerified": true,
+  "remoteTagObject": "cc8bca9d5061efaf74c650d7f40178650532b072",
+  "remoteTagCommit": "a0aa6114e98cf069edcfe68aea3d85ef4987cc08"
+}

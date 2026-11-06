@@ -1,6 +1,6 @@
 # BLG-FRIEND02：友链页标题与本站资料
 
-- 状态：待体验。日期：2026-11-06（Asia/Taipei）。已按用户体验反馈补齐标题居中与可复制资料块，适用验证完成；后续发布授权及执行统一记在 [BLG-EDIT02](page-editor-wysiwyg.md) 的 v2.0.9 发布与上线一节。
+- 状态：待体验。日期：2026-11-06（Asia/Taipei）。已按用户体验反馈补齐标题居中与可复制资料块，适用验证完成，正式版 `v2.0.9` 已发布并更新线上；发布授权、线上核验及收尾证据统一记在 [BLG-EDIT02](page-editor-wysiwyg.md) 的 v2.0.9 发布与上线一节。
 - 目标：友链页“友链列表”“失联友链”“如何交换友链”“本站信息”统一为居中的橙色双斜杠、衬线文字；交换说明下按 xaoxuu 参照提供本站资料 YAML 代码块（title、url、avatar、description、feed）；答复现有友链展示方式，不切换卡片布局。
 - 起点：根 dev / `2ad23a6225708675a7917cd718d5f92e399cee3d`，根目录已有用户文档与证据改动，全部保留。分支 `codex/fix/20261106-blg-friend02-friends-page`；worktree `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-fix-blg-friend02-friends-page`。集成目标 dev；本次未授权提交、推送或生产发布。
 - 标题装饰与字体的唯一参照：`docs/baselines/friends-page/reference.png`；本站信息的布局参照为用户后补的 `reference-site-info.png`，来源 `https://xaoxuu.com/friends/`，采用居中分区标题、说明及整段 YAML 代码块，标题装饰仍沿已确认的橙色斜杠。实时参考页只读访问未返回截图中的资料块，因此以用户截图作为资料布局依据。`before-heading.png`、`before-exchange.png` 仅记录原有问题。颜色复用 Stellar `--accent` / `--text`，浅色使用对应可读文字；字号复用 `--fsh2`，移动端无页面横向溢出。复用 Stellar `.highlight > .code > pre` 及现有复制按钮，不另建复制运行时。
@@ -21,4 +21,4 @@
 - 当前服务提供的 CSS、实际友链脚本及代码复制脚本 SHA256 均与源码相同，见 `runtime-assets-centered.json`；浏览器无 error 日志。临时视口与系统配色模拟已还原，额外参考/检查标签页已关闭，保留友链预览页。
 - 当前截图与度量在 `docs/baselines/friends-page/`：`after-centered-desktop-dark.jpg`、`after-centered-mobile-dark.jpg`、`after-centered-desktop-light.jpg`、`after-centered-preview.jpg`、`browser-centered-verification.json`。不含 centered 的截图/检查文件保留为上一版历史证据。截图使用隔离示例友链，不能当成生产页面已更新的证据。
 - 展示方式核查：2.0 现有头像卡片、带 RSS 动态卡片、网站封面卡片和按数据分组的卡片可复用；纯文字列表需要另做样式。第三点只提供选项，当前布局未切换。
-- 下一步：用户体验本地 `http://127.0.0.1:18086/friends`。提交、集成及线上发布沿后续明确授权执行；仅用户确认后改为“已验收”。
+- 下一步：用户体验线上 <https://blog.xn--fhqths51enha.cn/friends>；本地预览已按后续发布授权停止，夹具和运行记录已保全，详见 BLG-EDIT02 收尾记录。仅用户确认后改为“已验收”。

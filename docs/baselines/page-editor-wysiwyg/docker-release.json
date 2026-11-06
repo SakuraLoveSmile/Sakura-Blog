@@ -1,0 +1,128 @@
+{
+  "conclusion": "success",
+  "createdAt": "2026-11-06T12:04:25Z",
+  "databaseId": 42214877675,
+  "event": "push",
+  "headBranch": "v2.0.9",
+  "headSha": "a0aa6114e98cf069edcfe68aea3d85ef4987cc08",
+  "jobs": [
+    {
+      "completedAt": "2026-11-06T12:09:50Z",
+      "conclusion": "success",
+      "databaseId": 127882282642,
+      "name": "image",
+      "startedAt": "2026-11-06T12:04:27Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-06T12:04:32Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-06T12:04:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:04:40Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "number": 2,
+          "startedAt": "2026-11-06T12:04:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:04:41Z",
+          "conclusion": "success",
+          "name": "Compute build metadata",
+          "number": 3,
+          "startedAt": "2026-11-06T12:04:40Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:04:49Z",
+          "conclusion": "success",
+          "name": "Run docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f",
+          "number": 4,
+          "startedAt": "2026-11-06T12:04:41Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:04:50Z",
+          "conclusion": "success",
+          "name": "Login to GHCR",
+          "number": 5,
+          "startedAt": "2026-11-06T12:04:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:04:51Z",
+          "conclusion": "success",
+          "name": "Extract image tags",
+          "number": 6,
+          "startedAt": "2026-11-06T12:04:50Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:09:31Z",
+          "conclusion": "success",
+          "name": "Build and push image",
+          "number": 7,
+          "startedAt": "2026-11-06T12:04:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:09:33Z",
+          "conclusion": "success",
+          "name": "Create GitHub Release (notes only)",
+          "number": 8,
+          "startedAt": "2026-11-06T12:09:31Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:09:35Z",
+          "conclusion": "success",
+          "name": "Post Build and push image",
+          "number": 13,
+          "startedAt": "2026-11-06T12:09:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:09:35Z",
+          "conclusion": "success",
+          "name": "Post Login to GHCR",
+          "number": 14,
+          "startedAt": "2026-11-06T12:09:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:09:48Z",
+          "conclusion": "success",
+          "name": "Post Run docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f",
+          "number": 15,
+          "startedAt": "2026-11-06T12:09:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:09:48Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "number": 16,
+          "startedAt": "2026-11-06T12:09:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-06T12:09:48Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "startedAt": "2026-11-06T12:09:48Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42214877675/job/127882282642"
+    }
+  ],
+  "status": "completed",
+  "updatedAt": "2026-11-06T12:09:50Z",
+  "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42214877675"
+}

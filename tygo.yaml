@@ -17,6 +17,7 @@ packages:
       - "uc.go"
       - "plugin_runtime.go"
       - "rag.go"
+      - "ai_assist.go"
       - "editor_import.go"
       - "stellar_import.go"
       - "page.go"

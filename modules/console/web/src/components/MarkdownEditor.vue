@@ -6,6 +6,7 @@ import { previewApi, attachmentApi, ucApi } from "@/api";
 import { preparePreviewDocument, previewFailureMessage } from "@/modules/plugins/preview/preview-document";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { useLocalDraft } from "@/composables/useLocalDraft";
+import { createMarkdownBridge } from "./editor/assistant/markdown-bridge";
 
 // 可复用 Markdown 编辑器：工具栏 + 分屏实时预览（后端 goldmark 渲染）
 // + 图片粘贴/拖拽直传 + 快捷键 + localStorage 草稿保护。
@@ -311,6 +312,13 @@ function openImagePicker() {
   pickerOpen.value = true;
 }
 
+// 写作助手桥接：选区就是 textarea 的字符偏移；结果优先原生插入以保留撤销栈，
+// 做不到时才经 updateValue 写回（走 v-model，同样会触发未保存标记与本地草稿）。
+const assistantBridge = createMarkdownBridge({
+  getTextarea: () => textareaRef.value,
+  setValue: (next, selStart, selEnd) => updateValue(next, selStart, selEnd),
+});
+
 // 对外暴露：草稿清理 + 选区动作/插入 + 模式切换 + 滚动定位，供 PostEditor 外置工具栏与大纲面板调用
 defineExpose({
   clearDraft,
@@ -322,6 +330,7 @@ defineExpose({
   scrollToLine,
   openImageUpload,
   openImagePicker,
+  getAssistantBridge: () => assistantBridge,
 });
 
 const tableTemplate = "\n| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |\n";

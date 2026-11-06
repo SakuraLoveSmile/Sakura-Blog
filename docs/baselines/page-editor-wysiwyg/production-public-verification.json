@@ -1,0 +1,80 @@
+{
+  "verifiedAt": "2026-11-06T12:13:45.647981+00:00",
+  "expectedVersion": "2.0.9",
+  "pages": {
+    "/readyz": {
+      "status": 200,
+      "sha256": "4062edaf750fb8074e7e83e0c9028c94e32468a8b6f1614774328ef045150f93"
+    },
+    "/": {
+      "status": 200,
+      "sha256": "e5dd01653d9cfacfc36695aca458c0dcbd86654d5f2d0beaf930e58ca27638d3"
+    },
+    "/friends": {
+      "status": 200,
+      "sha256": "1892d87cf236719af2b27028369487bd45430c9f96049afbded8b842a101782d",
+      "generatedSiteInfoCount": 1,
+      "h2": [
+        "友链列表",
+        "如何交换友链？",
+        "本站信息",
+        "站内搜索"
+      ]
+    },
+    "/settings": {
+      "status": 200,
+      "sha256": "70c4c5d477b04b5620381f14db775f1239f3d68b14aaac7a6006802c8c53d6d9",
+      "versionVisible": true
+    },
+    "/console/": {
+      "status": 200,
+      "sha256": "f23de76b9a6a6b99a8613485a399a489ec7d0525794c0b1f54a838a0aee75fbe",
+      "entryChunk": "/console/assets/index-CDgqgH-T.js"
+    },
+    "/uc/": {
+      "status": 200,
+      "sha256": "46d953ba1767e4c85783c5901cdef997b15cbb11d3e12b6cc07e6082055ff5b7"
+    },
+    "/atom.xml": {
+      "status": 200,
+      "sha256": "388403eaab43e69bc0065e6bda8a99f0f57e0a11108efd35a68d909a0d0f1068"
+    },
+    "/sitemap.xml": {
+      "status": 200,
+      "sha256": "e37ddfdc9cae9e0c54933288ab5ac9a76a6ba7b5cd57662a73b3f83ff674da05"
+    }
+  },
+  "publicFriendCORS": {
+    "/api/friends": {
+      "status": 200,
+      "allowOrigin": "*",
+      "allowCredentials": null
+    },
+    "/api/friends-aggregated": {
+      "status": 200,
+      "allowOrigin": "*",
+      "allowCredentials": null
+    }
+  },
+  "assets": [
+    {
+      "url": "/assets/css/friends-page.css?v=9a6bfaf8",
+      "sha256": "9a6bfaf8b8ae4a35b0fe9e702785b016d7854333a3c7932280f232bc13bcce49",
+      "localPath": "modules/stellar/web/assets/css/friends-page.css",
+      "localMatches": true
+    },
+    {
+      "url": "/console/assets/index-CDgqgH-T.js",
+      "sha256": "008a6c1253ac8304772b014081ea1685cea04baa51c71369920c517207eff8ad",
+      "localPath": "modules/console/web/dist/assets/index-CDgqgH-T.js",
+      "localMatches": true
+    },
+    {
+      "url": "https://blog.xn--fhqths51enha.cn/assets/js/services/friends_and_posts.js?v=1f141c54",
+      "sha256": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+      "localPath": "modules/stellar/web/assets/js/services/friends_and_posts.js",
+      "localMatches": true,
+      "discoveredFromProductionDOM": true
+    }
+  ]
+}

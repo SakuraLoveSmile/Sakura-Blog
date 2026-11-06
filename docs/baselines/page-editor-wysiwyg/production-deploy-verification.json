@@ -1,0 +1,67 @@
+{
+  "task": "BLG-EDIT02",
+  "version": "2.0.9",
+  "startedAt": "2026-11-06T12:12:34.280071+00:00",
+  "server": "blog-prod",
+  "composeDir": "/opt/1panel/docker/compose/blog",
+  "previous": {
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.9-beta01",
+    "imageId": "sha256:07287aeecc8d1fe9651e97565ab2eddff5ef66a934d403c3e45c96b948640aab",
+    "restarts": 0
+  },
+  "target": {
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.9",
+    "revision": "a0aa6114e98cf069edcfe68aea3d85ef4987cc08",
+    "imageId": "sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e",
+    "repoDigests": [
+      "ghcr.io/sakuralovesmile/sakura-blog@sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e"
+    ]
+  },
+  "backup": {
+    "directory": "/home/ubuntu/blog-release-v2.0.9",
+    "mode": "0700",
+    "archive": "site-state.tar",
+    "sha256": "d69c9cd1ba319707cf7443b7a7f8a9e3bbd2bb788d26ec2dc7f56e2d1eb6189c",
+    "bytes": 864450560,
+    "members": 1776,
+    "comparedWithColdSource": true,
+    "databaseSha256": "0806a2a6e237f44d3232cb0b6ee8da2112bfe8432f45f2a55e209e0998f54c53",
+    "includes": [
+      "docker-compose.yml",
+      "config/",
+      "content/",
+      "data/"
+    ]
+  },
+  "before": {
+    "quickCheck": "ok",
+    "userVersion": 0,
+    "schemaSha256": "1b9de290e3f9287c0ef3d5d4a177a72a2677d197d2204b31649bf6f1a72fe968",
+    "pageCount": 5,
+    "pageSourceSha256": "0d6395be917f5089a63b998a7d3f3a0ca8da5fe72a69c4bf4a45f59e5c23f0ab"
+  },
+  "after": {
+    "quickCheck": "ok",
+    "userVersion": 0,
+    "schemaSha256": "1b9de290e3f9287c0ef3d5d4a177a72a2677d197d2204b31649bf6f1a72fe968",
+    "pageCount": 5,
+    "pageSourceSha256": "0d6395be917f5089a63b998a7d3f3a0ca8da5fe72a69c4bf4a45f59e5c23f0ab"
+  },
+  "checks": {
+    "hostReadyz": 200,
+    "running": true,
+    "restarts": 0,
+    "imageIdMatches": true,
+    "composeImageOnlyChanged": true,
+    "configUnchanged": true,
+    "pageSourcesUnchanged": true,
+    "schemaUserVersionUnchanged": true,
+    "configurationPermissions": {
+      "app.yml": "0o600",
+      "site.yml": "0o600"
+    },
+    "schemaDefinitionUnchanged": true
+  },
+  "maintenanceSeconds": 58.33,
+  "finishedAt": "2026-11-06T12:13:32.605531+00:00"
+}

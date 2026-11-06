@@ -1,0 +1,17 @@
+{
+  "verifiedAt": "2026-11-06T12:03:07.192073+00:00",
+  "runId": 42211666269,
+  "jobId": 127871527913,
+  "conclusion": "success",
+  "totalTests": 210,
+  "passedWithoutRetry": 209,
+  "flakyPassedOnExistingRetry": 1,
+  "failedFinal": 0,
+  "flakyTest": "tests/e2e/console-mobile-a11y.spec.ts:825",
+  "firstFailure": "links.length expected > 0, received 0 at line 881",
+  "testPolicyChanged": false,
+  "resultLines": [
+    "e2e\tRun critical path e2e\t2026-11-06T12:00:55.8987430Z   1 flaky",
+    "e2e\tRun critical path e2e\t2026-11-06T12:00:55.8989241Z   209 passed (21.8m)"
+  ]
+}

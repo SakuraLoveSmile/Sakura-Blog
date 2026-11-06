@@ -4,7 +4,7 @@ import { postFields } from "@/components/editor/stellar-form-fields";
 import { provide, ref, onMounted, onBeforeUnmount, computed, watch, defineAsyncComponent, nextTick } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
-import { postApi, taxonomyApi, previewApi, editorImportApi, getApiErrorMessage } from "@/api";
+import { postApi, taxonomyApi, previewApi, editorImportApi, aiApi, getApiErrorMessage } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 import MarkdownImportPreview from "@/components/editor/MarkdownImportPreview.vue";
@@ -16,6 +16,10 @@ import EditorToolbar from "./EditorToolbar.vue";
 import EditorSidebar from "./EditorSidebar.vue";
 import AiGenerateModal from "./AiGenerateModal.vue";
 import RevisionPanel from "./RevisionPanel.vue";
+import WritingAssistantPanel from "@/components/editor/assistant/WritingAssistantPanel.vue";
+import { createWritingAssistant } from "@/components/editor/assistant/useWritingAssistant";
+import { isAssistantHotkey } from "@/components/editor/assistant/assistant-core";
+import type { AssistantBridge } from "@blog/editor/assistant-bridge";
 import { Icon } from "@iconify/vue";
 import { Toast, Dialog, VButton } from "@/components/ui";
 
@@ -87,6 +91,7 @@ interface RichEditorExpose {
   openImagePicker: () => void;
   clearDraft: () => void;
   flushPendingChanges: () => Promise<void>;
+  getAssistantBridge: () => AssistantBridge | null;
 }
 
 interface CategoryNode {
@@ -335,23 +340,105 @@ const SIDEBAR_KEY = "post-editor:sidebar-open";
 const sidebarOpen = ref(localStorage.getItem(SIDEBAR_KEY) !== "0");
 const mobileSidebarOpen = ref(false);
 const isMobile = ref(window.matchMedia("(max-width: 639px)").matches);
+// ≥1024：写作助手并入右栏；更窄时它是浮在编辑区上的底部面板。
+const isWide = ref(window.matchMedia("(min-width: 1024px)").matches);
 const mobileSidebarRef = ref<HTMLElement | null>(null);
 const mobileSidebarTrigger = ref<HTMLButtonElement | null>(null);
 const mobileSidebarClose = ref<HTMLButtonElement | null>(null);
-const sidebarVisible = computed(() => (isMobile.value ? mobileSidebarOpen.value : sidebarOpen.value));
+// 右栏是否显示：设置面板展开着，或写作助手正并在里面。
+const sidebarColumnVisible = computed(() => sidebarOpen.value || assistantDocked.value);
+const sidebarVisible = computed(() => (isMobile.value ? mobileSidebarOpen.value : sidebarColumnVisible.value));
 function syncMobileViewport() {
   isMobile.value = window.matchMedia("(max-width: 639px)").matches;
+  isWide.value = window.matchMedia("(min-width: 1024px)").matches;
   if (!isMobile.value) mobileSidebarOpen.value = false;
 }
 function toggleSidebar() {
   if (isMobile.value) {
     mobileSidebarOpen.value = !mobileSidebarOpen.value;
-    if (mobileSidebarOpen.value) nextTick(() => mobileSidebarClose.value?.focus());
+    if (mobileSidebarOpen.value) {
+      // 设置抽屉和助手面板占同一块位置，同时只留一个。
+      if (assistant.open) assistant.closePanel();
+      nextTick(() => mobileSidebarClose.value?.focus());
+    }
   } else {
-    sidebarOpen.value = !sidebarOpen.value;
+    if (assistantDocked.value) {
+      // 右栏里正是写作助手：这个按钮收起整个右栏。
+      assistant.closePanel();
+      sidebarOpen.value = false;
+    } else {
+      sidebarOpen.value = !sidebarOpen.value;
+    }
     localStorage.setItem(SIDEBAR_KEY, sidebarOpen.value ? "1" : "0");
   }
 }
+
+// ---------- 写作助手 ----------
+// 快捷键 Mod+J 随时唤出；窄屏是底部面板，≥1024 并入右栏。助手只在用户点「应用」时改动正文，
+// 改动只让文章变成「有未保存的修改」，不会触发保存。
+const isMac = /macintosh|mac os x/i.test(navigator.userAgent);
+const assistantHotkeyLabel = isMac ? "⌘J" : "Ctrl+J";
+const assistant = createWritingAssistant({
+  stream: (request, options) => aiApi.assistStream(request, options),
+  getTitle: () => form.value.title,
+  getMarkdown: () => form.value.content_md,
+  copyText: (text) => navigator.clipboard.writeText(text),
+});
+const assistantDocked = computed(() => assistant.open && isWide.value);
+const assistantSheet = computed(() => assistant.open && !isWide.value);
+const dockPanelRef = ref<InstanceType<typeof WritingAssistantPanel> | null>(null);
+const sheetPanelRef = ref<InstanceType<typeof WritingAssistantPanel> | null>(null);
+
+function activeAssistantPanel() {
+  return dockPanelRef.value ?? sheetPanelRef.value;
+}
+
+function currentAssistantBridge(): AssistantBridge | null {
+  const editor = editorKind.value === "rich" ? richRef.value : editorRef.value;
+  return editor?.getAssistantBridge?.() ?? null;
+}
+
+async function openAssistant() {
+  if (!baselineReady.value) return;
+  mobileSidebarOpen.value = false;
+  assistant.openPanel();
+  await nextTick();
+  activeAssistantPanel()?.focus();
+}
+
+function closeAssistant() {
+  if (!assistant.open) return;
+  assistant.closePanel();
+  void nextTick(() => currentAssistantBridge()?.focus());
+}
+
+function toggleAssistant() {
+  if (assistant.open) closeAssistant();
+  else void openAssistant();
+}
+
+/** 快捷键：在标题、正文、面板里按都是开关面板；打开后焦点进入面板，关闭后回到编辑器。 */
+function onAssistantHotkey(event: KeyboardEvent) {
+  if (!isAssistantHotkey(event, isMac)) return;
+  // 其它浮层打开时让位给它们。
+  if (aiOpen.value || revisionOpen.value || coverPickerOpen.value || pendingImport.value) return;
+  if (!baselineReady.value) return;
+  event.preventDefault();
+  event.stopPropagation();
+  toggleAssistant();
+}
+
+// 富文本 / Markdown 实例（含切换编辑器、同组件换文章）一变，就把助手接到新的编辑面上；
+// 旧编辑面上进行中的请求和结果随之作废。
+watch([richRef, editorRef, editorKind, editorInstanceKey], () => assistant.attach(currentAssistantBridge()), {
+  flush: "post",
+});
+// Markdown 切到「仅预览」时编辑面不可用，面板里的选区概况与按钮状态要跟着变。
+// v-show 的显隐在本轮更新的最后才落到 DOM，所以等这一轮 flush 完再取。
+watch(editorMode, async () => {
+  await nextTick();
+  assistant.refresh();
+});
 function closeMobileSidebar() {
   mobileSidebarOpen.value = false;
   nextTick(() => mobileSidebarTrigger.value?.focus());
@@ -642,6 +729,9 @@ onMounted(async () => {
   window.addEventListener("resize", syncMobileViewport);
   document.addEventListener("pointerdown", onEditorKindPointerDown);
   document.addEventListener("keydown", onEditorKindDocumentKeydown);
+  // 捕获阶段监听：编辑器内部也能唤出助手，且不会把这次按键当成输入。
+  window.addEventListener("keydown", onAssistantHotkey, true);
+  assistant.attach(currentAssistantBridge());
   loadTaxonomy();
   editorMode.value = (editorRef.value?.getMode?.() as EditorMode) || "split";
   if (!isEdit.value) return;
@@ -661,6 +751,8 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", syncMobileViewport);
   document.removeEventListener("pointerdown", onEditorKindPointerDown);
   document.removeEventListener("keydown", onEditorKindDocumentKeydown);
+  window.removeEventListener("keydown", onAssistantHotkey, true);
+  assistant.dispose();
 });
 
 // 回滚成功后重新拉取文章内容到编辑器。
@@ -977,6 +1069,22 @@ function handleDiscardDraft() {
             @open-revision="revisionOpen = true"
           >
             <template #end>
+              <!-- 写作助手：Mod+J 随时唤出，针对选区润色、改写、续写等 -->
+              <button
+                type="button"
+                class="editor-assistant-toggle"
+                :class="{ 'is-open': assistant.open }"
+                data-testid="assistant-toggle"
+                :title="`写作助手（${assistantHotkeyLabel}）`"
+                aria-label="写作助手"
+                aria-controls="writing-assistant-panel"
+                :aria-expanded="assistant.open"
+                :disabled="!baselineReady"
+                @click="toggleAssistant"
+              >
+                <Icon icon="ri:quill-pen-ai-line" class="editor-assistant-icon" aria-hidden="true" />
+                <span class="editor-assistant-label">写作助手</span>
+              </button>
               <!-- 编辑器选择（富文本/Markdown） -->
               <div class="editor-kind-picker relative">
                 <button
@@ -1042,8 +1150,8 @@ function handleDiscardDraft() {
               <button
                 type="button"
                 class="editor-sidebar-toggle hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-secondary hover:text-foreground sm:inline-flex"
-                :title="sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
-                :aria-expanded="sidebarOpen"
+                :title="sidebarColumnVisible ? '收起右侧面板' : '展开右侧面板'"
+                :aria-expanded="sidebarColumnVisible"
                 aria-controls="post-settings-panel"
                 @click="toggleSidebar"
               >
@@ -1093,12 +1201,22 @@ function handleDiscardDraft() {
 
       <!-- 右侧设置面板：≥1024 固定 320px 右栏；640–1024 全宽下置于编辑区 -->
       <div
-        v-show="sidebarOpen"
+        v-show="sidebarColumnVisible"
         id="post-settings-panel"
         class="sidebar-desktop hidden w-full shrink-0 sm:block lg:sticky lg:top-[72px] lg:w-80"
         style="max-height: calc(100vh - 88px); overflow-y: auto"
       >
+        <!-- ≥1024 写作助手并入右栏，设置面板暂时让位（状态不丢） -->
+        <WritingAssistantPanel
+          v-if="assistantDocked"
+          ref="dockPanelRef"
+          variant="dock"
+          :assistant="assistant"
+          :hotkey-label="assistantHotkeyLabel"
+          @close="closeAssistant"
+        />
         <EditorSidebar
+          v-show="!assistantDocked"
           :form="form"
           :sync-error="stellarFormError"
           :categories="categories"
@@ -1113,6 +1231,19 @@ function handleDiscardDraft() {
         />
       </div>
     </div>
+
+    <!-- <1024：写作助手作为浮在编辑区上的底部面板（不加遮罩，编辑区仍可操作） -->
+    <Transition name="assistant-sheet">
+      <WritingAssistantPanel
+        v-if="assistantSheet"
+        ref="sheetPanelRef"
+        variant="sheet"
+        :fullscreen="fullscreen"
+        :assistant="assistant"
+        :hotkey-label="assistantHotkeyLabel"
+        @close="closeAssistant"
+      />
+    </Transition>
 
     <!-- 移动端：底部抽屉式侧边栏 -->
     <Transition name="drawer">
@@ -1366,6 +1497,85 @@ function handleDiscardDraft() {
   transform: translateY(-5px) scale(0.98);
 }
 
+/* ===== 写作助手入口与底部面板动画 ===== */
+.editor-assistant-toggle {
+  display: inline-flex;
+  min-height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.editor-assistant-toggle:hover:not(:disabled),
+.editor-assistant-toggle.is-open {
+  background: var(--color-accent);
+  color: var(--color-foreground);
+}
+
+.editor-assistant-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.editor-assistant-toggle:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
+.editor-assistant-icon {
+  color: var(--color-text-tertiary);
+  font-size: 16px;
+}
+
+/* 工具栏中间的格式工具是横向滚动的：窄时入口只留图标，把宽度让给格式工具；足够宽时再带上文字，方便发现。 */
+.post-toolbar-shell {
+  container: post-toolbar / inline-size;
+}
+
+.editor-assistant-label {
+  display: none;
+}
+
+@container post-toolbar (min-width: 840px) {
+  .editor-assistant-label {
+    display: inline;
+  }
+}
+
+.editor-assistant-toggle:hover:not(:disabled) .editor-assistant-icon,
+.editor-assistant-toggle.is-open .editor-assistant-icon {
+  color: var(--color-foreground);
+}
+
+.assistant-sheet-enter-active,
+.assistant-sheet-leave-active {
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
+    opacity var(--duration-fast) ease;
+}
+
+.assistant-sheet-enter-from,
+.assistant-sheet-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-sheet-enter-active,
+  .assistant-sheet-leave-active {
+    transition: none;
+  }
+}
+
 /* ===== 底部抽屉动画 ===== */
 .drawer-enter-active,
 .drawer-leave-active {
@@ -1404,6 +1614,12 @@ function handleDiscardDraft() {
   }
   .editor-kind-trigger-label {
     display: none;
+  }
+  .editor-assistant-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0 8px;
   }
 }
 

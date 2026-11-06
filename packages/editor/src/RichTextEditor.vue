@@ -16,6 +16,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "tiptap-markdown";
 import type { Extension } from "@tiptap/core";
 import { CodeBlockWithLang } from "./code-block";
+import { createRichAssistantBridge } from "./assistant-rich-bridge";
 import { attachmentApi } from "@blog/api-client";
 import { useLocalDraft } from "@blog/shared";
 import {
@@ -208,6 +209,9 @@ const editor = useEditor({
   },
 });
 
+// 写作助手桥接：按需取选区 Markdown、把结果作为一次可撤销的事务写回；编辑器就绪前各方法都返回空。
+const assistantBridge = createRichAssistantBridge(() => editor.value);
+
 // 外部变更（AI 回填 / 版本回滚 / 模式切换 / 草稿恢复 / API 首次加载）-> 重新解析 Markdown 进编辑器
 watch(
   () => props.modelValue,
@@ -301,6 +305,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 onBeforeUnmount(() => {
   if (serializeTimer) clearTimeout(serializeTimer);
+  assistantBridge.dispose();
   if (tiptapTestHookEnabled) {
     delete (window as Window & { __consoleTiptapEditor?: unknown }).__consoleTiptapEditor;
   }
@@ -435,6 +440,7 @@ defineExpose({
   clearDraft,
   activeStates,
   openSearch,
+  getAssistantBridge: () => assistantBridge,
 });
 </script>
 

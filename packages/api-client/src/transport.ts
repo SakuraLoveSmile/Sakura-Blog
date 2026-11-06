@@ -64,6 +64,11 @@ function handleResponseError(error: unknown): Promise<never> {
   return Promise.reject(error);
 }
 
+/** Let non-axios callers (fetch/SSE streams) apply the host's 401 policy. */
+export function reportUnauthorized(error: unknown): void {
+  onUnauthorized?.(error);
+}
+
 /** Install the package-owned response policy on a transport instance. */
 export function installApiInterceptors(instance: AxiosInstance): void {
   instance.interceptors.response.use((response) => response, handleResponseError);

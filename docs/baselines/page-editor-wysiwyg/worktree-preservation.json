@@ -1,0 +1,20 @@
+{
+  "preservedAt": "2026-11-06T12:20:38.366224+00:00",
+  "task": "BLG-EDIT02",
+  "sourceWorktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-fix-blg-friend02-friends-page",
+  "archive": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/.archives/20261106-blg-edit02-friends-page/runtime-and-release-records.tar.gz",
+  "archiveMode": "0600",
+  "archiveSha256": "275d27cfbb7ffa6b5cd006d7666c447fbbb8dcbb989f907f309204e013383c5c",
+  "archiveBytes": 2910283,
+  "verifiedUniqueFilesAndSymlinks": 125,
+  "sourceComparisonPassed": true,
+  "localPreviewStopped": true,
+  "resourceSymlinkNotDereferenced": true,
+  "regenerableOutputs": [
+    "node_modules",
+    "modules/console/web/dist",
+    "modules/console/web/dist-uc",
+    "blog"
+  ],
+  "cleanupResult": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/.archives/20261106-blg-edit02-friends-page/cleanup-result.json"
+}

@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "ac0a64eda6349916b7640167289121513328b9ed",
+  "businessCodeMatches": "3dd20a75ca7112b21068772c9888f1aee40dcaca",
+  "businessCodeUnchanged": true,
+  "localConsoleAsset": "/console/assets/index-CDgqgH-T.js",
+  "localConsoleSha256": "008a6c1253ac8304772b014081ea1685cea04baa51c71369920c517207eff8ad",
+  "runtimeMatchesCurrentBuild": true,
+  "parityTestExitCode": 0,
+  "parityResult": "11 passed (32.9s)",
+  "consoleAdminSessionAvailable": true,
+  "consoleVersionBefore": "2.0.9-beta01",
+  "checks": {
+    "parity-build": {
+      "exitCode": 0,
+      "sha256": "dd66994c0b5912d83613f5eb6fc1b19e3c6888fa4343364bb7c5e0c41b50daee"
+    },
+    "parity-commit": {
+      "exitCode": 0,
+      "sha256": "6ed26b3c50698f85a9184f5e9b2ed6de1fca7f2574990be3511d53b4b4862ab1"
+    },
+    "parity-merge-check": {
+      "exitCode": 0,
+      "sha256": "bb919572a19fd485f3ebebbd7554f37b3aafea2081b1d7f0a11041194e1b4af5"
+    }
+  }
+}

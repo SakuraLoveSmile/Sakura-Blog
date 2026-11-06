@@ -6,6 +6,7 @@ import { parse, compileScript } from "../web/node_modules/vue/compiler-sfc/index
 import ts from "../web/node_modules/typescript/lib/typescript.js";
 import { useLocalDraft } from "../../../packages/shared/src/composables/useLocalDraft.ts";
 import { stellarEditorContextKey } from "../web/src/components/editor/stellar-context.ts";
+import { createMarkdownBridge } from "../web/src/components/editor/assistant/markdown-bridge.ts";
 import * as previewDocument from "../web/src/modules/plugins/preview/preview-document.ts";
 
 // 编译并挂载真实 SFC，以实际 Vue props/watch/事件顺序验证；不复制草稿逻辑。
@@ -81,6 +82,7 @@ function mountEditor(t: any, saved?: string, initial = "", options: EditorHarnes
     new Function("require", "exports", code)((name: string) => {
       if (name === "vue") return Vue;
       if (name === "./editor/stellar-context") return { stellarEditorContextKey };
+      if (name === "./editor/assistant/markdown-bridge") return { createMarkdownBridge };
       if (name === "@/composables/useLocalDraft") return { useLocalDraft };
       if (name === "@/api")
         return {
