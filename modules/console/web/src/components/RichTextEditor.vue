@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from "vue";
 import PackageRichTextEditor from "@blog/editor/RichTextEditor.vue";
+import type { AssistantBridge } from "@blog/editor/assistant-bridge";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { StellarTag } from "@/components/editor/stellar-tag";
 import StellarEditingCanvas from "@/components/editor/StellarEditingCanvas.vue";
@@ -48,6 +49,10 @@ async function flushPendingChanges() {
 function openSearch() {
   inner.value?.openSearch();
 }
+/** 写作助手桥接；内层编辑器尚未挂载时为 null。 */
+function getAssistantBridge(): AssistantBridge | null {
+  return inner.value?.getAssistantBridge?.() ?? null;
+}
 
 defineExpose({
   flushPendingChanges,
@@ -58,6 +63,7 @@ defineExpose({
   openImagePicker,
   clearDraft,
   openSearch,
+  getAssistantBridge,
   activeStates,
 });
 </script>
