@@ -1,0 +1,12 @@
+{
+  "run": 42272018533,
+  "job": 128078704389,
+  "total": 237,
+  "passed": 236,
+  "flaky": 1,
+  "failed": 0,
+  "flakyTest": "tests/e2e/editor-writing-state.spec.ts:53 › 立即输入后保存、预览与切换编辑器包含最新正文；元数据触发离开保护",
+  "flakyRecoveredOnRetry": true,
+  "firstFailureMessage": "预览渲染失败",
+  "note": "既有用例，重试后通过；未修改断言或重试配置"
+}

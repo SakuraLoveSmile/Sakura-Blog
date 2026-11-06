@@ -1,0 +1,40 @@
+{
+  "base": "https://blog.xn--fhqths51enha.cn",
+  "checkedAt": "2026-11-06T19:39:49.084Z",
+  "pages": [
+    {
+      "path": "/",
+      "status": 200,
+      "url": "https://blog.xn--fhqths51enha.cn/",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "path": "/post/who-am-i",
+      "status": 200,
+      "url": "https://blog.xn--fhqths51enha.cn/post/who-am-i",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "path": "/settings",
+      "status": 200,
+      "url": "https://blog.xn--fhqths51enha.cn/settings",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "path": "/post/who-am-i",
+      "status": 200,
+      "url": "https://blog.xn--fhqths51enha.cn/post/who-am-i",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": []
+    }
+  ],
+  "versionText": "Blog v2.1.0",
+  "ok": true
+}

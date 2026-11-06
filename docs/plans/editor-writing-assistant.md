@@ -1,6 +1,6 @@
 # 文章编辑器 AI 写作助手（第一期：选区助手）
 
-任务号：BLG-20261106-01　状态：待体验（改动都在 worktree 里，未提交）
+任务号：BLG-20261106-01　状态：待体验（已提交 `ca07ffc1`、发布 v2.1.0 并部署生产；等待用户体验确认）
 
 ## 目标与范围
 
@@ -51,9 +51,9 @@
 
 ## 运行资源
 
-- 基线：根工作区 `dev` / `2ad23a62`。
-- worktree：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-feat-blg-20261106-01-editor-writing-assistant`
-- 分支：`codex/feat/20261106-blg-20261106-01-editor-writing-assistant`；合入目标：根工作区 `dev`（提交/合入需用户授权）。
+- 基线：根工作区 `dev` / `2ad23a62`；最终实现提交 `ca07ffc1`（已合入 `dev` 并随 v2.1.0 发布）。
+- worktree：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-feat-blg-20261106-01-editor-writing-assistant`（已删除，忽略文件归档见 `docs/baselines/editor-writing-assistant/worktree-preservation.json`）
+- 分支：`codex/feat/20261106-blg-20261106-01-editor-writing-assistant`（本地已删除）；合入目标：根工作区 `dev`（已合入）。
 - 浏览器验收：`scripts/e2e/run-server.sh` 的隔离空站，监听 8101（避开其他 worktree 的 8096），账号 `admin` / `e2e-password`。
 - 前端文件：`modules/console/web/src/components/editor/assistant/`（助手核心、行内差异、composable、面板、Markdown 桥接），富文本桥接与桥接契约在 `packages/editor/src/assistant-bridge.ts`、`assistant-rich-bridge.ts`（经 `RichTextEditor.vue` 与 `MarkdownEditor.vue` 暴露），SSE 客户端在 `packages/api-client/src/sse.ts` 与 `api/editor.ts`；接线在 `modules/posts/PostEditor.vue`（入口放在 `EditorToolbar` 已有的 `end` 插槽里，没有改 `EditorToolbar.vue`）。
 
@@ -124,7 +124,7 @@
 
 ## 验证记录
 
-状态：待体验。以下都是在同一份源码上取得的（改动全部留在 worktree，未提交）。
+状态：待体验。以下是发布前在同一份源码上取得的记录（当时改动还留在 worktree、未提交）；随后已提交为 `ca07ffc1` 并按流程发布，见下方「收尾与发布」与 `docs/plans/release-v2.1.0.md`。
 
 - 后端：`internal/llm/stream.go`、`modules/console/api/ai_assist.go` 及测试。`go test -count=1 -race` 覆盖流式解析、空闲超时、上游错误、SSRF 拒绝、并发上限、gzip 中间件下逐块到达、客户端断开取消上游与释放名额、未登录 401 与普通作者 403。
 - 前端单元测试（`modules/console/tests/`）：新增 `sse-parser`、`assist-stream`、`assistant-core`、`inline-diff`、`assistant-markdown-bridge`、`writing-assistant` 六个文件，覆盖 SSE 解析、请求构建与截断、逐词差异、标签校验、Markdown 桥接（块边界、围栏、应用与撤销）和助手状态机（流式、停止、重试、过期、撤销、被作者自己撤回后再次应用、焦点）；`markdown-editor-draft`、`uc-consumer-lifecycle` 两个 SFC 测试的依赖白名单随新 import 更新。
@@ -132,11 +132,20 @@
 - 浏览器验收：`tests/e2e/writing-assistant.spec.ts` 共 27 条，在隔离空站（`VITE_E2E=1` 构建，监听 8101）上一次跑完 **27/27 通过**；跑用例时服务加载的入口 `index-BbGDEYih.js` / `index-BjZn6m9r.css` 与当时 `dist/index.html`（`VITE_E2E=1` 构建，带测试钩子）一致；之后 `make build` 已把 `dist` 换回不带钩子的正式产物（入口现在是 `index-Bv8NBxKt.js`），所以现在的 `dist` 与那个 hash 对不上是正常的。每条用例结束时断言没有 console error。验收中发现并修掉的问题：生成中按 `Esc` 因焦点随按钮禁用丢失而无效（加了焦点接力）；仅预览切回编辑后概况滞后一帧（等下一个 tick 再刷新）；窄工具栏被入口文字挤占（见「实现中的取舍」）；结果栏「放弃」单独落单；出错时结果栏头部是个空行、在错误提示上方撑出一截空白；手机底部面板里生成结束后「应用」排在可视区域之外（原来只在开始生成时滚动，现在底部面板在结束时再滚一次，桌面右栏不动）。另外 D1 富文本用例偶发丢第一个字（TipTap 的 `focus()` 下一帧才聚焦），用例改为等聚焦后再输入。
 - 截图：`docs/baselines/editor-writing-assistant/`（各图说明见该目录 README），都由最终源码上的用例重新生成并逐张看过：桌面 1280 与 800 的面板、手机 390 的面板与对比视图、未配置时的错误提示、收起右栏后的宽工具栏。
 
+## 收尾与发布（v2.1.0）
+
+- 提交：worktree 内全部改动（含本记录与 `docs/baselines/editor-writing-assistant/`）提交为 `ca07ffc1`（GPG 签名，`feat: 文章编辑器新增 AI 写作助手`）；rebase 最新 dev 后无冲突，工作区干净。
+- 合入：`make merge-check` 在 feature 与 dev 组合态均通过，dev 快进合入；origin/main 的发布合并记录经 `codex/chore/20261107-blg-20261106-01-sync-main` 同步回 dev（`082c3375`，树与 `ca07ffc1` 相同）。
+- 发布：PR [#56](https://github.com/SakuraLoveSmile/Sakura-Blog/pull/56)（dev→main）与 [#57](https://github.com/SakuraLoveSmile/Sakura-Blog/pull/57)（main→release）CI 全部通过后合并，release 为 `c73525eb`；签名 tag `v2.1.0` 打在 `c73525eb`，[Docker Release 42280497014](https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42280497014) success，镜像 `ghcr.io/sakuralovesmile/sakura-blog:2.1.0`（digest `sha256:c27e314e…be95d50`，标签 `2.1.0`/`2.1`/`2`/`latest`/`sha-c73525e`）。
+- 生产：blog-prod 冷备 `site-state.tar` 后升级到 `2.1.0`（维护约 10 秒），宿主 `/readyz` 200、公网 `/settings` 显示 `Blog v2.1.0`，公网文章页无 console error；未用生产账号登录 Console 做写操作，交互体验留待用户。
+- 清理：两个 worktree 与本地任务分支已删除；被忽略的沙箱脚本归档在根 `.tmp/editor-writing-assistant-release/`（SHA256 见 `docs/baselines/editor-writing-assistant/worktree-preservation.json`）。
+- 发布完整记录（同步、两级 PR、镜像标签、备份与回退）：`docs/plans/release-v2.1.0.md`。
+
 ## 体验方式（沙箱）
 
 主目录的本地库还是 Stellar v2 迁移前的旧库（启动日志有 `notebook migration pending`，首页返回 409）：不带 `-dev` 的嵌入模式直接拒绝启动（`settings.stellar_v2: missing versioned theme document`）；`-dev` 虽能起来，但 `config.LoadAI` 同样读不到版本化主题文档，AI 设置读不出来，写作助手和已有的 AI 功能都用不了。迁移是需要单独审阅的操作，不在本任务内，所以体验写作助手用沙箱：
 
-1. 在 worktree 根目录执行 `bash .tmp/try-assistant.sh`。脚本在被 git 忽略的 `.tmp/` 里，不受跟踪；`PORT=…` 换端口，`RESET=1` 清空沙箱数据。它依次做三件事：`make build` 得到嵌入正式前端的二进制；用 `scripts/e2e/prepare.go` 在 `.tmp/try-assistant-root` 建一份隔离库，并写最小的 `site.yml` 与 `app.yml`；以 `-root` 指向该目录启动（默认 8098），不读写主目录的数据与配置。
+1. 在功能 worktree 根目录执行 `bash .tmp/try-assistant.sh`（worktree 已按收尾规则删除；脚本已归档到根 `.tmp/editor-writing-assistant-release/worktree-preservation.tar.gz`，解出后放回任意 worktree 的 `.tmp/` 即可）。脚本在被 git 忽略的 `.tmp/` 里，不受跟踪；`PORT=…` 换端口，`RESET=1` 清空沙箱数据。它依次做三件事：`make build` 得到嵌入正式前端的二进制；用 `scripts/e2e/prepare.go` 在 `.tmp/try-assistant-root` 建一份隔离库，并写最小的 `site.yml` 与 `app.yml`；以 `-root` 指向该目录启动（默认 8098），不读写主目录的数据与配置。
 2. 打开 `/console/assistant?tab=settings`，在「对话模型」填写公网可达的 OpenAI 兼容接口地址、API Key 与模型并保存；再打开任意文章编辑器，选中文字按 `Ctrl/⌘+J`。
 
 在这个沙箱的真实服务上（不拦截任何请求）已走通：登录 → 保存 AI 设置（`PUT /api/v1/settings/stellar` 返回 200，密钥回显 `****`，刷新后保留）→ Markdown 编辑器选中文字 → 点「润色」。接口地址故意填内网地址时，面板显示「AI 接口地址不可用：不允许访问内网地址」并给出「重试」，说明助手读到了刚保存的配置，请求到达了真实后端与 LLM 客户端。公网模型的流式返回没有验证。

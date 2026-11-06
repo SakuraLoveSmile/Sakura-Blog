@@ -1,0 +1,20 @@
+{
+  "task": "BLG-20261106-01",
+  "worktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-feat-blg-20261106-01-editor-writing-assistant",
+  "branch": "codex/feat/20261106-blg-20261106-01-editor-writing-assistant",
+  "integrated_head": "ca07ffc135e474f0bd20a4e22f24d5e38948746f",
+  "archive": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog/.tmp/editor-writing-assistant-release/worktree-preservation.tar.gz",
+  "bytes": 1975041,
+  "sha256": "71d76d6b0d8e17991cd47b94fb4efb9cda2421023638e765a506d789360ef374",
+  "preserved": [
+    ".tmp/try-assistant.sh（隔离沙箱体验脚本，任务记录「体验方式（沙箱）」引用）",
+    ".tmp/playwright-test-results/（写作助手专项用例的历史失败产物，仅存档）"
+  ],
+  "not_archived": "blog 二进制、Console/User Center dist、node_modules 与 resource 链接均为可重建产物，不入档；共享 resource 与主工作区保留",
+  "sync_worktree": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261107-chore-blg-20261106-01-sync-main",
+  "sync_branch": "codex/chore/20261107-blg-20261106-01-sync-main",
+  "sync_integrated_head": "082c3375ac08ae6ace15ce7c86701e2c42ab348d",
+  "worktrees_removed": true,
+  "local_task_branches_removed": true,
+  "remote_branches_deleted": false
+}
