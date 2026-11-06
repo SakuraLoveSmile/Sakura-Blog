@@ -1,0 +1,75 @@
+{
+  "task": "BLG-20261106-02",
+  "version": "v2.0.9-beta01",
+  "kind": "prerelease",
+  "tag": {
+    "name": "v2.0.9-beta01",
+    "objectSha": "ff2b405407381c547bac6f9f3b9c23007d085400",
+    "pointedCommit": "7e930138dd73bebfdc52b235346fb934edcb55cc",
+    "signed": true,
+    "signature": "GPG key 979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989, Good signature"
+  },
+  "prs": {
+    "dev_to_main": {
+      "number": 51,
+      "mergeCommit": "2e1058f4cb900688816f27b891fe8b2ebcc2cc97"
+    },
+    "release_history_sync": {
+      "number": 52,
+      "mergeCommit": "214c7009b64f594b97cec65f8ec2744f78c002cf"
+    },
+    "main_to_release": {
+      "number": 53,
+      "mergeCommit": "7e930138dd73bebfdc52b235346fb934edcb55cc"
+    }
+  },
+  "releaseContentEqualsMain": true,
+  "dockerRelease": {
+    "runId": 42196838286,
+    "workflow": "docker-release.yml",
+    "displayTitle": "Merge pull request #53 from SakuraLoveSmile/main",
+    "conclusion": "success",
+    "startedAt": "2026-11-06T09:41:07Z",
+    "finishedAt": "2026-11-06T09:45:40Z"
+  },
+  "image": {
+    "repository": "ghcr.io/sakuralovesmile/sakura-blog",
+    "tag": "2.0.9-beta01",
+    "digest": "sha256:07287aeecc8d1fe9651e97565ab2eddff5ef66a934d403c3e45c96b948640aab"
+  },
+  "aliasTagsGenerated": [
+    "2.0.9-beta01",
+    "sha-7e93013"
+  ],
+  "stableTagsUnchanged": {
+    "checkedAt": "2026-11-06T17:46+08:00",
+    "before": {
+      "latest": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2.0": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2.0.8": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2.0.9-beta01": null
+    },
+    "after": {
+      "latest": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2.0": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2.0.8": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+      "2.0.9-beta01": "sha256:07287aeecc8d1fe9651e97565ab2eddff5ef66a934d403c3e45c96b948640aab"
+    },
+    "noMinorMajorAliasesForBeta": true
+  },
+  "githubRelease": {
+    "tag": "v2.0.9-beta01",
+    "prerelease": true,
+    "assets": 0,
+    "latestReleaseRemains": "v2.0.8",
+    "createdAt": "2026-11-06T09:45:27Z"
+  },
+  "imageStartCheck": {
+    "server": "blog-prod",
+    "command": "sudo docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.0.9-beta01 -h",
+    "exitCode": 0,
+    "imageIdEqualsGhcrDigest": true
+  }
+}

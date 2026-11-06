@@ -1,0 +1,70 @@
+{
+  "task": "BLG-20261106-02",
+  "deployedAt": "2026-11-06T17:47+08:00",
+  "server": "blog-prod",
+  "composeDir": "/opt/1panel/docker/compose/blog",
+  "previous": {
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.8",
+    "imageId": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+    "containerStatus": "Up 29 hours, restarts 0",
+    "hostReadyz": 200
+  },
+  "target": {
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.0.9-beta01",
+    "imageId": "sha256:07287aeecc8d1fe9651e97565ab2eddff5ef66a934d403c3e45c96b948640aab",
+    "composeImageChangedOnlyLine": true
+  },
+  "backup": {
+    "dir": "/home/ubuntu/blog-release-v2.0.9-beta01",
+    "mode": "0700 ubuntu:ubuntu",
+    "files": [
+      "docker-compose.yml",
+      "blog.db"
+    ],
+    "dbMd5": "0263c2968e27e6d708612675b444bd90",
+    "dbMd5MatchesSourceAfterColdStop": true,
+    "walShmAfterColdStop": "absent (clean stop checkpointed)"
+  },
+  "steps": [
+    "sudo docker pull ghcr.io/...:2.0.9-beta01",
+    "sudo docker run --rm ... -h (exit 0)",
+    "sudo docker compose stop blog (cold stop)",
+    "cp data/blog.db backup; cp docker-compose.yml backup",
+    "sudo sed -i image: 2.0.8 -> 2.0.9-beta01",
+    "sudo docker compose up -d (recreated container)"
+  ],
+  "checks": {
+    "containerImage": "ghcr.io/sakuralovesmile/sakura-blog:2.0.9-beta01",
+    "containerImageIdMatchesGhcrDigest": true,
+    "containerRunning": true,
+    "restarts": 0,
+    "hostReadyz": 200,
+    "publicReadyz": 200,
+    "publicSettingsVersion": "Blog v2.0.9-beta01",
+    "hostPages": {
+      "/": 200,
+      "/readyz": 200,
+      "/console/": 200,
+      "/uc/": 200,
+      "/settings": 200,
+      "/sitemap.xml": 200,
+      "/post/who-am-i": 200
+    },
+    "containerLogErrorLinesLast10m": 0
+  },
+  "consoleBundle": {
+    "servedIndexChunk": "/console/assets/index-COV9z3AH.js",
+    "servedSha256": "52d5eb24d9965f9fdc4a5c06fdd1efa67ea98507e0a3151ed1845253597bf7ee",
+    "localProductionBuildSha256": "52d5eb24d9965f9fdc4a5c06fdd1efa67ea98507e0a3151ed1845253597bf7ee",
+    "identical": true,
+    "retiredChunksAbsent": [
+      "MenuView",
+      "AppearanceView",
+      "AuthorsView"
+    ]
+  },
+  "rollback": {
+    "image": "compose image 改回 ghcr.io/sakuralovesmile/sakura-blog:2.0.8 后 docker compose up -d",
+    "data": "本次无数据库 schema 变更；如需数据回退，停容器后用备份 blog.db 覆盖 data/blog.db（先移除 WAL/SHM）再启动"
+  }
+}
