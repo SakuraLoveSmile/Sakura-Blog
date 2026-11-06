@@ -43,12 +43,10 @@ const SAVE_BUTTON_FILES = [
   "modules/console/web/src/modules/appearance/EnhancementsSettings.vue",
 ];
 
-test("旧主题设置仅提供 canonical 配置入口，不再双协议写入", () => {
-  for (const path of ["appearance/AppearanceView.vue", "appearance/MenuView.vue", "authors/AuthorsView.vue", "friends/FriendSettings.vue"]) {
-    const code = read(`modules/console/web/src/modules/${path}`);
-    assert.match(code, /CanonicalSettingsNotice/);
-    assert.doesNotMatch(code, /settingsApi\.updateSection|settingsApi\.all/);
-  }
+test("友链设置仅提供 canonical 配置入口，不再双协议写入", () => {
+  const code = read("modules/console/web/src/modules/friends/FriendSettings.vue");
+  assert.match(code, /CanonicalSettingsNotice/);
+  assert.doesNotMatch(code, /settingsApi\.updateSection|settingsApi\.all/);
 });
 
 test("AI 设置使用 canonical 编辑器读写 blog_extensions.ai，不接入旧 ai 分段", () => {
@@ -108,10 +106,6 @@ test("所有设置与主题设置保存按钮都带全局保存禁用条件（�
   assert.match(themeYaml, /:disabled="loading \|\| localSaving \|\| Boolean\(props\.saving\)"/);
   // 请求期间仍允许继续编辑 YAML 文本（不得因保存禁用输入）
   assert.doesNotMatch(themeYaml, /:disabled="loading \|\| localSaving"/);
-  assert.match(
-    read("modules/console/web/src/modules/appearance/AppearanceView.vue"),
-    /CanonicalSettingsNotice/,
-  );
   assert.match(
     read("modules/console/web/src/modules/settings/MenubarEditor.vue"),
     /:disabled="hasErrors \|\| Boolean\(saving\)"/,

@@ -1,4 +1,5 @@
 import { definePlugin } from "../definePlugin";
+import { retiredConsoleRedirect } from "@/router/retired-pages";
 
 const admin = ["system:manage"];
 
@@ -34,9 +35,6 @@ export default definePlugin({
     { path: "/friends", label: "友链", icon: "ri:links-line", group: "互动" },
     { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
     { path: "/attachments", label: "媒体库", icon: "ri:folder-2-line", group: "媒体", mobile: true },
-    { path: "/authors", label: "作者", icon: "ri:user-star-line", group: "内容", permissions: admin },
-    { path: "/appearance", label: "主题设置", icon: "ri:palette-line", group: "外观", permissions: admin },
-    { path: "/menus", label: "菜单", icon: "ri:menu-line", group: "外观", permissions: admin },
     { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line", group: "系统" },
     { path: "/users", label: "用户", icon: "ri:user-star-line", group: "系统", permissions: admin },
     { path: "/login-logs", label: "登录日志", icon: "ri:shield-user-line", group: "系统", permissions: admin },
@@ -125,7 +123,7 @@ export default definePlugin({
       {
         path: "authors",
         name: "Authors",
-        component: () => import("@/modules/authors/AuthorsView.vue"),
+        redirect: (to) => retiredConsoleRedirect("authors", to.query.tab),
         meta: { permissions: admin },
       },
       {
@@ -179,13 +177,13 @@ export default definePlugin({
       {
         path: "appearance",
         name: "Appearance",
-        component: () => import("@/modules/appearance/AppearanceView.vue"),
+        redirect: (to) => retiredConsoleRedirect("appearance", to.query.tab),
         meta: { permissions: admin },
       },
       {
         path: "menus",
         name: "Menus",
-        component: () => import("@/modules/appearance/MenuView.vue"),
+        redirect: (to) => retiredConsoleRedirect("menus", to.query.tab),
         meta: { permissions: admin },
       },
       { path: "profile", name: "Profile", component: () => import("@/modules/profile/ProfileView.vue") },

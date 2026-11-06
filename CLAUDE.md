@@ -61,6 +61,7 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 - 设置页的 sticky 页头与底部保存栏会盖住滚到它们下面的内容。`SettingsView` 量取两者的实际尺寸（手机上页头会换行，保存栏随文字变高），以 `--settings-sticky-offset`、`--settings-bar-offset` 注入；分区锚点和内容区里可聚焦的控件用 `scroll-margin` 让出这两块，换页（含手机列表 ↔ 详情）后回到内容起点。Playwright 的可见性断言不看遮挡，验证锚点、换页与键盘聚焦要用 `tests/e2e/support/settings.ts` 的 `expectClearOfHeader` 或命中测试，不要只断言“在视口内”。
 - 设置页在手机（≤767px）上每个可点击控件的点击区要 ≥44px，但沿用的小控件（共享 `VSwitch`、结构化编辑器里的“恢复默认”与折叠摘要）视觉不变：`settings-form.css` 末尾的“手机点击区”块用透明伪元素补上下空白，只往空白处延伸、不抢相邻控件的点击，上下各补多少按量到的真实空隙定；不透明度滑块在 `SettingColorEditor.vue` 里加高再用负外边距抵回。`boundingBox` 看不到伪元素补出来的点击区，验收用 `tests/e2e/support/settings.ts` 的 `measureTouchTargets`（逐控件命中测试，同时查被抢的点击）；新增小控件或调整结构化编辑器的间距时，同步看那组用例。
 - 设置项的效果说明由 `structured-setting-guidance.ts` 和 `settings-field-effects.ts` 提供展示文案，类型/默认值/保存契约仍以原有 schema 与 API 为准；页面标题下只有一句话说明，不再有单独的“效果说明条”。`useSettingsPreview` 使用当前草稿请求只读整页预览（入口是页头的“前端预览”），支持选择页面与实际视口宽度；静态 iframe 移除脚本并展开懒加载图片，不代替真实交互或外部服务验证。
+- 旧的 Console 分段页面 `/console/appearance`、`/console/menus`、`/console/authors` 已退役为入口兼容层：路由经 `modules/console/web/src/router/retired-pages.ts` 重定向到系统设置的「主题外观」「导航与页脚」「作者与友链」页（旧 `?tab=feedback` 仍落到访客反馈），页面组件已删除，`internal/module/core` 与前端 core plugin 都不再挂这些入口。新增设置页或调整页面键时同步核对这份重定向映射。
 - 结构化编辑器的分组（`details.structured-item`）默认全部展开，不按路径设“默认折叠”白名单；收起只是用户的临时操作，不写入任何设置。宽屏下分组内容每层缩进 24px，手机只让嵌套的分组每层退进 8px，宽度留给控件。只有“代码与原文”里的完整配置原文是有意默认折叠的。
 - Console 的局部 UI 变更除了类型/行为测试外，还需要加载真实服务后的浏览器验收；SPA 构建成功不证明后端仍在服务当前入口。
 

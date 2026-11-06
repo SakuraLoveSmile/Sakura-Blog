@@ -22,11 +22,12 @@ test("SettingsView protects against concurrent duplicate saves and isolates sect
   assert.match(code, /beforeunload/);
 });
 
-test("主题设置停止旧主题写入并引导 canonical，保留 Feedback 旧链接", () => {
-  const code = read("modules/console/web/src/modules/appearance/AppearanceView.vue");
-  assert.match(code, /CanonicalSettingsNotice/);
-  assert.doesNotMatch(code, /settingsApi\.updateSection/);
-  assert.match(code, /route\.query\.tab === "feedback"/);
+test("退役的主题设置重定向到 canonical 设置页，保留 Feedback 旧链接", () => {
+  const redirect = read("modules/console/web/src/router/retired-pages.ts");
+  assert.match(redirect, /appearance: \{ tab: "appearance", legacyTabs: \{ feedback: "feedback" \} \}/);
+  const core = read("modules/console/web/src/modules/core/module.ts");
+  assert.match(core, /retiredConsoleRedirect\("appearance", to\.query\.tab\)/);
+  assert.doesNotMatch(core, /modules\/appearance\/AppearanceView\.vue/);
   const notice = read("modules/console/web/src/modules/settings/CanonicalSettingsNotice.vue");
   assert.match(notice, /stellarSettingsApi\.get\(\)/);
   assert.match(notice, /stellar_migration_required/);
