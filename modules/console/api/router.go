@@ -427,6 +427,8 @@ func (h *Handler) register(r *gin.Engine) {
 			wiki.GET("/:project/docs", h.listWikidocs)
 			wiki.GET("/:project/docs/:slug", h.getWikidoc)
 			wiki.POST("/:project/docs", h.createWikidoc)
+			// 从已有文章导入文档（Spec 63）：只读文章，逐条创建文库文档。
+			wiki.POST("/:project/docs/import", h.importWikidocs)
 			wiki.PUT("/:project/docs/:slug", h.updateWikidoc)
 			wiki.DELETE("/:project/docs/:slug", h.deleteWikidoc)
 		}
