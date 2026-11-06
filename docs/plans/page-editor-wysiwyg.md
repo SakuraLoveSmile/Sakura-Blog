@@ -1,6 +1,6 @@
 # BLG-EDIT02：页面编辑与正式页面一致
 
-- 状态：待体验。2026-11-06（Asia/Taipei）。用户在 BLG-FRIEND02 体验后新增页面编辑的四项修复要求，本记录独立维护该施工事项。已完成本地实现、构建、回归及受影响界面核验；本次用户已要求按流程发布新版本并更新线上，发布执行进展见下文。
+- 状态：实现中。2026-11-06（Asia/Taipei）。用户在 BLG-FRIEND02 体验后新增页面编辑的四项修复要求，本记录独立维护该施工事项。已完成本地实现、构建、回归及受影响界面核验；本次用户已要求按流程发布新版本并更新线上，发布执行进展见下文。
 - 目标：页面编辑不再显示 Stellar 2 原文配置入口；真实友链可加载；去掉 shortcode 预览外围额外底色；可编辑正文复用当前正式页面的实际主题、排版及友链页居中标题，并显示只读本站资料。
 - 工作区：复用当前会话工作树 `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-fix-blg-friend02-friends-page`，分支 `codex/fix/20261106-blg-friend02-friends-page`，实现起点 HEAD `2ad23a6225708675a7917cd718d5f92e399cee3d`。原因是此次验收直接依赖尚未集成的 BLG-FRIEND02 样式与本站资料，避免在两个工作树复制未提交的依赖；原任务已完成部分作为本任务输入，未迁移或改名。两项工作由主 agent 顺序接续，不并行运行另一份来源。根 dev 的用户改动及 editor-writing-assistant 工作树不操作。集成目标 dev。
 - 唯一目标参照是同一代码与设置下的公开正式页面（本地 `http://127.0.0.1:18086/friends`，BLG-FRIEND02）；用户现状截图在 `docs/baselines/page-editor-wysiwyg/before-user.png`。保留页面编辑工具栏、基本表单、原始 Markdown 和未知配置，不换 Console 风格。
@@ -56,3 +56,5 @@
 - 当前下一步：提交本任务实现与既有验收证据，同步最新 dev，完成组合态门禁与真实构建，再执行 dev→main→release、Docker Release 和生产核验。最终结果与资源收尾继续记在本节。
 - 发布前补查既有端到端对比度场景时发现，共用 NodeView 无条件采用透明表面会影响未使用正式页画布的文章编辑器；已将透明表面限定为 `layout=page`，其他编辑器保留原独立表面。行为测试分别挂载页面/文章上下文，保留原高度、来源与 token 断言，并新增两种表面的明确断言；不改旧端到端可读性标准。
 - 此兼容修正经独立只读复核无新增阻塞；既有两项 Playwright 可读性用例通过，浅色 12.27:1、深色 10.97:1，无页面错误或横向溢出。未改变原用例或对比度门槛；测试产物归档在 `docs/baselines/page-editor-wysiwyg/surface-compatibility/`，原 tag-live-preview 的 38 份基线已逐文件恢复。首轮 PR CI 在 e2e 未完成时主动取消，修正后重新运行全套。
+- 远端首轮完整 CI（`42205001100`，源码 `3dd20a75`）的 Go/Console/assets/lint/security/build 均通过；E2E 为 206 passed、3 failed、1 flaky。三项失败均为 tag-plugin-parity 的 pages 场景在父文档定位 contenteditable，未进入新增受控画布；仅调整这些正文定位到 `iframe[title="页面编辑画布"]`，保持全部原保存拒绝、源码保真、交互和 API 断言。手机评论命中区用例重试后通过，属于本轮观察到的 flaky，未修改其门槛。新定位本地验证与远端全套通过前，不合并 PR 或发布。
+- iframe 定位适配经独立只读审查通过；隔离 8096 夹具完整执行 `tests/e2e/tag-plugin-parity.spec.ts`，11/11 passed（32.9s，exit 0），包含三项 pages 场景及原 posts、动态净化、主题与源码保真检查。没有放宽任何断言或增加等待/重试；原8份 tag-plugin-parity 基线已恢复，本次证据放在 `parity-compatibility/`。

@@ -41,6 +41,10 @@ async function editorMarkdown(page: Page) {
   return page.evaluate(() => (window as any).__consoleTiptapEditor.storage.markdown.getMarkdown() as string);
 }
 
+function editingRoot(page: Page, kind: "posts" | "pages") {
+  return kind === "pages" ? page.frameLocator('iframe[title="页面编辑画布"]') : page;
+}
+
 test.beforeEach(async ({ page }) => login(page));
 
 test("完整目录：54 项官方标签与 Blog 扩展示例可解析、往返并生成正式运行时文档", async ({ page }) => {
@@ -79,6 +83,7 @@ test("完整目录：54 项官方标签与 Blog 扩展示例可解析、往返�
 
 for (const kind of ["posts", "pages"] as const) {
   test(`${kind}：未知、未闭合与交错源码保留，保存拒绝后不覆盖已有正文`, async ({ page }) => {
+    const editor = editingRoot(page, kind);
     const sources = [
       "{% custom %}\n<!-- tab Keep -->\n{% note Title Body %}\n{% endcustom %}",
       "{% tabs %}\n<!-- tab Keep -->\n{% note Title Body %}",
@@ -87,7 +92,7 @@ for (const kind of ["posts", "pages"] as const) {
     const slug = await create(page, kind);
     for (const source of sources) {
       await page.goto(`/console/${kind}/edit/${slug}`);
-      await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
+      await expect(editor.locator('[contenteditable="true"]').first()).toBeVisible();
       await page.evaluate(
         (markdown) => (window as any).__consoleTiptapEditor.commands.setContent(markdown, true),
         source,
@@ -100,17 +105,18 @@ for (const kind of ["posts", "pages"] as const) {
       // 既有后端严格校验拒绝未知/残缺结构；不得为测试放宽保存语义。
       expect((await saved).status()).toBe(400);
       expect((await (await page.request.get(`/api/v1/${kind}/${slug}`)).json()).content_md).toBe("原始正文");
-      await expect(page.locator(".stellar-tag-node")).toHaveCount(1);
+      await expect(editor.locator(".stellar-tag-node")).toHaveCount(1);
       expect(await editorMarkdown(page)).toBe(source);
     }
   });
   test(`${kind}：富文本嵌套与代码示例保存重开保持原始标签`, async ({ page }) => {
+    const editor = editingRoot(page, kind);
     const slug = await create(page, kind);
     await page.goto(`/console/${kind}/edit/${slug}`);
-    await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
+    await expect(editor.locator('[contenteditable="true"]').first()).toBeVisible();
     await page.evaluate((markdown) => (window as any).__consoleTiptapEditor.commands.setContent(markdown, true), body);
-    await expect(page.locator(".stellar-tag-node")).toHaveCount(1);
-    await expect(page.locator("pre code")).toContainText("{% note 示例 不应激活 %}");
+    await expect(editor.locator(".stellar-tag-node")).toHaveCount(1);
+    await expect(editor.locator("pre code")).toContainText("{% note 示例 不应激活 %}");
     const response = page.waitForResponse(
       (r) => r.url().endsWith(`/api/v1/${kind}/${slug}`) && r.request().method() === "PUT",
     );
@@ -122,14 +128,15 @@ for (const kind of ["posts", "pages"] as const) {
     expect(persisted.content_md).toContain("`{% button 示例 / %}`");
     expect(persisted.content_md).not.toContain("data-stellar-tag");
     await page.goto(`/console/${kind}/edit/${slug}`);
-    await expect(page.locator(".stellar-tag-node")).toHaveCount(1);
+    await expect(editor.locator(".stellar-tag-node")).toHaveCount(1);
     expect(await editorMarkdown(page)).toContain(nested);
   });
 
   test(`${kind}：共享面板可交互预览 tabs 并插入保存`, async ({ page }) => {
+    const editor = editingRoot(page, kind);
     const slug = await create(page, kind);
     await page.goto(`/console/${kind}/edit/${slug}`);
-    await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
+    await expect(editor.locator('[contenteditable="true"]').first()).toBeVisible();
     if (kind === "posts") await page.locator("button[aria-pressed]", { hasText: "设置" }).click();
     else await page.getByRole("button", { name: "标签", exact: true }).click();
     const panel = page.locator("[data-shortcode-insert-panel]");
@@ -151,7 +158,7 @@ for (const kind of ["posts", "pages"] as const) {
     await page.getByRole("button", { name: kind === "posts" ? "保存草稿" : "保存", exact: true }).click();
     expect((await saved).ok()).toBeTruthy();
     await page.goto(`/console/${kind}/edit/${slug}`);
-    await expect(page.locator(".stellar-tag-node")).toHaveCount(1);
+    await expect(editor.locator(".stellar-tag-node")).toHaveCount(1);
     expect(await editorMarkdown(page)).toContain("第二页正文");
   });
 }
