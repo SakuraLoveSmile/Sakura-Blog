@@ -18,6 +18,7 @@ import {
   injectPreviewSurface,
   injectPreviewWriteGuard,
   preparePreviewDocument,
+  withPreviewContentWidth,
   previewFailureMessage,
   previewInvalidNoticeVisible,
   previewSurfaceColor,
@@ -392,6 +393,39 @@ test(`${SURFACE} · 预览表面注入不透明背景、跟随文档主题且幂
   assert.ok(prepared.includes("#1c1c1e") && prepared.includes("#ffffff"), "提供中性明暗回退色");
   assert.equal(injectPreviewSurface(prepared), prepared, "重复注入必须幂等");
   assert.equal((prepared.match(/data-preview-surface="1"/g) || []).length, 1);
+});
+
+test(`${SURFACE} · 嵌入正文不增加表面，写守卫和 profile 存储规则仍有效`, () => {
+  const serverDoc = '<!doctype html><html><head><meta charset="utf-8"><style>html,body{background:transparent}</style></head><body></body></html>';
+  for (const profile of [null, "component-library"]) {
+    const embedded = preparePreviewDocument(serverDoc, profile, { surface: "embedded" });
+    assert.ok(!embedded.includes('data-preview-surface="1"'));
+    assert.ok(!embedded.includes('data-preview-surface-script="1"'));
+    assert.ok(embedded.includes("html,body{background:transparent}"));
+    assert.ok(embedded.includes('data-preview-write-guard="1"'));
+    assert.equal(embedded.includes('data-preview-storage="1"'), profile === "component-library");
+    assert.equal(preparePreviewDocument(embedded, profile, { surface: "embedded" }), embedded);
+  }
+});
+
+test(`${SURFACE} · 正文宽度只约束内容，更新幂等且拒绝非法尺寸`, () => {
+  const serverDoc = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>@media(max-width:767px){.component{display:block}}</style></head><body><main data-stellar-preview-content><article class="md-text content"><div class="component">x</div></article></main><script>window.example = 1;</script></body></html>';
+  const prepared = preparePreviewDocument(serverDoc, null, { surface: "embedded" });
+  for (const invalid of [0, -1, NaN, Infinity, -Infinity, "600; color:red" as any]) {
+    assert.equal(withPreviewContentWidth(prepared, invalid), prepared, `非法宽度 ${invalid} 不改文档`);
+  }
+  const narrow = withPreviewContentWidth(prepared, 615.6);
+  assert.equal(withPreviewContentWidth(narrow, 615.6), narrow);
+  const wide = withPreviewContentWidth(narrow, 860);
+  assert.equal((wide.match(/data-preview-content-width="1"/g) || []).length, 1);
+  assert.ok(wide.includes("width:860px"));
+  assert.ok(!wide.includes("width:616px"));
+  const injected = wide.match(/<style data-preview-content-width="1">([\s\S]*?)<\/style>/)?.[1] ?? "";
+  assert.ok(injected.startsWith("[data-stellar-preview-content],[data-stellar-preview-content] article{"));
+  assert.ok(!/\b(html|body|iframe)\b|@media/.test(injected), "正文宽度不得改媒体查询视口");
+  assert.equal(wide.replace(/<style data-preview-content-width="1">[\s\S]*?<\/style>/, ""), prepared, "组件样式、脚本、写守卫及视口元数据必须保持原样");
+  assert.ok(withPreviewContentWidth(prepared, Number.MAX_VALUE).includes("width:16384px"));
+  assert.ok(withPreviewContentWidth(prepared, 0.1).includes("width:1px"));
 });
 
 function surfaceScriptOf(document: string): string {

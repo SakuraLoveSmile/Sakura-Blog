@@ -419,6 +419,48 @@ test("迟到响应不覆盖新结果", async () => {
   }
 });
 
+test("共享缓存按预览表面隔离，显式 key 失效只影响当前表面", async () => {
+  mock.timers.enable({ apis: ["setTimeout"] });
+  try {
+    for (const cacheKey of [undefined, "custom-key"]) {
+      const cache = new renderGate.PreviewCache(20);
+      const standalone = mountComposable(async (markdown) => result(markdown), { cache });
+      const embedded = mountComposable(async (markdown) => result(markdown), { cache, surface: "embedded" });
+      const opts = { immediate: true, profile: null, cacheKey };
+      standalone.state.scheduleRender("A", opts);
+      mock.timers.tick(0);
+      await flush();
+      assert.ok(standalone.state.document.value.includes('data-preview-surface="1"'));
+
+      embedded.state.scheduleRender("A", opts);
+      mock.timers.tick(0);
+      await flush();
+      assert.equal(embedded.calls.length, 1, "嵌入预览不得复用独立预览的已准备文档");
+      assert.ok(!embedded.state.document.value.includes('data-preview-surface="1"'));
+      assert.ok(!embedded.state.document.value.includes('data-preview-surface-script="1"'));
+      assert.ok(embedded.state.document.value.includes('data-preview-write-guard="1"'));
+      assert.ok(!embedded.state.document.value.includes('data-preview-storage="1"'));
+
+      standalone.state.scheduleRender("A", opts);
+      embedded.state.scheduleRender("A", opts);
+      assert.equal(standalone.calls.length, 1, "独立预览仍命中本表面缓存");
+      assert.equal(embedded.calls.length, 1, "嵌入预览仍命中本表面缓存");
+      const rawKey = cacheKey ?? renderGate.previewCacheKey(null, "A");
+      embedded.state.invalidateCache(rawKey);
+      standalone.state.scheduleRender("A", opts);
+      embedded.state.scheduleRender("A", opts);
+      mock.timers.tick(0);
+      await flush();
+      assert.equal(standalone.calls.length, 1, "嵌入预览失效不删除独立表面缓存");
+      assert.equal(embedded.calls.length, 2, "显式失效应映射到当前表面的 key");
+      standalone.app.unmount();
+      embedded.app.unmount();
+    }
+  } finally {
+    mock.timers.reset();
+  }
+});
+
 test("存储回退按 profile 收窄：component-library 注入，真实上下文不注入", async () => {
   mock.timers.enable({ apis: ["setTimeout"] });
   try {

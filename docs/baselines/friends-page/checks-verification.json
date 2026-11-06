@@ -1,0 +1,72 @@
+{
+  "task": "BLG-FRIEND02",
+  "status": "待体验",
+  "recorded_at": "2026-11-06T15:08:44.267606+08:00",
+  "head": "2ad23a6225708675a7917cd718d5f92e399cee3d",
+  "branch": "codex/fix/20261106-blg-friend02-friends-page",
+  "changes": "uncommitted",
+  "code_sha256": {
+    "modules/stellar/routes/stellar_host_pages.go": "c6d2e5ec3c70defda4735f88e5876c0b8bf538fb423975345b0f5f355e1f467e",
+    "modules/stellar/routes/stellar_preview.go": "3e0d1a09b583c423a89172c396bcbcb9136d6945bd38cbfa41961dd9806887c6",
+    "modules/stellar/routes/stellar_runtime.go": "af1178e5406d415fd37ddd4e397f7cddda8827244ff66bcd83a8d9ba9b35563b",
+    "modules/stellar/routes/stellar_friends_content_test.go": "677f8fd5e4d778ec9b7643ac25fee3026e42b29521442ea59f58f7614993b5f8",
+    "modules/stellar/web/assets/css/friends-page.css": "4de104b40f39f6284b9112abe1ffb507b794eb09911c2de3bc7cc5439cef13bc",
+    "modules/stellar/web/assets/js/services/friends_and_posts.js": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+    "modules/stellar/web/assets/js/blog/services/friends.js": "85f8dca59ec58c64989c6b93745e5c022c7a9882ea9d97448a67ae1af8a3f432",
+    "modules/stellar/web/assets/js/blog/services/friends_and_posts.js": "79a88f7b4b7e6687615f0a8ab118f67e2f1fdcb0eff10547b6760661b8b59a55",
+    "modules/stellar/web/templates/partial/stellar/head.html": "3dafafec0fb11426d540610b9cc3cfa255e1619a6c2387fb3343e798cb1d23e3"
+  },
+  "binary_sha256": "82d30f8f14620f0861d65c971e78a6e86e3e095c747fb85e642be4c3fca03dd8",
+  "checks": [
+    {
+      "command": "make build",
+      "result": "passed",
+      "log": ".tmp/blg-friend02-build.log",
+      "log_sha256": "7c1485d9f57889ecca3f35719124d977de38242aea5d9b80bc05454b9b55404f"
+    },
+    {
+      "command": "make go-build",
+      "result": "passed after final Go changes",
+      "log": ".tmp/blg-friend02-go-build.log",
+      "log_sha256": "5274e601d770ec048ac76a3b08499b267d81286e958159578776c2d7998ba232"
+    },
+    {
+      "command": "make test",
+      "result": "passed",
+      "console_tests": 456,
+      "stellar_asset_tests": 229,
+      "go": "vet, Staticcheck, go test ./... passed",
+      "log": ".tmp/blg-friend02-test-retry.log",
+      "log_sha256": "29de0f7bfb4b9a4847dabb67777ab02fad2d592bfb5c5ab4e18759da701957de"
+    },
+    {
+      "command": "go test ./modules/stellar/routes -run TestStellarFriendsSiteInfo -count=1",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "first_gate_failure": {
+    "test": "Mermaid style_optimization=true loads mermaid.css before rendering",
+    "cause_evidence": "Unchanged test waits fixed 15ms; only script/link events arrived under concurrent compile. Standalone test and unchanged full make test rerun passed. No test or gate edits.",
+    "log": ".tmp/blg-friend02-test.log",
+    "log_sha256": "7b6776f09c08203a72b07b87b43d0d35c252945ae32c52df2806ecd94ee5f973"
+  },
+  "browser_cases": 33,
+  "fixtures": "isolated local database; three sample friends; actual public site metadata",
+  "preview": {
+    "url": "http://127.0.0.1:18086/friends",
+    "pid": 40241,
+    "session": 20155,
+    "root": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-fix-blg-friend02-friends-page/.tmp/blg-friend02-runtime"
+  },
+  "not_performed": [
+    "commit",
+    "merge-check / dev integration",
+    "push",
+    "release",
+    "production mutation"
+  ]
+}

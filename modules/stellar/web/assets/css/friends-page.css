@@ -1,0 +1,61 @@
+/* 友链页分区标题沿用户参照图使用双斜杠，配色继续跟随主题。 */
+.md-text.content .friends-page h2 {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 0.3em;
+  margin: 2rem auto 1.5rem;
+  border: 0;
+  color: var(--text);
+  font-family: "Songti SC", "Noto Serif SC", "SimSun", serif;
+  font-size: var(--fsh2);
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.md-text.content .friends-page h2::before,
+.md-text.content .friends-page h2::after {
+  content: "";
+  flex: 0 0 0.3em;
+  height: 1.3em;
+  background: var(--accent);
+  transform: skewX(-20deg);
+}
+
+/* 保留标题锚点和目录目标，去掉技术文章标题原有的色块前缀。 */
+.md-text.content .friends-page h2 > .headerlink {
+  position: absolute;
+  inset: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+
+.md-text.content .friends-page h2 > .headerlink::before,
+.md-text.content .friends-page h2 > .headerlink::after {
+  content: none;
+}
+
+.friends-page .friends-site-info .highlight {
+  max-width: 100%;
+}
+
+.md-text .friends-page .friends-site-info .code > pre {
+  margin: 0;
+  padding: var(--gap-p);
+  color: var(--text-p1);
+}
+
+@media (max-width: 480px) {
+  .md-text.content .friends-page h2 {
+    gap: 0.5em;
+    font-size: min(var(--fsh2), 6.5vw);
+  }
+}

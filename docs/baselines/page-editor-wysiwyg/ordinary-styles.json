@@ -1,0 +1,423 @@
+{
+  "published": {
+    "appearance": null,
+    "code": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 110.5,
+          "width": 175.796875,
+          "x": 371.828125,
+          "y": 498.59375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "19.5px",
+          "marginBottom": "13px",
+          "marginTop": "13px",
+          "paddingBottom": "6.5px",
+          "paddingTop": "6.5px",
+          "textAlign": "start"
+        },
+        "text": "package main\n\nfunc main() {\n    println(\"hello\")\n}"
+      }
+    ],
+    "headings": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 48.59375,
+          "width": 616,
+          "x": 328,
+          "y": 256.5
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgb(255, 255, 255)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "27px",
+          "fontWeight": "500",
+          "letterSpacing": "normal",
+          "lineHeight": "48.6px",
+          "marginBottom": "22.41px",
+          "marginTop": "40.5px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "普通正文"
+      }
+    ],
+    "list": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 24,
+          "width": 592,
+          "x": 348,
+          "y": 407.59375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "15px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "24px",
+          "marginBottom": "0px",
+          "marginTop": "0px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "第一项"
+      },
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 24,
+          "width": 592,
+          "x": 348,
+          "y": 431.59375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "15px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "24px",
+          "marginBottom": "0px",
+          "marginTop": "0px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "第二项"
+      }
+    ],
+    "p": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 25.59375,
+          "width": 616,
+          "x": 328,
+          "y": 327.5
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "25.6px",
+          "marginBottom": "16px",
+          "marginTop": "16px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "left"
+        },
+        "text": "这是一段用于比较的正文，包含 粗体、斜体、链接 和 行内代码。"
+      }
+    ],
+    "root": {
+      "before": {
+        "color": "rgba(0, 0, 0, 0)",
+        "transform": "none"
+      },
+      "rect": {
+        "height": 570.09375,
+        "width": 648,
+        "x": 312,
+        "y": 216
+      },
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "borderRadius": "0px",
+        "color": "rgba(255, 255, 255, 0.8)",
+        "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "lineHeight": "25.6px",
+        "marginBottom": "0px",
+        "marginTop": "0px",
+        "paddingBottom": "32px",
+        "paddingTop": "0px",
+        "textAlign": "start"
+      },
+      "text": "普通正文\n这是一段用于比较的正文，包含 粗体、斜体、链接 和 行内代码。\n\n引用文字：保持正式页排版。\n\n\n第一项\n第二项\n\n\n\n1\n2\n3\n4\n5\n\n\npackage main\n\nfunc main"
+    },
+    "table": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 90,
+          "width": 616,
+          "x": 328,
+          "y": 644.09375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "25.6px",
+          "marginBottom": "20px",
+          "marginTop": "20px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "名称\n说明\n\n\n\n\n友链\n一段表格文字\n\n\n页面\n一致的排版"
+      }
+    ],
+    "theme": "dark"
+  },
+  "editor": {
+    "appearance": null,
+    "code": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 110.5,
+          "width": 175.796875,
+          "x": 67.828125,
+          "y": 298.59375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif",
+          "fontSize": "13px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "19.5px",
+          "marginBottom": "13px",
+          "marginTop": "13px",
+          "paddingBottom": "6.5px",
+          "paddingTop": "6.5px",
+          "textAlign": "start"
+        },
+        "text": "package main\n\nfunc main() {\n    println(\"hello\")\n}"
+      }
+    ],
+    "headings": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 48.59375,
+          "width": 566,
+          "x": 24,
+          "y": 56.5
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgb(255, 255, 255)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "27px",
+          "fontWeight": "500",
+          "letterSpacing": "normal",
+          "lineHeight": "48.6px",
+          "marginBottom": "22.41px",
+          "marginTop": "40.5px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "普通正文"
+      }
+    ],
+    "list": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 24,
+          "width": 542,
+          "x": 44,
+          "y": 207.59375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "15px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "24px",
+          "marginBottom": "0px",
+          "marginTop": "0px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "第一项"
+      },
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 24,
+          "width": 542,
+          "x": 44,
+          "y": 231.59375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "15px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "24px",
+          "marginBottom": "0px",
+          "marginTop": "0px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "第二项"
+      }
+    ],
+    "p": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 25.59375,
+          "width": 566,
+          "x": 24,
+          "y": 127.5
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "25.6px",
+          "marginBottom": "16px",
+          "marginTop": "16px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "left"
+        },
+        "text": "这是一段用于比较的正文，包含 粗体、斜体、链接 和 行内代码。"
+      }
+    ],
+    "root": {
+      "before": {
+        "color": "rgba(0, 0, 0, 0)",
+        "transform": "none"
+      },
+      "rect": {
+        "height": 528,
+        "width": 566,
+        "x": 24,
+        "y": 56.5
+      },
+      "style": {
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "borderRadius": "0px",
+        "color": "rgba(255, 255, 255, 0.8)",
+        "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "lineHeight": "25.6px",
+        "marginBottom": "0px",
+        "marginTop": "0px",
+        "paddingBottom": "0px",
+        "paddingTop": "0px",
+        "textAlign": "start"
+      },
+      "text": "普通正文这是一段用于比较的正文，包含 粗体、斜体、链接 和 行内代码。引用文字：保持正式页排版。第一项第二项1\n2\n3\n4\n5\npackage main\n\nfunc main() {\n    prin"
+    },
+    "table": [
+      {
+        "before": {
+          "color": "rgba(0, 0, 0, 0)",
+          "transform": "none"
+        },
+        "rect": {
+          "height": 90,
+          "width": 566,
+          "x": 24,
+          "y": 444.09375
+        },
+        "style": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderRadius": "0px",
+          "color": "rgba(255, 255, 255, 0.8)",
+          "fontFamily": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "letterSpacing": "normal",
+          "lineHeight": "25.6px",
+          "marginBottom": "20px",
+          "marginTop": "20px",
+          "paddingBottom": "0px",
+          "paddingTop": "0px",
+          "textAlign": "start"
+        },
+        "text": "名称说明友链一段表格文字页面一致的排版"
+      }
+    ],
+    "theme": "dark"
+  },
+  "pass": true
+}

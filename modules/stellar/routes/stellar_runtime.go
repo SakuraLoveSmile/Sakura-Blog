@@ -626,6 +626,12 @@ func (s *webServer) stellarBody(snap *stellarSnapshot, r *stellarRecord) (string
 	if err != nil {
 		return "", err
 	}
+	if r.pageRow != nil && r.pageRow.Slug == FriendsSlug && r.profile == "page" {
+		body, err = stellarFriendsContentHTML(body, snap.site)
+		if err != nil {
+			return "", err
+		}
+	}
 	icon := func(key string) string {
 		if s.icons == nil {
 			return ""

@@ -68,8 +68,8 @@ func Mount(r *gin.Engine, d Dependencies) error {
 	}
 	if d.Friends != nil {
 		friendRoutes := d.Friends.PublicRoutes()
-		r.GET("/api/friends-aggregated", friendRoutes.Aggregated)
-		r.GET("/api/friends", friendRoutes.Aggregated)
+		r.GET("/api/friends-aggregated", publicFriendReadCORS, friendRoutes.Aggregated)
+		r.GET("/api/friends", publicFriendReadCORS, friendRoutes.Aggregated)
 	}
 	if d.GH != nil {
 		ghRoutes := ghpkg.NewHandler(d.GH).PublicRoutes()
@@ -87,4 +87,10 @@ func Mount(r *gin.Engine, d Dependencies) error {
 	r.GET("/api/vote/info", voteRoutes.Info)
 	r.POST("/api/vote/update", voteRoutes.Update)
 	return nil
+}
+
+// 公开友链只读响应供 opaque 预览使用，不开放凭据、写接口或其他内容路由。
+func publicFriendReadCORS(c *gin.Context) {
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Next()
 }

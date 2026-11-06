@@ -39,6 +39,9 @@ const props = defineProps<{
   /** Host extensions (for example the app-owned StellarTag node) cross the package boundary here. */
   extensions?: unknown[];
   attachmentPicker?: Component;
+  /** 宿主提供的可编辑画布；默认继续使用包内排版。 */
+  canvas?: Component;
+  canvasProps?: Record<string, unknown>;
 }>();
 
 const tiptapTestHookEnabled = import.meta.env.DEV || import.meta.env.VITE_E2E === "1";
@@ -571,7 +574,10 @@ defineExpose({
       </button>
     </div>
 
-    <div class="rte-content">
+    <component v-if="canvas" :is="canvas" :editor="editor" v-bind="canvasProps">
+      <EditorContent :editor="editor" />
+    </component>
+    <div v-else class="rte-content">
       <EditorContent :editor="editor" />
     </div>
 
