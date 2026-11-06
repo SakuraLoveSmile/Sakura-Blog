@@ -30,20 +30,33 @@ func TestCoreManifestContainsAssistantNav(t *testing.T) {
 	t.Fatal("core manifest is missing the AI assistant nav item")
 }
 
-func TestCoreManifestContainsAppearanceNav(t *testing.T) {
+func TestCoreManifestContainsSettingsNav(t *testing.T) {
 	meta := (&core.Module{}).Meta()
 	for _, item := range meta.Nav {
-		if item.Path == "/appearance" {
-			if item.Label != "主题设置" || item.Group != "外观" || item.Icon != "ri:palette-line" {
-				t.Fatalf("appearance nav = %+v, want label/group/icon 主题设置/外观/ri:palette-line", item)
+		if item.Path == "/settings" {
+			if item.Label != "设置" || item.Group != "系统" || item.Icon != "ri:settings-3-line" {
+				t.Fatalf("settings nav = %+v, want label/group/icon 设置/系统/ri:settings-3-line", item)
 			}
 			if len(item.Permissions) != 1 || item.Permissions[0] != store.PermissionSystemManage {
-				t.Fatalf("appearance nav permissions = %+v, want [%s]", item.Permissions, store.PermissionSystemManage)
+				t.Fatalf("settings nav permissions = %+v, want [%s]", item.Permissions, store.PermissionSystemManage)
 			}
 			return
 		}
 	}
-	t.Fatal("core manifest is missing the appearance nav item")
+	t.Fatal("core manifest is missing the settings nav item")
+}
+
+// 旧分段页面（/console/appearance、/console/menus、/console/authors）已退役为系统设置入口，
+// manifest 不得再把死胡同挂回侧栏；旧地址由 Console 路由重定向到 /settings。
+func TestCoreManifestRetiresLegacySegmentPages(t *testing.T) {
+	meta := (&core.Module{}).Meta()
+	for _, retired := range []string{"/appearance", "/menus", "/authors"} {
+		for _, item := range meta.Nav {
+			if item.Path == retired {
+				t.Fatalf("core manifest still exposes retired nav item %s", retired)
+			}
+		}
+	}
 }
 
 func TestPluginsNavHasFiveChildren(t *testing.T) {
@@ -159,8 +172,8 @@ func TestRuntimeCoreManifestExposesExistingContentAndAppearanceEntries(t *testin
 		}
 		for _, expected := range []module.Nav{
 			{Path: "/notebooks", Label: "笔记本", Icon: "ri:book-2-line", Group: "内容"},
-			{Path: "/authors", Label: "作者", Icon: "ri:user-star-line", Group: "内容", Permissions: []string{store.PermissionSystemManage}},
-			{Path: "/menus", Label: "菜单", Icon: "ri:menu-line", Group: "外观", Permissions: []string{store.PermissionSystemManage}},
+			{Path: "/settings", Label: "设置", Icon: "ri:settings-3-line", Group: "系统", Permissions: []string{store.PermissionSystemManage}},
+			{Path: "/taxonomy", Label: "分类标签", Icon: "ri:price-tag-3-line", Group: "系统"},
 		} {
 			got, ok := byPath[expected.Path]
 			if !ok {
@@ -170,7 +183,12 @@ func TestRuntimeCoreManifestExposesExistingContentAndAppearanceEntries(t *testin
 				t.Fatalf("%s differs from existing frontend contract: %+v", expected.Path, got)
 			}
 		}
-		for _, order := range [][3]string{{"/topics", "/notebooks", "/pages"}, {"/attachments", "/authors", "/appearance"}, {"/appearance", "/menus", "/taxonomy"}} {
+		for _, retired := range []string{"/appearance", "/menus", "/authors"} {
+			if _, ok := byPath[retired]; ok {
+				t.Fatalf("runtime manifest still exposes retired entry %s", retired)
+			}
+		}
+		for _, order := range [][3]string{{"/topics", "/notebooks", "/pages"}, {"/attachments", "/taxonomy", "/users"}, {"/login-logs", "/plugins", "/modules"}, {"/modules", "/settings", "/backup"}} {
 			if slices.Index(paths, order[1]) != slices.Index(paths, order[0])+1 || slices.Index(paths, order[2]) != slices.Index(paths, order[1])+1 {
 				t.Fatalf("menu order changed: %v", paths)
 			}

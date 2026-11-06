@@ -69,12 +69,13 @@ test("feedback form is moved out of appearance enhancements (migration, not dupl
   const code = read("modules/console/web/src/modules/appearance/EnhancementsSettings.vue");
   assert.doesNotMatch(code, /settings-feedback-api-base/);
   assert.doesNotMatch(code, /saveFeedback/);
-  const view = read("modules/console/web/src/modules/appearance/AppearanceView.vue");
-  // 脏跟踪与分组不再包含 feedback（数组项形态）；?tab=feedback 旧链接改道 /settings
-  assert.match(view, /CanonicalSettingsNotice/);
-  assert.doesNotMatch(view, /^\s*"feedback",\s*$/m);
-  assert.match(view, /route\.query\.tab === "feedback"/);
-  assert.match(view, /router\.replace\(\{\s*path:\s*"\/settings",\s*query:\s*\{\s*tab:\s*"feedback"\s*\}\s*\}\)/);
+  const redirect = read("modules/console/web/src/router/retired-pages.ts");
+  // 旧外观页的 ?tab=feedback 改道随页面退役迁入路由兼容层，仍落到访客反馈页
+  assert.match(redirect, /legacyTabs: \{ feedback: "feedback" \}/);
+  assert.match(
+    read("modules/console/web/src/modules/core/module.ts"),
+    /retiredConsoleRedirect\("appearance", to\.query\.tab\)/,
+  );
 });
 
 test("feedback check api contract: named response type generated for Console", () => {

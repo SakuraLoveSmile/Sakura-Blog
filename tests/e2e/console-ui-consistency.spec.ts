@@ -308,20 +308,20 @@ test.describe("Console UI 一致性测试", () => {
     }
   });
 
-  test("管理员可通过侧栏菜单进入主题设置，手机端可通过更多抽屉进入，且支持无障碍焦点管理与关闭返回", async ({ page }, testInfo) => {
+  test("管理员可通过侧栏菜单进入系统设置，手机端可通过更多抽屉进入，且支持无障碍焦点管理与关闭返回", async ({ page }, testInfo) => {
     await login(page);
 
-    // 桌面端验证侧栏进入主题设置
+    // 桌面端验证侧栏进入系统设置（“主题设置”旧入口已退役并重定向到设置页）
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/dashboard");
 
-    const appearanceNavLink = page.locator('aside a[href="/console/appearance"]');
-    await expect(appearanceNavLink).toBeVisible();
-    await appearanceNavLink.click();
-    await expect(page).toHaveURL(/\/console\/appearance/);
-    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    const settingsNavLink = page.locator('aside a[href="/console/settings"]');
+    await expect(settingsNavLink).toBeVisible();
+    await settingsNavLink.click();
+    await expect(page).toHaveURL(/\/console\/settings/);
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
 
-    // 手机端验证通过“更多”抽屉进入主题设置与焦点管理
+    // 手机端验证通过“更多”抽屉进入系统设置与焦点管理
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/dashboard");
 
@@ -341,15 +341,15 @@ test.describe("Console UI 一致性测试", () => {
     await expect(drawerDialog).toHaveCount(0);
     await expect(moreBtn).toBeFocused();
 
-    // 再次打开抽屉并点击主题设置
+    // 再次打开抽屉并点击系统设置
     await moreBtn.click();
     await expect(drawerDialog).toBeVisible();
-    const drawerAppearanceLink = page.locator('div[role="dialog"] a[href="/console/appearance"]');
-    await expect(drawerAppearanceLink).toBeVisible();
+    const drawerSettingsLink = page.locator('div[role="dialog"] a[href="/console/settings"]');
+    await expect(drawerSettingsLink).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("t1-mobile-drawer.png") });
-    await drawerAppearanceLink.click();
-    await expect(page).toHaveURL(/\/console\/appearance/);
-    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    await drawerSettingsLink.click();
+    await expect(page).toHaveURL(/\/console\/settings/);
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
   });
 
   test("主按钮采用工具型小圆角、黑字高对比、无外发光", async ({ page }) => {
@@ -386,8 +386,8 @@ test.describe("Console UI 一致性测试", () => {
   test("分段 Tabs 与按钮支持键盘聚焦并具有清晰焦点环", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/appearance");
-    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    await page.goto("/console/settings?tab=appearance");
+    await expect(page.getByRole("heading", { name: "主题外观" })).toBeVisible();
 
     // 检查 CSS 样式表中已声明的 focus-visible 规范
     const focusRules = await page.evaluate(() => {
@@ -573,12 +573,32 @@ test.describe("Console UI 一致性测试", () => {
     await page.screenshot({ path: testInfo.outputPath("t3-posts-empty.png") });
   });
 
-  test("主题设置已退役为通知页：不再渲染分段 Tabs", async ({ page }) => {
+  test("旧分段页面重定向到系统设置：没有可停留的空页面，旧 feedback 链接仍可用", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto("/console/menus");
+    await expect(page).toHaveURL(/\/console\/settings\?tab=navigation$/);
+    await expect(page.getByRole("heading", { name: "导航与页脚" })).toBeVisible();
+
     await page.goto("/console/appearance");
-    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    await expect(page).toHaveURL(/\/console\/settings\?tab=appearance$/);
+    await expect(page.getByRole("heading", { name: "主题外观" })).toBeVisible();
     await expect(page.locator('.appearance-tabs [role="tablist"]')).toHaveCount(0);
+
+    await page.goto("/console/appearance?tab=feedback");
+    await expect(page).toHaveURL(/\/console\/settings\?tab=feedback$/);
+    await expect(page.getByRole("heading", { name: "访客反馈" })).toBeVisible();
+
+    await page.goto("/console/authors");
+    await expect(page).toHaveURL(/\/console\/settings\?tab=community$/);
+    await expect(page.getByRole("heading", { name: "作者与友链" })).toBeVisible();
+
+    // 侧栏不再出现旧分段页面的死胡同入口
+    const retiredNavLinks = page.locator(
+      'aside a[href="/console/appearance"], aside a[href="/console/menus"], aside a[href="/console/authors"]',
+    );
+    await expect(retiredNavLinks).toHaveCount(0);
   });
 
   test("ConsoleStatsCard 在用户管理与备份管理均采用统一规范", async ({ page }) => {
@@ -779,7 +799,7 @@ const LIST_EMPTY_CASES: Array<{
 // 原先对设置页 VTabbar(autoReveal) 的横向显露断言随页签一并退役，对应契约改为下面的导航断言；
 // VTabbar autoReveal 组件自身的源码契约仍由 modules/console/tests/components-a11y.test.ts 覆盖。
 test.describe("Console 设置导航与空列表选择入口", () => {
-  test("候选验收截图：设置导航（390 分组列表 / 详情，1280 桌面）与主题设置", async ({ page }, testInfo) => {
+  test("候选验收截图：设置导航（390 分组列表 / 详情，1280 桌面）与主题外观", async ({ page }, testInfo) => {
     await login(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
@@ -793,8 +813,8 @@ test.describe("Console 设置导航与空列表选择入口", () => {
     await page.screenshot({ path: testInfo.outputPath("settings-detail-390.png") });
 
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/appearance?tab=appearance");
-    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    await page.goto("/console/settings?tab=appearance");
+    await expect(page.getByRole("heading", { name: "主题外观" })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("tabs-appearance-1280.png") });
   });
 
@@ -1128,7 +1148,7 @@ test.describe("Console 设置导航与空列表选择入口", () => {
     await page.screenshot({ path: testInfo.outputPath("poster-selected-390.png") });
   });
 
-  test("方向 A 图形与文字可访问性：设置页标题唯一、头像圆形、标签插件重试对比度、模块/菜单单层", async ({ page }) => {
+  test("方向 A 图形与文字可访问性：设置页标题唯一、头像圆形、标签插件重试对比度、模块单层", async ({ page }) => {
     await login(page);
     const allSettings = await page.request.get("/api/v1/settings");
     expect(allSettings.ok(), await allSettings.text()).toBeTruthy();
@@ -1181,11 +1201,10 @@ test.describe("Console 设置导航与空列表选择入口", () => {
     await expect(page.locator("main.content h1 svg")).toHaveCount(0);
     expect(await page.locator(".module-record").first().evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
 
+    // 旧的“菜单”页已退役：旧地址必须跳到系统设置，不留下可停留的空页面。
     await page.goto("/console/menus");
-    await expect(page.getByRole("heading", { name: "菜单" })).toBeVisible();
-    await expect(page.locator(".card-wrapper")).toHaveCount(0);
-    const menuPadding = await page.locator(".menu-container").evaluate((el) => getComputedStyle(el).paddingLeft);
-    expect(menuPadding).toBe("32px");
+    await expect(page).toHaveURL(/\/console\/settings\?tab=navigation$/);
+    await expect(page.getByRole("heading", { name: "导航与页脚" })).toBeVisible();
     await restoreSite();
   });
 
@@ -1195,7 +1214,7 @@ test.describe("Console 设置导航与空列表选择入口", () => {
       "/console/dashboard",
       "/console/settings?tab=basic",
       "/console/settings?tab=appearance",
-      "/console/appearance",
+      "/console/settings?tab=navigation",
       "/console/comments",
       "/console/posts",
     ];
@@ -1327,7 +1346,11 @@ test("Console 全部主导航在桌面和手机可达且无整页横向溢出", 
   const paths = await page.locator('aside a[href^="/console/"]').evaluateAll((links) =>
     Array.from(new Set(links.map((link) => new URL((link as HTMLAnchorElement).href).pathname))),
   );
-  expect(paths.length).toBeGreaterThanOrEqual(25);
+  expect(paths.length).toBeGreaterThanOrEqual(20);
+  // /console/appearance、/console/menus、/console/authors 已退役并重定向到系统设置，不得再挂在侧栏。
+  for (const retired of ["/console/appearance", "/console/menus", "/console/authors"]) {
+    expect(paths, `${retired} 已退役，不应再出现在侧栏`).not.toContain(retired);
+  }
   // 这两个侧栏分组入口按已登记路由跳转到默认子页，仍精确核验最终地址。
   const destinations: Record<string, string> = {
     "/console/plugins": "/console/plugins/shortcodes",

@@ -1,0 +1,137 @@
+{
+  "task": "BLG-RSS01",
+  "verifiedAt": "2026-11-05T05:19:14.001744+00:00",
+  "version": "2.0.8",
+  "tag": "v2.0.8",
+  "tagSignature": "verified",
+  "releaseCommit": "5db4dac339e23e1424108d7f45ca6702b0ee9264",
+  "pullRequests": [
+    "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/49",
+    "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/50"
+  ],
+  "checks": [
+    {
+      "pullRequest": 49,
+      "runID": 41967397516,
+      "sourceCommit": "92c990939d8086a16c953007c390e4be8a34c7ce",
+      "e2ePassed": 206,
+      "jobs": [
+        {
+          "name": "build",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "lint",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "e2e",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "console",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "go",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "security",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "image",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "release-source",
+          "status": "completed",
+          "conclusion": "skipped"
+        }
+      ]
+    },
+    {
+      "pullRequest": 50,
+      "runID": 41969911033,
+      "sourceCommit": "3b31b8f21849c29cd3a7edae4ef1ab7d626ef3eb",
+      "e2ePassed": 206,
+      "jobs": [
+        {
+          "name": "image",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "build",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "console",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "go",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "e2e",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "lint",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "security",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "release-source",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "dockerRelease": {
+    "runID": 41971796382,
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/41971796382",
+    "conclusion": "success",
+    "manifestDigest": "sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e",
+    "matchesServerPulledImage": true,
+    "imageHelpExitCode": 0
+  },
+  "githubRelease": {
+    "assets": [],
+    "isDraft": false,
+    "isPrerelease": false,
+    "publishedAt": "2026-11-05T05:09:41Z",
+    "tagName": "v2.0.8",
+    "targetCommitish": "main",
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/releases/tag/v2.0.8"
+  },
+  "consoleBrowser": {
+    "url": "https://blog.xn--fhqths51enha.cn/console/system-update",
+    "currentVersion": "2.0.8",
+    "latestVersion": "2.0.8",
+    "releaseNotesVisible": true,
+    "verifiedUsing": "CUA existing authenticated session"
+  },
+  "deploymentEvidence": "deploy-verification.json",
+  "publicEvidence": "production-verification.json",
+  "browserEvidence": "production-browser-verification.json"
+}

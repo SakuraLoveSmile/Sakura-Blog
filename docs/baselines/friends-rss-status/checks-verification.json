@@ -1,0 +1,52 @@
+{
+  "task": "BLG-RSS01",
+  "sourceCommit": "92c990939d8086a16c953007c390e4be8a34c7ce",
+  "environment": {
+    "go": "go version go1.26.10 darwin/arm64",
+    "node": "v22.23.2",
+    "platform": "Darwin arm64"
+  },
+  "checks": [
+    {
+      "command": "node --test (friends-and-posts, stellar-v2-friends-host, stellar-v2-service-content)",
+      "passed": 21,
+      "exitCode": 0
+    },
+    {
+      "command": "go test ./internal/config ./internal/friends",
+      "exitCode": 0
+    },
+    {
+      "command": "make build",
+      "exitCode": 0,
+      "consoleProducts": "real dist and dist-uc"
+    },
+    {
+      "command": "git commit pre-commit hook",
+      "exitCode": 0,
+      "scope": "final source including invalid-URL regression"
+    },
+    {
+      "command": "make merge-check",
+      "exitCode": 0,
+      "scope": "feature and integrated root dev make test"
+    },
+    {
+      "command": "bash scripts/check-release-secrets.sh",
+      "exitCode": 0
+    }
+  ],
+  "independentReview": {
+    "finding": "Invalid feed URL could abort following components during cache classification",
+    "resolution": "Keep URL classification inside per-component error boundary; regression covers invalid and following valid component"
+  },
+  "browserEvidence": "local-browser-verification.json",
+  "productionRSSVerification": {
+    "status": "passed",
+    "sourcesWithPosts": 4,
+    "articlesPerSource": 3,
+    "totalArticles": 12,
+    "newSubscription": "https://wangyunzi.com/rss.xml",
+    "evidence": "production-verification.json"
+  }
+}

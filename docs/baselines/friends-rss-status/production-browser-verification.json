@@ -1,0 +1,103 @@
+{
+  "task": "BLG-RSS01",
+  "version": "2.0.8",
+  "sourceCommit": "92c990939d8086a16c953007c390e4be8a34c7ce",
+  "releaseCommit": "5db4dac339e23e1424108d7f45ca6702b0ee9264",
+  "verifiedAt": "2026-11-05T05:15:47.130Z",
+  "reusedPredeploymentTab": true,
+  "desktop": {
+    "cards": [
+      {
+        "description": "欲戴皇冠，必承其重",
+        "diagnostic": "",
+        "linkCount": 4,
+        "postCount": 3,
+        "title": "W1ndysの小屋",
+        "unavailable": false
+      },
+      {
+        "description": "此行山高路远，我只剩口袋玫瑰一片",
+        "diagnostic": "",
+        "linkCount": 4,
+        "postCount": 3,
+        "title": "长街短梦",
+        "unavailable": false
+      },
+      {
+        "description": "先想想为什么，再考虑怎么做",
+        "diagnostic": "",
+        "linkCount": 4,
+        "postCount": 3,
+        "title": "温锦瑜的博客",
+        "unavailable": false
+      },
+      {
+        "description": "纵有疾风起，人生不言弃",
+        "diagnostic": "",
+        "linkCount": 4,
+        "postCount": 3,
+        "title": "雨中的博客",
+        "unavailable": false
+      },
+      {
+        "description": "陪伴是最长情的告白",
+        "diagnostic": "",
+        "linkCount": 1,
+        "postCount": 0,
+        "title": "Pei你看雪Blog",
+        "unavailable": false
+      },
+      {
+        "description": "须知少时凌云志，曾许人间第一流！",
+        "diagnostic": "",
+        "linkCount": 1,
+        "postCount": 0,
+        "title": "心月云",
+        "unavailable": false
+      },
+      {
+        "description": "记录，成为更好的自己。",
+        "diagnostic": "",
+        "linkCount": 1,
+        "postCount": 0,
+        "title": "Torrk's Blog",
+        "unavailable": false
+      },
+      {
+        "description": "醒亦念卿，梦亦念卿",
+        "diagnostic": "",
+        "linkCount": 0,
+        "postCount": 0,
+        "title": "MJ's Blog",
+        "unavailable": true
+      }
+    ],
+    "noRssText": false,
+    "scriptResources": [
+      "https://blog.xn--fhqths51enha.cn/assets/js/services/friends_and_posts.js?v=3fff2b5d"
+    ],
+    "unavailableSectionCount": 1,
+    "viewport": {
+      "height": 960,
+      "scrollWidth": 1272,
+      "width": 1272
+    }
+  },
+  "mobile": {
+    "cardCount": 8,
+    "longStreetPostCount": 3,
+    "noRssText": false,
+    "unavailableLinkCount": 0,
+    "viewport": {
+      "height": 844,
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  "screenshots": [
+    "production-desktop.png",
+    "production-affected.png",
+    "production-mobile.png"
+  ],
+  "result": "passed"
+}
