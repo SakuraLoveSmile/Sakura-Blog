@@ -31,3 +31,4 @@ packages:
       - "notebook_note.go"
       - "backup_restores.go"
       - "backup.go"
+      - "wiki_import.go"

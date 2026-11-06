@@ -1,0 +1,22 @@
+{
+  "command": "pnpm exec playwright test tests/e2e/tag-live-preview.spec.ts --grep '可见性补充'",
+  "testSummary": "2 passed (25.1s)",
+  "testExitCode": null,
+  "wrapperExitCode": 1,
+  "wrapperLimitation": "测试完成后的 shell 包装器误用 zsh 只读 status 变量，未保存退出文件；未重跑已通过测试。远端完整 E2E 另行核验。",
+  "lightContrast": 12.273733720720593,
+  "darkContrast": 10.97079086613533,
+  "overflow": 0,
+  "pageErrors": 0,
+  "serverPort8096Stopped": true,
+  "preservedExistingBaselineFiles": 38,
+  "generatedEvidenceFiles": [
+    "final-dark-toolbar-tabs.png",
+    "final-dark-studio-tabs.png",
+    "final-visibility-toolbar-390-tabs.png",
+    "final-dark-nodeview-tabs.png",
+    "final-visibility-nodeview-tabs.png",
+    "final-visibility-markdown-tabs.png",
+    "final-dark-insert-tabs.png"
+  ]
+}

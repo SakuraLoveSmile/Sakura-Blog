@@ -1,0 +1,60 @@
+{
+  "dragHandleHit": {
+    "backendNodeId": 75336,
+    "frameId": "8CE9C4004A423883F24B700A3035A21F"
+  },
+  "dragCancelled": {
+    "orderPreserved": true,
+    "dragging": false
+  },
+  "consecutiveDrags": [
+    {
+      "dragging": false,
+      "first": "stellar-tag-node group relative my-2 ProseMirror-selectednode",
+      "second": "友链列表"
+    },
+    {
+      "dragging": false,
+      "first": "stellar-tag-node group relative my-2 ProseMirror-selectednode",
+      "second": "友链列表"
+    }
+  ],
+  "inputNote": "首次host激活与属性操作使用实际鼠标事件核验。iframe locator.click 自身的自动滚动不作为产品滚动行为证据。",
+  "propertyKeyboard": {
+    "opened": 1,
+    "escapeClosed": true
+  },
+  "pointerToolLimit": "最终指针校验受浏览器工具自动对齐高iframe影响：事件日志证明点击送达应用之前外层已滚动，实际target变为IFRAME而非所见按钮；不以这些点击证明产品按钮失败或通过。属性入口以Enter激活、字段输入与Escape关闭已实测。",
+  "focusTrace": [
+    {
+      "level": "info",
+      "message": "BLG-Canvas-listener true",
+      "timestamp": "2026-11-06T09:54:12.211Z",
+      "url": "http://127.0.0.1:18086/console/assets/RichTextEditor-Ceg2lx9k.js"
+    },
+    {
+      "level": "info",
+      "message": "BLG-Focus-before pointerdown svg BODY BODY 0",
+      "timestamp": "2026-11-06T09:54:26.023Z",
+      "url": "http://127.0.0.1:18086/console/assets/RichTextEditor-Ceg2lx9k.js"
+    },
+    {
+      "level": "info",
+      "message": "BLG-Focus-after false IFRAME DIV 0",
+      "timestamp": "2026-11-06T09:54:26.025Z",
+      "url": "http://127.0.0.1:18086/console/assets/RichTextEditor-Ceg2lx9k.js"
+    },
+    {
+      "level": "info",
+      "message": "BLG-Focus-before pointerdown IFRAME IFRAME DIV 470",
+      "timestamp": "2026-11-06T09:54:41.422Z",
+      "url": "http://127.0.0.1:18086/console/assets/RichTextEditor-Ceg2lx9k.js"
+    },
+    {
+      "level": "info",
+      "message": "BLG-Focus-after false IFRAME DIV 470",
+      "timestamp": "2026-11-06T09:54:41.422Z",
+      "url": "http://127.0.0.1:18086/console/assets/RichTextEditor-Ceg2lx9k.js"
+    }
+  ]
+}

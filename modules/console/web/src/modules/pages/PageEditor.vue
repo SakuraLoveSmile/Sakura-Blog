@@ -6,7 +6,6 @@ import { useRoute, useRouter } from "vue-router";
 import { pageApi, editorImportApi, getApiErrorMessage, settingsApi } from "@/api";
 import MarkdownImportPreview from "@/components/editor/MarkdownImportPreview.vue";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
-import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
 import EditorToolbar from "../posts/EditorToolbar.vue";
@@ -705,20 +704,16 @@ const smallInputCls =
             class="w-full px-4 py-3 text-lg font-medium border border-border rounded-xl focus:outline-none focus:border-primary transition-colors dark:bg-secondary dark:border-border-strong dark:text-foreground dark:placeholder-gray-500"
           />
           <!-- 富文本（默认）/ Markdown 分屏，绑定同一份 content_md，切换即同步 -->
-          <StellarContentConfig
-            :sync-error="stellarFormError"
-            v-model:config="form.stellar_config"
-            v-model:blog="form.blog_extensions"
-            :version="form.stellar_version"
-            profile="page"
-            :content="form.content_md"
-            class="mb-3"
-          />
+          <p v-if="stellarFormError" role="alert" class="text-sm text-destructive">{{ stellarFormError }}</p>
+          <p v-if="form.stellar_version !== 2" role="status" class="text-sm text-destructive">
+            这条旧内容尚未迁移，仅可预览。请先审查迁移候选；保存不会自动转换旧字段。
+          </p>
           <RichTextEditor
             v-if="editorKind === 'rich'"
             ref="richRef"
             v-model="form.content_md"
             :storage-key="'page:' + (isNew ? 'new' : slugParam)"
+            :page-appearance="true"
             @save="handleSave"
           />
           <MarkdownEditor

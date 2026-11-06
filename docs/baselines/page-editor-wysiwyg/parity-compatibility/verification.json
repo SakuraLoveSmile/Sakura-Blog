@@ -1,0 +1,14 @@
+{
+  "command": "pnpm exec playwright test tests/e2e/tag-plugin-parity.spec.ts",
+  "exitCode": 0,
+  "result": "11 passed (32.9s)",
+  "logSha256": "2f4334e2e5b63fd9ff7833173d461cdf96a89f44ae6c506178ba189647fa7052",
+  "originalBaselineRestored": 8,
+  "generatedEvidenceFiles": [
+    "after-minimal-mobile.png",
+    "after-flat-mobile.png",
+    "after-glass-mobile.png",
+    "after-card-mobile.png"
+  ],
+  "assertionsUnchanged": true
+}

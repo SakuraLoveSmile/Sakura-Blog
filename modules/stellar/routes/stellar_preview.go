@@ -106,7 +106,8 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 	if input.Mode != content.StellarPreviewModeDocument && input.Mode != content.StellarPreviewModeContent && input.Mode != content.StellarPreviewModeWidget {
 		return content.StellarPreviewOutput{}, fmt.Errorf("unsupported Stellar preview mode %q", input.Mode)
 	}
-	site, err := stellarPreviewSite(s.site.Load(), input.RequestURL)
+	publicSite := s.site.Load()
+	site, err := stellarPreviewSite(publicSite, input.RequestURL)
 	if err != nil {
 		return content.StellarPreviewOutput{}, err
 	}
@@ -204,7 +205,7 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 		}
 	}
 	if profile == "page" && stellarPathKey(path) == stellarPathKey("/"+FriendsSlug) {
-		input.HTML, err = stellarFriendsPreviewHTML(input.HTML, site.Pages.Friends.ShowPostsOn())
+		input.HTML, err = stellarFriendsContentHTML(input.HTML, publicSite)
 		if err != nil {
 			return content.StellarPreviewOutput{}, err
 		}

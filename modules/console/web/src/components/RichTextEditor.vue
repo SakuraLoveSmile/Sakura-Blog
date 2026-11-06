@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import PackageRichTextEditor from "@blog/editor/RichTextEditor.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { StellarTag } from "@/components/editor/stellar-tag";
+import StellarEditingCanvas from "@/components/editor/StellarEditingCanvas.vue";
+import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 
 const props = defineProps<{
   modelValue: string;
   storageKey?: string;
   followStorageKey?: boolean;
+  pageAppearance?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -17,6 +20,8 @@ const emit = defineEmits<{
 }>();
 
 const inner = ref<any>(null);
+const stellarContext = inject(stellarEditorContextKey, undefined);
+const canvasProps = computed(() => ({ markdown: props.modelValue, metadata: stellarContext?.value }));
 const activeStates = computed<Record<string, boolean>>(() => inner.value?.activeStates ?? {});
 
 function applyFormat(id: string) {
@@ -65,6 +70,8 @@ defineExpose({
     :follow-storage-key="props.followStorageKey"
     :extensions="[StellarTag]"
     :attachment-picker="AttachmentPickerModal"
+    :canvas="props.pageAppearance ? StellarEditingCanvas : undefined"
+    :canvas-props="canvasProps"
     @update:model-value="emit('update:modelValue', $event)"
     @save="emit('save')"
     @pending-change="emit('pending-change', $event)"

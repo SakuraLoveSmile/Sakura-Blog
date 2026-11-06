@@ -1,0 +1,34 @@
+{
+  "verifiedAt": "2026-11-06T10:26:56.008Z",
+  "code": "1333f216",
+  "localSmoke": {
+    "canvasFound": true,
+    "generatedSiteInformation": true,
+    "headings": [
+      {
+        "align": "center",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "size": "27px",
+        "text": "友链列表"
+      },
+      {
+        "align": "center",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "size": "27px",
+        "text": "如何交换友链？"
+      },
+      {
+        "align": "center",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Songti SC\", \"Noto Serif SC\", SimSun, serif",
+        "size": "27px",
+        "text": "本站信息"
+      }
+    ],
+    "legacyConfigVisible": false,
+    "overflow": false,
+    "width": 1280
+  }
+}

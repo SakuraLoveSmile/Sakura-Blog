@@ -1,0 +1,16 @@
+{
+  "verifiedAt": "2026-11-06T10:41:57.158Z",
+  "pageFrames": [
+    {
+      "containsFriendService": true,
+      "surfaceInjected": false,
+      "title": "标签预览"
+    },
+    {
+      "containsFriendService": true,
+      "surfaceInjected": false,
+      "title": "标签预览"
+    }
+  ],
+  "generatedSiteInformation": true
+}

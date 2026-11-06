@@ -1,0 +1,32 @@
+{
+  "runId": 42205001100,
+  "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42205001100",
+  "head": "3dd20a75ca7112b21068772c9888f1aee40dcaca",
+  "conclusion": "failure",
+  "passed": 206,
+  "failed": 3,
+  "flaky": 1,
+  "failures": [
+    {
+      "file": "tests/e2e/tag-plugin-parity.spec.ts",
+      "line": 81,
+      "kind": "pages",
+      "cause": "parent document selector cannot find editor DOM moved into controlled iframe"
+    },
+    {
+      "file": "tests/e2e/tag-plugin-parity.spec.ts",
+      "line": 107,
+      "kind": "pages",
+      "cause": "parent document selector cannot find editor DOM moved into controlled iframe"
+    },
+    {
+      "file": "tests/e2e/tag-plugin-parity.spec.ts",
+      "line": 129,
+      "kind": "pages",
+      "cause": "parent document selector cannot find editor DOM moved into controlled iframe"
+    }
+  ],
+  "flakyScenario": "console-mobile-a11y.spec.ts:825 手机评论行命中区，CI自动重试后通过",
+  "gate": "PR保持未合并；更新定位后重跑完整CI",
+  "recordedAt": "2026-11-06T11:08:39.858750+00:00"
+}

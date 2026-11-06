@@ -1,0 +1,41 @@
+{
+  "editor": {
+    "scripts": [
+      "http://127.0.0.1:18086/console/assets/index-B5jiWvv0.js"
+    ],
+    "styles": [
+      "http://127.0.0.1:18086/console/assets/index-DZKNdHZq.css",
+      "http://127.0.0.1:18086/console/assets/registry-D1WRZwEj.css",
+      "http://127.0.0.1:18086/console/assets/DefaultLayout-02XDOw06.css",
+      "http://127.0.0.1:18086/console/assets/RichTextEditor-3c33kYzF.css",
+      "http://127.0.0.1:18086/console/assets/AttachmentField-CuiIM6NY.css",
+      "http://127.0.0.1:18086/console/assets/ShortcodeInsertPanel-dJbjMdhP.css",
+      "http://127.0.0.1:18086/console/assets/PageEditor-BxWZTVeM.css"
+    ],
+    "url": "http://127.0.0.1:18086/console/pages/edit/friends"
+  },
+  "published": {
+    "scripts": [
+      "https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js",
+      "http://127.0.0.1:18086/assets/js/plugins/copycode.js?v=1f141c54",
+      "https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js",
+      "http://127.0.0.1:18086/assets/vendor/dompurify/purify.min.js?v=1f141c54",
+      "http://127.0.0.1:18086/assets/js/services/friends_and_posts.js?v=1f141c54",
+      "http://127.0.0.1:18086/assets/js/utils.js?v=d990afb2",
+      "http://127.0.0.1:18086/assets/js/main.js?v=2c74f5df",
+      "http://127.0.0.1:18086/assets/js/navigation-init.js?v=d1e00ede",
+      "http://127.0.0.1:18086/assets/js/profile.js?v=797baded",
+      "http://127.0.0.1:18086/assets/js/runtime/index.js?v=1f141c54"
+    ],
+    "styles": [
+      "http://127.0.0.1:18086/assets/css/main-minimal.css?v=db804e0a",
+      "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+      "http://127.0.0.1:18086/assets/css/highlight.css?v=f38ba7df",
+      "http://127.0.0.1:18086/assets/css/pagination.css?v=fe27f525",
+      "http://127.0.0.1:18086/assets/css/site-footer.css?v=177e3f5f",
+      "http://127.0.0.1:18086/assets/css/main-appearance-minimal.css?v=dfa57057",
+      "http://127.0.0.1:18086/assets/css/friends-page.css?v=9a6bfaf8"
+    ],
+    "url": "http://127.0.0.1:18086/friends"
+  }
+}

@@ -84,7 +84,7 @@ document.currentScript.stellarMount = function (root, context) {
         }
         if (cells.length) utils.dom(el).find('.grid-box').append(cells.join(''));
         if (unavailableCells.length) {
-          utils.dom(el).append(`<div class="unavailable-friends"><div class="unavailable-title">失联友链</div><div class="grid-box">${unavailableCells.join('')}</div></div>`);
+          utils.dom(el).append(`<div class="unavailable-friends"><h2 class="unavailable-title">失联友链</h2><div class="grid-box">${unavailableCells.join('')}</div></div>`);
         }
         window.wrapLazyloadImages(el);
       }, undefined, localFriends ? { cache: 'no-store' } : {});

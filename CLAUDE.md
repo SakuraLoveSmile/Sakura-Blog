@@ -103,12 +103,17 @@ Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `
 - 标签数据服务由 `blog-upstream-services.js` 划分区域所有权，`services.js` 提供共享请求生命周期和局部 DOMPurify 净化。服务脚本必须用该上下文处理远端普通文本、URL 与动态 HTML；完整解码/渲染后才记成功，失败或取消必须允许重挂重试。DOMPurify 的版本、许可证和文件校验在 `assets/vendor/dompurify/UPSTREAM.json`；不要绕开局部边界使用全局 `innerHTML`。
 - 部署使用 `internal/settings/data/icons.yml` 的嵌入图标注册表；开发默认也读取这份受跟踪副本。图标为内联 SVG，未知 key 会安全地渲染占位。新配置使用当前语义化键；保留 `legacyIconAlias`，直到迁移数据确认不再需要旧 `solar:`/`ph:`/`bxs:` 键。
 - 用户已批准完整移植中的浅色、深色与自动配色以及四种外观预设。当前是否接通以代码与浏览器证据为准，不能再用旧的仅深色约定缩减本任务。
+- `/friends` 的宿主正文通过 `stellarFriendsContentHTML` 加上页面专属外壳，并在交换说明分区展示当前站点资料 YAML；包含站名、网址、绝对头像、简介与本站 Atom 订阅地址，使用既有 YAML 编码器和 Stellar 代码复制组件，存储的正文保持原样。Console 预览共用该处理，但资料取公开站点快照，资源仍用预览地址。居中标题辅助样式保存在 `friends-page.css`，只在友链页加载。
 
 ## 编辑器与 shortcode
 
 shortcode 的解析、表单 schema 和重建路径必须共享一份 catalog：以后端 `internal/post/shortcode_catalog.go` 和各 renderer 实际接受的 named/positional 参数为准，而不是复制第二份前端字段表。
 
 文章与页面共用 `ShortcodeInsertPanel`；Studio 与面板通过 `useShortcodeDraft` 将源码交后端解析并同步参数。预览消费服务端完整文档和 token/resize 协议。富文本的 `stellar-tag-syntax.ts` 按完整外层区间保留 raw；未知或残缺结构也保存为源码节点，避免 Markdown 解析丢弃 marker 注释。后端严格语法校验继续决定能否保存，源码回退不代表无效内容可发布。
+
+页面富文本通过宿主提供的 `StellarEditingCanvas` 将同一个 TipTap 编辑 DOM 放到受控同源 iframe；仅复用完整预览的样式和主题属性，不执行返回的正文 HTML/脚本。Console CSS 限定在组件操作控件范围，避免 reset 改变正文。媒体查询沿浏览器视口，正文宽度沿编辑区。本站资料使用净化后的只读装饰，代码块/表格使用编辑 NodeView 复用正式页容器；Chroma token 只在语言和正文匹配时作为有限 class 装饰接入，均不进入 Markdown。
+
+动态 shortcode 仍在 `sandbox="allow-scripts"` 的 opaque iframe 内运行，页面画布内的正文嵌入采用透明表面，其他编辑器与独立预览保持原表面以保证对比度。高度消息和拖拽/属性控件事件应绑定实际 `ownerDocument` 的窗口或文档，保留消息来源及 token 校验；两个既有公开友链 GET 提供无凭据 CORS，其他后台和写接口不开放。
 
 - 编辑既有内容时，不为缺失字段补默认值；否则只改一个字段也会污染原始 Markdown。
 - 无法可靠解析的未知参数、多余位置参数或未闭合块级标签必须回退到原始源码编辑，而非猜测性重建。

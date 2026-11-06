@@ -1,0 +1,90 @@
+{
+  "task": "BLG-20261106-03",
+  "feature": "文库管理从「文章」导入文档",
+  "runAt": "2026-11-06T17:14:00+08:00",
+  "command": "pnpm exec playwright test tests/e2e/wiki-import.spec.ts",
+  "environment": {
+    "playwright": "1.62.1",
+    "node": "v22.23.2",
+    "browser": "Chromium (Playwright bundled, headless)",
+    "server": "scripts/e2e/run-server.sh：独立临时 SQLite（.tmp/e2e-server.*）+ -dev + VITE_E2E 构建",
+    "baseURL": "http://127.0.0.1:8096",
+    "dataBoundary": "隔离库，不读写本机 data/blog.db、config/app.yml 与上传目录"
+  },
+  "results": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "tests": [
+      "浏览器加载当前 Console 产物：入口 HTML 与 dist 一致且文库页带「导入文章」",
+      "桌面 1280×800：从文章导入两篇为草稿，文档树/编辑器/API 一致，原文章不变且草稿不公开",
+      "已发布导入并归属父文档；重复导入显示「已导入」、回收站文章不进入候选",
+      "移动 390×844：导入弹窗可用、选项完整且无横向溢出"
+    ]
+  },
+  "consoleArtifacts": {
+    "entryHtmlSha256": "67fd518ada8f26e25f5fea504a4cfc53ccc1ae51e70d8f694d099120f8eb29f4",
+    "entryHtmlMatchesDisk": true,
+    "assets": [
+      {
+        "url": "/console/assets/index-CW5V0muJ.js",
+        "sha256": "633be04f056356b3b49667c57311314b51ae6048a431aaf16cba486b51b9247e",
+        "matchesDisk": true
+      },
+      {
+        "url": "/console/assets/api-DFluM-31.js",
+        "sha256": "bbb6d184d6c8f511afdbe4304e74fde56c89ac88f5986fd25dba9c503d087ae7",
+        "matchesDisk": true
+      },
+      {
+        "url": "/console/assets/runtime-core.esm-bundler-D3B8NDwW.js",
+        "sha256": "9cd6e827a8bf5afaf9c6193f98b4ec9aee5d251724afa70e7e45ef09f6786196",
+        "matchesDisk": true
+      },
+      {
+        "url": "/console/assets/pinia-DDAxLdaT.js",
+        "sha256": "1c3395b3597f1817ffd2761582536f2545a06e830d1784c1b49af2f3adda8d92",
+        "matchesDisk": true
+      }
+    ]
+  },
+  "screenshots": [
+    {
+      "file": "modal-selected-2.png",
+      "bytes": 114690,
+      "sha256": "4ef41690830eb475b8f7b6eec3973eb9117fdeecf75eeb64225acf4e520c6f8e",
+      "viewport": "1280x800"
+    },
+    {
+      "file": "result-panel.png",
+      "bytes": 102822,
+      "sha256": "e7bc7bc3478e14bc51ee890b8e4eda56904fdb40df1ea48a662ea5ab85480252",
+      "viewport": "1280x800"
+    },
+    {
+      "file": "docs-after-import.png",
+      "bytes": 111417,
+      "sha256": "b3eb7ee974506be00c0185af1b20de881fa6c199b067aae41b889177b1b59bdc",
+      "viewport": "1280x800"
+    },
+    {
+      "file": "modal-imported-and-trashed.png",
+      "bytes": 120381,
+      "sha256": "c41218367578aec38ee55c46a4ed8ba0d4062430673108b7161b6ba856e4484d",
+      "viewport": "1280x800"
+    },
+    {
+      "file": "mobile-modal-390.png",
+      "bytes": 68475,
+      "sha256": "2a96063b0a71d1d4fd67f72197a7132e16bef8e6777c0931b8d42faf07d2f46a",
+      "viewport": "390x844"
+    }
+  ],
+  "rawEvidence": "browser-evidence.json",
+  "uncovered": [
+    "生产实例与真实线上文章数据（本次使用隔离库与 API 夹具）",
+    "Safari / Firefox / 真机（只有 Chromium 与 390×844 视口）",
+    "单次 100 篇上限的极端批量性能",
+    "文章正文渲染失败时的界面提示（Go 回归覆盖 failed 文案，浏览器未构造该夹具）"
+  ]
+}

@@ -13,6 +13,7 @@ import {
   type MockFixtureConfig,
 } from "./preview-document.ts";
 import {
+  previewCacheKey,
   PreviewScheduler,
   sharedPreviewCache,
   type PreviewCache,
@@ -37,6 +38,8 @@ export interface PluginPreviewOptions {
   /** 缓存实例（缺省共享 LRU 20 条） */
   cache?: PreviewCache;
   frame?: PluginPreviewFrameLimits;
+  /** 正文嵌入预览保留透明背景；缺省为独立预览表面。 */
+  surface?: "standalone" | "embedded";
 }
 
 export interface PluginPreviewRenderOptions {
@@ -82,6 +85,11 @@ export function usePluginPreview(
   const srcdoc = computed(() => document.value);
   void getOverrides;
 
+  // 缓存存储已准备的文档，两种表面不能共享同一个条目。
+  function surfaceCacheKey(key: string): string {
+    return options.surface === "embedded" ? `preview-surface:embedded|${key}` : key;
+  }
+
   const scheduler = new PreviewScheduler({
     delayMs: options.delayMs ?? 400,
     cache: options.cache ?? sharedPreviewCache,
@@ -90,7 +98,11 @@ export function usePluginPreview(
       const { data } = await previewApi.render(markdown, profile, { ...metadata, mode: "content" });
       // 写守卫始终注入；内存 Storage 只在 component-library 预览注入，
       // 真实站上下文（NodeView）保持 rating/vote 不可交互的旧行为。
-      return { html: data.html, document: preparePreviewDocument(data.document, profile), token: data.preview_token };
+      return {
+        html: data.html,
+        document: preparePreviewDocument(data.document, profile, { surface: options.surface }),
+        token: data.preview_token,
+      };
     },
     onChange: (state) => {
       status.value = state.status;
@@ -115,12 +127,13 @@ export function usePluginPreview(
     immediateOrOptions: boolean | PluginPreviewRenderOptions = false,
   ): void {
     const opts = typeof immediateOrOptions === "boolean" ? { immediate: immediateOrOptions } : immediateOrOptions;
+    const profile = opts.profile === undefined ? "component-library" : opts.profile;
     scheduler.schedule({
       markdown,
       // 未显式给出 profile 时走组件库 Fixture；NodeView 传 null 使用真实上下文。
-      profile: opts.profile === undefined ? "component-library" : opts.profile,
+      profile,
       metadata: opts.metadata,
-      cacheKey: opts.cacheKey,
+      cacheKey: surfaceCacheKey(opts.cacheKey ?? previewCacheKey(profile, markdown, opts.metadata)),
       delayMs: opts.delayMs,
       immediate: opts.immediate,
       bypassCache: opts.bypassCache,
@@ -139,7 +152,7 @@ export function usePluginPreview(
 
   /** 主动失效缓存；不传 key 时清空共享缓存。 */
   function invalidateCache(key?: string): void {
-    scheduler.invalidate(key);
+    scheduler.invalidate(key === undefined ? undefined : surfaceCacheKey(key));
   }
 
   /** 输入变化时调用：新文档就绪前不把高度收缩。 */

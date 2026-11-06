@@ -1,0 +1,237 @@
+{
+  "time": "2026-11-06T18:02:09.628227+08:00",
+  "head": "2ad23a6225708675a7917cd718d5f92e399cee3d",
+  "branch": "codex/fix/20261106-blg-friend02-friends-page",
+  "root_dev_head": "515ed89a487976a05536d182c1418f23bfeeadbb",
+  "build": {
+    "command": "make build",
+    "exit_code": 0
+  },
+  "test": {
+    "command": "make test",
+    "exit_code": 0,
+    "totals": [
+      [
+        "469",
+        "469",
+        "0"
+      ],
+      [
+        "229",
+        "229",
+        "0"
+      ]
+    ]
+  },
+  "log_sha256": {
+    "build": "7c35709d3b1c1a932e63406a68fd417d47be1be9adc2c7fac41c4b27911481af",
+    "test": "3edef77a76a7f8ca299550d0f9ee9f6bbe874fbabd765122174db64140da6f05"
+  },
+  "source_sha256": {
+    "modules/console/tests/plugin-preview.test.ts": "c1b7eb02b9c5d4e783d22101a14af1fc663856d6108c0898586cb1bebe858ad4",
+    "modules/console/tests/stellar-editor-blocks.test.ts": "8f09d0daf945dd1c4868ef1042ce48a983076b8c605d2ee572789b2c8e71e645",
+    "modules/console/tests/stellar-editor-decoration.test.ts": "dd690b981aac1614785d3ef25e2f12abcf0657568c6d4ec1375d844ef228d365",
+    "modules/console/tests/stellar-tag-preview.test.ts": "23ff797c71a9c1fa2573fc57469e16f05026ac966eb41fcead9c8fad1a0ad166",
+    "modules/console/tests/use-plugin-preview.test.ts": "33d32f6ab0c9a91dcd0a57d3cb29203074c32074cc7c731797fefd945923478d",
+    "modules/console/web/src/components/RichTextEditor.vue": "8650aeb6cfa6b26093177e1edc42ad9707db29a1395031e38290f9fb4d56fd0e",
+    "modules/console/web/src/components/editor/StellarEditingCanvas.vue": "a0d0162d9df462fef2bbd0649e7e2c47ce21fa7d58862a9a61505c85fd10f063",
+    "modules/console/web/src/components/editor/StellarTagPropertyPopover.vue": "b84a99722a5c2729b969bf11721e454b1dc4e49c0638915e641f592969716678",
+    "modules/console/web/src/components/editor/StellarTagView.vue": "b1c746155324967f5b762d2ac1384a1cd81bbea521d13b868d87830dac93cea8",
+    "modules/console/web/src/components/editor/stellar-editor-blocks.ts": "4c0120b12311fb41b844006ae299d9164834cf362d3e6d0940647564cbfe89c5",
+    "modules/console/web/src/components/editor/stellar-editor-decoration.ts": "ead873ad275e1ebe3871b913a24746f82f2dd4bfce35c12deeb1f610756e2c51",
+    "modules/console/web/src/components/editor/stellar-tag.ts": "00769d08e7be3d21b270a8c70085efa907b21aa808db929b64356b5d361d7189",
+    "modules/console/web/src/modules/pages/PageEditor.vue": "50b3e1307acefe5a5f68a05ffef59600ce78024ed0204706b40efe1383d194bb",
+    "modules/console/web/src/modules/plugins/preview/preview-document.ts": "dc1236b9b703ec136585e264a61fd735c5aac6e53c5aecffe941be475eed039a",
+    "modules/console/web/src/modules/plugins/preview/usePluginPreview.ts": "d2a3fa9dbd3b2d53a2c9bf5bbcbc76a698a3edc9e0a0744f5a8a6f7323596036",
+    "modules/stellar/api/module.go": "faf8c62834515fb5931335d598d4981a409cce6e403ff3a70834a2958e212ac2",
+    "modules/stellar/api/module_test.go": "353c8893cd4f9900ed6f57fe982e662c426f6404546d9ce47aff31f10edfbbbc",
+    "modules/stellar/routes/stellar_friends_content_test.go": "061d8fcb84655937f9b2940348380a720697b6c6fc63c664c84fa8fc09f50344",
+    "modules/stellar/routes/stellar_host_pages.go": "00f940d78ee1a8d55374d3cd4d7636f5089e617206273de99aedebfd02490d84",
+    "modules/stellar/routes/stellar_preview.go": "3e0d1a09b583c423a89172c396bcbcb9136d6945bd38cbfa41961dd9806887c6",
+    "modules/stellar/routes/stellar_runtime.go": "af1178e5406d415fd37ddd4e397f7cddda8827244ff66bcd83a8d9ba9b35563b",
+    "modules/stellar/web/assets/css/friends-page.css": "9a6bfaf8b8ae4a35b0fe9e702785b016d7854333a3c7932280f232bc13bcce49",
+    "modules/stellar/web/assets/js/blog/services/friends.js": "85f8dca59ec58c64989c6b93745e5c022c7a9882ea9d97448a67ae1af8a3f432",
+    "modules/stellar/web/assets/js/blog/services/friends_and_posts.js": "79a88f7b4b7e6687615f0a8ab118f67e2f1fdcb0eff10547b6760661b8b59a55",
+    "modules/stellar/web/assets/js/services/friends_and_posts.js": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+    "modules/stellar/web/templates/partial/stellar/head.html": "3dafafec0fb11426d540610b9cc3cfa255e1619a6c2387fb3343e798cb1d23e3",
+    "packages/editor/src/RichTextEditor.vue": "bdd97be84483421643ef9c44ae148d34ee9f63749fd720129d08e5bcb936b188"
+  },
+  "binary_sha256": "5d1590fa82324127c4c7ab06fe2d346607da14a1eb6cef2eb245dc2ad1722ae6",
+  "runtime_assets": [
+    {
+      "url": "http://127.0.0.1:18086/assets/css/friends-page.css?v=9a6bfaf8",
+      "path": "modules/stellar/web/assets/css/friends-page.css",
+      "sha256": "9a6bfaf8b8ae4a35b0fe9e702785b016d7854333a3c7932280f232bc13bcce49",
+      "disk_sha256": "9a6bfaf8b8ae4a35b0fe9e702785b016d7854333a3c7932280f232bc13bcce49",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/css/highlight.css?v=f38ba7df",
+      "path": "modules/stellar/web/assets/css/highlight.css",
+      "sha256": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8",
+      "disk_sha256": "f38ba7df8853a17f1df729323c4c46dfdd76eff3915415475db216aa879f22a8",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/css/main-appearance-minimal.css?v=dfa57057",
+      "path": "modules/stellar/web/assets/css/main-appearance-minimal.css",
+      "sha256": "dfa57057265f79020279b0fc5cbed69672a20bfc9cbfde4357d5734be42773cc",
+      "disk_sha256": "dfa57057265f79020279b0fc5cbed69672a20bfc9cbfde4357d5734be42773cc",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/css/main-minimal.css?v=db804e0a",
+      "path": "modules/stellar/web/assets/css/main-minimal.css",
+      "sha256": "db804e0a7723954b550b58e3de9924f7c6bb54baf11f2e1f0647dc5d3a218cd0",
+      "disk_sha256": "db804e0a7723954b550b58e3de9924f7c6bb54baf11f2e1f0647dc5d3a218cd0",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/css/pagination.css?v=fe27f525",
+      "path": "modules/stellar/web/assets/css/pagination.css",
+      "sha256": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5",
+      "disk_sha256": "fe27f5252e65156666fc8a55c406967b3e66807c1280955bd6deadab2fd97ae5",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/css/site-footer.css?v=177e3f5f",
+      "path": "modules/stellar/web/assets/css/site-footer.css",
+      "sha256": "177e3f5f39054164eb8027051ac1f16ac1091c86ee19cb8a4994feeac70cd386",
+      "disk_sha256": "177e3f5f39054164eb8027051ac1f16ac1091c86ee19cb8a4994feeac70cd386",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/js/main.js?v=2c74f5df",
+      "path": "modules/stellar/web/assets/js/main.js",
+      "sha256": "2c74f5dff4d3b9e7400dd1e73a9b3c83970319365870a63728cbfae970f3530c",
+      "disk_sha256": "2c74f5dff4d3b9e7400dd1e73a9b3c83970319365870a63728cbfae970f3530c",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/js/navigation-init.js?v=d1e00ede",
+      "path": "modules/stellar/web/assets/js/navigation-init.js",
+      "sha256": "d1e00ede1461e4f0cfbdc7edb946db7a3056d180384a65d356df467454f251bd",
+      "disk_sha256": "d1e00ede1461e4f0cfbdc7edb946db7a3056d180384a65d356df467454f251bd",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/js/plugins/copycode.js?v=1f141c54",
+      "path": "modules/stellar/web/assets/js/plugins/copycode.js",
+      "sha256": "84255963c75425f6544d535e563035889fde041ecc6e9dbd03a91f4cb6198746",
+      "disk_sha256": "84255963c75425f6544d535e563035889fde041ecc6e9dbd03a91f4cb6198746",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/js/profile.js?v=797baded",
+      "path": "modules/stellar/web/assets/js/profile.js",
+      "sha256": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d",
+      "disk_sha256": "797baded71322589658a1a8da91676fcdfe4df383d9dacdcb5db32f89bd0e92d",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/js/runtime/index.js?v=1f141c54",
+      "path": "modules/stellar/web/assets/js/runtime/index.js",
+      "sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f",
+      "disk_sha256": "a7d9c8b01b7b6883f916bbb8d8fd076dc98e53b4b8203948b5fdff16de8a6d2f",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/js/services/friends_and_posts.js?v=1f141c54",
+      "path": "modules/stellar/web/assets/js/services/friends_and_posts.js",
+      "sha256": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+      "disk_sha256": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/js/utils.js?v=d990afb2",
+      "path": "modules/stellar/web/assets/js/utils.js",
+      "sha256": "d990afb2fa48ad5fee69d01615cded392ec676004c9cc694cc335da9f63ae142",
+      "disk_sha256": "d990afb2fa48ad5fee69d01615cded392ec676004c9cc694cc335da9f63ae142",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/assets/vendor/dompurify/purify.min.js?v=1f141c54",
+      "path": "modules/stellar/web/assets/vendor/dompurify/purify.min.js",
+      "sha256": "cd37898f9782adf54820c413191b5691803f0f137c799d6edcfd38523b4c2c31",
+      "disk_sha256": "cd37898f9782adf54820c413191b5691803f0f137c799d6edcfd38523b4c2c31",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/AttachmentField-CuiIM6NY.css",
+      "path": "modules/console/web/dist/assets/AttachmentField-CuiIM6NY.css",
+      "sha256": "fef93d5f4adc4ee931331c7ce57928b05c63359ac6705acf35b91486529adf29",
+      "disk_sha256": "fef93d5f4adc4ee931331c7ce57928b05c63359ac6705acf35b91486529adf29",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/DefaultLayout-02XDOw06.css",
+      "path": "modules/console/web/dist/assets/DefaultLayout-02XDOw06.css",
+      "sha256": "ba00465f8d9c92f49821d65302359c262d2f4a9e9e54d82df0cdc3f7d6fa9734",
+      "disk_sha256": "ba00465f8d9c92f49821d65302359c262d2f4a9e9e54d82df0cdc3f7d6fa9734",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/PageEditor-BxWZTVeM.css",
+      "path": "modules/console/web/dist/assets/PageEditor-BxWZTVeM.css",
+      "sha256": "440884a3a4e246befc1c05a5b704dfa98714701702ddb08105a2b29b801ccb7c",
+      "disk_sha256": "440884a3a4e246befc1c05a5b704dfa98714701702ddb08105a2b29b801ccb7c",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/PageEditor-oWvLfUrU.js",
+      "path": "modules/console/web/dist/assets/PageEditor-oWvLfUrU.js",
+      "sha256": "5274699f2338e1b61ab6488f9e17c7242205b14e4bbcde78a60605e122dfe1da",
+      "disk_sha256": "5274699f2338e1b61ab6488f9e17c7242205b14e4bbcde78a60605e122dfe1da",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/RichTextEditor-3c33kYzF.css",
+      "path": "modules/console/web/dist/assets/RichTextEditor-3c33kYzF.css",
+      "sha256": "e03743c1813b5cacf34bef702f0d292b5436b7271fce673ee8ffe5703a9dc76f",
+      "disk_sha256": "e03743c1813b5cacf34bef702f0d292b5436b7271fce673ee8ffe5703a9dc76f",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/RichTextEditor-aK5iDdUV.js",
+      "path": "modules/console/web/dist/assets/RichTextEditor-aK5iDdUV.js",
+      "sha256": "c250aa6692cb131398e67ffecf8d92a67afd455ef55f231922a6c7579711b141",
+      "disk_sha256": "c250aa6692cb131398e67ffecf8d92a67afd455ef55f231922a6c7579711b141",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/ShortcodeInsertPanel-dJbjMdhP.css",
+      "path": "modules/console/web/dist/assets/ShortcodeInsertPanel-dJbjMdhP.css",
+      "sha256": "b6b70ed9bab8a3c8548d361d02e158aeec01fb0aeeabd85edcbfd64d6d1cb99d",
+      "disk_sha256": "b6b70ed9bab8a3c8548d361d02e158aeec01fb0aeeabd85edcbfd64d6d1cb99d",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/index-B5jiWvv0.js",
+      "path": "modules/console/web/dist/assets/index-B5jiWvv0.js",
+      "sha256": "30cc08e3b9c0d652006e4bee0a56fb49dc629134cea8ba7ff8bd3056bafd3628",
+      "disk_sha256": "30cc08e3b9c0d652006e4bee0a56fb49dc629134cea8ba7ff8bd3056bafd3628",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/index-DZKNdHZq.css",
+      "path": "modules/console/web/dist/assets/index-DZKNdHZq.css",
+      "sha256": "2ebe32d482d389a91eb4155ad19fc0538926b232a03562baf8717b991c27932e",
+      "disk_sha256": "2ebe32d482d389a91eb4155ad19fc0538926b232a03562baf8717b991c27932e",
+      "matches": true
+    },
+    {
+      "url": "http://127.0.0.1:18086/console/assets/registry-D1WRZwEj.css",
+      "path": "modules/console/web/dist/assets/registry-D1WRZwEj.css",
+      "sha256": "225757fba522d5548824c900dd5854ae546530f0d1ac4347aa7c0bf24af49653",
+      "disk_sha256": "225757fba522d5548824c900dd5854ae546530f0d1ac4347aa7c0bf24af49653",
+      "matches": true
+    }
+  ],
+  "all_assets_match": true,
+  "readyz": 200,
+  "listener": "COMMAND   PID      USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\nblog    69032 sakurasep   13u  IPv4 0xdc4b2deeeedc8a2f      0t0  TCP 127.0.0.1:18086 (LISTEN)",
+  "not_run": [
+    "make merge-check（会实际合入dev，未授权）",
+    "远端CI、发布、生产部署"
+  ]
+}

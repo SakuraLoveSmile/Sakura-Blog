@@ -1,0 +1,219 @@
+{
+  "generatedAt": "2026-11-06T09:14:34.474Z",
+  "tests": {
+    "console-assets": {
+      "recordedAt": "2026-11-06T09:14:24.397Z",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "entryHtml": {
+        "sha256": "67fd518ada8f26e25f5fea504a4cfc53ccc1ae51e70d8f694d099120f8eb29f4",
+        "diskSha256": "67fd518ada8f26e25f5fea504a4cfc53ccc1ae51e70d8f694d099120f8eb29f4",
+        "matchesDisk": true
+      },
+      "assets": [
+        {
+          "url": "/console/assets/index-CW5V0muJ.js",
+          "matchesDisk": true,
+          "sha256": "633be04f056356b3b49667c57311314b51ae6048a431aaf16cba486b51b9247e"
+        },
+        {
+          "url": "/console/assets/api-DFluM-31.js",
+          "matchesDisk": true,
+          "sha256": "bbb6d184d6c8f511afdbe4304e74fde56c89ac88f5986fd25dba9c503d087ae7"
+        },
+        {
+          "url": "/console/assets/runtime-core.esm-bundler-D3B8NDwW.js",
+          "matchesDisk": true,
+          "sha256": "9cd6e827a8bf5afaf9c6193f98b4ec9aee5d251724afa70e7e45ef09f6786196"
+        },
+        {
+          "url": "/console/assets/pinia-DDAxLdaT.js",
+          "matchesDisk": true,
+          "sha256": "1c3395b3597f1817ffd2761582536f2545a06e830d1784c1b49af2f3adda8d92"
+        }
+      ],
+      "pageShowsImportEntry": true
+    },
+    "desktop-import-drafts-1280x800": {
+      "recordedAt": "2026-11-06T09:14:28.342Z",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "project": {
+        "id": "pw-wiki-pw-wiki-import-1793956464847",
+        "title": "导入验收文库 pw-wiki-import-1793956464847"
+      },
+      "fixtures": [
+        {
+          "slug": "pw-wiki-import-1793956464847-quick-start",
+          "title": "导入验收 pw-wiki-import-1793956464847-quick-start",
+          "body": "# 快速开始\n\n导入验收正文甲。\n",
+          "status": "published"
+        },
+        {
+          "slug": "pw-wiki-import-1793956464847-deep-dive",
+          "title": "导入验收 pw-wiki-import-1793956464847-deep-dive",
+          "body": "# 深入指南\n\n导入验收正文乙。\n",
+          "status": "draft"
+        }
+      ],
+      "modal": {
+        "title": "导入文章到「导入验收文库 pw-wiki-import-1793956464847」",
+        "copyHint": "只复制标题与 Markdown 正文",
+        "optionLabels": [
+          "归属父文档",
+          "导入后状态"
+        ],
+        "rows": [
+          {
+            "title": "导入验收 pw-wiki-import-1793956464847-quick-start",
+            "statusLabel": "已发布"
+          },
+          {
+            "title": "导入验收 pw-wiki-import-1793956464847-deep-dive",
+            "statusLabel": "草稿"
+          }
+        ],
+        "selectedCount": "已选 2 篇",
+        "screenshot": {
+          "file": "modal-selected-2.png",
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "bytes": 114690,
+          "sha256": "4ef41690830eb475b8f7b6eec3973eb9117fdeecf75eeb64225acf4e520c6f8e"
+        }
+      },
+      "import": {
+        "status": 200,
+        "imported": [
+          {
+            "slug": "pw-wiki-import-1793956464847-quick-start",
+            "post_slug": "pw-wiki-import-1793956464847-quick-start"
+          },
+          {
+            "slug": "pw-wiki-import-1793956464847-deep-dive",
+            "post_slug": "pw-wiki-import-1793956464847-deep-dive"
+          }
+        ],
+        "skipped": 0,
+        "failed": 0,
+        "resultSummary": "已导入 2 篇",
+        "screenshot": {
+          "file": "result-panel.png",
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "bytes": 102822,
+          "sha256": "e7bc7bc3478e14bc51ee890b8e4eda56904fdb40df1ea48a662ea5ab85480252"
+        }
+      },
+      "afterImport": {
+        "docs": [
+          {
+            "slug": "pw-wiki-import-1793956464847-quick-start",
+            "title": "导入验收 pw-wiki-import-1793956464847-quick-start",
+            "status": "draft",
+            "parent": 0
+          },
+          {
+            "slug": "pw-wiki-import-1793956464847-deep-dive",
+            "title": "导入验收 pw-wiki-import-1793956464847-deep-dive",
+            "status": "draft",
+            "parent": 0
+          }
+        ],
+        "editorTitle": "导入验收 pw-wiki-import-1793956464847-quick-start",
+        "treeCountLabel": "2 篇",
+        "screenshot": {
+          "file": "docs-after-import.png",
+          "viewport": {
+            "width": 1280,
+            "height": 800
+          },
+          "bytes": 111417,
+          "sha256": "b3eb7ee974506be00c0185af1b20de881fa6c199b067aae41b889177b1b59bdc"
+        }
+      },
+      "sourcePostsReadOnly": true,
+      "draftPublicStatus": 404
+    },
+    "mobile-modal-390x844": {
+      "recordedAt": "2026-11-06T09:14:34.474Z",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "project": {
+        "id": "pw-wiki-m-pw-wiki-import-mobile-1793956473766",
+        "title": "移动导入 pw-wiki-import-mobile-1793956473766"
+      },
+      "modalBox": {
+        "x": 16,
+        "y": 103.546875,
+        "width": 358,
+        "height": 636.90625
+      },
+      "noHorizontalOverflow": true,
+      "labels": {
+        "parent": "归属父文档",
+        "status": "导入后状态"
+      },
+      "selectedCount": "已选 2 篇",
+      "screenshot": {
+        "file": "mobile-modal-390.png",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "bytes": 68475,
+        "sha256": "2a96063b0a71d1d4fd67f72197a7132e16bef8e6777c0931b8d42faf07d2f46a"
+      }
+    },
+    "published-parent-and-duplicate": {
+      "recordedAt": "2026-11-06T09:14:33.326Z",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "project": {
+        "id": "pw-wiki-pub-pw-wiki-import-pub-1793956468802",
+        "title": "导入验收已发布 pw-wiki-import-pub-1793956468802"
+      },
+      "parentDoc": {
+        "id": 3,
+        "title": "指南目录 pw-wiki-import-pub-1793956468802"
+      },
+      "imported": {
+        "slug": "pw-wiki-import-pub-1793956468802-published",
+        "status": "published",
+        "parent": 3,
+        "publicStatus": 200
+      },
+      "trashedPost": {
+        "hiddenFromList": true,
+        "apiImported": 0,
+        "apiFailedReason": "文章在回收站，无法导入"
+      },
+      "duplicateRow": {
+        "label": "已导入",
+        "checkboxDisabled": true,
+        "submitDisabled": true
+      },
+      "screenshot": {
+        "file": "modal-imported-and-trashed.png",
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        },
+        "bytes": 120381,
+        "sha256": "c41218367578aec38ee55c46a4ed8ba0d4062430673108b7161b6ba856e4484d"
+      }
+    }
+  }
+}
