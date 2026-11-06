@@ -1,0 +1,57 @@
+{
+  "verifiedAt": "2026-11-06T10:29:54.493214+00:00",
+  "implementationCommit": "1333f216363eb1265c8ff1779508f8c177a12ccd",
+  "checks": {
+    "commit": {
+      "sha256": "a1ccc95fc49b73d2a26e15d91b2983401bd89ccb499eed5568f46d305a225e04",
+      "exit_code": 0
+    },
+    "sync-main": {
+      "sha256": "ae345185af2ce96f6a35091e222fad0fd126535c7a764a219566148bfe339a15",
+      "exit_code": 0
+    },
+    "combined-build": {
+      "sha256": "8ec7889a99de371b25f47862b09cc4d805a4a0627323cfe32aaf2835f863be97",
+      "exit_code": 0
+    },
+    "combined-lint": {
+      "sha256": "7df796804ec2085f08c008829be637255eb0798525f889da4986ca62460765f7",
+      "exit_code": 0
+    },
+    "merge-check": {
+      "sha256": "d430315d3304b942117a18d14dc7cbbfb4f7b7ff3b16bc8b3c784dfb689160af",
+      "exit_code": 0
+    }
+  },
+  "mergeCheckTotals": [
+    [
+      "477",
+      "477",
+      "0"
+    ],
+    [
+      "229",
+      "229",
+      "0"
+    ],
+    [
+      "477",
+      "477",
+      "0"
+    ],
+    [
+      "229",
+      "229",
+      "0"
+    ]
+  ],
+  "runtimeConsole": {
+    "asset": "/console/assets/index-CuPh3zk3.js",
+    "sha256": "44cd645d8496c7d7846f52579f79526ea93036e4e4bc5bf060dae70edb4ad33c",
+    "diskSha256": "44cd645d8496c7d7846f52579f79526ea93036e4e4bc5bf060dae70edb4ad33c",
+    "matches": true
+  },
+  "binarySha256": "08fc9ccb19179b25d0b834458f0ef26041b9d39255d2baa855873c0806c6bd49",
+  "rootUserFilesPreserved": 321,
+  "review": "独立只读审查无新增阻塞；既有鼠标自动化限制保留"
+}

@@ -10,7 +10,8 @@ import type { PluginMeta, PluginVariant } from "@/modules/plugins/plugin-types";
 import { loadPluginCatalog } from "@/modules/plugins/usePluginCatalog";
 import { formForVariant } from "@/modules/plugins/shortcode";
 import { usePluginPreview } from "@/modules/plugins/preview/usePluginPreview";
-import { sharedPreviewQueue } from "@/modules/plugins/preview/render-gate";
+import { PreviewCache, sharedPreviewQueue } from "@/modules/plugins/preview/render-gate";
+import { withPreviewContentWidth } from "@/modules/plugins/preview/preview-document";
 import { tagNameOf, typeLabelOf } from "./stellar-tag";
 
 // Stellar 标签节点的 NodeView：选中时浮出 Halo 同款操作气泡（类型标签 + 编辑/删除），iframe 渲染前台真实效果。
@@ -25,9 +26,14 @@ const typeLabel = computed(() => typeLabelOf(raw.value));
 const preview = usePluginPreview(() => ({ capability: "static", height: 64 }), undefined, {
   delayMs: 150,
   queue: sharedPreviewQueue,
+  cache: new PreviewCache(20),
+  // 页面画布已提供真实主题背景；其他编辑器仍需要独立表面保证文字对比度。
+  surface: stellarContext?.value.layout === "page" ? "embedded" : "standalone",
   frame: { minHeight: 32, maxHeight: Number.MAX_SAFE_INTEGER, margin: 0 },
 });
-const srcdoc = preview.srcdoc;
+const contentWidth = ref(0);
+const viewportWidth = ref(window.innerWidth);
+const srcdoc = computed(() => withPreviewContentWidth(preview.srcdoc.value, contentWidth.value));
 const hasPreview = computed(() => Boolean(preview.srcdoc.value));
 const loading = computed(() => preview.status.value === "loading");
 const updating = computed(() => preview.status.value === "updating");
@@ -35,6 +41,20 @@ const failed = computed(() => preview.status.value === "error" && !hasPreview.va
 
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const wrapperRef = ref<HTMLElement | null>(null);
+let widthObserver: ResizeObserver | undefined;
+let messageWindow: Window | null = null;
+function bindPreviewMessages() {
+  const ownerWindow = iframeRef.value?.ownerDocument.defaultView || wrapperRef.value?.ownerDocument.defaultView || null;
+  if (messageWindow === ownerWindow) return;
+  messageWindow?.removeEventListener("message", onPreviewMessage);
+  messageWindow = ownerWindow;
+  messageWindow?.addEventListener("message", onPreviewMessage);
+}
+function measurePreviewWidth() {
+  viewportWidth.value = window.innerWidth;
+  contentWidth.value = wrapperRef.value?.clientWidth || 0;
+  bindPreviewMessages();
+}
 function setWrapperRef(el: any) {
   wrapperRef.value = el?.$el ?? el ?? null;
 }
@@ -61,6 +81,10 @@ function refreshPreview(delayMs: number) {
 }
 
 onMounted(() => {
+  widthObserver = new ResizeObserver(measurePreviewWidth);
+  if (wrapperRef.value) widthObserver.observe(wrapperRef.value);
+  window.addEventListener("resize", measurePreviewWidth);
+  measurePreviewWidth();
   refreshPreview(0);
   void loadPluginCatalog();
 });
@@ -76,8 +100,15 @@ watch(
 function onPreviewMessage(event: MessageEvent) {
   preview.onMessage(event, iframeRef.value);
 }
-onMounted(() => window.addEventListener("message", onPreviewMessage));
-onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
+// EditorContent 可被 Teleport 到同源画布；监听实际父窗口，保留 composable 的 source/token 校验。
+watch(iframeRef, bindPreviewMessages, { flush: "post" });
+onMounted(bindPreviewMessages);
+onBeforeUnmount(() => {
+  messageWindow?.removeEventListener("message", onPreviewMessage);
+  messageWindow = null;
+  window.removeEventListener("resize", measurePreviewWidth);
+  widthObserver?.disconnect();
+});
 
 // ---------- 编辑（优先属性表单，解析失败时保留源码编辑） ----------
 
@@ -230,19 +261,24 @@ function closeEditor() {
         <button type="button" class="ml-1 text-primary" @mousedown.prevent @click="preview.retry()">重试</button>
       </p>
       <!-- 未选中时 pointer-events 关闭：整卡任意处点击即选中节点出气泡；选中后恢复可交互/滚动 -->
-      <iframe
+      <div
         v-else-if="hasPreview"
+        class="stellar-tag-viewport overflow-hidden"
+      >
+      <iframe
         ref="iframeRef"
         :srcdoc="srcdoc"
-        :style="{ height: preview.frameHeight.value + 'px' }"
+        :style="{ height: preview.frameHeight.value + 'px', width: viewportWidth + 'px' }"
         :class="[
-          'block w-full border-0 bg-transparent transition-[height] duration-150',
+          'block max-w-none border-0 bg-transparent transition-[height] duration-150',
           !selected && 'pointer-events-none',
         ]"
         allowtransparency="true"
         sandbox="allow-scripts"
         title="标签预览"
+        @load="bindPreviewMessages"
       ></iframe>
+      </div>
       <p
         v-else
         class="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-text-quaternary"

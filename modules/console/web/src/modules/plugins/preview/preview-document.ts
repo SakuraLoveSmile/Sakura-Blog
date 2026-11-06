@@ -3,7 +3,7 @@
 // 避免两套预览行为继续分叉。纯 TS，可脱离 Vue 单测。
 //
 // buildPreviewDoc 仍是组件库的暗色单模式文档；服务端整页预览（preparePreviewDocument）
-// 跟随文档自身主题，只补不透明表面，不强行改成 Console 配色。
+// 跟随文档自身主题；独立预览补不透明表面，正文嵌入预览保留透明背景。
 // iframe 内注入的 ctx/def/deps/utils 为 base.html 前台运行时的等价最小版：
 // - ctx：main.js / services 依赖的全局对象（data_cache 关闭，保证预览每次拿最新 Fixture）；
 // - def：friends.js/sites.js 读取的占位素材；
@@ -407,15 +407,31 @@ export function injectPreviewWriteGuard(document: string): string {
   return insertAfterCharset(document, PREVIEW_WRITE_GUARD);
 }
 
+interface PreviewDocumentOptions {
+  surface?: "standalone" | "embedded";
+}
+
 /**
  * 预览文档统一预处理：写守卫始终注入；内存 Storage 仅 component-library 预览注入。
  * 真实站上下文（NodeView/Markdown）不注入 Storage，rating/vote 保持不可交互的旧行为。
  */
-export function preparePreviewDocument(document: string, profile?: string | null): string {
-  // 五处预览都经过这里：先补不透明、跟随文档主题的表面，再注入写守卫与可选存储回退。
-  const surfaced = injectPreviewSurface(document);
+export function preparePreviewDocument(
+  document: string,
+  profile?: string | null,
+  options: PreviewDocumentOptions = {},
+): string {
+  const surfaced = options.surface === "embedded" ? document : injectPreviewSurface(document);
   const guarded = injectPreviewWriteGuard(surfaced);
   return profile === "component-library" ? injectPreviewStorageFallback(guarded) : guarded;
+}
+
+/** 限定嵌入正文的可用宽度，保留 iframe 的真实视口及组件自身响应式规则。 */
+export function withPreviewContentWidth(document: string, width: number): string {
+  if (!document || !Number.isFinite(width) || width <= 0) return document;
+  const pixels = Math.min(16384, Math.max(1, Math.round(width)));
+  const style = `<style data-preview-content-width="1">[data-stellar-preview-content],[data-stellar-preview-content] article{width:${pixels}px;max-width:100%;box-sizing:border-box}</style>`;
+  const existing = /<style\b[^>]*\bdata-preview-content-width="1"[^>]*>[\s\S]*?<\/style>/i;
+  return existing.test(document) ? document.replace(existing, () => style) : insertBeforeClosingTag(document, "head", style);
 }
 
 /** 前台运行时等价最小 shim（对齐 base.html 的 ctx/def/deps/utils，data_cache 关闭）。 */

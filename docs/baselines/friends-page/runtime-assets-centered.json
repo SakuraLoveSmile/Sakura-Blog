@@ -1,0 +1,20 @@
+[
+  {
+    "path": "modules/stellar/web/assets/css/friends-page.css",
+    "source_sha256": "9a6bfaf8b8ae4a35b0fe9e702785b016d7854333a3c7932280f232bc13bcce49",
+    "served_sha256": "9a6bfaf8b8ae4a35b0fe9e702785b016d7854333a3c7932280f232bc13bcce49",
+    "matches": true
+  },
+  {
+    "path": "modules/stellar/web/assets/js/services/friends_and_posts.js",
+    "source_sha256": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+    "served_sha256": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+    "matches": true
+  },
+  {
+    "path": "modules/stellar/web/assets/js/plugins/copycode.js",
+    "source_sha256": "84255963c75425f6544d535e563035889fde041ecc6e9dbd03a91f4cb6198746",
+    "served_sha256": "84255963c75425f6544d535e563035889fde041ecc6e9dbd03a91f4cb6198746",
+    "matches": true
+  }
+]

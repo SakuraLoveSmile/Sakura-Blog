@@ -1,0 +1,55 @@
+{
+  "task": "BLG-FRIEND02",
+  "status": "待体验",
+  "recorded_at": "2026-11-06T15:34:53.358568+08:00",
+  "head": "2ad23a6225708675a7917cd718d5f92e399cee3d",
+  "branch": "codex/fix/20261106-blg-friend02-friends-page",
+  "changes": "uncommitted",
+  "code_sha256": {
+    "modules/stellar/routes/stellar_host_pages.go": "00f940d78ee1a8d55374d3cd4d7636f5089e617206273de99aedebfd02490d84",
+    "modules/stellar/routes/stellar_preview.go": "3e0d1a09b583c423a89172c396bcbcb9136d6945bd38cbfa41961dd9806887c6",
+    "modules/stellar/routes/stellar_runtime.go": "af1178e5406d415fd37ddd4e397f7cddda8827244ff66bcd83a8d9ba9b35563b",
+    "modules/stellar/routes/stellar_friends_content_test.go": "061d8fcb84655937f9b2940348380a720697b6c6fc63c664c84fa8fc09f50344",
+    "modules/stellar/web/assets/css/friends-page.css": "9a6bfaf8b8ae4a35b0fe9e702785b016d7854333a3c7932280f232bc13bcce49",
+    "modules/stellar/web/assets/js/services/friends_and_posts.js": "3841e838ef0bd10393ac688fa3a5930f70a65f940df7fbf8e05a7dbee7669ae2",
+    "modules/stellar/web/assets/js/blog/services/friends.js": "85f8dca59ec58c64989c6b93745e5c022c7a9882ea9d97448a67ae1af8a3f432",
+    "modules/stellar/web/assets/js/blog/services/friends_and_posts.js": "79a88f7b4b7e6687615f0a8ab118f67e2f1fdcb0eff10547b6760661b8b59a55",
+    "modules/stellar/web/templates/partial/stellar/head.html": "3dafafec0fb11426d540610b9cc3cfa255e1619a6c2387fb3343e798cb1d23e3"
+  },
+  "binary_sha256": "5888971850458a8f0ba24d21a367d72bf03cdba6285821633dfcbf3d0db2336b",
+  "checks": [
+    {
+      "command": "make go-build",
+      "result": "passed",
+      "log": ".tmp/blg-friend02-go-build-centered.log",
+      "log_sha256": "5274e601d770ec048ac76a3b08499b267d81286e958159578776c2d7998ba232"
+    },
+    {
+      "command": "make test",
+      "result": "passed",
+      "log": ".tmp/blg-friend02-test-centered.log",
+      "log_sha256": "9243834fe5a66c192f22f646aea8c5701cd9d853b83640873ba5908edf82a749"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "browser_cases": 33,
+  "browser_errors": [],
+  "copy_button": "Browser displayed copy success; YAML round-trip passed. Browser Use virtual clipboard did not expose OS clipboard contents; no claim of successful OS clipboard read-back.",
+  "fixtures": "isolated local database; three sample friends; actual public site metadata",
+  "preview": {
+    "url": "http://127.0.0.1:18086/friends",
+    "pid": 47622,
+    "session": 34835,
+    "root": "/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261106-fix-blg-friend02-friends-page/.tmp/blg-friend02-runtime"
+  },
+  "not_performed": [
+    "commit",
+    "merge-check / dev integration",
+    "push",
+    "release",
+    "production mutation"
+  ]
+}

@@ -99,7 +99,7 @@ document.currentScript.stellarMount = function (root, context) {
           utils.dom(el).find('.grid-box').append(cell);
         }
         if (unavailable.length > 0) {
-          let section = `<div class="unavailable-friends"><div class="unavailable-title">失联友链</div><div class="grid-box">`;
+          let section = `<div class="unavailable-friends"><h2 class="unavailable-title">失联友链</h2><div class="grid-box">`;
           for (let item of unavailable) {
             section += `<div class="grid-cell user-post-card unavailable-card">`;
             section += `<div class="avatar-box">`;

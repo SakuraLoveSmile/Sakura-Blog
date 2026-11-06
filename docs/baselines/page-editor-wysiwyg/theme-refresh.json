@@ -1,0 +1,16 @@
+{
+  "canvas": {
+    "background": "rgb(249, 250, 251)",
+    "theme": "light"
+  },
+  "node": {
+    "background": "rgba(0, 0, 0, 0)",
+    "headings": [
+      {
+        "color": "rgb(0, 0, 0)",
+        "text": "失联友链"
+      }
+    ],
+    "theme": "light"
+  }
+}

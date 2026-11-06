@@ -1,0 +1,56 @@
+{
+  "verifiedAt": "2026-11-06T10:46:22.506005+00:00",
+  "sourceCommit": "3dd20a75ca7112b21068772c9888f1aee40dcaca",
+  "checks": {
+    "surface-build": {
+      "sha256": "7e85ce18c7f05552e31a0240eb353074da4a9f7b8f4b04a6bf1c8173e1e3e7ac",
+      "exitCode": 0
+    },
+    "surface-test": {
+      "sha256": "328f909a049b2e51885c764afaf469cf63a2a60607fac49488902ffb62fd52b2",
+      "exitCode": 0
+    },
+    "surface-commit": {
+      "sha256": "75215645f5f95d29b8ba0e24e9f0898e7e4fe31f221802b2b9539403aee2199f",
+      "exitCode": 0
+    },
+    "surface-merge-check": {
+      "sha256": "c639d00ef368b52c1929319caef7c30c3c12334603da80cd8b9369a82f140e3a",
+      "exitCode": 0
+    }
+  },
+  "mergeCheckTotals": [
+    [
+      "478",
+      "478",
+      "0"
+    ],
+    [
+      "229",
+      "229",
+      "0"
+    ],
+    [
+      "478",
+      "478",
+      "0"
+    ],
+    [
+      "229",
+      "229",
+      "0"
+    ]
+  ],
+  "runtimeConsole": {
+    "asset": "/console/assets/index-CDgqgH-T.js",
+    "servedSha256": "008a6c1253ac8304772b014081ea1685cea04baa51c71369920c517207eff8ad",
+    "diskSha256": "008a6c1253ac8304772b014081ea1685cea04baa51c71369920c517207eff8ad",
+    "matches": true
+  },
+  "binarySha256": "622819d8adb1fa0c3c96c4f600df2a5ea7bf5fe7a5ccefd72b8c35a73d27e1c3",
+  "sourceSha256": {
+    "modules/console/web/src/components/editor/StellarTagView.vue": "1cc24f087facd3bb4f41bc53f4f6bf61fd3926b4c54ae13fd9ed9946293aaf29"
+  },
+  "e2eResult": "既有两项可读性用例通过，完整远端 E2E 待 CI",
+  "review": "页面/文章表面边界的增量独立复核通过"
+}

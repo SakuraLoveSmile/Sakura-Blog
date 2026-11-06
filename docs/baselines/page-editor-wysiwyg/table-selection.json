@@ -1,0 +1,26 @@
+[
+  {
+    "afterPosition": "absolute",
+    "background": "color(srgb 0.109 0.8146 0.991 / 0.12)",
+    "position": "relative",
+    "text": "友链"
+  },
+  {
+    "afterPosition": "absolute",
+    "background": "color(srgb 0.109 0.8146 0.991 / 0.12)",
+    "position": "relative",
+    "text": "一段表格文字"
+  },
+  {
+    "afterPosition": "absolute",
+    "background": "color(srgb 0.109 0.8146 0.991 / 0.12)",
+    "position": "relative",
+    "text": "页面"
+  },
+  {
+    "afterPosition": "absolute",
+    "background": "color(srgb 0.109 0.8146 0.991 / 0.12)",
+    "position": "relative",
+    "text": "一致的排版"
+  }
+]

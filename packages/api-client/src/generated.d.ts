@@ -667,3 +667,37 @@ export interface UpdateCheckResponse {
   frontend_fingerprint?: string;
   is_dev?: boolean;
 }
+
+//////////
+// source: wiki_import.go
+
+/**
+ * WikiDocImportRequest 从「文章」导入到指定文库项目。
+ * Slugs 为文章 slug 列表（按选择顺序导入）；Parent 为目标父文档（0=根文档）；
+ * Status 为导入后的文档状态（空值按草稿处理，避免导入即公开）。
+ */
+export interface WikiDocImportRequest {
+  slugs: string[];
+  parent: number /* int64 */;
+  status: string;
+}
+/**
+ * WikiDocImportItem 单篇文章的导入结果。Result 取值 imported/skipped/failed，
+ * 与响应里的三个分桶一致；Reason 只对 skipped/failed 有意义。
+ */
+export interface WikiDocImportItem {
+  post_slug: string;
+  slug: string;
+  title: string;
+  result: string;
+  reason?: string;
+  doc_id?: number /* int64 */;
+}
+/**
+ * WikiDocImportResponse 批量导入结果。单篇跳过/失败不回滚已导入的文档。
+ */
+export interface WikiDocImportResponse {
+  imported: WikiDocImportItem[];
+  skipped: WikiDocImportItem[];
+  failed: WikiDocImportItem[];
+}

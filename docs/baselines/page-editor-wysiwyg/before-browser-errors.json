@@ -1,0 +1,8 @@
+[
+  {
+    "level": "error",
+    "message": "[stellar extension:services] mount failed TypeError: Failed to fetch\n    at window.fetch (about:srcdoc:29:23)\n    at sharedFetch (http://127.0.0.1:18086/assets/js/runtime/request-cache.js?v=1f141c54:204:37)\n    at Object.request (http://127.0.0.1:18086/assets/js/runtime/request-cache.js?v=1f141c54:229:32)",
+    "timestamp": "2026-11-06T08:01:07.001Z",
+    "url": "http://127.0.0.1:18086/assets/js/runtime/index.js?v=1f141c54"
+  }
+]

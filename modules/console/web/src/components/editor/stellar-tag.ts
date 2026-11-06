@@ -1,4 +1,6 @@
-import { Node } from "@tiptap/core";
+import { Node, type NodeView as TipTapNodeView } from "@tiptap/core";
+import { NodeSelection } from "@tiptap/pm/state";
+import type { NodeView } from "@tiptap/pm/view";
 import { VueNodeViewRenderer } from "@tiptap/vue-3";
 import { runtimePlugins } from "@/modules/plugins/usePluginCatalog";
 import StellarTagView from "./StellarTagView.vue";
@@ -16,6 +18,38 @@ export { decodeRaw, encodeRaw, tagNameOf, wrapShortcodes } from "./stellar-tag-s
 export function typeLabelOf(raw: string): string {
   const name = tagNameOf(raw);
   return runtimePlugins.value.find((plugin) => plugin.name === name)?.title || name;
+}
+
+/** 仅接管上游拖拽状态的 document 归属，其余节点事件规则仍交给 TipTap。 */
+export function withOwnerDocumentDragEvents(nodeView: NodeView): NodeView {
+  if (!nodeView.stopEvent) return nodeView;
+  const view = nodeView as TipTapNodeView<unknown>;
+  const stopEvent = view.stopEvent.bind(view);
+  const destroy = nodeView.destroy?.bind(nodeView);
+  let dragDocument: Document | null = null;
+  const finishDrag = () => {
+    view.isDragging = false;
+    for (const type of ["dragend", "drop", "mouseup"]) dragDocument?.removeEventListener(type, finishDrag);
+    dragDocument = null;
+  };
+  nodeView.stopEvent = (event) => {
+    const target = event.target as HTMLElement;
+    const dom = view.dom;
+    if (event.type === "mousedown" && !view.isDragging && view.editor.isEditable && view.node.type.spec.draggable
+      && NodeSelection.isSelectable(view.node) && dom?.contains(target) && !view.contentDOM?.contains(target)
+      && !["INPUT", "BUTTON", "SELECT", "TEXTAREA"].includes(target.tagName) && !target.isContentEditable) {
+      const handle = target.closest("[data-drag-handle]");
+      if (handle && (dom === handle || dom.contains(handle))) {
+        // Stellar atom 可选中：预置状态不会改变上游 mousedown 的 false 返回值。
+        view.isDragging = true;
+        dragDocument = dom.ownerDocument;
+        for (const type of ["dragend", "drop", "mouseup"]) dragDocument.addEventListener(type, finishDrag);
+      }
+    }
+    return stopEvent(event);
+  };
+  nodeView.destroy = () => { finishDrag(); destroy?.(); };
+  return nodeView;
 }
 
 export const StellarTag = Node.create({
@@ -46,7 +80,8 @@ export const StellarTag = Node.create({
   },
 
   addNodeView() {
-    return VueNodeViewRenderer(StellarTagView);
+    const render = VueNodeViewRenderer(StellarTagView);
+    return (props) => withOwnerDocumentDragEvents(render(props));
   },
 
   // tiptap-markdown 集成：serialize 原样回写 raw；parse.setup 注册 core rule

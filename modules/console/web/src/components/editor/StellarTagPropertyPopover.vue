@@ -31,6 +31,7 @@ const structuredValid = ref(true);
 const structuredError = ref("");
 const originalRaw = props.raw;
 let updateTimer: ReturnType<typeof setTimeout> | undefined;
+let eventDocument: Document | undefined;
 
 watch(
   () => props.plugin,
@@ -112,14 +113,15 @@ function closeOnKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
-  document.addEventListener("pointerdown", closeOnPointerDown, true);
-  document.addEventListener("keydown", closeOnKeydown, true);
+  eventDocument = popoverRef.value?.ownerDocument || document;
+  eventDocument.addEventListener("pointerdown", closeOnPointerDown, true);
+  eventDocument.addEventListener("keydown", closeOnKeydown, true);
 });
 
 onBeforeUnmount(() => {
   clearUpdateTimer();
-  document.removeEventListener("pointerdown", closeOnPointerDown, true);
-  document.removeEventListener("keydown", closeOnKeydown, true);
+  eventDocument?.removeEventListener("pointerdown", closeOnPointerDown, true);
+  eventDocument?.removeEventListener("keydown", closeOnKeydown, true);
 });
 </script>
 
