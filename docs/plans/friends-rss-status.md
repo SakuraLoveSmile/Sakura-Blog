@@ -1,6 +1,6 @@
 # BLG-RSS01：友链动态状态修正与上线
 
-- 状态：实现中；日期：2026-11-05（Asia/Taipei）。用户授权：修改代码并更新线上，包含项目规定的提交、推送、PR 晋级、版本发布及部署。
+- 状态：待体验；日期：2026-11-05（Asia/Taipei）。用户授权：修改代码并更新线上，包含项目规定的提交、推送、PR 晋级、版本发布及部署。正式版本 `v2.0.8` 已部署，必要验证通过，等待用户体验确认。
 - 目标：未配置 RSS 的友链只显示卡片与简介；抓取失败显示“动态暂不可用”；失联站点集中显示且不再误报未设置 RSS；正常的 HTTP 重定向不判失联。
 - 起点：根工作树 `dev` / `a2399d1f2399b56840e2806aa95c413ad50d8df3`，用户已有文档、截图与未跟踪文件全部保留。线上镜像为 `2.0.7`。
 - 分支：`codex/fix/20261105-blg-rss01-friend-feed-status`；工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261105-fix-blg-rss01-friend-feed-status`；本地集成目标为根 `dev`。先同步 `origin/release` 已有的纯合并历史，源码无差异，确保后续晋级无需绕过分支保护。
@@ -26,7 +26,15 @@
 
 ## 验证记录
 
-- T1/T2：实际服务已修正，未新增 schema/API 字段/CSS。定向 Node 21 个用例通过（含旧 Blog 入口 4 个）；Go `./internal/config ./internal/friends` 通过。`make test` 与 `make build` 首轮通过；随后独立 reviewer 发现 URL 分类抛错会阻断后续组件，已改回逐组件错误边界并补双组件回归，提交 hook 将核验最终组合。
-- 本地运行：隔离根目录为工作树 `.tmp/blg-rss01-runtime`，端口 `127.0.0.1:18085`，独立 SQLite/内容/账号，不访问生产数据。真实浏览器已确认未订阅卡片、失败文案、失联分区和 301 卡片状态；外观矩阵继续核验。
-- 本机 DNS 返回安全抓取器拒绝的地址，隔离服务无法抓取公网 RSS，未放宽安全策略。正常文章已由脚本行为测试覆盖，生产升级后再验证真实 RSS 抓取。
-- 下一步：最终构建/提交 hook、`make merge-check`，随后 CI 晋级和上线。仅用户明确体验确认后改为“已验收”。
+- T1/T2：实际服务已修正，未新增 schema/API 字段/CSS。定向 Node 21 个用例通过（含旧 Blog 入口 4 个）；Go `./internal/config ./internal/friends` 通过。独立 reviewer 发现 URL 分类抛错会阻断后续组件，已改回逐组件错误边界并补双组件回归，最终 `make test`、`make build` 与提交及合并门禁均通过。
+- 本地运行：隔离根目录为工作树 `.tmp/blg-rss01-runtime`，端口 `127.0.0.1:18085`，独立 SQLite/内容/账号，不访问生产数据。真实浏览器已确认未订阅卡片、失败文案、失联分区和 301 卡片状态；四外观 × 浅色/深色/自动（自动含系统浅深色）共 16 个场景通过，390/1280 宽度均无横向溢出，失联卡片无链接。见 `docs/baselines/friends-rss-status/local-browser-verification.json` 与对应截图。
+- 本机 DNS 返回安全抓取器拒绝的地址，隔离服务无法抓取公网 RSS，未放宽安全策略。正常文章由脚本行为测试覆盖；生产升级后已补验真实抓取，四个订阅源各显示 3 篇文章，共 12 篇。
+- 最终源提交：`92c990939d8086a16c953007c390e4be8a34c7ce`（签名验证通过）。最终构建、提交 hook 和 `make merge-check` 均通过，根 dev 组合态复验通过且已推送。门禁与环境证据：`docs/baselines/friends-rss-status/checks-verification.json`。
+- PR：[#49 dev → main](https://github.com/SakuraLoveSmile/Sakura-Blog/pull/49)，CI run `41967397516` 全部通过（e2e 206 passed）；已合并至 `main` / `3b31b8f21849c29cd3a7edae4ef1ab7d626ef3eb`。[#50 main → release](https://github.com/SakuraLoveSmile/Sakura-Blog/pull/50) 的 CI run `41969911033` 全部通过（e2e 206 passed，含镜像预构建与发布来源检查），已合并至 `release` / `5db4dac339e23e1424108d7f45ca6702b0ee9264`。
+- 发布：签名标签 `v2.0.8` 已推送，签名和指向的 release 合并提交已核验；Docker Release run `41971796382` 成功，正式 GitHub Release 已创建且无二进制资产。固定镜像为 `ghcr.io/sakuralovesmile/sakura-blog:2.0.8`，CI 推送与服务器拉取的摘要均为 `sha256:64c3690998a60cd642a9001170e8d3256ceb7c126d0c152f83583687aa6acf4e`；OCI revision 为 `5db4dac339e23e1424108d7f45ca6702b0ee9264`，镜像 `-h` 退出码为 0。
+- 生产部署：先完成固定镜像拉取与来源核验，再停止 blog 冷备数据库，以事务仅修改 `12.rss` 和 `6.url`，核对全部 8 行其他字段不变后启动。数据库完整性检查通过；备份位于服务器 `/home/ubuntu/blog-release-v2.0.8-blg-rss01`（0700，内含 0600 的 DB/config/compose），数据库备份 SHA256 为 `508b4dd93833ef6c6708d8833b0dd60506e24d03831c8c90d135b8b3f8bb4ed0`。未操作其他服务，见 `deploy-verification.json`。
+- 线上验收：宿主 8081 和公网 `/readyz` 均为 200，容器运行固定 2.0.8 且重启次数为 0；公开设置页显示 v2.0.8，已登录的 Console「系统更新」页显示当前版本与 GHCR 最新版本均为 2.0.8，更新日志对应本次两个 PR。两条友链 API 别名结果一致，保留全部 8 条友链；长街短梦抓取成功并显示 3 篇文章；只有手工标记的 MJ's Blog 在失联区。
+- 线上浏览器：复用升级前已有缓存的标签页重新加载，实际脚本 `friends_and_posts.js?v=3fff2b5d` 与源码 SHA256 一致，更新后的 RSS 与 HTTPS 网址即时显示。桌面 1280 与手机 390 场景通过，无“未设置 RSS”，失联卡片无链接，手机无横向溢出。证据见 `production-browser-verification.json`、`production-verification.json`、`release-verification.json` 和对应截图；临时浏览器尺寸覆盖已清除。
+- 本地收尾：隔离服务已停止，17 份未跟踪的验收证据逐字节核对后保存到根工作区；确认提交已合入 dev，正常 `git worktree remove` 移除本任务工作树，`git branch -d` 删除本地任务分支。共享 resource 与其他资源保持。原有 298 个未跟踪文件哈希一致，原有 tracked 差异逐字节一致。
+- 仍属源站的问题：Torrk 的 HTTPS 证书过期、温锦瑜 RSS 内的 localhost 文章链接保持原样；本任务没有替对方站点修改证书或重写文章地址。其余未提供 RSS 的站点继续保留卡片与简介。
+- 下一步：用户体验线上 `/friends`；仅用户明确确认后改为“已验收”。

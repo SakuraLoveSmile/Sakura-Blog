@@ -1,0 +1,85 @@
+{
+  "task": "BLG-RSS01",
+  "verifiedAt": "2026-11-05T05:11:48.573417+00:00",
+  "baseURL": "https://blog.xn--fhqths51enha.cn",
+  "version": "2.0.8",
+  "readyz": 200,
+  "settingsVersionVisible": true,
+  "consoleSPA": 200,
+  "consoleAssets": [
+    "/console/assets/index-B7CR-HmI.js",
+    "/console/assets/api-A7kJ8ncB.js",
+    "/console/assets/runtime-core.esm-bundler-D3B8NDwW.js",
+    "/console/assets/pinia-DDAxLdaT.js",
+    "/console/assets/preload-helper-l0U7FUPx.js",
+    "/console/assets/index-96V2R_wW.css"
+  ],
+  "friendsAliasesEqual": true,
+  "friendCount": 8,
+  "friends": [
+    {
+      "title": "W1ndysの小屋",
+      "url": "https://blog.w1ndys.top/",
+      "unavailable": false,
+      "postCount": 3,
+      "feedFailureMarkerCount": 0
+    },
+    {
+      "title": "长街短梦",
+      "url": "https://wangyunzi.com/",
+      "unavailable": false,
+      "postCount": 3,
+      "feedFailureMarkerCount": 0
+    },
+    {
+      "title": "温锦瑜的博客",
+      "url": "https://www.wenjinyu.me/",
+      "unavailable": false,
+      "postCount": 3,
+      "feedFailureMarkerCount": 0
+    },
+    {
+      "title": "雨中的博客",
+      "url": "https://coolchong.cn/",
+      "unavailable": false,
+      "postCount": 3,
+      "feedFailureMarkerCount": 0
+    },
+    {
+      "title": "Pei你看雪 Blog",
+      "url": "https://pnkx.top/",
+      "unavailable": false,
+      "postCount": 0,
+      "feedFailureMarkerCount": 0
+    },
+    {
+      "title": "心月云",
+      "url": "https://wch666.com",
+      "unavailable": false,
+      "postCount": 0,
+      "feedFailureMarkerCount": 0
+    },
+    {
+      "title": "Torrk's Blog",
+      "url": "http://conimi.com",
+      "unavailable": false,
+      "postCount": 0,
+      "feedFailureMarkerCount": 0
+    },
+    {
+      "title": "MJ's Blog",
+      "url": "https://blog.justlovesmile.top",
+      "unavailable": true,
+      "postCount": 0,
+      "feedFailureMarkerCount": 0
+    }
+  ],
+  "friendScript": {
+    "path": "/assets/js/services/friends_and_posts.js?v=3fff2b5d",
+    "matchesSource": true,
+    "sha256": "70bf5314da098e65c9f12ac3ecae62bbcbda065acf095ad05c4bb91dc0bfec29"
+  },
+  "runtimeAssetVersionChanged": true,
+  "runtimeEntry": "/assets/js/runtime/index.js?v=3fff2b5d",
+  "knownExternalIssue": "温锦瑜订阅源内的文章链接为 localhost:1313，保持原文，不在本次范围内重写。"
+}

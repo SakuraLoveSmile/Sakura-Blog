@@ -81,13 +81,15 @@ test("settings center keeps structured forms and section save contracts split by
   assert.doesNotMatch(read("modules/settings/tabs/PostSettings.vue"), /friends\./);
 });
 
-test("appearance, menu, author, assistant and friend settings routes are wired", () => {
+test("退役的旧分段页面只保留重定向，助手与友链设置仍走 canonical 表单", () => {
   const core = read("modules/core/module.ts");
-  for (const marker of ['path: "/appearance"', 'path: "/menus"', 'path: "/authors"'])
-    assert.match(core, new RegExp(marker));
-  assert.match(read("modules/appearance/AppearanceView.vue"), /CanonicalSettingsNotice/);
-  assert.match(read("modules/appearance/MenuView.vue"), /CanonicalSettingsNotice/);
-  assert.match(read("modules/authors/AuthorsView.vue"), /CanonicalSettingsNotice/);
+  for (const page of ["appearance", "menus", "authors"]) {
+    assert.match(core, new RegExp(`redirect: \\(to\\) => retiredConsoleRedirect\\("${page}", to\\.query\\.tab\\)`));
+  }
+  // 页面组件已删除：旧地址不再是可停留的空页面，避免再次变成死胡同。
+  for (const retired of ["modules/appearance/AppearanceView.vue", "modules/appearance/MenuView.vue", "modules/authors/AuthorsView.vue"]) {
+    assert.equal(existsSync(join(ROOT, retired)), false, `${retired} should be removed`);
+  }
   assert.match(read("modules/assistant/AssistantView.vue"), /tab === "settings"/);
   assert.match(read("modules/assistant/AiSettings.vue"), /CanonicalSettingsForm/);
   assert.match(read("modules/friends/FriendList.vue"), /activeTab.*settings/);
