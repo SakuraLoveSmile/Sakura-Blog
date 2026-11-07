@@ -1,0 +1,728 @@
+{
+  "generated_at": "2026-11-07T05:30:41.955Z",
+  "checks": [
+    {
+      "name": "public link /notebooks/acceptance (desktop) opens",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "public link /notebooks/acceptance/responsive-check (desktop) opens",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "public note page shows title (desktop)",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "legacy public page is a readable 409 page (desktop)",
+      "ok": true,
+      "detail": "HTTP 409"
+    },
+    {
+      "name": "legacy console shows the migration notice (desktop)",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "legacy console hides the raw backend text until expanded (desktop)",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "public link /notebooks/acceptance (mobile) opens",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "public link /notebooks/acceptance/responsive-check (mobile) opens",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "public note page shows title (mobile)",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "legacy public page is a readable 409 page (mobile)",
+      "ok": true,
+      "detail": "HTTP 409"
+    },
+    {
+      "name": "legacy console shows the migration notice (mobile)",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "legacy console hides the raw backend text until expanded (mobile)",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "legacy public page keeps JSON for API clients",
+      "ok": true,
+      "detail": "HTTP 409"
+    },
+    {
+      "name": "mobile own controls are at least 44px tall",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "no horizontal overflow on any checked screen",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "touch_targets": {
+    "notebooks-list-desktop": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "搜索笔记本",
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "搜索",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "管理笔记",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "编辑",
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "在博客中查看",
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "上一页",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "下一页",
+          "height": 36
+        }
+      ],
+      "shared": [],
+      "overflowX": false
+    },
+    "notes-list-desktop": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "搜索笔记",
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "标签筛选",
+          "height": 40
+        },
+        {
+          "tag": "select",
+          "text": "全部状态草稿已发布",
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "筛选",
+          "height": 36
+        },
+        {
+          "tag": "a",
+          "text": "响应式检查记录（已更新）",
+          "height": 21
+        },
+        {
+          "tag": "a",
+          "text": "在博客中查看",
+          "height": 32
+        },
+        {
+          "tag": "button",
+          "text": "编辑",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "上一页",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "下一页",
+          "height": 36
+        }
+      ],
+      "shared": [],
+      "overflowX": false
+    },
+    "notebook-editor-desktop": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "例如 journal",
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "例如：工作笔记",
+          "height": 40
+        },
+        {
+          "tag": "textarea",
+          "text": "显示在博客的笔记本卡片和首页上",
+          "height": 78.5
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "height": 40
+        },
+        {
+          "tag": "summary",
+          "text": "高级：集合配置与 Blog 扩展（JSON 原文",
+          "height": 20
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 178
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 108.6
+        },
+        {
+          "tag": "button",
+          "text": "只校验",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "删除空笔记本",
+          "height": 36
+        }
+      ],
+      "shared": [
+        {
+          "tag": "input",
+          "text": "选择 icons.yml 图标或图片 URL",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "选择图标",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "从附件库选择图片",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "添加图片",
+          "height": 112
+        }
+      ],
+      "overflowX": false
+    },
+    "note-editor-desktop": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "不填时使用 Slug",
+          "height": 40
+        },
+        {
+          "tag": "input",
+          "text": "例如 first-note 或 工作/记录",
+          "height": 40
+        },
+        {
+          "tag": "textarea",
+          "text": "工作/记录\n随笔",
+          "height": 78.5
+        },
+        {
+          "tag": "summary",
+          "text": "高级：Front matter 与 Blog 扩",
+          "height": 20
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 178
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 108.6
+        },
+        {
+          "tag": "button",
+          "text": "只校验",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "删除笔记",
+          "height": 36
+        }
+      ],
+      "shared": [
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "select",
+          "text": "富文本Markdown",
+          "height": 26
+        },
+        {
+          "tag": "button",
+          "text": "查找和替换",
+          "height": 44
+        }
+      ],
+      "overflowX": false
+    },
+    "legacy-notice-desktop": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "搜索笔记本",
+          "height": 40
+        },
+        {
+          "tag": "button",
+          "text": "搜索",
+          "height": 36
+        },
+        {
+          "tag": "summary",
+          "text": "技术详情",
+          "height": 22.1
+        },
+        {
+          "tag": "button",
+          "text": "重试",
+          "height": 36
+        }
+      ],
+      "shared": [],
+      "overflowX": false
+    },
+    "notebooks-list-mobile": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "搜索笔记本",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "搜索",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "管理笔记",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "编辑",
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "text": "在博客中查看",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "上一页",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "下一页",
+          "height": 44
+        }
+      ],
+      "shared": [],
+      "overflowX": false
+    },
+    "notes-list-mobile": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "搜索笔记",
+          "height": 44
+        },
+        {
+          "tag": "input",
+          "text": "标签筛选",
+          "height": 44
+        },
+        {
+          "tag": "select",
+          "text": "全部状态草稿已发布",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "筛选",
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "text": "响应式检查记录（已更新）",
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "text": "在博客中查看",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "编辑",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "上一页",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "下一页",
+          "height": 44
+        }
+      ],
+      "shared": [],
+      "overflowX": false
+    },
+    "notebook-editor-mobile": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "例如 journal",
+          "height": 44
+        },
+        {
+          "tag": "input",
+          "text": "例如：工作笔记",
+          "height": 44
+        },
+        {
+          "tag": "textarea",
+          "text": "显示在博客的笔记本卡片和首页上",
+          "height": 78.5
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "height": 44
+        },
+        {
+          "tag": "summary",
+          "text": "高级：集合配置与 Blog 扩展（JSON 原文",
+          "height": 44
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 178
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 108.6
+        },
+        {
+          "tag": "button",
+          "text": "只校验",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "删除空笔记本",
+          "height": 44
+        }
+      ],
+      "shared": [
+        {
+          "tag": "input",
+          "text": "选择 icons.yml 图标或图片 URL",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "选择图标",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "从附件库选择图片",
+          "height": 36
+        },
+        {
+          "tag": "button",
+          "text": "添加图片",
+          "height": 88
+        }
+      ],
+      "overflowX": false
+    },
+    "note-editor-mobile": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "不填时使用 Slug",
+          "height": 44
+        },
+        {
+          "tag": "input",
+          "text": "例如 first-note 或 工作/记录",
+          "height": 44
+        },
+        {
+          "tag": "textarea",
+          "text": "工作/记录\n随笔",
+          "height": 78.5
+        },
+        {
+          "tag": "summary",
+          "text": "高级：Front matter 与 Blog 扩",
+          "height": 44
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 178
+        },
+        {
+          "tag": "textarea",
+          "text": "",
+          "height": 108.6
+        },
+        {
+          "tag": "button",
+          "text": "只校验",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "删除笔记",
+          "height": 44
+        }
+      ],
+      "shared": [
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "height": 30
+        },
+        {
+          "tag": "select",
+          "text": "富文本Markdown",
+          "height": 26
+        },
+        {
+          "tag": "button",
+          "text": "查找和替换",
+          "height": 44
+        }
+      ],
+      "overflowX": false
+    },
+    "legacy-notice-mobile": {
+      "own": [
+        {
+          "tag": "input",
+          "text": "搜索笔记本",
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "text": "搜索",
+          "height": 44
+        },
+        {
+          "tag": "summary",
+          "text": "技术详情",
+          "height": 46.1
+        },
+        {
+          "tag": "button",
+          "text": "重试",
+          "height": 44
+        }
+      ],
+      "shared": [],
+      "overflowX": false
+    }
+  },
+  "links": [
+    {
+      "href": "/notebooks/acceptance",
+      "status": 200,
+      "viewport": "desktop"
+    },
+    {
+      "href": "/notebooks/acceptance/responsive-check",
+      "status": 200,
+      "viewport": "desktop"
+    },
+    {
+      "href": "/notebooks/acceptance",
+      "status": 200,
+      "viewport": "mobile"
+    },
+    {
+      "href": "/notebooks/acceptance/responsive-check",
+      "status": 200,
+      "viewport": "mobile"
+    }
+  ]
+}

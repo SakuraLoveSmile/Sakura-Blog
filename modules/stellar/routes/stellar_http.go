@@ -31,6 +31,12 @@ func stellarError(c *gin.Context, err error) {
 	var schema *stellarv2.SchemaError
 	var model *stellarmodels.ConfigError
 	if errors.Is(err, store.ErrStellarMigrationRequired) {
+		// 浏览器直接打开前台时给可读说明，脚本与 API 客户端仍得到原来的 JSON。
+		if wantsHTML(c) {
+			c.Header("X-Robots-Tag", "noindex")
+			c.Data(http.StatusConflict, "text/html; charset=utf-8", []byte(stellarMigrationPendingHTML))
+			return
+		}
 		c.JSON(http.StatusConflict, stellarHTTPError{Error: "内容尚未迁移到 Stellar 2.0，请先审阅并执行迁移预览", Code: "stellar_migration_required"})
 		return
 	}

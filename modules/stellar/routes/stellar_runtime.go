@@ -508,12 +508,10 @@ func (s *webServer) stellarBuildSnapshot(ctx context.Context, site *tmpl.Site, i
 	return snap, nil
 }
 
+// collectionBasePath 与 Console 的“在博客中查看”共用 stellarv2.CollectionBasePath。
 func collectionBasePath(theme map[string]any, c *stellarCollection) string {
-	if p := stellarString(stellarGet(c.config, "route.path")); p != "" {
-		return stellarPath(p)
-	}
 	profile := map[string]string{"wiki": "wikiIndex", "topic": "topic", "notebook": "notebooks"}[c.profile]
-	return strings.TrimSuffix(stellarProfilePath(theme, profile), "/") + "/" + url.PathEscape(c.id)
+	return stellarv2.CollectionBasePath(theme, profile, c.id, stellarString(stellarGet(c.config, "route.path")))
 }
 func stellarHostPage(snap *stellarSnapshot, r *stellarRecord) stellarmodels.Object {
 	p := stellarmodels.Object{"_id": r.source, "source": r.source, "path": strings.TrimLeft(r.path, "/"), "permalink": tmpl.JoinSiteURL(snap.site.URL, r.path), "layout": "post", "tags": []any{}, "categories": []any{}}

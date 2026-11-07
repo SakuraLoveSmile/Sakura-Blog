@@ -37,6 +37,8 @@ type NotebookNoteResponse struct {
 	StellarVersion int       `json:"stellar_version"`
 	StellarConfig  string    `json:"stellar_config"`
 	BlogExtensions string    `json:"blog_extensions"`
+	// PublicPath 是已发布笔记在前台的路径；草稿或站点尚无 Stellar 2.0 主题快照时为空串。
+	PublicPath string `json:"public_path"`
 }
 
 type NotebookNoteListResponse struct {
@@ -89,7 +91,7 @@ func (h *Handler) listNotebookNotes(c *gin.Context) {
 		if query != "" && !strings.Contains(strings.ToLower(note.Slug+" "+note.Title+" "+note.ContentMD), query) {
 			continue
 		}
-		items = append(items, notebookNoteResponse(note))
+		items = append(items, h.noteView(notebook, note))
 	}
 	total := len(items)
 	start, end := notebookPageBounds(total, page, size)
@@ -97,9 +99,9 @@ func (h *Handler) listNotebookNotes(c *gin.Context) {
 }
 
 func (h *Handler) getNotebookNote(c *gin.Context) {
-	_, note, ok := h.requireNotebookNote(c)
+	notebook, note, ok := h.requireNotebookNote(c)
 	if ok {
-		c.JSON(http.StatusOK, notebookNoteResponse(note))
+		c.JSON(http.StatusOK, h.noteView(notebook, note))
 	}
 }
 
@@ -125,7 +127,7 @@ func (h *Handler) createNotebookNote(c *gin.Context) {
 		return
 	}
 	h.publishContentChanged()
-	c.JSON(http.StatusCreated, notebookNoteResponse(note))
+	c.JSON(http.StatusCreated, h.noteView(notebook, note))
 }
 
 func (h *Handler) updateNotebookNote(c *gin.Context) {
@@ -141,7 +143,7 @@ func (h *Handler) draftNotebookNote(c *gin.Context) {
 }
 
 func (h *Handler) saveNotebookNote(c *gin.Context, status string) {
-	_, note, ok := h.requireNotebookNote(c)
+	notebook, note, ok := h.requireNotebookNote(c)
 	if !ok {
 		return
 	}
@@ -160,7 +162,7 @@ func (h *Handler) saveNotebookNote(c *gin.Context, status string) {
 		return
 	}
 	h.publishContentChanged()
-	c.JSON(http.StatusOK, notebookNoteResponse(note))
+	c.JSON(http.StatusOK, h.noteView(notebook, note))
 }
 
 func (h *Handler) deleteNotebookNote(c *gin.Context) {
