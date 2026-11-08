@@ -199,7 +199,11 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 		if profile == "page" && stellarPathKey(path) == stellarPathKey("/"+FriendsSlug) {
 			publicData["friendsShowPosts"] = site.Pages.Friends.ShowPostsOn()
 		}
-		input.HTML, err = s.posts.RenderStellarV2WithContext(*input.Markdown, post.StellarRenderContext{Theme: in.Theme, Data: publicData, Page: config, Language: language, BlogExtensions: true, Offline: snap.offline})
+		// 预览正文按前台语义渲染：Offline 只服务于图片快照（模板/侧栏里的 Github 标签不出公网）。
+		// 预览若沿用 Offline，blog_ghrepo/blog_ghuser 会输出没有卡片样式、也没有服务脚本水合入口的
+		// data-service 空壳，编辑器里只剩一行裸链接。这里改用带 6h 缓存的真实 GitHub 客户端，
+		// API 失败时仍按前台同一套「降级为链接卡片」语义渲染。
+		input.HTML, err = s.posts.RenderStellarV2WithContext(*input.Markdown, post.StellarRenderContext{Theme: in.Theme, Data: publicData, Page: config, Language: language, BlogExtensions: true})
 		if err != nil {
 			return content.StellarPreviewOutput{}, err
 		}
