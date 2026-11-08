@@ -1,0 +1,49 @@
+{
+  "server": "blog-prod",
+  "compose": "/opt/1panel/docker/compose/blog/docker-compose.yml",
+  "before": {
+    "image": "2.0.9",
+    "image_id": "sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e",
+    "restarts": 0
+  },
+  "backup": {
+    "dir": "/home/ubuntu/blog-release-v2.1.0",
+    "file": "site-state.tar",
+    "bytes": 864378880,
+    "sha256": "d6674ddadf7840e05dcc0b3c7f847118d9fce769b6732d9101ca0b39fcd633c5",
+    "mode": "0600 ubuntu:ubuntu",
+    "dir_mode": "0700"
+  },
+  "cold_db_check": {
+    "quick_check": "ok",
+    "user_version": 0,
+    "method": "python3 sqlite3 只读连接，停服后执行"
+  },
+  "window": {
+    "start": "2026-11-06T19:38:34Z",
+    "stopped": "2026-11-06T19:38:35Z",
+    "up": "2026-11-06T19:38:44Z",
+    "ready": "2026-11-06T19:38:45Z",
+    "downtime_seconds": 10
+  },
+  "after": {
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.0",
+    "image_id": "sha256:c27e314ebc2f92f84f2dc5cde0c026017ea2c94ac65a346cf245c706cbe95d50",
+    "status": "running",
+    "restarts": 0,
+    "host_readyz": 200,
+    "config_perms_unchanged": "0600 blog:blog"
+  },
+  "public": {
+    "/readyz": 200,
+    "/": 200,
+    "/console/": 200,
+    "/uc/": 200,
+    "/settings": 200,
+    "version_text": "Blog v2.1.0"
+  },
+  "rollback": {
+    "image": "改回 ghcr.io/sakuralovesmile/sakura-blog:2.0.9 后 docker compose up -d；无数据库 schema 迁移"
+  },
+  "browser": "production-browser-verification.json"
+}

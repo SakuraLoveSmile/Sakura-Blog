@@ -243,6 +243,15 @@ export interface NotebookResponse {
   stellar_version: number /* int */;
   stellar_config: string;
   blog_extensions: string;
+  /**
+   * PublicPath 是笔记本在前台的首页路径；站点还没有 Stellar 2.0 主题快照时为空串。
+   */
+  public_path: string;
+  /**
+   * NoteCount、PublishedCount 只统计当前用户有权管理的笔记。
+   */
+  note_count: number /* int */;
+  published_count: number /* int */;
 }
 export interface NotebookListResponse {
   items: NotebookResponse[];
@@ -282,6 +291,10 @@ export interface NotebookNoteResponse {
   stellar_version: number /* int */;
   stellar_config: string;
   blog_extensions: string;
+  /**
+   * PublicPath 是已发布笔记在前台的路径；草稿或站点尚无 Stellar 2.0 主题快照时为空串。
+   */
+  public_path: string;
 }
 export interface NotebookNoteListResponse {
   items: NotebookNoteResponse[];

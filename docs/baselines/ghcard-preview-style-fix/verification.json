@@ -1,0 +1,51 @@
+{
+  "task": "BLG-20261108-01",
+  "title": "GitHub 仓库卡片（blog_ghrepo/blog_ghuser）编辑器预览与前台渲染修复",
+  "date": "2026-11-08",
+  "environment": {
+    "server": "隔离 E2E 服务 bash scripts/e2e/run-server.sh（127.0.0.1:8096，临时库）",
+    "browser": "Playwright Chromium，1280×900 / 1440×900，colorScheme=dark",
+    "flow": "Console 登录 → POST /api/v1/posts 建草稿 {% blog_ghrepo SakuraLoveSmile/F1-Desktop %} → 打开 /console/posts/edit/<slug> → 读取标签节点 iframe 内 DOM 与计算样式"
+  },
+  "symptoms": {
+    "editor_preview_before": "标签节点 iframe 内是 data-service 空壳：<div class=\"tag-plugin ghcard data-service ds-ghinfo ds-ghrepo\" data-api=\"https://api.github.com/repos/...\">，没有 ghrepo-card 结构、没有服务脚本水合入口，只剩一行裸链接；节点高度 40px。",
+    "card_styles_before": ".ghrepo-card 计算样式 height=0，border=0px，background=透明，padding=0px；预览文档 <head> 缺少 /assets/css/tag-plugins.css（该文件承载 ghrepo/ghuser 卡片布局）。",
+    "live_page_before": "前台同一篇正文的 <head> 同样没有 tag-plugins.css，卡片盒子为零高度、只剩名称裸文本。"
+  },
+  "fixes": [
+    "modules/stellar/routes/stellar_preview.go：预览正文渲染不再沿用图片快照的 Offline 语义（Offline 只用于 renderSnapshots），改用带 6h 缓存的真实 GitHub 客户端，API 失败时仍按前台「降级为链接卡片」渲染。",
+    "modules/stellar/clientconfig/build.go：v2 head 样式包补上受跟踪的 /assets/css/tag-plugins.css（插在 main-appearance-{preset}.css 之前，保持上游最终视觉层顺序）。"
+  ],
+  "after": {
+    "editor_preview": {
+      "hasCard": true,
+      "hasOfflineShell": false,
+      "cardClass": "ghrepo-card",
+      "cardRect": { "width": 274, "height": 57 },
+      "cardStyle": {
+        "background": "rgb(55, 61, 67)",
+        "borderTopWidth": "1px",
+        "borderRadius": "12px",
+        "padding": "16px"
+      },
+      "stylesheet": "/assets/css/tag-plugins.css 已出现在预览文档 head"
+    },
+    "live_page": {
+      "card_markup_unchanged": "<div class=\"tag-plugin ghcard\"><a class=\"ghcard\" ...><div class=\"ghrepo-card\">...",
+      "stylesheet": "/assets/css/tag-plugins.css 已出现在前台 head",
+      "card_style": "与预览一致（卡片盒子可见）"
+    }
+  },
+  "remaining_environment_limit": {
+    "observation": "本机 api.github.com 解析到 198.18.0.98（Clash fake-ip 段），internal/safefetch 的出站 SSRF 守卫判定为禁访地址，服务端 GitHub 请求全部失败（default transport 200 / safefetch: target host resolves to a forbidden address）。",
+    "effect": "本地卡片按前台语义降级为「仅仓库名」；线上服务器 DNS 正常时显示星标/Fork/描述/语言/许可证。",
+    "covered_by_test": "TestStellarContentPreviewRendersGitHubCards 用固定 GHClient 断言 ⭐ 42 / 🍴 7 / 语言 / 许可证 / 简介等完整卡片字段。",
+    "content_note": "用户截图里的 SakuraLoveSmile/F1-Desktop 在 GitHub 不存在（其公开仓库为 PI-Desktop），API 返回 404 时同样按设计降级。"
+  },
+  "commands": [
+    "go test ./modules/stellar/routes -run 'TestStellarContentPreview' -count=1",
+    "go test ./modules/stellar/clientconfig -count=1",
+    "VITE_E2E=1 pnpm --filter console run build && bash scripts/e2e/run-server.sh",
+    "node /tmp/verify-fix.mjs（截图与本文件 after 数据来源）"
+  ]
+}

@@ -125,7 +125,23 @@ export const wikiDocFields: StellarFormField[] = [
   { form: "title", path: "title", host: true },
   { form: "order", path: "content.collection_order", blog: true, fallback: 0 },
 ];
+// 笔记本集合：名称、描述、图标、封面与总索引顺序（上游 listing.order，数字小的在前）。
+export const notebookFields: StellarFormField[] = [
+  { form: "name", path: "name" },
+  { form: "description", path: "description", host: true },
+  { form: "icon", path: "icon" },
+  { form: "cover", path: "cover" },
+  {
+    form: "sort",
+    path: "listing.order",
+    fallback: 0,
+    // 清空输入框时移除该字段，不写入空串让上游校验失败。
+    write: (value) => (typeof value === "number" && Number.isFinite(value) ? value : undefined),
+  },
+];
 export const noteFields: StellarFormField[] = [
+  // 标题留空时移除 title，前台与列表回退到 Slug。
+  { form: "title", path: "title", write: (value) => value || undefined },
   {
     form: "tags",
     path: "tags",

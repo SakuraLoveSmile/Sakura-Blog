@@ -37,6 +37,11 @@ type NotebookResponse struct {
 	StellarVersion int       `json:"stellar_version"`
 	StellarConfig  string    `json:"stellar_config"`
 	BlogExtensions string    `json:"blog_extensions"`
+	// PublicPath 是笔记本在前台的首页路径；站点还没有 Stellar 2.0 主题快照时为空串。
+	PublicPath string `json:"public_path"`
+	// NoteCount、PublishedCount 只统计当前用户有权管理的笔记。
+	NoteCount      int `json:"note_count"`
+	PublishedCount int `json:"published_count"`
 }
 
 type NotebookListResponse struct {
@@ -64,6 +69,11 @@ func (h *Handler) listNotebooks(c *gin.Context) {
 		notebookError(c, err)
 		return
 	}
+	totals, err := h.notebookNoteTotals(c)
+	if err != nil {
+		notebookError(c, err)
+		return
+	}
 	items := []NotebookResponse{}
 	query := strings.ToLower(c.Query("q"))
 	for _, notebook := range all {
@@ -77,7 +87,7 @@ func (h *Handler) listNotebooks(c *gin.Context) {
 		if query != "" && !strings.Contains(strings.ToLower(notebook.ID+" "+notebook.Name+" "+notebook.Description), query) {
 			continue
 		}
-		items = append(items, notebookResponse(notebook))
+		items = append(items, h.notebookView(notebook, totals))
 	}
 	total := len(items)
 	start, end := notebookPageBounds(total, page, size)
@@ -87,7 +97,7 @@ func (h *Handler) listNotebooks(c *gin.Context) {
 func (h *Handler) getNotebook(c *gin.Context) {
 	notebook, ok := h.requireNotebook(c)
 	if ok {
-		c.JSON(http.StatusOK, notebookResponse(notebook))
+		h.respondNotebook(c, http.StatusOK, notebook)
 	}
 }
 
@@ -110,7 +120,7 @@ func (h *Handler) createNotebook(c *gin.Context) {
 		return
 	}
 	h.publishContentChanged()
-	c.JSON(http.StatusCreated, notebookResponse(notebook))
+	h.respondNotebook(c, http.StatusCreated, notebook)
 }
 
 func (h *Handler) updateNotebook(c *gin.Context) {
@@ -135,7 +145,7 @@ func (h *Handler) updateNotebook(c *gin.Context) {
 		return
 	}
 	h.publishContentChanged()
-	c.JSON(http.StatusOK, notebookResponse(notebook))
+	h.respondNotebook(c, http.StatusOK, notebook)
 }
 
 func (h *Handler) deleteNotebook(c *gin.Context) {
