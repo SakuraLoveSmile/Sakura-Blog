@@ -1,0 +1,16 @@
+{
+  "pr": 57,
+  "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/57",
+  "headRefOid": "f1bf77cf0b3cfa4d7f826dbcec8cb99a293d5108",
+  "mergeCommit": {
+    "oid": "c73525eb6bcafd779205536e0e8c7a64a3b41576"
+  },
+  "mergedAt": "2026-11-06T19:31:51Z",
+  "e2e": {
+    "run": 42276960917,
+    "passed": 237,
+    "flaky": 0,
+    "failed": 0,
+    "duration": "21.3m"
+  }
+}

@@ -333,6 +333,10 @@ func buildStyles(theme, defaults object, blog BlogConfig, math, preset string, s
 	if blog.Content {
 		add("/assets/css/post-footer.css", "", false)
 	}
+	// 项目补充的标签插件样式（ghrepo/ghuser 卡片、swiper、banner、navbar、frame 等）：
+	// 上游 main-*.css 只有基础 tag-plugin 规则，这份受跟踪样式必须随页面加载，
+	// 否则正文里的标签插件只剩裸文本（卡片高度为 0，BLG-20261108-01）。
+	add("/assets/css/tag-plugins.css", "", false)
 	add("/assets/css/main-appearance-"+preset+".css", "", false)
 	return styles
 }

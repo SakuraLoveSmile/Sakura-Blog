@@ -1,0 +1,15 @@
+{
+  "run": {
+    "conclusion": "success",
+    "createdAt": "2026-11-06T19:32:20Z",
+    "databaseId": 42280497014,
+    "displayTitle": "Merge pull request #57 from SakuraLoveSmile/main",
+    "event": "push",
+    "headBranch": "v2.1.0",
+    "status": "completed",
+    "updatedAt": "2026-11-06T19:36:55Z",
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42280497014"
+  },
+  "tag": "v2.1.0",
+  "releaseCommit": "c73525eb6bcafd779205536e0e8c7a64a3b41576"
+}

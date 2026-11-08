@@ -1,0 +1,19 @@
+{
+  "pr": 56,
+  "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/56",
+  "headRefOid": "082c3375ac08ae6ace15ce7c86701e2c42ab348d",
+  "mergeCommit": {
+    "oid": "f1bf77cf0b3cfa4d7f826dbcec8cb99a293d5108"
+  },
+  "mergedAt": "2026-11-06T19:07:45Z",
+  "e2e": {
+    "run": 42272018533,
+    "job": 128078704389,
+    "total": 237,
+    "passed": 236,
+    "flaky": 1,
+    "failed": 0,
+    "flakyTest": "tests/e2e/editor-writing-state.spec.ts:53 › 立即输入后保存、预览与切换编辑器包含最新正文；元数据触发离开保护",
+    "flakyRecoveredOnRetry": true
+  }
+}

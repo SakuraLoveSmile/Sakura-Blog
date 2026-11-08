@@ -283,6 +283,9 @@ func TestHostStylesFollowActiveFeaturesAndKeepAppearanceLast(t *testing.T) {
 			if counts["/assets/css/pagination.css"] != 1 {
 				t.Fatal("pagination must retain its complete navigation at narrow viewports")
 			}
+			if counts["/assets/css/tag-plugins.css"] != 1 {
+				t.Fatal("tag plugin supplements must load once on every page (ghrepo/ghuser card layout)")
+			}
 			for path, enabled := range map[string]bool{"/assets/css/search.css": tc.search, "/assets/css/post-password.css": tc.password} {
 				want := 0
 				if enabled {
@@ -314,7 +317,7 @@ func TestStylesAndUseNumber(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := []string{"/assets/css/main-minimal.css", "/assets/css/main-card-hover-spotlight.css", "/assets/css/main-card-hover-tilt.css", "/assets/css/main-lazyload-blur.css", "/assets/css/main-katex.css", "https://custom.test/katex.css", "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css", "/assets/css/highlight.css", "/assets/css/pagination.css", "/assets/css/site-footer.css", "/assets/css/main-appearance-minimal.css"}
+	expected := []string{"/assets/css/main-minimal.css", "/assets/css/main-card-hover-spotlight.css", "/assets/css/main-card-hover-tilt.css", "/assets/css/main-lazyload-blur.css", "/assets/css/main-katex.css", "https://custom.test/katex.css", "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css", "/assets/css/highlight.css", "/assets/css/pagination.css", "/assets/css/site-footer.css", "/assets/css/tag-plugins.css", "/assets/css/main-appearance-minimal.css"}
 	for i, path := range expected {
 		if bundle.Styles[i].Href != path {
 			t.Fatalf("styles[%d]: %+v", i, bundle.Styles)

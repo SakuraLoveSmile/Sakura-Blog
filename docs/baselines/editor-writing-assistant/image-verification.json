@@ -1,0 +1,23 @@
+{
+  "image": "ghcr.io/sakuralovesmile/sakura-blog",
+  "tag": "2.1.0",
+  "digest": "sha256:c27e314ebc2f92f84f2dc5cde0c026017ea2c94ac65a346cf245c706cbe95d50",
+  "tags": [
+    "2.1.0",
+    "2.1",
+    "2",
+    "latest",
+    "sha-c73525e"
+  ],
+  "previous_stable": {
+    "tag": "2.0.9",
+    "digest": "sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e",
+    "unchanged": true
+  },
+  "oci_revision": "c73525eb6bcafd779205536e0e8c7a64a3b41576",
+  "run_minus_h": {
+    "command": "docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.0 -h",
+    "exit_code": 0,
+    "host": "blog-prod"
+  }
+}

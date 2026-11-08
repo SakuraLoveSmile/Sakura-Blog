@@ -1,0 +1,65 @@
+{
+  "pr": {
+    "baseRefName": "release",
+    "headRefOid": "f1bf77cf0b3cfa4d7f826dbcec8cb99a293d5108",
+    "mergeCommit": {
+      "oid": "c73525eb6bcafd779205536e0e8c7a64a3b41576"
+    },
+    "mergedAt": "2026-11-06T19:31:51Z",
+    "number": 57,
+    "state": "MERGED",
+    "title": "发布 v2.1.0：文章编辑器 AI 写作助手",
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/57"
+  },
+  "checks": {
+    "go": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629430"
+    },
+    "lint": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629515"
+    },
+    "security": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629656"
+    },
+    "console": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629498"
+    },
+    "e2e": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629519"
+    },
+    "image": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629669"
+    },
+    "release-source": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629238"
+    },
+    "build": {
+      "state": "SUCCESS",
+      "bucket": "pass",
+      "link": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42276960917/job/128095629309"
+    }
+  },
+  "e2e": {
+    "run": 42276960917,
+    "job": 128095629519,
+    "total": 237,
+    "passed": 237,
+    "flaky": 0,
+    "failed": 0,
+    "duration": "21.3m"
+  }
+}

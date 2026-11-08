@@ -12,3 +12,5 @@
 - `after-error-1280.png`：未配置对话模型时的错误提示与「重试」，指向「设置 → AI」。
 
 所有页面与数据都来自隔离的本地 e2e 站点；流式响应由 Playwright 在页面里注入，不是真实模型的输出，也不作为生产证据。`after-*.png` 由 `tests/e2e/writing-assistant.spec.ts` 在设置 `ASSISTANT_SHOTS_DIR` 时写出，用的是最终源码；手机截图是 390×844 视口模拟，不是真机。
+- `production-post-1280.png`、`production-post-390.png`、`production-settings-version.png`：v2.1.0 上线后公网文章页与设置页（版本显示 `Blog v2.1.0`）的实测截图；对应断言见 `production-browser-verification.json`。
+- `pr56-*.json`、`pr57-*.json`、`docker-release.json`、`github-release.json`、`image-verification.json`、`production-deploy-verification.json`：两级 PR、Docker Release、镜像与生产升级证据，权威发布记录见 `docs/plans/release-v2.1.0.md`。

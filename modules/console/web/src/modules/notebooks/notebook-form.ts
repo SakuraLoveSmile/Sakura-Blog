@@ -1,9 +1,15 @@
-import type { NotebookRequest, NotebookNoteRequest } from "@blog/api-client";
+import type { NotebookRequest, NotebookNoteRequest, NotebookResponse } from "@blog/api-client";
 
 export interface NotebookForm {
   id: string;
   config: string;
   blog: string;
+  // 名称等基本字段与 config 里的对应项双向同步（useStellarForm），本身不单独提交。
+  name: string;
+  description: string;
+  icon: string;
+  cover: string;
+  sort: number;
 }
 export interface NoteForm {
   slug: string;
@@ -11,10 +17,37 @@ export interface NoteForm {
   tags: string;
   config: string;
   blog: string;
+  // 标题与 config 里的 title 双向同步（useStellarForm），本身不单独提交。
+  title: string;
 }
 
 export function newNotebookForm(): NotebookForm {
-  return { id: "", config: '{\n  "name": "新笔记本",\n  "description": ""\n}', blog: "{}" };
+  return {
+    id: "",
+    config: '{\n  "name": "新笔记本",\n  "description": ""\n}',
+    blog: "{}",
+    name: "",
+    description: "",
+    icon: "",
+    cover: "",
+    sort: 0,
+  };
+}
+type NotebookFormSource = Pick<
+  NotebookResponse,
+  "id" | "stellar_config" | "blog_extensions" | "name" | "description" | "icon" | "cover" | "sort"
+>;
+export function notebookFormFrom(data: NotebookFormSource): NotebookForm {
+  return {
+    id: data.id,
+    config: data.stellar_config,
+    blog: data.blog_extensions,
+    name: data.name,
+    description: data.description,
+    icon: data.icon,
+    cover: data.cover,
+    sort: data.sort,
+  };
 }
 export function newNoteForm(notebook: string): NoteForm {
   return {
@@ -22,6 +55,7 @@ export function newNoteForm(notebook: string): NoteForm {
     content: "",
     tags: "",
     blog: "{}",
+    title: "",
     config: JSON.stringify({ title: "新笔记", collection: { profile: "notebook", id: notebook } }, null, 2),
   };
 }
@@ -89,6 +123,24 @@ export function isMigrationError(error: unknown): boolean {
       /migration|迁移/i.test(data.data?.error ?? data.data?.detail ?? ""))
   );
 }
+// 写入失败的简短 Toast：迁移说明已经在页面顶部完整展示，这里不再重复整段后端原文。
+export function failureToast(message: string, migration: boolean): string {
+  return migration ? "需要先迁移到 Stellar 2.0，详见页面顶部的说明" : message;
+}
 export function notebookRoute(notebook: string, suffix = "notes"): string {
   return `/notebooks/${encodeURIComponent(notebook)}/${suffix}`;
+}
+export function noteStatusLabel(status: string): string {
+  return status === "published" ? "已发布" : "草稿";
+}
+export function notebookCountsLabel(item: { note_count: number; published_count: number }): string {
+  if (!item.note_count) return "还没有笔记";
+  return `${item.note_count} 篇笔记 · ${item.published_count} 篇已发布`;
+}
+// 列表里的更新时间：本地时区 YYYY-MM-DD HH:mm；无法解析时返回空串。
+export function formatNoteTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
