@@ -92,6 +92,11 @@
   vertical-align: -0.16em;
 }
 
+/* 链接卡片：rich 布局的顶部图标固定 16px，避免超长 URL 把它压成 0 宽。 */
+.md-text .link-card >.top .img {
+  flex: none;
+}
+
 /* ---------- Spec 20: swiper 轮播（对齐 _plugins/swiper.styl） ---------- */
 :root {
   --swiper-theme-color: var(--theme) !important;
