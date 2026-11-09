@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-09T10:23:24.565Z",
+  "generatedAt": "2026-11-09T10:58:53.149Z",
   "tests": {
     "projects-merged-entry": {
-      "recordedAt": "2026-11-09T10:23:24.565Z",
+      "recordedAt": "2026-11-09T10:58:53.149Z",
       "project": {
-        "id": "pw-wiki-mg-pw-wiki-merge-1794219803759",
-        "title": "合并验收项目 pw-wiki-merge-1794219803759"
+        "id": "pw-wiki-mg-pw-wiki-merge-1794221932272",
+        "title": "合并验收项目 pw-wiki-merge-1794221932272"
       },
       "sidebar": {
         "links": 1,
@@ -13,7 +13,7 @@
         "childItems": 0
       },
       "landingUrl": "/console/wiki/projects",
-      "docsUrl": "/console/wiki/pw-wiki-mg-pw-wiki-merge-1794219803759/docs",
+      "docsUrl": "/console/wiki/pw-wiki-mg-pw-wiki-merge-1794221932272/docs",
       "missingProjectEmptyState": true,
       "viewportsChecked": [
         1280,

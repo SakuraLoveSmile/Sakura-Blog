@@ -504,6 +504,31 @@ test("项目管理：侧栏单入口、/wiki 落项目列表、项目行进入�
   }
   expect(overflow, "项目管理两页在两个视口下都不得整页横向溢出").toEqual([]);
 
+  // 8) 长 slug 的项目行在 390px 下不得把「N 篇文档」挤成逐字竖排。
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/console/wiki/projects");
+  // 等列表真的加载出至少一行再量，避免把“还没渲染”误判成“没有折行”。
+  await expect(page.locator("main.content div.group").filter({ hasText: `合并验收项目 ${token}` }).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  const docSpanHeights = await page.locator("main.content div.group").evaluateAll((rows) =>
+    rows
+      .map((row) => {
+        const meta = row.querySelector("div.mt-0\\.5");
+        const docSpan = meta?.querySelector("span:last-child");
+        if (!docSpan || !meta?.textContent?.includes("篇文档")) return null;
+        return {
+          text: docSpan.textContent?.trim() ?? "",
+          h: Math.round(docSpan.getBoundingClientRect().height),
+        };
+      })
+      .filter((item): item is { text: string; h: number } => item !== null),
+  );
+  expect(docSpanHeights.length, "至少应有一个带「篇文档」的项目行").toBeGreaterThan(0);
+  for (const item of docSpanHeights) {
+    expect(item.h, `「${item.text}」被折行成竖排（高度 ${item.h}px，单行应 ≤ 20px）`).toBeLessThanOrEqual(20);
+  }
+
   recordEvidence(
     "projects-merged-entry",
     {

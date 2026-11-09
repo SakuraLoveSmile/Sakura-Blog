@@ -379,10 +379,11 @@ onMounted(() => loadProjects());
                   </span>
                   <Icon v-if="project.pin" icon="ri:pushpin-fill" class="shrink-0 text-xs text-primary" />
                 </div>
-                <div class="mt-0.5 flex items-center gap-2 text-xs text-text-quaternary">
-                  <span class="font-mono">/{{ project.id }}</span>
-                  <span>·</span>
-                  <span>{{ project.doc_count || 0 }} 篇文档</span>
+                <!-- slug 可能很长：让它省略号截断，项目 id 放 title；文档数始终单行不折字。 -->
+                <div class="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-text-quaternary">
+                  <span class="truncate font-mono" :title="project.id">/{{ project.id }}</span>
+                  <span class="shrink-0">·</span>
+                  <span class="shrink-0 whitespace-nowrap">{{ project.doc_count || 0 }} 篇文档</span>
                 </div>
               </div>
 
