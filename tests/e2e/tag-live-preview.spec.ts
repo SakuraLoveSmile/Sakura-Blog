@@ -1198,23 +1198,33 @@ test.describe("BLG-20261031-03 标签实时预览", () => {
     expect(diag.pageErrors).toEqual([]);
   });
 
-  // 系统深色偏好（站点 appearance 为 auto）时，预览表面必须是「深底 + 浅字」，
-  // 而不是把深色 Console 透上来。Playwright 默认模拟浅色，需显式 emulateMedia。
-  test("可见性补充：深色系统偏好下五处 tabs 表面为不透明深底且文本可读", async ({ page }) => {
+  // 系统深色偏好（站点 appearance 为 auto）时，预览必须是「深底 + 浅字」且文本可读。
+  // BLG-20261109-03 起，文章编辑器 NodeView 在站点与 Console 同色系时不再铺站点表面，
+  // 此时按 Console 实际底色验对比度；其余独立预览（Studio/插入面板/分屏/顶栏气泡）仍必须自带不透明表面。
+  // Playwright 默认模拟浅色，需显式 emulateMedia。
+  test("可见性补充：深色系统偏好下五处 tabs 为深底浅字且文本可读", async ({ page }) => {
     test.setTimeout(240_000);
     const diag = watch(page);
     await page.emulateMedia({ colorScheme: "dark" });
     await login(page);
     const results: Record<string, unknown>[] = [];
 
-    async function probe(label: string, iframe: Locator) {
+    async function probe(label: string, iframe: Locator, options: { allowTransparent?: boolean } = {}) {
       const data = await measurePreviewTabs(iframe);
-      for (const key of ["html", "body"] as const) {
-        expect(parseColor(data[key])[3], `${label} ${key} 深色背景必须不透明（实际 ${data[key]}）`).toBe(1);
+      const opaque = [data.body, data.html].some((bg) => parseColor(bg)[3] === 1);
+      let background = data.background;
+      let backgroundLuminance = data.backgroundLuminance;
+      if (!opaque) {
+        expect(options.allowTransparent, `${label} 表面必须不透明（实际 html=${data.html} body=${data.body}）`).toBe(true);
+        // 同色系站点在文章 NodeView 里保持透明：按宿主 Console 的实际底色验可读性。
+        background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+        backgroundLuminance = luminance(parseColor(background));
       }
-      expect(data.backgroundLuminance, `${label} 深色主题表面应为深底（实际 ${data.background}）`).toBeLessThan(0.1);
-      expect(data.ratio, `${label} 深色文本对比度 ${data.ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
-      results.push({ label, ...data });
+      expect(parseColor(background)[3], `${label} 生效底色必须不透明（实际 ${background}）`).toBe(1);
+      expect(backgroundLuminance, `${label} 深色场景应为深底（实际 ${background}）`).toBeLessThan(0.1);
+      const ratio = contrastRatio(data.textColor, background);
+      expect(ratio, `${label} 深色文本对比度 ${ratio.toFixed(2)}:1（底色 ${background}）`).toBeGreaterThanOrEqual(4.5);
+      results.push({ label, ...data, effectiveBackground: background, ratio });
       await warmupPaint(iframe, label === "toolbar" ? "page" : "element");
       return data;
     }
@@ -1250,7 +1260,7 @@ test.describe("BLG-20261031-03 标签实时预览", () => {
     await openPostEditor(page, slug);
     const nodeIframe = page.locator(".stellar-tag-node iframe").first();
     await expect(nodeIframe).toBeVisible({ timeout: 30_000 });
-    await probe("nodeview", nodeIframe);
+    await probe("nodeview", nodeIframe, { allowTransparent: true });
     await page.screenshot({ path: `${BASELINE_DIR}/final-dark-nodeview-tabs.png` });
 
     await page.goto("/console/pages/edit/new");

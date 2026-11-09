@@ -23,6 +23,8 @@ import {
   previewInvalidNoticeVisible,
   previewSurfaceColor,
   previewSurfaceFallback,
+  surfaceLuminance,
+  surfaceSchemeOf,
   previewWriteAllowed,
   PREVIEW_WRITE_PATHS,
   MIN_PREVIEW_HEIGHT,
@@ -434,11 +436,17 @@ function surfaceScriptOf(document: string): string {
   return match[1];
 }
 
-function runSurfaceScript(options: { theme?: string | null; prefersDark?: boolean; background?: string }) {
+function runSurfaceScript(options: { theme?: string | null; prefersDark?: boolean; background?: string; hostBackground?: string }) {
   const styleSink = () => {
-    const style: Record<string, string> & { setProperty?: (name: string, value: string) => void } = {};
+    const style: Record<string, string> & {
+      setProperty?: (name: string, value: string) => void;
+      removeProperty?: (name: string) => void;
+    } = {};
     style.setProperty = (name: string, value: string) => {
       style[name] = value;
+    };
+    style.removeProperty = (name: string) => {
+      delete style[name];
     };
     return style;
   };
@@ -478,7 +486,11 @@ function runSurfaceScript(options: { theme?: string | null; prefersDark?: boolea
     console,
   };
   runInNewContext(surfaceScriptOf(
-    preparePreviewDocument('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>', null),
+    preparePreviewDocument(
+      '<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>',
+      null,
+      { surface: "standalone", hostBackground: options.hostBackground },
+    ),
   ), sandbox);
   return { html: html.style["background-color"], body: body.style["background-color"] };
 }
@@ -504,6 +516,70 @@ test(`${SURFACE} · 表面回退按主题/系统偏好，透明变量合成到�
   assert.equal(systemDark.html, "rgb(28, 28, 30)");
   const forcedLight = runSurfaceScript({ theme: "light", prefersDark: true, background: "" });
   assert.equal(forcedLight.html, "rgb(255, 255, 255)");
+});
+
+test(`${SURFACE} · 宿主底色同色系时不铺站点表面，异色系保留不透明表面`, () => {
+  const serverDoc =
+    '<!doctype html><html><head><meta charset="utf-8"><style>html,body{background:transparent}</style></head><body></body></html>';
+
+  // 宿主深色（Console）：首屏只给浅色站点兜底，深色站点由运行时保持透明。
+  const darkHost = preparePreviewDocument(serverDoc, null, { surface: "standalone", hostBackground: "rgb(10, 10, 11)" });
+  assert.ok(darkHost.includes('html[data-theme="light"]'), "深色宿主只给浅色主题兜底");
+  assert.ok(!darkHost.includes('html[data-theme="dark"]'), "深色宿主不再给深色主题铺底");
+  assert.ok(!darkHost.includes("html, body { background-color"), "深色宿主不再无条件铺满表面");
+  assert.ok(darkHost.includes("prefers-color-scheme: light"), "浅色系统偏好的自动主题仍需兜底");
+
+  // 宿主浅色：只给深色站点铺深底。
+  const lightHost = preparePreviewDocument(serverDoc, null, { surface: "standalone", hostBackground: "rgb(255, 255, 255)" });
+  assert.ok(lightHost.includes('html[data-theme="dark"]'), "浅色宿主给深色主题铺底");
+  assert.ok(!lightHost.includes('html[data-theme="light"]'), "浅色宿主不给浅色主题铺底");
+  assert.ok(lightHost.includes("prefers-color-scheme: dark"));
+
+  // 无法解析的宿主色回退旧行为（任何主题都铺底）。
+  assert.equal(
+    preparePreviewDocument(serverDoc, null, { surface: "standalone", hostBackground: "not-a-color" }),
+    preparePreviewDocument(serverDoc, null, {}),
+    "非法宿主色必须回退旧行为",
+  );
+
+  assert.equal(surfaceSchemeOf("rgb(10, 10, 11)"), "dark");
+  assert.equal(surfaceSchemeOf("rgba(249, 250, 251, 1)"), "light");
+  assert.equal(surfaceSchemeOf("#ffffff"), "light");
+  assert.equal(surfaceSchemeOf("#0a0a0b"), "dark");
+  assert.equal(surfaceSchemeOf("transparent"), null);
+  assert.equal(surfaceLuminance("#000000"), 0);
+  assert.ok((surfaceLuminance("#ffffff") ?? 0) > 0.9);
+
+  // 真实执行注入脚本：同色系保持透明，异色系落成不透明 rgb。
+  const darkOnDark = runSurfaceScript({
+    theme: "dark",
+    prefersDark: false,
+    background: "rgb(34, 33, 29)",
+    hostBackground: "rgb(10, 10, 11)",
+  });
+  assert.equal(darkOnDark.html, undefined, "深色站点 + 深色宿主必须保持透明");
+  assert.equal(darkOnDark.body, undefined);
+  const lightOnDark = runSurfaceScript({
+    theme: "light",
+    prefersDark: false,
+    background: "rgb(249, 250, 251)",
+    hostBackground: "rgb(10, 10, 11)",
+  });
+  assert.equal(lightOnDark.html, "rgb(249, 250, 251)", "浅色站点 + 深色宿主继续铺浅底");
+  const darkOnLight = runSurfaceScript({
+    theme: "dark",
+    prefersDark: true,
+    background: "rgb(28, 28, 30)",
+    hostBackground: "rgb(249, 250, 251)",
+  });
+  assert.equal(darkOnLight.html, "rgb(28, 28, 30)", "深色站点 + 浅色宿主继续铺深底");
+  const lightOnLight = runSurfaceScript({
+    theme: "light",
+    prefersDark: false,
+    background: "rgb(249, 250, 251)",
+    hostBackground: "rgb(255, 255, 255)",
+  });
+  assert.equal(lightOnLight.html, undefined, "浅色站点 + 浅色宿主必须保持透明");
 });
 
 // ---------- 写入守卫 / 存储回退 profile 收窄 ----------

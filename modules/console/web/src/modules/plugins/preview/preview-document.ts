@@ -168,25 +168,108 @@ export function previewSurfaceColor(
   return `rgb(${Math.round(base[0])}, ${Math.round(base[1])}, ${Math.round(base[2])})`;
 }
 
-/** 首屏 CSS 兜底：即使运行时脚本尚未执行，html/body 也不会透出 Console 深色。 */
-function previewSurfaceStyle(): string {
-  return `<style data-preview-surface="1">
+/**
+ * 把 CSS 颜色换算成相对亮度（WCAG）；无法解析返回 null。
+ * 解析与亮度计算内嵌在函数内（函数声明，不使用外层变量），.toString() 注入 iframe 后可独立运行。
+ */
+export function surfaceLuminance(color: string | null | undefined): number | null {
+  function parse(value: string | null | undefined): [number, number, number] | null {
+    const text = String(value || "").trim();
+    const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(text);
+    if (hex) {
+      let digits = hex[1];
+      if (digits.length === 3) digits = digits[0] + digits[0] + digits[1] + digits[1] + digits[2] + digits[2];
+      return [parseInt(digits.slice(0, 2), 16), parseInt(digits.slice(2, 4), 16), parseInt(digits.slice(4, 6), 16)];
+    }
+    const match = /^rgba?\(\s*([^)]+)\)$/i.exec(text);
+    if (!match) return null;
+    const tokens = match[1]
+      .replace(/\//g, " ")
+      .split(/[\s,]+/)
+      .filter(Boolean);
+    if (tokens.length < 3) return null;
+    const values = tokens.slice(0, 3).map((item) => Number(item));
+    for (const item of values) {
+      if (!Number.isFinite(item)) return null;
+    }
+    return [
+      Math.min(255, Math.max(0, values[0])),
+      Math.min(255, Math.max(0, values[1])),
+      Math.min(255, Math.max(0, values[2])),
+    ];
+  }
+  const channels = parse(color);
+  if (!channels) return null;
+  const linear = (value: number) => {
+    const unit = value / 255;
+    return unit <= 0.03928 ? unit / 12.92 : Math.pow((unit + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linear(channels[0]) + 0.7152 * linear(channels[1]) + 0.0722 * linear(channels[2]);
+}
+
+/**
+ * 按相对亮度把宿主底色归入 light/dark；无法解析返回 null。
+ * 只用于首屏 CSS 兜底选择"哪种站点主题需要铺表面"；运行时以实际颜色对比度为准。
+ */
+export function surfaceSchemeOf(color: string | null | undefined): "light" | "dark" | null {
+  const luminance = surfaceLuminance(color);
+  if (luminance === null) return null;
+  return luminance < 0.35 ? "dark" : "light";
+}
+
+/** 站点底色与宿主底色对比度低于该值时视为同色系，不铺表面（见 previewSurfaceScript）。 */
+export const PREVIEW_SURFACE_MATCH_CONTRAST = 2;
+
+/**
+ * 首屏 CSS 兜底：即使运行时脚本尚未执行，html/body 也不会透出 Console 深色。
+ * 给出宿主底色时只在"站点明暗与宿主相反"的文档上铺色；同色系不铺，避免编辑器里出现整块背景。
+ * host 为 null 时保持旧行为（任何主题都铺不透明表面）。
+ */
+function previewSurfaceStyle(host: { color: string; scheme: "light" | "dark" } | null): string {
+  if (!host) {
+    return `<style data-preview-surface="1">
 html, body { background-color: var(--background, ${PREVIEW_SURFACE_LIGHT}) !important; }
 html[data-theme="dark"], html[data-theme="dark"] body { background-color: var(--background, ${PREVIEW_SURFACE_DARK}) !important; }
 @media (prefers-color-scheme: dark) {
   html:not([data-theme="light"]), html:not([data-theme="light"]) body { background-color: var(--background, ${PREVIEW_SURFACE_DARK}) !important; }
 }
 </style>`;
+  }
+  // 宿主深色时只给浅色站点铺浅底；宿主浅色时只给深色站点铺深底。
+  const site = host.scheme === "dark" ? "light" : "dark";
+  const fallback = site === "dark" ? PREVIEW_SURFACE_DARK : PREVIEW_SURFACE_LIGHT;
+  const excluded = site === "dark" ? "light" : "dark";
+  return `<style data-preview-surface="1">
+html[data-theme="${site}"], html[data-theme="${site}"] body { background-color: var(--background, ${fallback}) !important; }
+@media (prefers-color-scheme: ${site}) {
+  html:not([data-theme="${excluded}"]), html:not([data-theme="${excluded}"]) body { background-color: var(--background, ${fallback}) !important; }
+}
+</style>`;
 }
 
-/** 运行时读取文档主题变量并落成不透明 rgb；变量透明/缺失时按主题回退。 */
-function previewSurfaceScript(): string {
+/**
+ * 运行时读取文档主题变量并落成不透明 rgb；变量透明/缺失时按主题回退。
+ * 给出宿主底色时先比较两者对比度：同色系（< PREVIEW_SURFACE_MATCH_CONTRAST）保持透明，
+ * 让宿主编辑器自己的底色透出来，不再在卡片周围形成整块站点背景。
+ */
+function previewSurfaceScript(host: { color: string; scheme: "light" | "dark" } | null): string {
+  const hostLiteral = host ? JSON.stringify(host.color) : "null";
   return `<script data-preview-surface-script="1">
 (function () {
   // 源码经 esbuild keepNames 时会插入 __name(fn, "name")；iframe 里没有该辅助，提供空实现。
   var __name = function (fn) { return fn; };
   var fallbackFor = ${previewSurfaceFallback.toString()};
   var colorFor = ${previewSurfaceColor.toString()};
+  var luminanceFor = ${surfaceLuminance.toString()};
+  var hostColor = ${hostLiteral};
+  var matchContrast = ${PREVIEW_SURFACE_MATCH_CONTRAST};
+  function contrastWithHost(color) {
+    if (!hostColor) return matchContrast;
+    var site = luminanceFor(color);
+    var host = luminanceFor(hostColor);
+    if (site === null || host === null) return matchContrast;
+    return (Math.max(site, host) + 0.05) / (Math.min(site, host) + 0.05);
+  }
   function resolveColor(value) {
     if (!value) return '';
     try {
@@ -220,9 +303,13 @@ function previewSurfaceScript(): string {
     var media = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
     var fallback = fallbackFor(theme, Boolean(media && media.matches));
     var color = colorFor(candidates(), fallback);
+    var paint = contrastWithHost(color) >= matchContrast;
     [document.documentElement, document.body].forEach(function (el) {
       if (!el || !el.style) return;
-      try { el.style.setProperty('background-color', color, 'important'); } catch (error) {}
+      try {
+        if (paint) el.style.setProperty('background-color', color, 'important');
+        else el.style.removeProperty('background-color');
+      } catch (error) {}
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
@@ -261,11 +348,16 @@ function insertBeforeClosingTag(document: string, tag: string, fragment: string)
 /**
  * 注入预览表面（不透明背景）。放在 </head> 前以确保晚于站点样式表，
  * 运行时脚本放在 </body> 前读取已计算的主题变量。幂等，纯函数。
+ *
+ * hostBackground 是宿主编辑器的实际底色；给出时只在站点底色与它明显不同色系时铺表面，
+ * 同色系保持透明（编辑器里不再出现整块主题背景）。不给时保持旧行为。
  */
-export function injectPreviewSurface(document: string): string {
+export function injectPreviewSurface(document: string, hostBackground?: string): string {
   if (!document || document.includes('data-preview-surface="1"')) return document;
-  const withStyle = insertBeforeClosingTag(document, "head", previewSurfaceStyle());
-  return insertBeforeClosingTag(withStyle, "body", previewSurfaceScript());
+  const scheme = surfaceSchemeOf(hostBackground);
+  const host = scheme ? { color: previewSurfaceColor([hostBackground], scheme === "dark" ? PREVIEW_SURFACE_DARK : PREVIEW_SURFACE_LIGHT), scheme } : null;
+  const withStyle = insertBeforeClosingTag(document, "head", previewSurfaceStyle(host));
+  return insertBeforeClosingTag(withStyle, "body", previewSurfaceScript(host));
 }
 
 /**
@@ -409,6 +501,8 @@ export function injectPreviewWriteGuard(document: string): string {
 
 interface PreviewDocumentOptions {
   surface?: "standalone" | "embedded";
+  /** 宿主编辑区底色；standalone 时用于判断是否真的需要铺站点表面。 */
+  hostBackground?: string;
 }
 
 /**
@@ -420,7 +514,8 @@ export function preparePreviewDocument(
   profile?: string | null,
   options: PreviewDocumentOptions = {},
 ): string {
-  const surfaced = options.surface === "embedded" ? document : injectPreviewSurface(document);
+  const surfaced =
+    options.surface === "embedded" ? document : injectPreviewSurface(document, options.hostBackground);
   const guarded = injectPreviewWriteGuard(surfaced);
   return profile === "component-library" ? injectPreviewStorageFallback(guarded) : guarded;
 }

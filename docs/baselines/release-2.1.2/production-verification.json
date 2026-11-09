@@ -1,0 +1,73 @@
+{
+  "task": "BLG-20261109-02",
+  "version": "v2.1.2",
+  "date": "2026-11-09",
+  "server": {
+    "host": "blog-prod（124.220.55.80，Ubuntu）",
+    "compose_dir": "/opt/1panel/docker/compose/blog",
+    "host_port": 8081
+  },
+  "before": {
+    "compose_image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.1",
+    "container": "b1b5fc6ec21e",
+    "image_id": "sha256:2e6dbe0a0ea0d74056234244ce4aac3bab859d4a392005bd8f25398b436da4c1",
+    "restarts": 0,
+    "status": "Up 4 hours",
+    "readyz_host": 200,
+    "disk": "50G 中 44G 已用，剩余 3.1G（94%）",
+    "site_version": "2.1.1"
+  },
+  "backup": {
+    "dir": "/home/ubuntu/blog-pre-v2.1.2（0700，ubuntu:ubuntu）",
+    "site_state": "site-state-pre-2.1.2.tar.gz（2,988,874 bytes，含 config/、content/、data/blog.db）",
+    "site_state_sha256": "bbb4e3c0c480a712019573d3b6069d7c43cde50eb695db15c767930679b20bef",
+    "compose_backup": "docker-compose.yml.before-2.1.2",
+    "before_facts": "before.txt（镜像 / 容器 / imageID / restarts / readyz / 磁盘 / 站点版本）"
+  },
+  "upgrade": {
+    "command": "compose image 行 2.1.1 → 2.1.2；镜像预拉取后 docker compose pull && docker compose up -d",
+    "down_at": "2026-11-09T10:00:30Z",
+    "up_at": "2026-11-09T10:00:34Z",
+    "downtime": "约 4 秒（无 schema 迁移）"
+  },
+  "after": {
+    "container": "14352c0a9faf",
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.2",
+    "image_id": "sha256:ad5c0840a8f163ee030cd3f575b3b386f8fc529659f2a4c035a0ebc8967d6e42",
+    "version_label": "2.1.2",
+    "restarts": 0,
+    "status": "running",
+    "readyz_host": 200
+  },
+  "public_acceptance": {
+    "time": "2026-11-09T10:02:00Z",
+    "endpoints": { "/": 200, "/readyz": 200, "/console/": 200, "/uc/": 200, "/settings": 200 },
+    "settings_version": "v2.1.2",
+    "browser": "Playwright Chromium 1.62.1，1280×900 DPR2，dark",
+    "about_banner": {
+      "url": "https://blog.xn--fhqths51enha.cn/about",
+      "title": "我的博客",
+      "subtitle": "记录技术成长",
+      "literal_params": "无（发布前显示 title:/subtitle: 字面量）",
+      "screenshot": "production-about-banner.png"
+    },
+    "link_cards": {
+      "url": "https://blog.xn--fhqths51enha.cn/post/anime-collect",
+      "cards": 2,
+      "layout": "link-card rich",
+      "desc_span": "无（不再渲染 true 与空描述行）",
+      "icon_width": "16px（长 URL 卡片与短 URL 卡片一致）",
+      "console_errors": 0,
+      "screenshot": "production-link-card.png"
+    }
+  },
+  "rollback": {
+    "image": "compose image 改回 ghcr.io/sakuralovesmile/sakura-blog:2.1.1（本机仍有该镜像，digest sha256:2e6dbe0a…436da4c1）→ docker compose up -d",
+    "data": "如需整站回滚：停容器后以 /home/ubuntu/blog-pre-v2.1.2/site-state-pre-2.1.2.tar.gz 恢复 config/、content/、data/blog.db 再启动",
+    "note": "本次无数据库 schema 迁移，正常回退只需切换镜像"
+  },
+  "not_verified": [
+    "未用生产账号登录 Console 做写操作",
+    "未在手机真机复核；390px 视口已由发布前浏览器验收覆盖（卡片尺寸与换行）"
+  ]
+}
