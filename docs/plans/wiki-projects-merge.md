@@ -1,11 +1,11 @@
 # BLG-20261109-04：Console「文库 + 项目管理」合并为单一「项目管理」入口
 
 - 项目 / 任务编号：Blog / BLG-20261109-04
-- 状态：待体验（本地实现与机械/浏览器验证通过，等用户体验确认）
+- 状态：待体验（已合入本地 `dev` `057e4ca1`；机械验证与浏览器验收通过，等用户体验确认）
 - 创建日期（Asia/Taipei）：2026-11-09
 - 权威记录：本文件；截图与浏览器证据见 [docs/baselines/wiki-projects-merge/](../baselines/wiki-projects-merge/)
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Blog`（根 `dev`，用户原有未提交的文档改动保留、未纳入本次提交）/ `/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261109-refactor-BLG-20261109-04-wiki-projects-merge`
-- 基线 / 分支 / 合入目标：`dev` `1529867b` / `codex/refactor/20261109-BLG-20261109-04-wiki-projects-merge` / 本地 `dev`
+- 基线 / 分支 / 合入目标：`dev` `9f8f1f9d`（rebase 基线）/ `codex/refactor/20261109-BLG-20261109-04-wiki-projects-merge`（提交 `057e4ca1`）/ 已合入本地 `dev`
 - 运行资源：本机 Playwright 独立 8096 服务与隔离数据库（`.tmp/e2e-server.*`，测试结束即停止）
 
 ## 目标与范围
@@ -52,7 +52,7 @@
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| （本次）`refactor: 合并 Console 文库与项目管理为单一入口` | 侧栏两个入口合为一个「项目管理」；`/wiki` 重定向到项目列表；文档工作台改为 `/wiki/:project/docs` 并去掉项目下拉；新增项目不存在空态 | `make test`、`make build`、两个 Playwright spec | 待 `make merge-check` 合入本地 `dev`；未推送、未发布 |
+| `057e4ca1` `refactor: 合并 Console 文库与项目管理为单一入口` | 侧栏两个入口合为一个「项目管理」；`/wiki` 重定向到项目列表；文档工作台改为 `/wiki/:project/docs` 并去掉项目下拉；新增项目不存在空态 | `make test`、`make build`、两个 Playwright spec、`make merge-check`（合入前后各跑一次全量门禁） | 已合入本地 `dev`（`057e4ca1`）；未推送、未发布 |
 
 ## 交付与恢复
 
