@@ -22,13 +22,8 @@ export default definePlugin({
     { path: "/topics", label: "专栏", icon: "ri:book-shelf-line", group: "内容" },
     { path: "/notebooks", label: "笔记本", icon: "ri:sticky-note-line", group: "内容" },
     { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容" },
-    {
-      path: "/wiki",
-      label: "文库",
-      icon: "ri:book-2-line",
-      group: "内容",
-      children: [{ path: "/wiki/projects", label: "项目管理", icon: "ri:stack-line", group: "内容" }],
-    },
+    // 文库与项目管理合并为单一入口：项目是主页，文档是项目下的二级内容。
+    { path: "/wiki", label: "项目管理", icon: "ri:stack-line", group: "内容" },
     { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },
     { path: "/comment-users", label: "评论用户", icon: "ri:user-community-line", group: "互动", permissions: admin },
     { path: "/notifications", label: "通知中心", icon: "ri:notification-3-line", group: "互动" },
@@ -116,8 +111,15 @@ export default definePlugin({
         component: () => import("@/modules/pages/PageEditor.vue"),
         meta: { hideFooter: true },
       },
-      { path: "wiki", name: "Wiki", component: () => import("@/modules/wiki/WikiDocsView.vue") },
+      // 项目管理：项目列表是落地页，文档工作台挂在项目作用域下（/wiki/<project>/docs）。
+      // 侧栏与旧书签都走 /wiki，统一重定向到项目列表。
+      { path: "wiki", redirect: "/wiki/projects" },
       { path: "wiki/projects", name: "WikiProjects", component: () => import("@/modules/wiki/WikiProjectsView.vue") },
+      {
+        path: "wiki/:project/docs",
+        name: "WikiDocs",
+        component: () => import("@/modules/wiki/WikiDocsView.vue"),
+      },
       { path: "taxonomy", name: "Taxonomy", component: () => import("@/modules/taxonomy/TaxonomyList.vue") },
       { path: "friends", name: "Friends", component: () => import("@/modules/friends/FriendList.vue") },
       {
