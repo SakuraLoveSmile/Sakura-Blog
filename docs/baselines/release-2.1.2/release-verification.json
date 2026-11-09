@@ -1,0 +1,69 @@
+{
+  "task": "BLG-20261109-02",
+  "version": "v2.1.2",
+  "date": "2026-11-09",
+  "release_type": "正式版 patch（v2.1.1 → v2.1.2）",
+  "content": [
+    "Stellar v2 兼容旧命名写法（banner title:/subtitle:、quot/tip text:、frame device:），官方位置语法不变",
+    "link 的 desc:true/false 按官方文档当描述区开关（true=rich、false=plain），不再输出字面量；v1 renderer 同步",
+    "rich link 卡片顶部图标固定 16px，超长 URL 不再压成 0 宽",
+    "基线：docs/baselines/card-render-fixes/"
+  ],
+  "promotion": {
+    "sync_main_into_dev": {
+      "branch": "codex/chore/20261109-BLG-20261109-02-sync-main",
+      "merge_commit": "8cccbe77",
+      "note": "main 上 4 条 dev 缺少的合并历史提交，同步后 dev..origin/main = 0"
+    },
+    "fix_merge": {
+      "branch": "codex/fix/20261109-BLG-20261109-02-card-render-fixes",
+      "fix_commit": "8bca9233",
+      "merge_commit": "8a96ec23",
+      "gate": "worktree make test + 合入 dev 后组合态 make test 均通过"
+    },
+    "prs": [
+      { "pr": 64, "direction": "dev→main", "title": "发布 v2.1.2：卡片渲染修复（banner 旧参数、link desc 开关、超长 URL 图标）", "checks": "go/lint/security/console/e2e/build 全绿", "merge_commit": "026ffb22" },
+      { "pr": 65, "direction": "sync release→main", "title": "chore: 同步 release 合并历史到 main（v2.1.2）", "note": "git diff --stat origin/main HEAD 为空（内容零差异）", "merge_commit": "d9ca4d42" },
+      { "pr": 66, "direction": "main→release", "title": "release: 发布 v2.1.2", "checks": "go/lint/security/console/e2e/build/release-source/image 全绿", "merge_commit": "f0268369" }
+    ],
+    "tag": {
+      "name": "v2.1.2",
+      "signed": true,
+      "signing_key": "979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989",
+      "target": "f0268369a14fe592b932ced7815e2dad4ed77b1c",
+      "verify": "git tag -v v2.1.2 通过"
+    }
+  },
+  "docker_release": {
+    "run_id": 42596371051,
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42596371051",
+    "started": "2026-11-09T09:49:47Z",
+    "conclusion": "success",
+    "github_release": {
+      "tag": "v2.1.2",
+      "draft": false,
+      "prerelease": false,
+      "target_commitish": "main",
+      "created_at": "2026-11-09T09:48:42Z",
+      "notes_length": 458,
+      "releases_latest": "v2.1.2"
+    }
+  },
+  "image": {
+    "name": "ghcr.io/sakuralovesmile/sakura-blog",
+    "tag": "2.1.2",
+    "digest": "sha256:ad5c0840a8f163ee030cd3f575b3b386f8fc529659f2a4c035a0ebc8967d6e42",
+    "labels": {
+      "org.opencontainers.image.version": "2.1.2",
+      "org.opencontainers.image.revision": "f0268369a14fe592b932ced7815e2dad4ed77b1c",
+      "org.opencontainers.image.created": "2026-11-09T09:50:10.370Z"
+    },
+    "alias_tags_same_manifest": ["2.1", "2", "latest"],
+    "sha_tag": "sha-f026836",
+    "unchanged_baseline": "2.1.1 digest sha256:2e6dbe0a…436da4c1 未移动",
+    "binary_start_check": "服务器 docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.2 -h 退出码 0"
+  },
+  "not_verified": [
+    "Console 登录态「检查更新」未实际点击；版本来源 GHCR tag 与 GitHub Release 均已为 2.1.2"
+  ]
+}
