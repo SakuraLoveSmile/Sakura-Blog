@@ -305,7 +305,7 @@ func (r *shortcodeV2Renderer) expand(body string) string {
 			r.fail(name, 1+strings.Count(body[:l[0]], "\n"), e.Error())
 			continue
 		}
-		args := v2MapArgs(tokens, entry.Params)
+		args := v2MapArgs(tokens, entry.Params, v2LegacyNamedParams(name)...)
 		value := ""
 		if blog {
 			value = r.renderBlog(name, argsRaw, content)
@@ -320,8 +320,22 @@ func (r *shortcodeV2Renderer) expand(body string) string {
 	return out.String()
 }
 
+// v2LegacyNamedKeys 旧版标签表单/旧内容会写出的命名参数键。
+// 这些字段在 Stellar v2 官方语法里是位置参数（见 shortcode_v2_catalog.go 的覆盖表），
+// 命名写法会被官方解析逻辑当成位置文本原样输出；这里额外接受命名写法，值仍落到同一字段，
+// 仅用于兼容迁移内容，不改变官方位置参数语义。
+var v2LegacyNamedKeys = map[string][]string{
+	"banner": {"title", "subtitle"},
+	"quot":   {"text"},
+	"tip":    {"text"},
+	"frame":  {"device"},
+}
+
+func v2LegacyNamedParams(name string) []string { return v2LegacyNamedKeys[name] }
+
 // 等价 utils.js args.map：最后一个位置字段吸收尾部，未知命名字段属于位置文本。
-func v2MapArgs(tokens []string, params []ShortcodeParamSchema) map[string]string {
+// legacyNamed 为兼容旧命名写法追加的命名键（与位置字段同键时，命名值优先，位置槽顺延）。
+func v2MapArgs(tokens []string, params []ShortcodeParamSchema, legacyNamed ...string) map[string]string {
 	args := map[string]string{}
 	keys := map[string]bool{}
 	var positionalKeys, other []string
@@ -333,6 +347,9 @@ func v2MapArgs(tokens []string, params []ShortcodeParamSchema) map[string]string
 			positionalKeys = append(positionalKeys, p.Key)
 		}
 	}
+	for _, k := range legacyNamed {
+		keys[k] = true
+	}
 	for _, t := range tokens {
 		k, v, ok := strings.Cut(strings.TrimSpace(t), ":")
 		if ok && keys[k] {
@@ -341,17 +358,24 @@ func v2MapArgs(tokens []string, params []ShortcodeParamSchema) map[string]string
 			other = append(other, t)
 		}
 	}
+	// 位置槽按顺序消费剩余 token；已由命名写法给出的字段不再占用位置槽。
+	pos := 0
 	for i, k := range positionalKeys {
-		if i >= len(other) {
+		if _, named := args[k]; named {
+			continue
+		}
+		if pos >= len(other) {
 			if len(other) > 0 {
 				delete(args, k)
 			}
 			continue
 		}
 		if i == len(positionalKeys)-1 {
-			args[k] = strings.Join(other[i:], " ")
+			args[k] = strings.Join(other[pos:], " ")
+			pos = len(other)
 		} else {
-			args[k] = other[i]
+			args[k] = other[pos]
+			pos++
 		}
 	}
 	return args

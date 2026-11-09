@@ -163,6 +163,21 @@ func (r *shortcodeV2Renderer) link(a map[string]string) string {
 	}
 	absolute := r.fullURL(a["url"])
 	api := strings.Replace(r.endpoint("siteInfo"), "{href}", absolute, 1)
+	// 官方文档把 desc:true/false 定义为“描述区开关”，但官方实现会把值原样渲染成描述文本。
+	// 这里按文档语义处理：true = rich 布局、false = plain 布局，字面量不进入卡片。
+	desc := a["desc"]
+	kind := "plain"
+	switch strings.ToLower(strings.TrimSpace(desc)) {
+	case "true":
+		desc = ""
+		kind = "rich"
+	case "false":
+		desc = ""
+	default:
+		if desc != "" {
+			kind = "rich"
+		}
+	}
 	var autofill []string
 	if a["title"] == "" {
 		autofill = append(autofill, "title")
@@ -170,12 +185,8 @@ func (r *shortcodeV2Renderer) link(a map[string]string) string {
 	if a["icon"] == "" {
 		autofill = append(autofill, "icon")
 	}
-	if a["desc"] == "" {
+	if desc == "" {
 		autofill = append(autofill, "desc")
-	}
-	kind := "plain"
-	if a["desc"] != "" {
-		kind = "rich"
 	}
 	el := `<div class="tag-plugin link dis-select"><a class="link-card ` + kind + ` card-hover card-hover--spotlight card-hover--tilt" title="` + html.EscapeString(a["title"]) + `"` + v2Attr("href", a["url"])
 	if strings.Contains(a["url"], "://") {
@@ -194,7 +205,12 @@ func (r *shortcodeV2Renderer) link(a map[string]string) string {
 	titleHTML := `<span class="title">` + html.EscapeString(title) + `</span>`
 	linkHTML := `<span class="cap link footnote">` + html.EscapeString(absolute) + `</span>`
 	if kind == "rich" {
-		el += `<div class="top">` + image + linkHTML + `</div><div class="bottom">` + titleHTML + `<span class="cap desc footnote">` + html.EscapeString(a["desc"]) + `</span></div>`
+		// 描述为空时不留空行；配置了 siteinfo 服务时保留占位供自动填充。
+		descHTML := ""
+		if desc != "" || api != "" {
+			descHTML = `<span class="cap desc footnote">` + html.EscapeString(desc) + `</span>`
+		}
+		el += `<div class="top">` + image + linkHTML + `</div><div class="bottom">` + titleHTML + descHTML + `</div>`
 	} else {
 		el += `<div class="left">` + titleHTML + linkHTML + `</div><div class="right">` + image + `</div>`
 	}

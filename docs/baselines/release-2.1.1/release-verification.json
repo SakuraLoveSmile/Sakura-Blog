@@ -1,0 +1,73 @@
+{
+  "task": "BLG-20261109-01",
+  "version": "v2.1.1",
+  "date": "2026-11-09",
+  "release_type": "正式版（v2.1.1-beta01 → v2.1.1）",
+  "content": [
+    "fix：GitHub 仓库卡片统计图标改用内联 Octicon SVG（star-fill / repo-forked / law），修复 emoji 在 0.75rem 下被压成细线、fork 看起来没显示全的问题",
+    "卡片图标随文字颜色与字号缩放，星标/fork 数量补 aria-label",
+    "基线证据：docs/baselines/ghcard-stat-icons/"
+  ],
+  "promotion": {
+    "sync_main_into_dev": {
+      "branch": "codex/chore/20261109-BLG-20261109-01-sync-main",
+      "merge_commit": "65d664ae",
+      "note": "main 上有 6 条 dev 缺少的合并历史提交，sync 后 dev..origin/main = 0"
+    },
+    "fix_merge": {
+      "branch": "codex/fix/20261109-BLG-20261109-01-ghcard-stat-icons",
+      "fix_commit": "7067c806",
+      "merge_commit": "b1c98b0a",
+      "gate": "worktree make test + 合入 dev 后组合态 make test 均通过"
+    },
+    "prs": [
+      { "pr": 61, "direction": "dev→main", "title": "发布 v2.1.1：GitHub 卡片统计图标改用内联 SVG", "checks": "go/lint/security/console/e2e(22m10s)/build 全绿", "merge_commit": "e567215a" },
+      { "pr": 62, "direction": "sync release→main", "title": "chore: 同步 release 合并历史到 main", "note": "git diff --stat origin/main HEAD 为空（内容零差异）", "merge_commit": "93dad705" },
+      { "pr": 63, "direction": "main→release", "title": "release: 发布 v2.1.1", "checks": "go/lint/security/console/e2e(18m16s)/build/release-source/image 全绿", "merge_commit": "038ffab8" }
+    ],
+    "tag": {
+      "name": "v2.1.1",
+      "signed": true,
+      "signing_key": "979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989",
+      "target": "038ffab8688ee9072b2c543a46a1f5f02c292fba",
+      "verify": "git tag -v v2.1.1 通过"
+    },
+    "after_release_ancestry": {
+      "main..origin/release": 0,
+      "content_diff_main_release": "空"
+    }
+  },
+  "docker_release": {
+    "run_id": 42568753791,
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42568753791",
+    "started": "2026-11-09T05:41:32Z",
+    "conclusion": "success",
+    "github_release": {
+      "tag": "v2.1.1",
+      "draft": false,
+      "prerelease": false,
+      "target_commitish": "main",
+      "created_at": "2026-11-09T05:41:11Z",
+      "notes_length": 787,
+      "releases_latest": "v2.1.1"
+    }
+  },
+  "image": {
+    "name": "ghcr.io/sakuralovesmile/sakura-blog",
+    "tag": "2.1.1",
+    "digest": "sha256:2e6dbe0a0ea0d74056234244ce4aac3bab859d4a392005bd8f25398b436da4c1",
+    "labels": {
+      "org.opencontainers.image.version": "2.1.1",
+      "org.opencontainers.image.revision": "038ffab8688ee9072b2c543a46a1f5f02c292fba",
+      "org.opencontainers.image.created": "2026-11-09T05:41:56.113Z"
+    },
+    "alias_tags_same_manifest": ["2.1", "2", "latest"],
+    "sha_tag": "sha-038ffab",
+    "unchanged_baseline": "2.1.1-beta01 digest sha256:a9464299…aff82c 未移动",
+    "binary_start_check": "服务器 sudo docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.1 -h 退出码 0，输出 usage（本机 Docker daemon 未启动，改用生产机执行）"
+  },
+  "not_verified": [
+    "本机 Docker daemon 未启动，镜像 manifest 核对改用生产机 docker manifest inspect / docker image inspect",
+    "Console 登录后「检查更新」页面未实际点击验证；版本来源 GHCR tag 与 GitHub Release 均已是 2.1.1"
+  ]
+}
