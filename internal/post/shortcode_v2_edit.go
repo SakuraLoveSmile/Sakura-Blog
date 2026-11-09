@@ -85,6 +85,10 @@ func ParseShortcodeForEditStellarV2(raw string) (ShortcodeEditResult, error) {
 			result.Values[p.Key] = envelope.body
 		}
 	}
+	// 兼容旧命名写法（banner 的 title/subtitle、quot/tip 的 text、frame 的 device）。
+	for _, k := range v2LegacyNamedParams(name) {
+		keys[k] = true
+	}
 	named := map[string]string{}
 	var positional []string
 	for _, t := range tokens {
@@ -124,7 +128,7 @@ func ParseShortcodeForEditStellarV2(raw string) (ShortcodeEditResult, error) {
 			result.Present = append(result.Present, p.Key)
 		}
 	}
-	mapped := v2MapArgs(tokens, entry.Params)
+	mapped := v2MapArgs(tokens, entry.Params, v2LegacyNamedParams(name)...)
 	for k, v := range mapped {
 		result.Values[k] = v
 	}

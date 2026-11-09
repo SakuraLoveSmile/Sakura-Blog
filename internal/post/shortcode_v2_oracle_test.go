@@ -258,7 +258,7 @@ func v2OfficialCases() []v2OracleCase {
 		{"emoji", "qq smile height:2em", ""}, {"emoji", "smile", ""}, {"emoji", "url:https://example.test/emoji.png name:Alt height:32px", ""},
 		{"icon", "star text color:cyan style:width:2em", ""}, {"frame", "iphone11 img:/image.png focus:top alt", ""}, {"frame", "ipad video:/video.mp4 img:/poster.png focus:bottom alt", ""},
 		{"image", "/image.png Alt width:400px height:300px bg:#eee padding:16px fancybox:false ratio:16/9 download:true", ""}, {"image", "/image.png Alt fancybox:/large.png download:false", ""},
-		{"link", "https://example.test title desc:false icon:/icon.png", ""}, {"link", "/post", ""}, {"button", "color:red icon:star size:xs Hello World /target", ""}, {"button", "Label /target", ""},
+		{"link", "/post icon:/icon.png", ""}, {"link", "/post", ""}, {"button", "color:red icon:star size:xs Hello World /target", ""}, {"button", "Label /target", ""},
 		{"mark", "color:yellow tip:Explanation Highlight", ""}, {"navbar", "active:/two [One](/one) [Two](/two) Anchor", ""}, {"note", "color:blue Title **content** and more", ""}, {"note", "singleword", ""},
 		{"poetry", "Title author:Author date:Today footer:End", "**verse**"}, {"quot", "el:h2 icon:question color:cyan Heading", ""}, {"quot", "el:p prefix:star suffix:heart Quote words", ""},
 		{"blockquote", "indent:false", "**quote**"}, {"hashtag", "Label /tag color:red", ""}, {"hashtag", "Label /tag", ""},
@@ -328,7 +328,6 @@ func v2OfficialParameterCases() []v2OracleCase {
 		{"video", "youtube:video-id autoplay:true", ""},
 		{"video", "youtube:video-id", ""},
 		{"link", "/post 'Title <tag> & \"quoted\"' desc:'Description <tag> & \"quoted\"'", ""},
-		{"link", "/post desc:true", ""},
 		{"link", "", ""},
 		{"copy", "git:https /alice/blog prefix:HTTPS", ""},
 		{"copy", "", ""},
@@ -558,6 +557,33 @@ func TestStellarV2OfficialDocumentedSafetyDifferences(t *testing.T) {
 			t.Fatalf("upstream exception changed: %q", official)
 		}
 		t.Log("明确安全偏差：官方 download 双引号未转义，Go 保留完整安全属性；caption/alt 与下载 URL 等效")
+	})
+	t.Run("link_desc_boolean_switch", func(t *testing.T) {
+		// 官方文档把 desc:true/false 定义为描述区开关，但官方实现把值原样渲染成描述文本。
+		// Go 按文档语义处理（true=rich、false=plain、字面量不入卡），属于有意的产品修正。
+		for _, tc := range []struct{ args, wantKind, literal string }{
+			{"/post desc:true", "link-card rich", "true"},
+			{"/post desc:false", "link-card plain", "false"},
+		} {
+			oracle := newV2Oracle(t, StellarRenderContext{})
+			entry, _ := shortcodeV2Entry("link")
+			tokens, err := v2Args(tc.args)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := oracle.r.render("link", v2MapArgs(tokens, entry.Params), "", tc.args)
+			want := oracle.render(t, "link", tc.args, "")
+			if v2Canonical(t, got) == v2Canonical(t, want) {
+				t.Fatalf("documented link desc divergence disappeared for %q", tc.args)
+			}
+			if !strings.Contains(got, tc.wantKind) {
+				t.Fatalf("%q should render %s, got %s", tc.args, tc.wantKind, got)
+			}
+			if strings.Contains(got, ">"+tc.literal+"<") {
+				t.Fatalf("%q leaked literal %q: %s", tc.args, tc.literal, got)
+			}
+		}
+		t.Log("明确上游缺陷偏差：官方把 desc:true/false 原样显示为描述文本，Go 按官方文档当布局开关")
 	})
 	for _, status := range []string{"", "in_track", "at_risk", "off_track", "finished", "unfinished"} {
 		t.Run("okr_single_kr_"+status, func(t *testing.T) {

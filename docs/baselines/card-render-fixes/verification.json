@@ -1,0 +1,63 @@
+{
+  "task": "BLG-20261109-02",
+  "title": "卡片渲染修复：banner 旧命名参数兼容、link desc 开关、超长 URL 图标压缩",
+  "date": "2026-11-09",
+  "branch": "codex/fix/20261109-BLG-20261109-02-card-render-fixes",
+  "base_commit": "f1fe60f6",
+  "report_basis": "2026-11-09 只读排查：公网 31 个页面 + 组件库 fixture 渲染（证据见对话记录）",
+  "fixes": [
+    {
+      "id": "legacy-named-params",
+      "problem": "旧版标签表单/旧内容写出的命名参数（banner title:/subtitle:、quot/tip text:、frame device:）在 Stellar v2 官方位置参数语法下会整段落入位置文本，原样显示。线上 /about 横幅显示 title: 我的博客 / subtitle: 记录技术成长。",
+      "changes": [
+        "internal/post/shortcode_v2.go：新增 v2LegacyNamedKeys（banner→title/subtitle，quot/tip→text，frame→device）与 v2MapArgs(..., legacyNamed...)，命名写法落到同一字段；官方位置语法保持不变。",
+        "internal/post/shortcode_v2_edit.go：编辑解析接受同一组命名写法，旧语法内容仍可结构化编辑。"
+      ]
+    },
+    {
+      "id": "link-desc-boolean",
+      "problem": "线上 6 篇文章 19 处 link 卡片使用 desc:true，描述区显示字面量 true。官方文档把 desc:true/false 定义为描述区开关，官方实现却把值原样输出。",
+      "changes": [
+        "internal/post/shortcode_v2_media.go：desc 为 true/false 时按开关处理（true=rich、false=plain），字面量不进入卡片；描述为空且未配置 siteinfo 时不渲染空描述行。",
+        "internal/post/shortcode_media.go：v1 link renderer 同步同一语义。",
+        "internal/post/shortcode_catalog.go：link 的 desc 字段说明改为“描述文本，或 true/false 开关描述区”。"
+      ]
+    },
+    {
+      "id": "link-icon-flex",
+      "problem": "rich link 卡片顶部图标在超长 URL 下被压成 0 宽（Notion 链接 0×16，短链接 16×16）。",
+      "changes": [
+        "modules/stellar/web/assets/css/tag-plugins.css：.md-text .link-card >.top .img { flex: none }，图标固定 16px。"
+      ]
+    }
+  ],
+  "tests": {
+    "new": [
+      "internal/post/shortcode_v2_card_fixes_test.go：link desc 开关（v2/v1）、banner/quot/tip/frame 旧命名参数与官方位置语法输出一致、旧语法可编辑、v2MapArgs 位置槽行为"
+    ],
+    "oracle": [
+      "internal/post/shortcode_v2_oracle_test.go：link desc:true/false 从严格 oracle 移到“明确上游缺陷偏差”用例（官方把开关值当文本，Go 按文档语义）；补充 link icon 严格 oracle 用例维持参数覆盖"
+    ],
+    "gate": "worktree 内 make test 退出码 0（go vet / staticcheck / go test ./... / console-test / assets-test / module-check）"
+  },
+  "browser_verification": {
+    "method": "修复后真实 renderer 输出 + 公网页面 CSS（注入更新后的 tag-plugins.css），Playwright Chromium 1.62.1，1280×900 DPR2 dark",
+    "banner": {
+      "before": "title: 我的博客 / subtitle: 记录技术成长（字面量）",
+      "after": "我的博客 / 记录技术成长（正确文本）；卡片 624×284，console error 0",
+      "screenshot": "after-about-banner.png"
+    },
+    "link_cards": {
+      "before": "两张卡片均显示 true；Notion 长 URL 图标 0×16",
+      "after": "无 true 与空描述行；长 URL 图标恢复 16×16（flex none），短 URL 同样 16×16；console error 0",
+      "screenshot": "after-link-cards.png"
+    },
+    "compare": "compare-before-after.png"
+  },
+  "not_verified": [
+    "公网仍是 v2.1.1，本轮改动未提交/未发布；19 张 link 卡片与 /about 横幅要在发布后才生效。",
+    "没有生产 Console 账号，未能验证编辑器内旧内容重新打开后的表单展示；编辑解析已有单测覆盖。",
+    "站点的 /about 横幅背景与头像仍引用组件库 fixture 素材（/assets/img/preview/*），属内容资源问题，需另改内容。",
+    "内容外链资源（3 篇 bu.dusays banner、4 篇 picsum 封面）未处理，仍待用户确认后替换上传。"
+  ]
+}
