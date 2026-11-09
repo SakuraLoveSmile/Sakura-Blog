@@ -1,0 +1,75 @@
+{
+  "task": "BLG-20261109-01",
+  "title": "GitHub 仓库卡片统计行图标：emoji 换成内联 Octicon SVG",
+  "date": "2026-11-09",
+  "branch": "codex/fix/20261109-BLG-20261109-01-ghcard-stat-icons",
+  "base_commit": "0ee38efe",
+  "reference": {
+    "live_url": "https://blog.xn--fhqths51enha.cn/post/pi-desktop-custom-dev-log",
+    "live_version": "v2.1.1-beta01（截图时公网版本）",
+    "user_report": "卡片里的 fork 图标看起来没有显示全"
+  },
+  "environment": {
+    "browser": "Playwright 1.62.1 Chromium，viewport 1280×900 DPR2 / 1280×900 DPR1 / 390×844 DPR2",
+    "appearance": "公网站点固定 data-theme=dark；light 截图是把文档 html 标签强制为 data-theme=light 后取得",
+    "harness": "拦截公网文章文档请求，用真实渲染器输出的卡片 HTML 替换正文卡片、在 head 末尾注入更新后的 tag-plugins.css；其余 CSS/JS 仍从公网加载",
+    "glyph_probe": "独立 HTML 页面按 12/15/18/20/24/32/48px 渲染单个 🍴，并用 CDP CSS.getPlatformFontsForNode 查统计行实际使用的平台字体"
+  },
+  "diagnosis": {
+    "symptom": "统计行里 ⭐ 显示完整，🍴 只剩两根细竖线，看起来像被裁掉一半",
+    "platform_font": "统计行 span 的 emoji 字形来自 Apple Color Emoji（CDP 查询），文字来自 Helvetica Neue",
+    "ink_measurement_12px_dpr2": {
+      "star_ink_device_px": "24×26",
+      "fork_ink_device_px": "11×24",
+      "note": "同一行、同一 font-size，🍴 的字面宽度只有 ⭐ 的约一半"
+    },
+    "isolated_glyph_tests": "🍴 单独渲染 12–48px，墨迹宽高比稳定在 0.40–0.46；即 Apple 的 fork+knife 字形本身细长，字号越小两根餐具越接近细线，不是 CSS 裁切",
+    "css_clip_ruled_out": ".repo-stats 没有 overflow/hidden 或固定高度约束；字形外框与行盒一致，未发生裁剪",
+    "root_cause": "统计行字号为 0.75rem（桌面 12px），emoji 图形在该字号下无法辨认；fork 因为丝状造型看起来像没显示全"
+  },
+  "changes": [
+    "internal/post/shortcode_github.go：统计行 ⭐/🍴/📄 emoji 换成内联 Octicon SVG（star-fill / repo-forked / law，16px viewBox、fill=currentColor、aria-hidden），星标与 fork 的 span 补 aria-label=\"N stars\"/\"N forks\"",
+    "modules/stellar/web/assets/css/tag-plugins.css：新增 .tag-plugin.ghcard .repo-stats .repo-stat-icon 尺寸 1.1em、右侧 0.35em 间距、vertical-align -0.16em（随统计行字号缩放，明暗主题跟随文字颜色）",
+    "internal/post/shortcode_preview_test.go、modules/console/api/preview_test.go、modules/stellar/routes/stellar_preview_github_test.go：断言从 emoji 文本改为 repo-stat 图标结构"
+  ],
+  "after": {
+    "desktop_1280_dpr2": {
+      "card_size_css_px": "424.2×110（修改前 427.1×110）",
+      "icon_box_css_px": "13.19×13.19 ×3（star/fork/law）",
+      "screenshot": "after-card-1280-dark-2x.png"
+    },
+    "desktop_1280_dpr1": {
+      "screenshot": "after-card-1280-dark-1x.png"
+    },
+    "mobile_390_dpr2": {
+      "card_size_css_px": "356×148.6",
+      "icon_box_css_px": "14.02×14.02",
+      "license_row": "许可证一项换到第二行，无横向溢出",
+      "screenshot": "after-card-390-dark-2x.png"
+    },
+    "light_forced": {
+      "screenshot": "after-card-1280-light-2x.png",
+      "note": "图标使用 currentColor，浅色主题下为 muted 文字色，对比度正常"
+    },
+    "compare": "compare-before-after-1280-dark-2x.png（上：修改前 emoji；下：修改后 SVG）"
+  },
+  "verification": {
+    "make_test": "worktree 内 make test 退出码 0（含 go vet、staticcheck、go test ./...、console-test、assets-test、module-check）",
+    "targeted_tests": [
+      "go test ./internal/post -count=1",
+      "go test ./modules/stellar/routes -run TestStellarContentPreviewRendersGitHubCards -count=1",
+      "node --test modules/stellar/tests/*.test.mjs（06 项套件 227 通过 / 2 跳过）"
+    ],
+    "browser_assertions": [
+      "统计行三个图标渲染为 13.19×13.19 CSS px，与数字基线对齐，无裁剪",
+      "卡片宽度由 427.1 收缩到 424.2 CSS px，正文排版未变",
+      "390px 视口下许可证换行且不溢出卡片",
+      "star-fill / repo-forked / law 三个图形均可辨识（对比图人工核对）"
+    ]
+  },
+  "not_verified": [
+    "公网仍是 v2.1.1-beta01，本次改动未发布；需按 dev → main → release → tag 流程出新镜像后才在线上生效",
+    "本轮没有重跑 Console 编辑器内 ghrepo 预览的浏览器截图；该预览复用同一渲染器与 tag-plugins.css，覆盖它的 Go 测试已更新（预览文档含 repo-stat 结构与 /assets/css/tag-plugins.css）",
+    "未在 Windows/Linux 或 Safari/Firefox 实测；图标为 SVG，不依赖平台 emoji 字体"
+  ]
+}

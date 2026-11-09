@@ -77,7 +77,10 @@ func TestRenderComponentPreview(t *testing.T) {
 	for _, want := range []string{
 		// ghrepo 使用确定性 Fixture 数据
 		`<span class="repo-name">vuejs/vue</span>`,
-		`>⭐ 12800<`,
+		// 统计行用内联 SVG 图标（emoji 在 0.75rem 下会压成细线，fork 图形不可辨）
+		`class="repo-stat" aria-label="12800 stars"`,
+		`class="repo-stat" aria-label="864 forks"`,
+		`class="repo-stat-icon"`,
 		// rating：端点改写 + preview- 隔离 ID
 		`data-api="/api/v1/preview/rating"`,
 		`data-id="preview-demo-post"`,

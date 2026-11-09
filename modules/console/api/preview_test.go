@@ -88,7 +88,8 @@ func TestPreviewMarkdownComponentLibraryGithubFixture(t *testing.T) {
 	out := previewBody(t, r, cookie, `{"preview_token":"fixture-preview-token","stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","markdown":"{% blog_ghrepo vuejs/vue %}\n\n{% blog_ghuser octocat %}\n\n{% ghcard anuraghazra/github-readme-stats %}","preview_profile":"component-library"}`)
 	for _, want := range []string{
 		`<span class="repo-name">vuejs/vue</span>`,
-		`>⭐ 12800<`,
+		`class="repo-stat" aria-label="12800 stars"`,
+		`class="repo-stat-icon"`,
 		`<span class="user-login">@octocat</span>`,
 		`<span>3200 followers</span>`,
 		`<img src="/assets/img/preview/avatar-gh-vuejs.svg"`,
