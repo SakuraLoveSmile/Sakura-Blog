@@ -1,0 +1,226 @@
+{
+  "task": "BLG-20261109-03",
+  "title": "编辑器标签预览表面按配色自适应",
+  "date": "2026-11-09",
+  "branch": "codex/fix/20261109-BLG-20261109-03-editor-tag-surface",
+  "base_commit": "8a96ec23",
+  "reference": "reference-user-editor-dark.png（用户 2026-11-09 16:41 提供的文章编辑器截图：深色站点卡片周围出现整块站点底色）",
+  "environment": {
+    "browser": "Playwright Chromium 1.62.1",
+    "viewport": "1440x900 DPR2",
+    "fixture": "隔离 e2e 实例（scripts/e2e/run-server.sh，独立临时根目录）；站点 theme.appearance.color_scheme 分别设为 dark/light/auto",
+    "github": "本机 GitHub 不可达，卡片按既有降级只渲染仓库名，尺寸 274x56.5，与本改动无关"
+  },
+  "before": [
+    {
+      "scheme": "dark",
+      "editorBackground": "rgb(10, 10, 11)",
+      "tags": [
+        {
+          "tag": "ghrepo",
+          "iframeHeight": 97,
+          "frameTheme": "dark",
+          "frameHtmlBackground": "rgb(28, 31, 33)",
+          "inlineBackground": "rgb(28, 31, 33)",
+          "effectiveBackground": "rgba(28,31,33,1)",
+          "textContrast": 16.57,
+          "card": {
+            "w": 274,
+            "h": 56.5,
+            "bg": "rgb(55, 61, 67)"
+          }
+        },
+        {
+          "tag": "note",
+          "iframeHeight": 67,
+          "frameTheme": "dark",
+          "frameHtmlBackground": "rgb(28, 31, 33)",
+          "inlineBackground": "rgb(28, 31, 33)",
+          "effectiveBackground": "rgba(28,31,33,1)",
+          "textContrast": 10.25,
+          "card": null
+        },
+        {
+          "tag": "tabs",
+          "iframeHeight": 114,
+          "frameTheme": "dark",
+          "frameHtmlBackground": "rgb(28, 31, 33)",
+          "inlineBackground": "rgb(28, 31, 33)",
+          "effectiveBackground": "rgba(28,31,33,1)",
+          "textContrast": 16.57,
+          "card": null
+        }
+      ]
+    },
+    {
+      "scheme": "light",
+      "editorBackground": "rgb(10, 10, 11)",
+      "tags": [
+        {
+          "tag": "ghrepo",
+          "iframeHeight": 97,
+          "frameTheme": "light",
+          "frameHtmlBackground": "rgb(249, 250, 251)",
+          "inlineBackground": "rgb(249, 250, 251)",
+          "effectiveBackground": "rgba(249,250,251,1)",
+          "textContrast": 20.1,
+          "card": {
+            "w": 274,
+            "h": 56.5,
+            "bg": "rgb(255, 255, 255)"
+          }
+        },
+        {
+          "tag": "note",
+          "iframeHeight": 67,
+          "frameTheme": "light",
+          "frameHtmlBackground": "rgb(249, 250, 251)",
+          "inlineBackground": "rgb(249, 250, 251)",
+          "effectiveBackground": "rgba(249,250,251,1)",
+          "textContrast": 11.52,
+          "card": null
+        },
+        {
+          "tag": "tabs",
+          "iframeHeight": 114,
+          "frameTheme": "light",
+          "frameHtmlBackground": "rgb(249, 250, 251)",
+          "inlineBackground": "rgb(249, 250, 251)",
+          "effectiveBackground": "rgba(249,250,251,1)",
+          "textContrast": 20.1,
+          "card": null
+        }
+      ]
+    }
+  ],
+  "after": [
+    {
+      "scheme": "dark",
+      "editorBackground": "rgb(10, 10, 11)",
+      "tags": [
+        {
+          "tag": "ghrepo",
+          "iframeHeight": 97,
+          "frameTheme": "dark",
+          "frameHtmlBackground": "rgba(0, 0, 0, 0)",
+          "inlineBackground": "",
+          "effectiveBackground": "rgba(10,10,11,1)",
+          "textContrast": 19.79,
+          "card": {
+            "w": 274,
+            "h": 56.5,
+            "bg": "rgb(55, 61, 67)"
+          }
+        },
+        {
+          "tag": "note",
+          "iframeHeight": 67,
+          "frameTheme": "dark",
+          "frameHtmlBackground": "rgba(0, 0, 0, 0)",
+          "inlineBackground": "",
+          "effectiveBackground": "rgba(10,10,11,1)",
+          "textContrast": 12.25,
+          "card": null
+        },
+        {
+          "tag": "tabs",
+          "iframeHeight": 114,
+          "frameTheme": "dark",
+          "frameHtmlBackground": "rgba(0, 0, 0, 0)",
+          "inlineBackground": "",
+          "effectiveBackground": "rgba(10,10,11,1)",
+          "textContrast": 19.79,
+          "card": null
+        }
+      ]
+    },
+    {
+      "scheme": "light",
+      "editorBackground": "rgb(10, 10, 11)",
+      "tags": [
+        {
+          "tag": "ghrepo",
+          "iframeHeight": 97,
+          "frameTheme": "light",
+          "frameHtmlBackground": "rgb(249, 250, 251)",
+          "inlineBackground": "rgb(249, 250, 251)",
+          "effectiveBackground": "rgba(249,250,251,1)",
+          "textContrast": 20.1,
+          "card": {
+            "w": 274,
+            "h": 56.5,
+            "bg": "rgb(255, 255, 255)"
+          }
+        },
+        {
+          "tag": "note",
+          "iframeHeight": 67,
+          "frameTheme": "light",
+          "frameHtmlBackground": "rgb(249, 250, 251)",
+          "inlineBackground": "rgb(249, 250, 251)",
+          "effectiveBackground": "rgba(249,250,251,1)",
+          "textContrast": 11.52,
+          "card": null
+        },
+        {
+          "tag": "tabs",
+          "iframeHeight": 114,
+          "frameTheme": "light",
+          "frameHtmlBackground": "rgb(249, 250, 251)",
+          "inlineBackground": "rgb(249, 250, 251)",
+          "effectiveBackground": "rgba(249,250,251,1)",
+          "textContrast": 20.1,
+          "card": null
+        }
+      ]
+    }
+  ],
+  "auto": [
+    {
+      "systemPrefersDark": true,
+      "frameTheme": null,
+      "frameHtmlBackground": "rgba(0, 0, 0, 0)",
+      "inlineBackground": "",
+      "editorBackground": "rgb(10, 10, 11)",
+      "screenshot": "after-auto-system-dark.png"
+    },
+    {
+      "systemPrefersDark": false,
+      "frameTheme": null,
+      "frameHtmlBackground": "rgb(249, 250, 251)",
+      "inlineBackground": "rgb(249, 250, 251)",
+      "editorBackground": "rgb(10, 10, 11)",
+      "screenshot": "after-auto-system-light.png"
+    }
+  ],
+  "conclusion": {
+    "dark_site": "改动前 iframe html/body 为不透明 rgb(28,31,33) 站点表面；改动后 rgba(0,0,0,0) 且无内联背景，卡片直接落在 Console 底色 rgb(10,10,11) 上。",
+    "light_site": "改动前后一致：不透明 rgb(249,250,251)，对比度不变。",
+    "contrast": "深色站点三处文本对实际生效底色（Console rgb(10,10,11)）对比度 19.79/12.25/19.79，均 ≥4.5；改动前为 16.57/10.25/16.57。",
+    "auto": "系统深色偏好 → 透明；系统浅色偏好 → 不透明浅色表面。",
+    "errors": "两次运行均无 console/page error。"
+  },
+  "e2e": {
+    "spec": "tests/e2e/tag-live-preview.spec.ts",
+    "result": "19 passed（1.7m）",
+    "note": "深色系统偏好用例中，NodeView 允许透明并按 Console 实际底色验对比度（12.58:1）；Studio/插入面板/顶栏气泡/Markdown 分屏仍要求不透明表面（10.97:1）。"
+  },
+  "unit": {
+    "command": "pnpm --filter console run test（vue-tsc -b + tsx --test）",
+    "result": "560 tests passed"
+  },
+  "files": [
+    "reference-user-editor-dark.png",
+    "before-dark-editor.png",
+    "before-dark-tag.png",
+    "after-dark-editor.png",
+    "after-dark-tag.png",
+    "after-light-tag.png",
+    "after-auto-system-dark.png",
+    "after-auto-system-light.png"
+  ],
+  "not_verified": [
+    "生产 Console 登录复测（需用户账号）",
+    "Firefox/Safari 的 iframe 与 getComputedStyle 差异"
+  ]
+}
