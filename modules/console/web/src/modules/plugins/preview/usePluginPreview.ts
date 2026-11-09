@@ -40,6 +40,8 @@ export interface PluginPreviewOptions {
   frame?: PluginPreviewFrameLimits;
   /** 正文嵌入预览保留透明背景；缺省为独立预览表面。 */
   surface?: "standalone" | "embedded";
+  /** 宿主编辑区底色；给出时同色系站点不再铺不透明表面（见 preparePreviewDocument）。 */
+  hostBackground?: string;
 }
 
 export interface PluginPreviewRenderOptions {
@@ -85,9 +87,10 @@ export function usePluginPreview(
   const srcdoc = computed(() => document.value);
   void getOverrides;
 
-  // 缓存存储已准备的文档，两种表面不能共享同一个条目。
+  // 缓存存储已准备的文档，不同表面/宿主底色不能共享同一个条目。
   function surfaceCacheKey(key: string): string {
-    return options.surface === "embedded" ? `preview-surface:embedded|${key}` : key;
+    if (options.surface === "embedded") return `preview-surface:embedded|${key}`;
+    return options.hostBackground ? `preview-surface:host=${options.hostBackground}|${key}` : key;
   }
 
   const scheduler = new PreviewScheduler({
@@ -100,7 +103,10 @@ export function usePluginPreview(
       // 真实站上下文（NodeView）保持 rating/vote 不可交互的旧行为。
       return {
         html: data.html,
-        document: preparePreviewDocument(data.document, profile, { surface: options.surface }),
+        document: preparePreviewDocument(data.document, profile, {
+          surface: options.surface,
+          hostBackground: options.hostBackground,
+        }),
         token: data.preview_token,
       };
     },

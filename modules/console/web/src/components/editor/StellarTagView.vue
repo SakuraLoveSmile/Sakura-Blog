@@ -21,14 +21,32 @@ const props = defineProps(nodeViewProps);
 const raw = computed(() => (props.node.attrs.raw as string) || "");
 const typeLabel = computed(() => typeLabelOf(raw.value));
 
+// 编辑器实际露出的底色（NodeView 自身透明）：编辑器外层不铺底，实体色来自 body/html。
+// 预览只在站点配色与它明显不同时铺站点表面；同色系保持透明，避免卡片周围出现整块背景。
+function editorBackdropColor(): string | undefined {
+  if (typeof document === "undefined" || typeof window === "undefined") return undefined;
+  if (typeof window.getComputedStyle !== "function") return undefined;
+  for (const element of [document.body, document.documentElement]) {
+    if (!element) continue;
+    const color = window.getComputedStyle(element).backgroundColor;
+    if (!color || color === "transparent") continue;
+    if (/^rgba\([^)]*,\s*0(?:\.0+)?\s*\)$/.test(color)) continue;
+    return color;
+  }
+  return undefined;
+}
+// 页面画布本身就是正式页背景，正文嵌入保持透明；其他编辑器按宿主配色决定是否铺表面。
+const pageCanvas = stellarContext?.value.layout === "page";
+const hostBackground = pageCanvas ? undefined : editorBackdropColor();
+
 // 共享预览调度：raw 短防抖（150ms）、context 长合并（550ms）；同 raw+context 命中缓存不重发，
 // 刷新期间保留旧 iframe/高度；失败保留上次成功预览并可重试。
 const preview = usePluginPreview(() => ({ capability: "static", height: 64 }), undefined, {
   delayMs: 150,
   queue: sharedPreviewQueue,
   cache: new PreviewCache(20),
-  // 页面画布已提供真实主题背景；其他编辑器仍需要独立表面保证文字对比度。
-  surface: stellarContext?.value.layout === "page" ? "embedded" : "standalone",
+  surface: pageCanvas ? "embedded" : "standalone",
+  hostBackground,
   frame: { minHeight: 32, maxHeight: Number.MAX_SAFE_INTEGER, margin: 0 },
 });
 const contentWidth = ref(0);

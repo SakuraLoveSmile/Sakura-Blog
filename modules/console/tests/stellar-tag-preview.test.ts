@@ -46,17 +46,25 @@ for (const layout of ["page", "post"] as const) test(`${layout} 标签预览保�
     removeEventListener: (name: string) => canvasListeners.delete(name),
   };
   const originalWindow = (globalThis as any).window;
+  const originalDocument = (globalThis as any).document;
   const originalResizeObserver = (globalThis as any).ResizeObserver;
   let app: Vue.App<any> | undefined;
   (globalThis as any).ResizeObserver = class { observe() {} disconnect() {} };
+  // 宿主编辑区（Console）深色：NodeView 需要据此决定是否铺站点表面。
+  const fakeDocument = { body: { nodeType: 1 }, documentElement: { nodeType: 1 } };
+  (globalThis as any).document = fakeDocument;
   (globalThis as any).window = {
     innerWidth: 1280,
     addEventListener: (name: string, callback: (event: any) => void) => listeners.set(name, callback),
     removeEventListener: (name: string) => listeners.delete(name),
+    getComputedStyle: (element: any) => ({
+      backgroundColor: element === fakeDocument.body ? "rgb(10, 10, 11)" : "rgba(0, 0, 0, 0)",
+    }),
   };
   t.after(() => {
     app?.unmount();
     (globalThis as any).window = originalWindow;
+    (globalThis as any).document = originalDocument;
     (globalThis as any).ResizeObserver = originalResizeObserver;
   });
 
@@ -122,6 +130,8 @@ for (const layout of ["page", "post"] as const) test(`${layout} 标签预览保�
   assert.equal(state.preview.previewToken.value, "current-token", "首次预览 token 未在确定轮询内就绪");
   assert.equal(state.preview.srcdoc.value.includes('data-preview-surface="1"'), layout === "post",
     "页面画布使用透明嵌入，文章编辑保留独立表面及文字对比度");
+  assert.equal(state.preview.srcdoc.value.includes('html[data-theme="light"]'), layout === "post",
+    "深色 Console 下文章编辑器只给浅色站点铺首屏表面，页面画布不注入表面");
   assert.ok(nodeCache instanceof renderGate.PreviewCache);
   assert.notEqual(nodeCache, renderGate.sharedPreviewCache, "NodeView 重新挂载后应取得当前主题文档");
   const frame = {};
