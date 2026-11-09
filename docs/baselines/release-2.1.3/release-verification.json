@@ -1,0 +1,101 @@
+{
+  "task": "BLG-20261109-03",
+  "title": "编辑器标签预览表面按配色自适应（v2.1.3）",
+  "date": "2026-11-09",
+  "timezone": "Asia/Taipei",
+  "branch": "codex/fix/20261109-BLG-20261109-03-editor-tag-surface",
+  "commit": "4aa3d7c1",
+  "base_dev": "8a96ec23",
+  "dev_merges": {
+    "sync_main": "1529867b",
+    "sync_release": "019d5665",
+    "v2.1.2_release_docs": "9f8f1f9d"
+  },
+  "prs": [
+    {
+      "number": 67,
+      "direction": "dev→main",
+      "title": "发布 v2.1.3：编辑器标签预览表面按配色自适应",
+      "merge_commit": "b44d073f",
+      "merged_at": "2026-11-09T10:31:46Z",
+      "checks": [
+        "go",
+        "lint",
+        "security",
+        "console",
+        "e2e",
+        "build"
+      ],
+      "result": "all success"
+    },
+    {
+      "number": 68,
+      "direction": "main→release",
+      "title": "release: 发布 v2.1.3",
+      "merge_commit": "e5eb3c2c",
+      "merged_at": "2026-11-09T10:56:41Z",
+      "checks": [
+        "go",
+        "lint",
+        "security",
+        "console",
+        "e2e",
+        "build",
+        "release-source",
+        "image"
+      ],
+      "result": "all success"
+    }
+  ],
+  "release_content_parity": "origin/main 与 origin/release 内容零差异（git diff --name-only = 0）",
+  "tag": {
+    "name": "v2.1.3",
+    "commit": "e5eb3c2cea023d3e0fcb508752a6b30c125e360b",
+    "signed": true,
+    "key": "979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989",
+    "verify": "gpg: Good signature from \"sakuralovesmile <sakuraseplite@gmail.com>\" [ultimate]"
+  },
+  "docker_release": {
+    "run_id": 42605031138,
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42605031138",
+    "created_at": "2026-11-09T10:57:02Z",
+    "updated_at": "2026-11-09T11:02:36Z",
+    "conclusion": "success"
+  },
+  "github_release": {
+    "tag": "v2.1.3",
+    "published_at": "2026-11-09T11:02:23Z",
+    "prerelease": false,
+    "draft": false,
+    "target": "main",
+    "assets": 0,
+    "notes_length": 315,
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/releases/tag/v2.1.3"
+  },
+  "image": {
+    "name": "ghcr.io/sakuralovesmile/sakura-blog:2.1.3",
+    "manifest_list_digest": "sha256:552447be8720fdb030b9a1419966230c398fdd354559fbda706511efbc305256",
+    "config_digest": "sha256:963b9d7eefa4bac1df49f53777d31c39bb88186515eefda93cc41d3fd680cf02",
+    "revision": "e5eb3c2cea023d3e0fcb508752a6b30c125e360b",
+    "created": "2026-11-09T10:57:25.080Z",
+    "aliases": {
+      "2.1.3": "same manifest",
+      "2.1": "same manifest",
+      "2": "same manifest",
+      "latest": "same manifest"
+    },
+    "binary_smoke": "docker run --rm ...:2.1.3 -h exit 0（服务器）"
+  },
+  "concurrent_release": {
+    "version": "v2.1.2",
+    "released_at": "2026-11-09T09:47:33Z",
+    "merge_commit": "f0268369",
+    "note": "本次流程进行中，另一条发布流程发布了 v2.1.2（GitHub 卡片渲染修复）并在 10:00Z 升级生产；v2.1.3 在其之上发布并覆盖生产。"
+  },
+  "pre_release_checks": {
+    "console": "pnpm --filter console run test（vue-tsc -b + tsx --test）：560 passed",
+    "make_test": "feature worktree 与合并后 dev 各一轮，全绿",
+    "e2e": "tests/e2e/tag-live-preview.spec.ts 19/19 passed",
+    "browser": "隔离 e2e 实例：深色站点改动前后、浅色站点、auto（系统深/浅）均符合预期，无 console/page error；见 docs/baselines/editor-tag-surface/verification.json"
+  }
+}
