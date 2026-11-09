@@ -78,9 +78,9 @@ test("registry: stat 卡 statKey 均为 /dashboard/stats 响应字段", () => {
 });
 
 test("dashboard grid: inset 间距不会被 100% 高度覆盖", () => {
-  const contentRule = DASHBOARD_CSS.match(
-    /\.dashboard-grid-stack > \.grid-stack-item > \.grid-stack-item-content \{([\s\S]*?)\}/,
-  )?.[1] ?? "";
+  const contentRule =
+    DASHBOARD_CSS.match(/\.dashboard-grid-stack > \.grid-stack-item > \.grid-stack-item-content \{([\s\S]*?)\}/)?.[1] ??
+    "";
   const widgetCellRule = DASHBOARD_CSS.match(/\.widget-cell \{([\s\S]*?)\}/)?.[1] ?? "";
   assert.match(contentRule, /inset:\s*10px/);
   assert.match(contentRule, /height:\s*auto/);
@@ -126,4 +126,18 @@ test("dashboard phase 1/2: refresh and non-blocking chart/comment states are wir
   assert.match(HOURLY, /暂无访问数据/);
   assert.match(HOURLY, /trendDays === 30/);
   assert.match(TREND, /showUv/);
+});
+
+test("访问趋势：全零序列按空态处理，横轴与提示由 DOM 层渲染", () => {
+  // 接口会给无数据的日子补零，只有 pv 全为 0 才是真正的空态。
+  assert.match(TREND, /const hasTraffic = computed\(\(\) => data\.value\.some\(\(item\) => item\.pv > 0\)\)/);
+  assert.match(TREND, /v-else-if="!hasTraffic"/);
+  // SVG 用了 preserveAspectRatio="none"，内部文字会被压扁；轴标签必须留在 HTML 层。
+  assert.match(TREND, /class="trend-axis"/);
+  assert.doesNotMatch(TREND, /<text\b/);
+  // 首尾标签贴边，避免半个字被卡片边缘裁掉。
+  assert.match(TREND, /is-first/);
+  assert.match(TREND, /is-last/);
+  // 折线两端内缩，末点记号与峰谷不被裁切。
+  assert.match(TREND, /const \{ inset, width \} = plot\.value/);
 });
