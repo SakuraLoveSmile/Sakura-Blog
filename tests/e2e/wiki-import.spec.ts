@@ -16,6 +16,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 const BASELINE_DIR = join(process.cwd(), "docs", "baselines", "wiki-post-import");
 const EVIDENCE_PATH = join(BASELINE_DIR, "browser-evidence.json");
+// 项目管理合并（BLG-20261109-04）的截图与证据单独归档，不覆盖上一任务的基线。
+const MERGE_BASELINE_DIR = join(process.cwd(), "docs", "baselines", "wiki-projects-merge");
+const MERGE_EVIDENCE_PATH = join(MERGE_BASELINE_DIR, "browser-evidence.json");
 const DIST_DIR = join(process.cwd(), "modules", "console", "web", "dist");
 
 test.describe.configure({ timeout: 120_000 });
@@ -93,13 +96,10 @@ async function createParentDoc(page: Page, projectId: string, slug: string, titl
   return id;
 }
 
-/** 打开文库页并选中指定项目，等待文档列表加载完成（空项目显示「暂无文档」）。 */
+/** 直接打开某个项目的文档工作台（文档是项目下的二级页面，项目来自路由）。 */
 async function openWikiProject(page: Page, project: WikiProjectFixture) {
-  await page.goto("/console/wiki");
-  await expect(page.getByRole("heading", { name: "文库管理", exact: true })).toBeVisible();
-  const projectSelect = page.getByTitle("选择文库项目");
-  await expect(projectSelect.locator(`option[value="${project.id}"]`)).toHaveCount(1, { timeout: 15_000 });
-  await projectSelect.selectOption(project.id);
+  await page.goto(`/console/wiki/${project.id}/docs`);
+  await expect(page.getByRole("heading", { name: "项目管理", exact: true })).toBeVisible();
   await expect(page.locator(".page-header").getByRole("button", { name: "导入文章", exact: true })).toBeEnabled();
 }
 
@@ -134,32 +134,34 @@ async function screenshot(page: Page, name: string) {
 }
 
 /** 每个用例把自己的实测值合并进同一份原始证据 JSON（按用例 key 覆盖，避免并行写坏）。 */
-function recordEvidence(key: string, payload: Record<string, unknown>) {
-  mkdirSync(BASELINE_DIR, { recursive: true });
+function recordEvidence(key: string, payload: Record<string, unknown>, dir = BASELINE_DIR, path = EVIDENCE_PATH) {
+  mkdirSync(dir, { recursive: true });
   let doc: { generatedAt?: string; tests?: Record<string, unknown> } = {};
   try {
-    doc = JSON.parse(readFileSync(EVIDENCE_PATH, "utf8")) as typeof doc;
+    doc = JSON.parse(readFileSync(path, "utf8")) as typeof doc;
   } catch {
     // 首次运行没有证据文件，直接新建。
   }
   const generatedAt = new Date().toISOString();
   doc.generatedAt = generatedAt;
   doc.tests = { ...(doc.tests ?? {}), [key]: { recordedAt: generatedAt, ...payload } };
-  writeFileSync(EVIDENCE_PATH, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
+  writeFileSync(path, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
 }
 
 /** 入口 HTML 必须与磁盘当前构建一致；页面里出现新入口才能证明浏览器加载了本次产物。 */
-test("浏览器加载当前 Console 产物：入口 HTML 与 dist 一致且文库页带「导入文章」", async ({ page }) => {
+test("浏览器加载当前 Console 产物：入口 HTML 与 dist 一致且项目管理页可用", async ({ page }) => {
   await login(page);
+  // 侧栏入口与旧书签都走 /console/wiki，落在项目列表。
   const entryResponse = await page.goto("/console/wiki");
   expect(entryResponse, "入口文档必须有响应").not.toBeNull();
   const entryHtml = await entryResponse!.text();
   const diskEntrySha = sha256(readFileSync(join(DIST_DIR, "index.html")));
   const entrySha = sha256(entryHtml);
   expect(entrySha, "浏览器入口 HTML 必须与磁盘当前构建的 dist/index.html 一致").toBe(diskEntrySha);
+  await expect(page).toHaveURL(/\/console\/wiki\/projects$/);
 
-  await expect(page.getByRole("heading", { name: "文库管理", exact: true })).toBeVisible();
-  await expect(page.locator(".page-header").getByRole("button", { name: "导入文章", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "项目管理", exact: true })).toBeVisible();
+  await expect(page.locator(".page-header").getByRole("button", { name: "新建项目", exact: true })).toBeVisible();
 
   // 页面实际加载的入口 JS 也必须是磁盘产物（用入口 HTML 里的 modulepreload/script URL 对照）。
   const assetUrls = Array.from(entryHtml.matchAll(/(?:src|href)="([^"]*\/console\/assets\/[^"]+)"/g)).map(
@@ -430,4 +432,115 @@ test("移动 390×844：导入弹窗可用、选项完整且无横向溢出", as
     selectedCount: "已选 2 篇",
     screenshot: mobileShot,
   });
+});
+
+test("项目管理：侧栏单入口、/wiki 落项目列表、项目行进入该项目文档，缺项目给空态", async ({ page }) => {
+  await login(page);
+  const token = `pw-wiki-merge-${Date.now()}`;
+  const project = await createWikiProject(page, `pw-wiki-mg-${token}`, `合并验收项目 ${token}`);
+
+  // 1) 侧栏只有一项「项目管理」，没有旧的「文库」入口，也没有子项。
+  const sidebar = page.locator("aside");
+  await expect(sidebar.getByRole("link", { name: "项目管理", exact: true })).toHaveCount(1);
+  await expect(sidebar.getByRole("link", { name: "文库", exact: true })).toHaveCount(0);
+  const wikiLink = sidebar.locator('a[href="/console/wiki"]');
+  await expect(wikiLink).toHaveCount(1);
+  // 只有图标，没有子项箭头（箭头是第二个 svg，只有带 children 的菜单项才会渲染）。
+  await expect(wikiLink.locator("svg")).toHaveCount(1);
+
+  // 2) 点侧栏落到项目列表。
+  await wikiLink.click();
+  await expect(page).toHaveURL(/\/console\/wiki\/projects$/);
+  await expect(page.getByRole("heading", { name: "项目管理", exact: true })).toBeVisible();
+  const row = page.locator("main.content").locator("div.group").filter({ hasText: `合并验收项目 ${token}` }).first();
+  await expect(row).toBeVisible();
+
+  // 3) 项目行内的「文档」入口进入该项目文档工作台，页头带项目名徽标。
+  await row.getByRole("button", { name: "文档", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/console/wiki/${project.id}/docs$`));
+  await expect(page.getByRole("heading", { name: "项目管理", exact: true })).toBeVisible();
+  const header = page.locator(".page-header");
+  await expect(header.getByText(`合并验收项目 ${token}`, { exact: true })).toBeVisible();
+  await expect(header.getByRole("button", { name: "导入文章", exact: true })).toBeEnabled();
+  await expect(header.getByRole("button", { name: "返回项目", exact: true })).toBeVisible();
+  await expect(header.locator("select")).toHaveCount(0);
+
+  // 4) 页内返回项目，回到列表且不再有选中项目以外的跳转副作用。
+  await header.getByRole("button", { name: "返回项目", exact: true }).click();
+  await expect(page).toHaveURL(/\/console\/wiki\/projects$/);
+
+  // 5) 项目列表页头「编排文档」在选中项目后可用，并同样进入该项目。
+  await row.click();
+  await expect(page.locator(".page-header").getByRole("button", { name: "编排文档", exact: true })).toBeEnabled();
+  await page.locator(".page-header").getByRole("button", { name: "编排文档", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/console/wiki/${project.id}/docs$`));
+
+  // 6) 不存在的项目给明确空态，不静默落到别的项目。
+  await page.goto(`/console/wiki/pw-wiki-missing-${token}/docs`);
+  await expect(page.getByText("项目不存在或无权限查看")).toBeVisible();
+  await expect(page.getByRole("button", { name: "返回项目管理", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "返回项目管理", exact: true }).click();
+  await expect(page).toHaveURL(/\/console\/wiki\/projects$/);
+
+  // 7) 桌面与手机都不出现整页横向溢出。
+  const overflow: string[] = [];
+  for (const [width, height] of [
+    [1280, 800],
+    [390, 844],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    for (const path of ["/console/wiki/projects", `/console/wiki/${project.id}/docs`]) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { name: "项目管理", exact: true })).toBeVisible();
+      const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+      if (!noOverflow) overflow.push(`${path} @ ${width}`);
+      await page.screenshot({
+        path: join(
+          MERGE_BASELINE_DIR,
+          `merged-${path.endsWith("projects") ? "projects" : "docs"}-${width}.png`,
+        ),
+      });
+    }
+  }
+  expect(overflow, "项目管理两页在两个视口下都不得整页横向溢出").toEqual([]);
+
+  // 8) 长 slug 的项目行在 390px 下不得把「N 篇文档」挤成逐字竖排。
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/console/wiki/projects");
+  // 等列表真的加载出至少一行再量，避免把“还没渲染”误判成“没有折行”。
+  await expect(page.locator("main.content div.group").filter({ hasText: `合并验收项目 ${token}` }).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  const docSpanHeights = await page.locator("main.content div.group").evaluateAll((rows) =>
+    rows
+      .map((row) => {
+        const meta = row.querySelector("div.mt-0\\.5");
+        const docSpan = meta?.querySelector("span:last-child");
+        if (!docSpan || !meta?.textContent?.includes("篇文档")) return null;
+        return {
+          text: docSpan.textContent?.trim() ?? "",
+          h: Math.round(docSpan.getBoundingClientRect().height),
+        };
+      })
+      .filter((item): item is { text: string; h: number } => item !== null),
+  );
+  expect(docSpanHeights.length, "至少应有一个带「篇文档」的项目行").toBeGreaterThan(0);
+  for (const item of docSpanHeights) {
+    expect(item.h, `「${item.text}」被折行成竖排（高度 ${item.h}px，单行应 ≤ 20px）`).toBeLessThanOrEqual(20);
+  }
+
+  recordEvidence(
+    "projects-merged-entry",
+    {
+      project,
+      sidebar: { links: 1, label: "项目管理", childItems: 0 },
+      landingUrl: "/console/wiki/projects",
+      docsUrl: `/console/wiki/${project.id}/docs`,
+      missingProjectEmptyState: true,
+      viewportsChecked: [1280, 390],
+      screenshots: ["merged-projects-1280.png", "merged-projects-390.png", "merged-docs-1280.png", "merged-docs-390.png"],
+    },
+    MERGE_BASELINE_DIR,
+    MERGE_EVIDENCE_PATH,
+  );
 });

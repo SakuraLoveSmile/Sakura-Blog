@@ -44,8 +44,23 @@ test("Console plugins: plugin library exposes five admin child routes and legacy
   assert.match(moduleSource, /ScriptPluginListView\.vue/);
 });
 
-test("Console plugins: catalog and runtime pages expose recoverable loading states", () => {
-  const catalog = read("modules/plugins/usePluginCatalog.ts");
+test("Console plugins: wiki and projects merged into one projects entry with docs under the project scope", () => {
+  const moduleSource = read("modules/core/module.ts");
+  // 侧栏只保留一个「项目管理」入口，且不再挂子项。
+  assert.match(moduleSource, /path: "\/wiki", label: "项目管理", icon: "ri:stack-line"/);
+  assert.doesNotMatch(moduleSource, /label: "文库"/);
+  assert.doesNotMatch(moduleSource, /\/wiki\/projects", label: "项目管理"/);
+  // 项目列表是落地页；文档工作台在项目作用域下。
+  assert.match(moduleSource, /path: "wiki", redirect: "\/wiki\/projects"/);
+  assert.match(moduleSource, /path: "wiki\/projects", name: "WikiProjects"/);
+  assert.match(moduleSource, /path: "wiki\/:project\/docs",\s+name: "WikiDocs"/);
+  // 文档页不再用下拉框选项目，项目只来自路由。
+  const docs = read("modules/wiki/WikiDocsView.vue");
+  assert.match(docs, /const activeProject = computed\(\(\) => String\(route\.params\.project \|\| ""\)\)/);
+  assert.doesNotMatch(docs, /title="选择文库项目"/);
+});
+
+test("Console plugins: catalog and runtime pages expose recoverable loading states", () => {  const catalog = read("modules/plugins/usePluginCatalog.ts");
   const shortcode = read("modules/plugins/ShortcodeStudioView.vue");
   const runtime = read("modules/plugins/ScriptPluginListView.vue");
   assert.match(catalog, /catalogStatus/);

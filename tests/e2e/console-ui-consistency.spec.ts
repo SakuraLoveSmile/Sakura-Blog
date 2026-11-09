@@ -1355,6 +1355,8 @@ test("Console 全部主导航在桌面和手机可达且无整页横向溢出", 
   const destinations: Record<string, string> = {
     "/console/plugins": "/console/plugins/shortcodes",
     "/console/seo": "/console/seo/overview",
+    // 文库与项目管理合并后，侧栏「项目管理」仍指向 /wiki，落在项目列表。
+    "/console/wiki": "/console/wiki/projects",
   };
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });

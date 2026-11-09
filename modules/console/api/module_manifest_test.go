@@ -59,6 +59,31 @@ func TestCoreManifestRetiresLegacySegmentPages(t *testing.T) {
 	}
 }
 
+// 文库与项目管理已合并为单一侧栏入口：项目是主页，文档是项目下的二级内容。
+// 旧的两级结构（「文库」+ 子项「项目管理」）不得回到侧栏。
+func TestCoreManifestMergesWikiIntoProjects(t *testing.T) {
+	meta := (&core.Module{}).Meta()
+	var wiki *module.Nav
+	for i := range meta.Nav {
+		switch meta.Nav[i].Label {
+		case "文库":
+			t.Fatalf("core manifest still exposes the retired 文库 nav item: %+v", meta.Nav[i])
+		}
+		if meta.Nav[i].Path == "/wiki" {
+			wiki = &meta.Nav[i]
+		}
+	}
+	if wiki == nil {
+		t.Fatal("core manifest is missing the /wiki nav item")
+	}
+	if wiki.Label != "项目管理" || wiki.Group != "内容" || wiki.Icon != "ri:stack-line" {
+		t.Fatalf("wiki nav = %+v, want label/group/icon 项目管理/内容/ri:stack-line", *wiki)
+	}
+	if len(wiki.Children) != 0 {
+		t.Fatalf("wiki nav children = %+v, want none (文档是项目下的二级页面，不再挂侧栏子项)", wiki.Children)
+	}
+}
+
 func TestPluginsNavHasFiveChildren(t *testing.T) {
 	want := []string{
 		"/plugins/shortcodes",

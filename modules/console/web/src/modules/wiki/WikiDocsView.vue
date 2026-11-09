@@ -2,11 +2,13 @@
 import { useStellarForm } from "@/components/editor/useStellarForm";
 import { wikiDocFields } from "@/components/editor/stellar-form-fields";
 import { provide, ref, computed, onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
 import { wikiApi, type WikiDocImportResponse, type WikiProject } from "@/api";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import ContentEditor from "@/components/ContentEditor.vue";
 import WikiImportModal from "./WikiImportModal.vue";
+import { wikiProjectDisplayName } from "./wiki-project-name";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, Toast, Dialog, VModal } from "@/components/ui";
 
@@ -37,8 +39,10 @@ interface FlatNode {
 }
 
 // ---------- 项目 ----------
+// 文档是项目的二级内容：当前项目只来自路由（/wiki/:project/docs），不再用下拉框猜上下文。
+const route = useRoute();
 const projects = ref<WikiProject[]>([]);
-const activeProject = ref("");
+const activeProject = computed(() => String(route.params.project || ""));
 const settingsLoading = ref(true);
 
 // ---------- 文档列表 / 树 ----------
@@ -113,6 +117,13 @@ const childCountMap = computed<Record<number, number>>(() => {
 // ---------- 统计数据 ----------
 const totalDocs = computed(() => docs.value.length);
 const currentProject = computed(() => projects.value.find((p) => p.id === activeProject.value) || null);
+// 路由里的项目不在项目列表里（被删除、拼错或无权查看）时给明确空态，不静默落到第一个项目。
+const projectMissing = computed(
+  () => !settingsLoading.value && Boolean(activeProject.value) && !currentProject.value,
+);
+const projectLabel = computed(() =>
+  currentProject.value ? wikiProjectDisplayName(currentProject.value) : activeProject.value,
+);
 const thisMonthUpdates = computed(() => {
   const now = new Date();
   const y = now.getFullYear();
@@ -128,7 +139,7 @@ const draftDocsCount = computed(() => docs.value.filter((d) => d.status === "dra
 const breadcrumb = computed<{ title: string; slug?: string }[]>(() => {
   const crumbs: { title: string; slug?: string }[] = [];
   if (currentProject.value) {
-    crumbs.push({ title: currentProject.value.title || currentProject.value.id });
+    crumbs.push({ title: wikiProjectDisplayName(currentProject.value) });
   }
   if (hasCurrent.value) {
     const chain: WikiDoc[] = [];
@@ -309,14 +320,12 @@ async function handleImported(result: WikiDocImportResponse) {
 }
 
 // ---------- 数据加载 ----------
+// 项目列表只用于解析当前项目的显示名与合法性；当前项目由路由决定，不在这里改写。
 async function loadProjects() {
   settingsLoading.value = true;
   try {
     const { data } = await wikiApi.listProjects();
     projects.value = Array.isArray(data.items) ? data.items : [];
-    if (projects.value.length && !activeProject.value) {
-      activeProject.value = projects.value[0].id;
-    }
   } catch {
   } finally {
     settingsLoading.value = false;
@@ -425,28 +434,35 @@ function selectAllDocs() {
   resetEditor();
 }
 
-onMounted(loadProjects);
+onMounted(() => {
+  // 项目来自路由：首次进入先加载项目列表（解析显示名与合法性），再按当前项目取文档。
+  loadProjects().then(() => loadDocs());
+});
 </script>
 
 <template>
   <div class="min-h-full">
-    <!-- 统一 Page Header -->
-    <VPageHeader title="文库管理">
-      <template #subtitle>编排多级技术文档与知识库大纲，支持树形导轨与 Markdown 沉浸写作</template>
+    <!-- 统一 Page Header：项目为主，文档是该项目下的二级内容 -->
+    <VPageHeader title="项目管理">
+      <template #badge>
+        <span
+          v-if="activeProject"
+          class="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-text-secondary"
+          :title="`/wiki/${activeProject}`"
+        >
+          {{ projectLabel }}
+        </span>
+      </template>
+      <template #subtitle>编排「{{ projectLabel }}」的多级文档与知识库大纲，支持树形导轨与 Markdown 沉浸写作</template>
       <template #actions>
-        <!-- 项目选择器 -->
-        <select v-model="activeProject" class="apple-select min-w-[160px]" title="选择文库项目">
-          <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.title || p.name || p.id }}</option>
-        </select>
-
-        <VButton :disabled="!activeProject" @click="importOpen = true">
+        <VButton @click="importOpen = true">
           <template #icon><Icon icon="ri:import-line" /></template>
           导入文章
         </VButton>
 
         <VButton :route="{ path: '/wiki/projects' }">
-          <template #icon><Icon icon="ri:settings-3-line" /></template>
-          项目设置
+          <template #icon><Icon icon="ri:arrow-left-line" /></template>
+          返回项目
         </VButton>
 
         <VButton type="primary" @click="openCreate(0)">
@@ -462,9 +478,19 @@ onMounted(loadProjects);
       </div>
 
       <VEmpty
+        v-else-if="projectMissing"
+        title="项目不存在或无权限查看"
+        :message="`地址里的项目「${activeProject}」不在你的项目列表中，可能已删除或拼写有误。`"
+      >
+        <template #actions>
+          <VButton type="primary" :route="{ path: '/wiki/projects' }"> 返回项目管理 </VButton>
+        </template>
+      </VEmpty>
+
+      <VEmpty
         v-else-if="!projects.length"
         title="暂无文库项目"
-        message="请先前往「文库项目」创建你的第一个技术知识库合辑"
+        message="请先在「项目管理」创建你的第一个技术知识库合辑"
       >
         <template #actions>
           <VButton type="primary" :route="{ path: '/wiki/projects' }"> 前往新建项目 </VButton>
@@ -767,7 +793,7 @@ onMounted(loadProjects);
     <WikiImportModal
       :open="importOpen"
       :project-id="activeProject"
-      :project-title="currentProject?.title || currentProject?.name || activeProject"
+      :project-title="projectLabel"
       :existing-slugs="existingSlugs"
       :docs="importParentOptions"
       @close="importOpen = false"
