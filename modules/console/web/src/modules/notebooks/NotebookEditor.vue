@@ -200,7 +200,6 @@ watch(() => route.params.notebook, load, { immediate: true });
             :version="2"
             profile="notebook"
             collection
-            summary="高级：集合配置与 Blog 扩展（JSON 原文）"
           />
         </fieldset>
         <div v-if="persisted" class="notebooks-actions mt-4">

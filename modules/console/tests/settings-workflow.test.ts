@@ -35,23 +35,17 @@ test("退役的主题设置重定向到 canonical 设置页，保留 Feedback �
   assert.match(notice, /tab: props.tab/);
 });
 
-test("ThemeYamlTab correctly exposes loading/saving states, error feedback, and dirty guards", () => {
-  const code = read("modules/console/web/src/modules/settings/ThemeYamlTab.vue");
-  // 重命名为样式 YAML
-  assert.match(code, /保存样式 YAML/);
-  assert.doesNotMatch(code, /保存主题 YAML/);
-  // 不吞掉错误，使用 Toast.error 展示明确明细
-  assert.match(code, /Toast\.error\(getApiErrorMessage/);
-  assert.doesNotMatch(code, /catch\s*\{\s*\}/);
-  // 防重复提交与保存中状态（本地保存状态更名为 localSaving，避免与页面级 saving 键混淆）
-  assert.match(code, /if\s*\(localSaving\.value\)\s*return;/);
-  assert.match(code, /localSaving\.value\s*=\s*true/);
-  // 必须接线页面级 saving 键，才能参与全局保存禁用
-  assert.match(code, /defineProps<\{ saving\?: string \}>/);
-  assert.match(code, /:disabled="loading \|\| localSaving \|\| Boolean\(props\.saving\)"/);
-  // 脏检查与离开守卫
-  assert.match(code, /isDirty\s*=\s*computed/);
-  assert.match(code, /onBeforeRouteLeave/);
+test("样式 YAML 整段编辑器已退役：代码与原文页只保留完整配置原文", () => {
+  // ThemeYamlTab 是 12 页结构化设置接管前的整段 YAML 保存页，已无任何模块挂载。
+  // 它的职责由「代码与原文」页的完整配置原文（可校验、按 section 保存）承接。
+  assert.throws(
+    () => read("modules/console/web/src/modules/settings/ThemeYamlTab.vue"),
+    /ENOENT/,
+    "ThemeYamlTab.vue 已退役，不应重新出现",
+  );
+  const raw = read("modules/console/web/src/modules/settings/SettingsRawEditor.vue");
+  assert.match(raw, /Stellar2Tab/);
+  assert.match(raw, /完整配置原文/);
 });
 
 test("AppearanceTab displays effective default color and inherit/override state badges", () => {

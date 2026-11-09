@@ -122,6 +122,9 @@ onMounted(load);
           placeholder="摘要（可选）"
           maxlength="500"
         />
+        <div class="mt-5 min-h-[26rem] overflow-hidden rounded-xl border border-border">
+          <MarkdownEditor user-center v-model="form.content_md" :storage-key="`uc-post:${route.params.slug || 'new'}`" />
+        </div>
         <StellarContentConfig
           v-model:config="form.stellar_config"
           v-model:blog="form.blog_extensions"
@@ -130,9 +133,6 @@ onMounted(load);
           :content="form.content_md"
           class="mt-5"
         />
-        <div class="mt-5 min-h-[26rem] overflow-hidden rounded-xl border border-border">
-          <MarkdownEditor user-center v-model="form.content_md" :storage-key="`uc-post:${route.params.slug || 'new'}`" />
-        </div>
       </section>
       <aside class="h-fit rounded-2xl border border-border bg-card p-4 sm:p-5">
         <h2 class="text-sm font-semibold">文章信息</h2>

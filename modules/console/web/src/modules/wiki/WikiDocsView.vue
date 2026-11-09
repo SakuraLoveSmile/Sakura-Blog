@@ -719,6 +719,13 @@ onMounted(() => {
               </div>
 
               <!-- Markdown 编辑器 -->
+              <ContentEditor
+                ref="editorRef"
+                v-model="form.content_md"
+                :storage-key="'wiki:' + activeProject + ':' + (originalSlug || 'new')"
+                min-height="500px"
+                @save="handleSave"
+              />
               <StellarContentConfig
                 :sync-error="stellarFormError"
                 v-model:config="form.stellar_config"
@@ -726,14 +733,7 @@ onMounted(() => {
                 :version="form.stellar_version"
                 profile="wiki"
                 :content="form.content_md"
-                class="mb-3"
-              />
-              <ContentEditor
-                ref="editorRef"
-                v-model="form.content_md"
-                :storage-key="'wiki:' + activeProject + ':' + (originalSlug || 'new')"
-                min-height="500px"
-                @save="handleSave"
+                class="mt-3"
               />
 
               <template #footer>

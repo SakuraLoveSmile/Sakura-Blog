@@ -208,14 +208,6 @@ watch(() => [route.params.notebook, route.params.id], load, { immediate: true })
               <p class="notebooks-help">层级标签使用 a/b；标签保留为字符串列表。</p></label
             >
           </VCard>
-          <StellarContentConfig
-            class="mt-4"
-            v-model:config="form.config"
-            v-model:blog="form.blog"
-            :version="2"
-            profile="note"
-            summary="高级：Front matter 与 Blog 扩展（JSON 原文）"
-          />
           <p class="notebooks-help">
             Front matter 里 collection.profile 必须为 notebook，collection.id 必须是当前笔记本 ID；预览使用当前配置。
           </p>
@@ -230,6 +222,13 @@ watch(() => [route.params.notebook, route.params.id], load, { immediate: true })
               @pending-change="editorPending = $event"
             />
           </div>
+          <StellarContentConfig
+            class="mt-4"
+            v-model:config="form.config"
+            v-model:blog="form.blog"
+            :version="2"
+            profile="note"
+          />
         </fieldset>
         <p v-if="status === 'published'" class="notebooks-help">
           保存更新会立即更新公开笔记；需要隐藏时请撤稿，撤稿后保存为草稿。

@@ -11,7 +11,7 @@ const configError = computed(() => {
     readJSONField(props.config, "");
     return "";
   } catch {
-    return "配置原文尚未完成，请在下方“配置原文（JSON）”中修正后再调整设置。";
+    return "配置原文尚未完成，请在下方“高级：配置原文”中修正后再调整设置。";
   }
 });
 const disabled = computed(() => props.version !== 2 || !!props.syncError || !!configError.value);
@@ -229,7 +229,7 @@ const tagsField: Field = { path: "footer.show_tags", label: "底部标签", choi
         </div>
         <p v-if="index === 0" class="text-[11px] text-text-quaternary">隐藏列表或搜索结果不会限制通过文章链接访问。</p>
         <p v-if="group.title === '内容渲染'" class="text-[11px] text-text-quaternary">
-          已有 Mermaid 参数会保留，可在配置原文中调整。
+          已有 Mermaid 参数会保留，可在下方“高级：配置原文”中调整。
         </p>
       </fieldset>
     </details>
@@ -334,7 +334,7 @@ const tagsField: Field = { path: "footer.show_tags", label: "底部标签", choi
           <p class="mt-1 text-[11px] text-text-quaternary">
             {{
               complexReferences
-                ? "现有资料包含复杂对象，已完整保留，请在配置原文中编辑。"
+                ? "现有资料包含复杂对象，已完整保留，请在下方“高级：配置原文”中编辑。"
                 : "清空可隐藏参考资料；恢复继承移除本文覆盖。"
             }}
           </p>

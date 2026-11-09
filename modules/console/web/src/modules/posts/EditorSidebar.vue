@@ -954,8 +954,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
         :version="form.stellar_version"
         :content="form.content_md"
         profile="post"
-        summary="配置原文（JSON）"
-        class="post-settings-content-config min-w-0"
+        class="min-w-0"
       />
     </template>
   </div>
@@ -965,15 +964,6 @@ const chipActiveCls = "bg-primary/15 text-primary";
 /* 标签输入在 token 容器内：焦点环交给 focus-within 边框，避免 input 再叠一圈全局蓝色焦点环。 */
 .tag-draft-input:focus-visible {
   outline: none;
-}
-
-/* 共享配置组件保持功能边界，仅在文章侧栏内去掉卡片皮肤。 */
-.post-settings-content-config {
-  padding: 18px 0 20px;
-  border: 0;
-  border-bottom: 1px solid var(--color-border);
-  border-radius: 0;
-  background: transparent;
 }
 
 /* 移动抽屉内的直接控件保证可触控。 */
