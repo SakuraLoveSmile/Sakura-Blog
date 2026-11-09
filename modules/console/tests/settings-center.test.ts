@@ -72,13 +72,18 @@ test("settings center keeps structured forms and section save contracts split by
     ["PostSettings.vue", /emit\(["']save["'], ["']article["']\)/],
     ["CommentSettings.vue", /settingsApi\.testNotify/],
     ["SearchSettings.vue", /emit\(["']save["'], ["']search["']\)/],
-    ["AdvancedSettings.vue", /saveJson/],
   ] as const;
   for (const [name, marker] of components) {
     assert.ok(existsSync(join(ROOT, "modules/settings/tabs", name)), `${name} should exist`);
     assert.match(read(`modules/settings/tabs/${name}`), new RegExp(marker));
   }
   assert.doesNotMatch(read("modules/settings/tabs/PostSettings.vue"), /friends\./);
+  // 旧整段 JSON 保存页已退役：12 页结构化设置接管后没有入口，保存走统一保存栏。
+  assert.ok(
+    !existsSync(join(ROOT, "modules/settings/tabs/AdvancedSettings.vue")),
+    "AdvancedSettings.vue 已退役，不应重新出现",
+  );
+  assert.ok(!existsSync(join(ROOT, "modules/settings/ThemeYamlTab.vue")), "ThemeYamlTab.vue 已退役，不应重新出现");
 });
 
 test("退役的旧分段页面只保留重定向，助手与友链设置仍走 canonical 表单", () => {
@@ -138,8 +143,8 @@ test("Stellar runtime settings are exposed by structured forms", () => {
   assert.match(search, /settings-search-cache-ttl/);
   assert.match(search, /data\.search\.local_search\.cache_ttl/);
 
-  const advanced = read("modules/settings/tabs/AdvancedSettings.vue");
-  assert.match(advanced, /settings-cache-max-entries/);
+  // 旧整段 JSON 页退役后，服务与缓存默认值仍由 settings-state 承载。
+  const advanced = read("modules/settings/settings-state.ts");
   for (const service of ["giscus", "waline", "artalk", "memos-user", "sites", "friends_and_posts", "siteinfo"])
     assert.match(advanced, new RegExp(service));
 

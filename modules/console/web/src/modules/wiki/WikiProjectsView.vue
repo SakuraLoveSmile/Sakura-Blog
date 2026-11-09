@@ -407,15 +407,6 @@ onMounted(() => loadProjects());
 
         <!-- 右侧项目表单与 Hero 设置 -->
         <div class="space-y-5 lg:col-span-8">
-          <StellarContentConfig
-            :sync-error="stellarFormError"
-            v-model:config="form.stellar_config"
-            v-model:blog="form.blog_extensions"
-            :version="form.stellar_version"
-            profile="wiki"
-            collection
-            class="mb-4"
-          />
           <VCard :title="isEditing ? `编辑项目：${selectedProject ? wikiProjectDisplayName(selectedProject) : form.id}` : '新建 Wiki 项目'">
             <div class="space-y-4">
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -650,6 +641,14 @@ onMounted(() => loadProjects());
               </div>
             </template>
           </VCard>
+          <StellarContentConfig
+            :sync-error="stellarFormError"
+            v-model:config="form.stellar_config"
+            v-model:blog="form.blog_extensions"
+            :version="form.stellar_version"
+            profile="wiki"
+            collection
+          />
         </div>
       </div>
     </div>

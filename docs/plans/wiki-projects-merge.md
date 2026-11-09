@@ -82,3 +82,25 @@
 | 2026-11-09 | 同上（去掉修复的负向对照） | 同上 | 断言按预期失败：「0 篇文档 被折行成竖排（高度 64px）」 |
 | 2026-11-09 | feature worktree | `make test` | 通过 |
 | 2026-11-09 | 同上 | `pnpm exec playwright test`（截图重生成） | `docs/baselines/wiki-projects-merge/` 四张截图 + 证据更新 |
+
+## 发布与线上升级（v2.1.4）
+
+用户 2026-11-09 22:00 左右确认体验通过并指示「发布新版本 然后更新线上」，据此执行完整发布流程。
+
+| 步骤 | 内容 | 结果 |
+| --- | --- | --- |
+| 版本判定 | `v2.1.3` 已占用且不含本次改动（PR #67 只到 `9f8f1f9d`）；`origin/main` 内容已全在 dev（零差异） | 取 `v2.1.4` |
+| dev → main | PR #69，8 项检查 | build/console/go/lint/security/e2e(21m50s) 全过；`image`、`release-source` 按 dev→main 规则跳过；合并 `8409b050` |
+| main → release | PR #70，8 项检查含 `release-source`(14s) 与 `image` 预构建(2m0s) | 全过；合并 `70ea2a7a` |
+| 签名 tag | `v2.1.4` → `70ea2a7a`，GPG key `979B6BCF…3F3AD989` | 签名验证 Good signature |
+| 镜像发布 | `docker-release.yml` run `42631195212` | success 5m55s；digest `sha256:c4924099…330577`；GitHub Release 已建、0 资产、非预发布 |
+| 镜像可启动 | 服务器 `docker run --rm <image> -h` | 退出码 0 |
+| 生产升级 | 备份 614M（sha256 `702651dd…`）+ compose `2.1.3` → `2.1.4` + `up -d` | 容器 `bf3a0c04de86`，Up，restarts 0，镜像 digest 与 GHCR 一致 |
+| 线上验收 | `/` `/console/` `/settings` `/wiki` | 全 200；`/readyz` 200；5 分钟内日志 0 错误 0 panic |
+| 产物核对 | 线上入口 `assets/index-Bty0ZzDD.js` | 含 `wiki/projects` 重定向、`wiki/:project/docs` 路由、「项目管理」标签；「文库」出现 **0** 次 |
+
+- 证据：`docs/baselines/release-2.1.4/release-verification.json`、`docs/baselines/release-2.1.4/production-verification.json`
+- 回退：compose `image` 改回 `2.1.3` 并 `up -d`（镜像仍在服务器，本次无 schema 迁移）；数据回退用 `/home/ubuntu/blog-pre-v2.1.4/site-state-pre-2.1.4.tar.gz`
+- 未验证：生产 Console 登录态下的完整交互（无生产账号密码）；Firefox/Safari 差异；公网域名入口（`site.yml` 的 `url` 为空，只验证了宿主 8081）
+- 磁盘提示：升级后根盘剩余 2.2G（96%），`/home/ubuntu` 下有多份历史 staging/update 目录与悬空镜像未清理（属历史资源，本次未动）
+- 状态：**待体验**（发布与升级已完成，等用户在生产确认）

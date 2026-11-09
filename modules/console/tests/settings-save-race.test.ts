@@ -31,7 +31,6 @@ const SAVE_BUTTON_FILES = [
   "modules/console/web/src/modules/settings/tabs/PostSettings.vue",
   "modules/console/web/src/modules/settings/tabs/CommentSettings.vue",
   "modules/console/web/src/modules/settings/tabs/SearchSettings.vue",
-  "modules/console/web/src/modules/settings/tabs/AdvancedSettings.vue",
   "modules/console/web/src/modules/settings/AuthorsTab.vue",
   "modules/console/web/src/modules/settings/WidgetsTab.vue",
   "modules/console/web/src/modules/settings/CoverTab.vue",
@@ -96,16 +95,13 @@ test("所有设置与主题设置保存按钮都带全局保存禁用条件（�
     loadingButtons += (code.match(/:loading="saving[^"]*"/g) ?? []).length;
     globallyDisabled += (code.match(/:disabled="Boolean\(saving\)"/g) ?? []).length;
   }
-  // 原 21 个：站点信息 1、SEO 宿主表单 2、访客反馈 1 已移入统一保存栏，其余 17 个保持不变。
-  assert.equal(loadingButtons, 17, "保存按钮数量应与受管子表单一致");
+  // 原 21 个：站点信息 1、SEO 宿主表单 2、访客反馈 1 已移入统一保存栏；
+  // AdvancedSettings 退役带走 3 个（inject、data_cache、json:<section>），其余 14 个保持不变。
+  assert.equal(loadingButtons, 14, "保存按钮数量应与受管子表单一致");
   assert.equal(globallyDisabled, loadingButtons, "每个保存按钮都必须带 Boolean(saving) 全局禁用条件");
 
-  // 独立持有本地保存状态的子表单必须接线页面级 saving，否则不会参与全局禁用
-  const themeYaml = read("modules/console/web/src/modules/settings/ThemeYamlTab.vue");
-  assert.match(themeYaml, /defineProps<\{ saving\?: string \}>/);
-  assert.match(themeYaml, /:disabled="loading \|\| localSaving \|\| Boolean\(props\.saving\)"/);
-  // 请求期间仍允许继续编辑 YAML 文本（不得因保存禁用输入）
-  assert.doesNotMatch(themeYaml, /:disabled="loading \|\| localSaving"/);
+  // 独立持有本地保存状态的子表单必须接线页面级 saving，否则不会参与全局禁用。
+  // 样式 YAML 整段编辑器随 ThemeYamlTab 一并退役，嵌套 JSON 原文统一走“代码与原文”页。
   assert.match(
     read("modules/console/web/src/modules/settings/MenubarEditor.vue"),
     /:disabled="hasErrors \|\| Boolean\(saving\)"/,
