@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-11-09T10:58:53.149Z",
+  "tests": {
+    "projects-merged-entry": {
+      "recordedAt": "2026-11-09T10:58:53.149Z",
+      "project": {
+        "id": "pw-wiki-mg-pw-wiki-merge-1794221932272",
+        "title": "合并验收项目 pw-wiki-merge-1794221932272"
+      },
+      "sidebar": {
+        "links": 1,
+        "label": "项目管理",
+        "childItems": 0
+      },
+      "landingUrl": "/console/wiki/projects",
+      "docsUrl": "/console/wiki/pw-wiki-mg-pw-wiki-merge-1794221932272/docs",
+      "missingProjectEmptyState": true,
+      "viewportsChecked": [
+        1280,
+        390
+      ],
+      "screenshots": [
+        "merged-projects-1280.png",
+        "merged-projects-390.png",
+        "merged-docs-1280.png",
+        "merged-docs-390.png"
+      ]
+    }
+  }
+}

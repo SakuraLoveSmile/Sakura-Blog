@@ -2,6 +2,7 @@
 import { useStellarForm } from "@/components/editor/useStellarForm";
 import { wikiFields } from "@/components/editor/stellar-form-fields";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import AttachmentField from "@/components/AttachmentField.vue";
@@ -127,6 +128,7 @@ function formFromProject(p: WikiProject): ProjectForm {
 }
 
 const projects = ref<WikiProject[]>([]);
+const router = useRouter();
 const selectedId = ref("");
 const form = ref<ProjectForm>(emptyForm());
 const stellarFormError = useStellarForm(() => form.value, wikiFields);
@@ -137,6 +139,13 @@ const error = ref("");
 
 const selectedProject = computed(() => projects.value.find((p) => p.id === selectedId.value) || null);
 const isEditing = computed(() => Boolean(selectedId.value));
+
+/** 文档工作台挂在项目作用域下；未选中项目时按钮禁用，不猜测目标项目。 */
+const docsRoute = computed(() => ({ path: `/wiki/${encodeURIComponent(selectedId.value)}/docs` }));
+
+function openDocs(projectId: string) {
+  router.push({ path: `/wiki/${encodeURIComponent(projectId)}/docs` });
+}
 
 // ---------- 统计数据 ----------
 const stats = computed(() => {
@@ -286,12 +295,12 @@ onMounted(() => loadProjects());
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="文库项目">
+    <VPageHeader title="项目管理">
       <template #subtitle>管理文库项目的多版本元数据、封面海报、标签与 Hero 介绍</template>
       <template #actions>
-        <VButton :route="{ path: '/wiki' }">
+        <VButton :disabled="!selectedId" :route="docsRoute">
           <template #icon><Icon icon="ri:file-list-3-line" /></template>
-          管理文档
+          编排文档
         </VButton>
         <VButton type="primary" @click="startCreate">
           <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
@@ -370,10 +379,11 @@ onMounted(() => loadProjects());
                   </span>
                   <Icon v-if="project.pin" icon="ri:pushpin-fill" class="shrink-0 text-xs text-primary" />
                 </div>
-                <div class="mt-0.5 flex items-center gap-2 text-xs text-text-quaternary">
-                  <span class="font-mono">/{{ project.id }}</span>
-                  <span>·</span>
-                  <span>{{ project.doc_count || 0 }} 篇文档</span>
+                <!-- slug 可能很长：让它省略号截断，项目 id 放 title；文档数始终单行不折字。 -->
+                <div class="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-text-quaternary">
+                  <span class="truncate font-mono" :title="project.id">/{{ project.id }}</span>
+                  <span class="shrink-0">·</span>
+                  <span class="shrink-0 whitespace-nowrap">{{ project.doc_count || 0 }} 篇文档</span>
                 </div>
               </div>
 
@@ -381,6 +391,16 @@ onMounted(() => loadProjects());
                 icon="ri:arrow-right-s-line"
                 class="text-text-quaternary transition-transform group-hover:translate-x-0.5"
               />
+              <!-- 文档是项目的二级内容：行内直达该项目的工作台，不抢整行“选中编辑”的点击。 -->
+              <button
+                type="button"
+                class="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-text-tertiary transition-colors hover:bg-secondary hover:text-primary"
+                :title="`编排「${wikiProjectDisplayName(project)}」的文档`"
+                @click.stop="openDocs(project.id)"
+              >
+                <Icon icon="ri:file-list-3-line" />
+                文档
+              </button>
             </div>
           </div>
         </div>
