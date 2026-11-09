@@ -1,0 +1,74 @@
+{
+  "task": "BLG-20261109-01",
+  "version": "v2.1.1",
+  "date": "2026-11-09",
+  "server": {
+    "host": "blog-prod（124.220.55.80，Ubuntu）",
+    "compose_dir": "/opt/1panel/docker/compose/blog",
+    "host_port": 8081
+  },
+  "before": {
+    "compose_image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.1-beta01",
+    "container": "49e24fc30e19",
+    "image_id": "sha256:a9464299fe2e28bea065778837711b72d21869290225b60b99ed8eeb69aff82c",
+    "restarts": 0,
+    "status": "Up 17 hours",
+    "readyz_host": 200,
+    "disk": "50G 中 44G 已用，剩余 3.5G（93%）",
+    "latest_app_backup": "blog-backup-20261108-130608.zip",
+    "site_version": "2.1.1-beta01"
+  },
+  "backup": {
+    "dir": "/home/ubuntu/blog-pre-v2.1.1（0700，ubuntu:ubuntu）",
+    "site_state": "site-state-pre-2.1.1.tar.gz（2.9MB，含 config/、content/、data/blog.db）",
+    "site_state_sha256": "486f73e861044ebc049c4a68f0ecb9b5c7857a239c8f62d9c56dc89a2d924ee7",
+    "compose_backup": "docker-compose.yml.before-2.1.1",
+    "before_facts": "before.txt（镜像 / imageID / restarts / readyz / 磁盘 / 站点版本）"
+  },
+  "upgrade": {
+    "command": "compose image 行改为 ghcr.io/sakuralovesmile/sakura-blog:2.1.1 → docker compose pull → docker compose up -d",
+    "image_pre_pulled": true,
+    "down_at": "2026-11-09T05:49:17Z",
+    "up_at": "2026-11-09T05:49:21Z",
+    "downtime": "约 4 秒（镜像已预先拉取，无 schema 迁移）"
+  },
+  "after": {
+    "container": "b1b5fc6ec21e",
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.1",
+    "image_id": "sha256:2e6dbe0a0ea0d74056234244ce4aac3bab859d4a392005bd8f25398b436da4c1",
+    "version_label": "2.1.1",
+    "restarts": 0,
+    "status": "running",
+    "readyz_host": 200
+  },
+  "public_acceptance": {
+    "time": "2026-11-09T05:50:23Z",
+    "endpoints": { "/": 200, "/readyz": 200, "/console/": 200, "/uc/": 200, "/settings": 200 },
+    "settings_version": "v2.1.1",
+    "article": "https://blog.xn--fhqths51enha.cn/post/pi-desktop-custom-dev-log",
+    "browser": "Playwright Chromium 1.62.1，1280×900 DPR2，dark，networkidle",
+    "card": {
+      "box_css_px": "424.2×110",
+      "background": "rgb(39, 37, 32)",
+      "border": "1px",
+      "radius": "12px",
+      "padding": "16px",
+      "stat_icons": 3,
+      "icon_box_css_px": "13.19×13.19",
+      "icon_color": "rgba(255, 255, 255, 0.5)（跟随 --text-p3）",
+      "aria_labels": ["0 stars", "0 forks"],
+      "console_errors": 0,
+      "page_errors": 0,
+      "screenshot": "production-ghrepo-card.png"
+    }
+  },
+  "rollback": {
+    "image": "compose image 改回 ghcr.io/sakuralovesmile/sakura-blog:2.1.1-beta01（本机仍有该镜像，digest sha256:a9464299…aff82c）→ docker compose up -d",
+    "data": "如需整站回滚：停容器后以 /home/ubuntu/blog-pre-v2.1.1/site-state-pre-2.1.1.tar.gz 恢复 config/、content/、data/blog.db 再启动",
+    "note": "本次无数据库 schema 迁移，正常回退只需切换镜像"
+  },
+  "not_verified": [
+    "未用生产账号登录 Console 做写操作",
+    "未在手机真机复核；样式在 390px 视口已由发布前浏览器验收覆盖"
+  ]
+}
