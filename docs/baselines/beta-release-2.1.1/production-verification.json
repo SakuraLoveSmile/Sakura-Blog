@@ -1,0 +1,66 @@
+{
+  "task": "BLG-20261108-02",
+  "server": "blog-prod (Ubuntu, compose dir /opt/1panel/docker/compose/blog, host port 8081)",
+  "preflight_at": "2026-11-08T11:40:50Z",
+  "preflight": {
+    "container_image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.0",
+    "container_image_id": "sha256:c27e314ebc2f92f84f2dc5cde0c026017ea2c94ac65a346cf245c706cbe95d50",
+    "container_status": "running",
+    "restarts": 0,
+    "started_at": "2026-11-06T19:38:44.483847357Z",
+    "compose_image_line": "image: ghcr.io/sakuralovesmile/sakura-blog:2.1.0",
+    "host_readyz": 200,
+    "latest_auto_backup": "/opt/1panel/docker/compose/blog/data/backups/blog-backup-20261107-193848.zip (46M, 2026-11-08 03:38)",
+    "sizes": { "config": "28K", "content": "96K", "sqlite": "13M" },
+    "disk_free": "3.7G"
+  },
+  "pre_upgrade_backup": {
+    "dir": "/home/ubuntu/blog-pre-v2.1.1-beta01 (0700, ubuntu:ubuntu)",
+    "site_state": "/home/ubuntu/blog-pre-v2.1.1-beta01/site-state-pre-beta.tar.gz",
+    "site_state_bytes_human": "2.9M",
+    "site_state_sha256": "ba5a2daa89e0060c2309fec679c0e82b8974a61ccc6986c0398ca2b66983fc04",
+    "compose_backup": "/home/ubuntu/blog-pre-v2.1.1-beta01/docker-compose.yml.before-2.1.1-beta01",
+    "in_place_compose_backup": "/opt/1panel/docker/compose/blog/docker-compose.yml.bak-before-2.1.1-beta01",
+    "before_facts": "/home/ubuntu/blog-pre-v2.1.1-beta01/before.txt"
+  },
+  "upgrade": {
+    "pulled_digest": "sha256:a9464299fe2e28bea065778837711b72d21869290225b60b99ed8eeb69aff82c",
+    "container_stop_at": "2026-11-08T13:04:37Z",
+    "recovered_on_210_at": "2026-11-08T13:05:36Z",
+    "recreated_at": "2026-11-08T13:06:04Z",
+    "started_at": "2026-11-08T13:06:07Z",
+    "downtime_seconds": 62,
+    "downtime_note": "首次冷备份因 config/ 与 data/blog.db 属 root（0600/root:root）且脚本用非 sudo tar + set -e 中止，先以 2.1.0 恢复；随后 sudo tar 备份并按预期切换镜像。后续同类升级直接用 sudo tar。",
+    "after_image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.1-beta01",
+    "after_image_id": "sha256:a9464299fe2e28bea065778837711b72d21869290225b60b99ed8eeb69aff82c",
+    "after_container_label_version": "2.1.1-beta01",
+    "after_status": "running",
+    "after_restarts": 0,
+    "after_host_readyz": 200,
+    "disk_free_after": "3.5G"
+  },
+  "public_verification": {
+    "base_url": "https://blog.xn--fhqths51enha.cn",
+    "status": { "/readyz": 200, "/": 200, "/console/": 200, "/uc/": 200, "/settings": 200 },
+    "settings_version_text": "v2.1.1-beta01",
+    "home_head_has_tag_plugins_css": true,
+    "github_card_post": {
+      "path": "/post/pi-desktop-custom-dev-log/",
+      "http": 200,
+      "tag_plugins_css": true,
+      "card_selector": ".ghrepo-card",
+      "card_size": { "width": 427, "height": 110 },
+      "card_style": { "background": "rgb(39, 37, 32)", "borderTopWidth": "1px", "borderRadius": "12px", "padding": "16px" },
+      "card_text": "SakuraLoveSmile/PI-Desktop 自用修改版 ⭐ 0 🍴 0 TypeScript GNU Lesser General Public License v3.0",
+      "avatar_image": true,
+      "console_errors": 0,
+      "page_errors": 0,
+      "browser": "Playwright Chromium 1280x900 dark, networkidle",
+      "screenshot": "production-ghrepo-card.png"
+    }
+  },
+  "rollback": {
+    "image": "compose image 改回 ghcr.io/sakuralovesmile/sakura-blog:2.1.0 后 docker compose up -d（本次无 schema 迁移）",
+    "data": "如需数据回退：停容器后用 site-state-pre-beta.tar.gz 恢复 config/、content/、data/blog.db 再启动"
+  }
+}
