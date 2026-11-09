@@ -1,0 +1,56 @@
+{
+  "task": "BLG-20261108-02",
+  "version": "v2.1.1-beta01",
+  "tag_commit": "244965626fa2a293e51db8ff26cc640f87624680",
+  "release_branch_head": "24496562",
+  "main_head_at_release": "38b4df4a",
+  "prs": {
+    "dev_to_main": { "number": 58, "merge_commit": "cdab977e", "required_checks": ["go", "lint", "security", "console", "e2e", "build"], "e2e_duration": "22m43s" },
+    "sync_release_to_main": { "number": 59, "merge_commit": "38b4df4a", "content_diff": "empty", "required_checks": ["go", "lint", "security", "console", "e2e", "build"] },
+    "main_to_release": { "number": 60, "merge_commit": "24496562", "required_checks": ["go", "lint", "security", "console", "e2e", "build", "release-source"], "image_job": "success" }
+  },
+  "tag": {
+    "name": "v2.1.1-beta01",
+    "signed": true,
+    "gpg_key": "979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989",
+    "verify": "git tag -v 通过"
+  },
+  "docker_release": {
+    "run_id": 42482614542,
+    "conclusion": "success",
+    "started_at": "2026-11-08T12:57:09Z",
+    "finished_at": "2026-11-08T13:01:24Z",
+    "duration": "4m15s"
+  },
+  "image": {
+    "name": "ghcr.io/sakuralovesmile/sakura-blog:2.1.1-beta01",
+    "index_digest": "sha256:a9464299fe2e28bea065778837711b72d21869290225b60b99ed8eeb69aff82c",
+    "amd64_manifest": "sha256:3fa25d7820e54ef51d322025d3f1b6ac5c1dd090ed61385d435b4558c90bd5c4",
+    "labels": {
+      "org.opencontainers.image.version": "2.1.1-beta01",
+      "org.opencontainers.image.revision": "244965626fa2a293e51db8ff26cc640f87624680",
+      "org.opencontainers.image.created": "2026-11-08T12:57:27.291Z"
+    },
+    "new_tags": ["2.1.1-beta01", "sha-2449656"],
+    "alias_tags_absent": ["2.1.1"],
+    "server_binary_smoke": { "command": "docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.1-beta01 -h", "exit_code": 0 }
+  },
+  "stable_tags_unchanged": {
+    "baseline_capture": "2026-11-08T11:42Z（发布前，匿名 GHCR token HEAD manifest）",
+    "latest": "sha256:c27e314ebc2f92f84f2dc5cde0c026017ea2c94ac65a346cf245c706cbe95d50",
+    "2": "sha256:c27e314ebc2f92f84f2dc5cde0c026017ea2c94ac65a346cf245c706cbe95d50",
+    "2.1": "sha256:c27e314ebc2f92f84f2dc5cde0c026017ea2c94ac65a346cf245c706cbe95d50",
+    "2.1.0": "sha256:c27e314ebc2f92f84f2dc5cde0c026017ea2c94ac65a346cf245c706cbe95d50",
+    "2.0.9": "sha256:7c26a9c220c7a1768c316b5d177280ad21887105fa333366c1353c97dc4f568e",
+    "after_release": "与基线逐项一致（未移动）"
+  },
+  "github_release": {
+    "tag": "v2.1.1-beta01",
+    "prerelease": true,
+    "draft": false,
+    "assets": [],
+    "target_commitish": "main",
+    "body_length": 474,
+    "releases_latest_still": "v2.1.0"
+  }
+}

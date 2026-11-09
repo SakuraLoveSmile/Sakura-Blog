@@ -61,8 +61,9 @@ func TestStellarContentPreviewRendersGitHubCards(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		"ghrepo-card", "repo-name", "vuejs/vue", "预览卡片描述", "⭐ 42", "🍴 7",
-		`class="lang-dot"`, "📄 MIT License",
+		"ghrepo-card", "repo-name", "vuejs/vue", "预览卡片描述",
+		"repo-stat-icon", `aria-label="42 stars"`, `aria-label="7 forks"`,
+		`class="lang-dot"`, ">MIT License</span>",
 		"ghuser-card", "user-name", "预览用户", "@octocat", "预览用户简介", "9 followers",
 		// 卡片外观来自项目补充样式；预览文档缺少它时卡片高度为 0、只剩裸文本。
 		"/assets/css/tag-plugins.css",
