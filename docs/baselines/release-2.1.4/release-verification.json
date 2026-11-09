@@ -1,0 +1,35 @@
+{
+  "task": "BLG-20261109-04",
+  "release": "v2.1.4",
+  "released_at_utc": "2026-11-09T14:04:41Z",
+  "tag": {
+    "name": "v2.1.4",
+    "signed": true,
+    "key": "979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989",
+    "target": "70ea2a7a",
+    "target_subject": "Merge pull request #70 from SakuraLoveSmile/main"
+  },
+  "prs": [
+    { "number": 69, "from": "dev", "to": "main", "merge_commit": "8409b050", "ci": { "build": "pass", "console": "pass", "e2e": "pass 21m50s", "go": "pass", "lint": "pass", "security": "pass", "image": "skipping (dev→main)", "release-source": "skipping (dev→main)" } },
+    { "number": 70, "from": "main", "to": "release", "merge_commit": "70ea2a7a", "ci": { "build": "pass 59s", "console": "pass 1m34s", "e2e": "pass 18m8s", "go": "pass 4m55s", "lint": "pass 3m18s", "security": "pass 3m1s", "image": "pass 2m0s", "release-source": "pass 14s" } }
+  ],
+  "docker_release": {
+    "run_id": 42631195212,
+    "conclusion": "success",
+    "duration": "5m55s",
+    "image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.4",
+    "digest": "sha256:c492409919fc36cc74fa19739c97cc65f04cf3150edba2c9e790460689330577",
+    "binary_launch_check": { "command": "docker run --rm <image> -h", "exit_code": 0 },
+    "github_release": {
+      "tag": "v2.1.4",
+      "is_prerelease": false,
+      "assets": 0,
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/releases/tag/v2.1.4"
+    }
+  },
+  "content": "Console 侧栏「文库 + 项目管理」合并为单一「项目管理」入口；项目列表为落地页，文档工作台改为 /console/wiki/<项目>/docs；/console/wiki 重定向到项目列表；修复 390px 项目行折字",
+  "not_verified": [
+    "生产 Console 登录态下的完整交互（无生产账号密码）",
+    "Firefox/Safari 差异化渲染"
+  ]
+}
