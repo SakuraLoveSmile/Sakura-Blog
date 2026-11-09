@@ -301,7 +301,7 @@ var shortcodeRegistry = []shortcodeRegistration{
 		named("fancybox", "灯箱分组", nil), named("ratio", "宽高比（如 16/9）", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"src"}}),
 	shortcodeEntry("link", ShortcodeInline, "媒体播放", ShortcodeStatic, reLink,
 		positional("url", "链接", "https://example.com"), positional("title", "标题", "示例站点"),
-		named("desc", "描述（提供则用 rich 布局）", nil), named("icon", "图标/缩略图 URL", nil)),
+		named("desc", "描述文本，或 true/false 开关描述区（true=rich、false=plain）", nil), named("icon", "图标/缩略图 URL", nil)),
 	shortcodeEntry("video", ShortcodeInline, "媒体播放", ShortcodeStatic, reVideo,
 		positional("src", "视频地址", "/assets/media/preview/sample-video.mp4"), named("bilibili", "B 站 BV 号", nil),
 		named("youtube", "YouTube 视频 ID", nil), named("type", "MIME 类型", nil),

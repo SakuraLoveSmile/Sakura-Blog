@@ -27,10 +27,15 @@ func renderLink(argsStr string) (string, bool) {
 	}
 	desc := named["desc"]
 	icon := named["icon"]
+	// 与 Stellar v2 一致：desc:true/false 是描述区开关，不是描述文本（官方文档语义）。
+	rich := desc != "" && !strings.EqualFold(strings.TrimSpace(desc), "false")
+	if strings.EqualFold(strings.TrimSpace(desc), "true") || strings.EqualFold(strings.TrimSpace(desc), "false") {
+		desc = ""
+	}
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin link dis-select">`)
-	if desc != "" && desc != "false" {
+	if rich {
 		// rich 模式（上下结构）
 		sb.WriteString(`<a class="link-card rich card-hover card-hover--spotlight card-hover--tilt" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
 		if strings.Contains(url, "://") {
@@ -43,7 +48,9 @@ func renderLink(argsStr string) (string, bool) {
 		sb.WriteString(`</div>`)
 		sb.WriteString(`<div class="bottom">`)
 		sb.WriteString(`<span class="title">` + html.EscapeString(title) + `</span>`)
-		sb.WriteString(`<span class="cap desc footnote">` + html.EscapeString(desc) + `</span>`)
+		if desc != "" {
+			sb.WriteString(`<span class="cap desc footnote">` + html.EscapeString(desc) + `</span>`)
+		}
 		sb.WriteString(`</div>`)
 	} else {
 		// plain 模式（左右结构）
