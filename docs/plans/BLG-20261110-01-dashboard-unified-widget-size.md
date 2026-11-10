@@ -1,8 +1,8 @@
 # BLG-20261110-01：仪表盘尺寸档位统一足迹
 
-- 状态：待体验（本地实现与验证完成，未提交、未合并、未发布）
-- 分支：`codex/feat/20261110-BLG-20261110-01-dashboard-unified-widget-size`
-- 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261110-feat-BLG-20261110-01-dashboard-unified-widget-size`
+- 状态：待体验（已合入 `dev` @ `591002f5`，未推送、未发布）
+- 分支：`codex/feat/20261110-BLG-20261110-01-dashboard-unified-widget-size`（已合并，本地分支已删除）
+- 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261110-feat-BLG-20261110-01-dashboard-unified-widget-size`（合并验证通过后已移除）
 - 基点：`dev` @ `b24bc214`
 - 合入目标：`dev`
 - 验收依据：`docs/baselines/dashboard-unified-size/README.md`（唯一参照、足迹表与逐项清单）
@@ -94,5 +94,5 @@
 
 ## 下一步
 
-体验确认后在 feature worktree 执行 `make merge-check` 合入 `dev`（会再跑一次 `make test` 并复验组合态），
-随后按既有规则清理本任务 worktree 与已合并分支；推送与发布另需授权。
+- 体验确认后把状态改为「已验收」。
+- `dev` 尚未推送；推送、开 PR、发布与服务器升级都需要单独授权。
