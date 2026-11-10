@@ -1,10 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { Schema } from "../web/node_modules/@tiptap/pm/model/dist/index.js";
 import { EditorState } from "../web/node_modules/@tiptap/pm/state/dist/index.js";
 import {
   createStellarPageInfoPlugin,
   exchangeSectionEnd,
+  siteInfoHintText,
   stellarPageInfoKey,
 } from "../web/src/components/editor/stellar-editor-decoration.ts";
 
@@ -57,4 +59,17 @@ test("本站信息仅为只读装饰，不改正文或未知 shortcode，也不�
   state = state.apply(state.tr.setMeta(stellarPageInfoKey, ""));
   assert.equal(plugin.props.decorations?.call(plugin, state)?.find().length, 0);
   assert.deepEqual(state.doc.toJSON(), original);
+});
+
+test("只读提示由编辑器宿主添加，位于本站资料块上方且不来自页面片段", () => {
+  assert.match(siteInfoHintText, /^只读/);
+  assert.match(siteInfoHintText, /设置/);
+  assert.match(siteInfoHintText, /站点信息/);
+  // 提示 DOM 由宿主创建，因此这里的结构约定只能静态核对；真实渲染由浏览器验收覆盖。
+  const sourceFile = new URL("../web/src/components/editor/stellar-editor-decoration.ts", import.meta.url);
+  const source = readFileSync(sourceFile, "utf8");
+  assert.match(source, /wrapper\.className = "stellar-site-info-widget"/);
+  assert.match(source, /hint\.textContent = siteInfoHintText/);
+  assert.match(source, /wrapper\.append\(hint, ownerDocument\.importNode\(source, true\)\)/);
+  assert.match(source, /wrapper\.contentEditable = "false"/);
 });

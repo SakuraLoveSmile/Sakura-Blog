@@ -1,6 +1,6 @@
 # BLG-20261110-01：仪表盘尺寸档位统一足迹
 
-- 状态：待体验（已合入 `dev` @ `591002f5`，未推送、未发布）
+- 状态：已验收（用户 2026-11-10 确认；随 `v2.1.6-beta01` 发布并已上线生产，见 `docs/plans/release-2.1.6-beta01.md`）
 - 分支：`codex/feat/20261110-BLG-20261110-01-dashboard-unified-widget-size`（已合并，本地分支已删除）
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261110-feat-BLG-20261110-01-dashboard-unified-widget-size`（合并验证通过后已移除）
 - 基点：`dev` @ `b24bc214`
@@ -94,5 +94,4 @@
 
 ## 下一步
 
-- 体验确认后把状态改为「已验收」。
-- `dev` 尚未推送；推送、开 PR、发布与服务器升级都需要单独授权。
+- 无。体验与线上均已确认；后续改动另开任务。
