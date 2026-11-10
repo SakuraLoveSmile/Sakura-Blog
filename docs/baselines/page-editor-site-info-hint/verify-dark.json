@@ -1,0 +1,61 @@
+{
+  "baseURL": "http://127.0.0.1:8096",
+  "scheme": "dark",
+  "hint": "只读 · 由「设置 → 站点信息」自动生成",
+  "checks": {
+    "createPage": {
+      "status": 409,
+      "ok": false
+    },
+    "hintText": {
+      "actual": "只读 · 由「设置 → 站点信息」自动生成",
+      "matches": true
+    },
+    "hintCount": 1,
+    "siteInfoCount": 1,
+    "hintStyle": {
+      "fontSize": "12px",
+      "lineHeight": "18px",
+      "color": "rgba(255, 255, 255, 0.5)",
+      "letterSpacing": "0.24px",
+      "userSelect": "none",
+      "insideReadonlyWidget": true,
+      "aboveSection": true,
+      "height": 18,
+      "background": "rgb(28, 31, 33)"
+    },
+    "iframeBox": {
+      "width": 1440,
+      "height": 560
+    },
+    "save": {
+      "status": 200
+    },
+    "markdown": {
+      "storedValue": "## 如何交换友链\n\n请把友链信息发给我，我会尽快添加。\n\n## 失联友链\n\n暂无。\n",
+      "storedEqualsSource": true,
+      "storedHasHint": false,
+      "storedHasSiteInfo": false,
+      "canvasHasHint": true,
+      "canvasHasSiteInfo": true
+    },
+    "editingAboveHint": {
+      "typedVisible": true,
+      "undoRestored": true
+    },
+    "mobile": {
+      "width": 340,
+      "height": 18,
+      "lines": 1,
+      "overflowRight": -26,
+      "scrollWidth": 390,
+      "clientWidth": 390
+    },
+    "publicPage": {
+      "siteInfoCount": 1,
+      "hintCount": 0,
+      "hasReadonlyText": false
+    }
+  },
+  "errors": []
+}

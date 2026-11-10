@@ -24,13 +24,17 @@ export function exchangeSectionEnd(doc: ProseMirrorNode): number | null {
   return result ?? (found ? doc.content.size : null);
 }
 
+/** 编辑器专用提示：这一块由站点设置生成，正文无法直接改写。 */
+export const siteInfoHintText = "只读 · 由「设置 → 站点信息」自动生成";
+
 /** 仅接入后端生成的信息块，拒绝将任何主动内容带入同源编辑画布。 */
 export function siteInfoWidget(html: string, ownerDocument: Document): HTMLElement {
   const parsed = ownerDocument.implementation.createHTMLDocument("");
   parsed.body.innerHTML = html;
   const source = parsed.querySelector<HTMLElement>(".friends-site-info");
-  const result = ownerDocument.createElement("section");
-  if (!source || source.tagName !== "SECTION") return result;
+  const wrapper = ownerDocument.createElement("div");
+  wrapper.className = "stellar-site-info-widget";
+  if (!source || source.tagName !== "SECTION") return wrapper;
   const allowed = new Set(["SECTION", "H2", "P", "DIV", "PRE", "CODE", "STRONG"]);
   for (const element of [source, ...source.querySelectorAll<HTMLElement>("*")]) {
     if (!allowed.has(element.tagName)) {
@@ -41,10 +45,15 @@ export function siteInfoWidget(html: string, ownerDocument: Document): HTMLEleme
       if (!["class", "id", "role", "aria-label", "aria-labelledby"].includes(attribute.name)) element.removeAttribute(attribute.name);
     }
   }
-  const widget = ownerDocument.importNode(source, true);
-  widget.contentEditable = "false";
-  widget.setAttribute("aria-readonly", "true");
-  return widget;
+  // 提示行只属于编辑器界面，由宿主创建，不来自服务端返回的页面片段。
+  const hint = ownerDocument.createElement("div");
+  hint.className = "stellar-site-info-hint";
+  hint.setAttribute("role", "note");
+  hint.textContent = siteInfoHintText;
+  wrapper.contentEditable = "false";
+  wrapper.setAttribute("aria-readonly", "true");
+  wrapper.append(hint, ownerDocument.importNode(source, true));
+  return wrapper;
 }
 
 export function createStellarPageInfoPlugin(): Plugin<string> {
