@@ -1,6 +1,6 @@
 # BLG-20261110-03：v2.1.6-beta01 预发布
 
-- 状态：待体验（已发布 v2.1.6-beta01，镜像启动已在局域网 NAS 补验，未部署生产）
+- 状态：已验收（v2.1.6-beta01 已发布，镜像启动已在局域网 NAS 补验，2026-11-10 已升级生产并核验）
 - 日期：2026-11-10（Asia/Taipei）
 - 版本依据：最新稳定版 `v2.1.5`（2026-11-10），本次取下一个 patch 的预发布 `v2.1.6-beta01`
 - 功能记录：`docs/plans/BLG-20261110-01-dashboard-unified-widget-size.md`（仪表盘尺寸档位统一足迹）
@@ -58,6 +58,21 @@
 - `tests/e2e/dashboard-widget-size.spec.ts`：16 组件 × 3 档 × 3 断点 = 144 组，同档渲染尺寸唯一、最大溢出 0px。
 - CI：两个 PR 的 e2e 均通过（23m32s / 23m15s）。
 
+## 生产升级（2026-11-10 15:18 CST）
+
+- 目标：`VM-0-12-ubuntu`，compose `/opt/1panel/docker/compose/blog/docker-compose.yml`，宿主端口 `8081:8080`。
+- 升级前：容器 `ghcr.io/…:2.1.5`（Up 13h，RestartCount 0），`/readyz` 200，根分区 51%。
+- 备份 `/home/ubuntu/blog-release-v2.1.6-beta01/`：`blog.db` + `blog.db-wal` + `blog.db-shm`（md5 与源一致）、
+  `site.yml`、`app.yml`、`docker-compose.yml.before-2.1.6-beta01`。应用自带备份最新为 `blog-backup-20261109-180411.zip`。
+- 变更：先 `docker pull` 新镜像（digest 与 GHCR 一致），再把 compose `image` 改为 `:2.1.6-beta01`，`docker compose up -d` 重建容器。
+- 升级后：
+  - 容器 running，镜像 ID `sha256:c2bb3dd3…39cee21`（= GHCR digest），`RestartCount=0`，启动日志无 error/panic/fatal；
+  - `/readyz` 200（1.5ms）、`/` 200、`/settings` 200、`/console/` 200；
+  - 公开 `/settings` 显示 `v2.1.6-beta01`；Console 入口引用新产物 `index-4u4z5T16.js`；
+  - 未登录 `POST /api/v1/posts` 返回 401（鉴权仍生效）。
+- 本次无数据库 schema 迁移。回滚：compose `image` 改回 `:2.1.5` → `docker compose up -d`（正常无需恢复数据；
+  如需整站回退用上面的备份或应用自带备份）。
+
 ## 未验证 / 遗留
 
 - ~~镜像内二进制启动未验证~~ → **已补验（2026-11-10 14:51，局域网 NAS）**：
@@ -75,7 +90,6 @@
 
 ## 下一步
 
-- 生产升级需单独授权：compose 固定 `:2.1.6-beta01` → `docker compose pull && docker compose up -d` → 探测 `/readyz`。
-- 体验确认后把状态改为「已验收」。
+- 观察期：Console 与前台如出现异常，按上面的回滚步骤切回 `:2.1.5`。
 - 局域网 NAS 的校验路径已可用（`ssh -i ~/.ssh/nas-verify sakurasep@192.168.0.69 'docker run --rm <image> -h'`），
   以后本机没有 Docker 时照此核验；`deploy/README.md` 的上线验证清单已补该步骤。
