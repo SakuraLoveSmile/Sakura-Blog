@@ -145,7 +145,7 @@ const displayedItems = computed(() => {
 
 <template>
   <div class="apple-card h-full flex flex-col justify-between" :class="`recent-comments-${sizePreset}`" :data-bp="breakpoint">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3 recent-header">
       <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">最近评论</h3>
       <button @click="router.push('/comments')" class="apple-link text-xs">
         全部
@@ -154,7 +154,7 @@ const displayedItems = computed(() => {
     </div>
 
     <div v-if="loading" class="dashboard-skeleton-list flex-1" aria-label="正在加载评论">
-      <span v-for="index in (sizePreset === 'large' ? 4 : 2)" :key="index" class="dashboard-skeleton-row">
+      <span v-for="index in (sizePreset === 'small' ? 2 : sizePreset === 'medium' ? 4 : 5)" :key="index" class="dashboard-skeleton-row">
         <i class="dashboard-skeleton-avatar" />
         <i class="dashboard-skeleton-copy is-wide" />
       </span>
@@ -165,11 +165,11 @@ const displayedItems = computed(() => {
     </div>
 
     <!-- Small 尺寸：超紧凑单行/双行评论 -->
-    <div v-else-if="sizePreset === 'small'" class="space-y-2 flex-1">
+    <div v-else-if="sizePreset === 'small'" class="recent-mini-list flex-1">
       <button
         v-for="item in displayedItems"
         :key="item.id"
-        class="w-full flex items-start gap-2 py-1.5 border-t border-border text-left transition-colors duration-150"
+        class="recent-mini-row w-full flex items-center gap-2 py-1.5 border-t border-border text-left transition-colors duration-150"
         type="button"
         @click="openComment(item)"
       >
@@ -300,8 +300,25 @@ const displayedItems = computed(() => {
 </template>
 
 <style scoped>
+/* 小档 107px 高：只留昵称一行与头像，正文行在更矮的盒子里会挤掉时间。 */
+.recent-comments-small .recent-header {
+  margin-bottom: 4px;
+}
+.recent-mini-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.recent-comments-small .recent-mini-row {
+  padding-block: 4px;
+}
+.recent-comments-small .recent-mini-row p {
+  display: none;
+}
+
 .recent-placeholder {
-  min-height: 120px;
+  min-height: 0;
 }
 
 .comment-content-bubble {

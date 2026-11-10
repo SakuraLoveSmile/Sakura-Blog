@@ -739,6 +739,18 @@ const showUvLine = computed(() => sizePreset.value === "large" || (sizePreset.va
   }
 }
 
+/* 小档 116px：标题与总量一行，图表吃掉余下高度；坐标轴与结论行让位。 */
+.trend-card-small .trend-chart-wrap {
+  margin-top: 6px;
+}
+.trend-card-small .trend-chart-svg {
+  min-height: 40px;
+}
+.trend-card-small .trend-axis,
+.trend-card-small .trend-footnote {
+  display: none;
+}
+
 /* Small：一行标题 + 一行结论 */
 .trend-small-head {
   display: flex;

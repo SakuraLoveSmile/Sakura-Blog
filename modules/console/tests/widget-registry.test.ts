@@ -113,8 +113,10 @@ test("dashboard phase 3: registers health/top-post widgets and three templates",
     assert.match(DASHBOARD_LAYOUT, new RegExp(`id: "${template}"`));
   }
   assert.match(DASHBOARD_LAYOUT, /createDashboardTemplateLayout/);
-  assert.match(DASHBOARD_LAYOUT, /"top-posts":/);
-  assert.match(DASHBOARD_LAYOUT, /"system-health":/);
+  assert.match(DASHBOARD_LAYOUT, /"top-posts",/);
+  assert.match(DASHBOARD_LAYOUT, /"system-health",/);
+  // 档位尺寸统一后，矩阵只剩一份断点级足迹。
+  assert.match(DASHBOARD_LAYOUT, /WIDGET_PRESET_FOOTPRINTS/);
 });
 
 test("dashboard phase 1/2: refresh and non-blocking chart/comment states are wired", () => {

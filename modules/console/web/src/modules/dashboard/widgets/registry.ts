@@ -43,7 +43,7 @@ function defineWidget(input: WidgetDefinitionInput): WidgetDefinition {
   return {
     ...input,
     group: input.group ?? "general",
-    defaultSize: input.defaultSize ?? { w: 6, h: 24 },
+    defaultSize: input.defaultSize ?? { w: 6, h: 28 },
     defaultConfig: input.defaultConfig ?? {},
   };
 }
@@ -56,7 +56,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: StatCardWidget,
     props: { statKey: "post_total", label: "文章" },
-    defaultSize: { w: 3, h: 19 },
+    defaultSize: { w: 3, h: 16 },
   }),
   defineWidget({
     id: "stat-published",
@@ -65,7 +65,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: StatCardWidget,
     props: { statKey: "post_published", label: "已发布" },
-    defaultSize: { w: 3, h: 19 },
+    defaultSize: { w: 3, h: 16 },
   }),
   defineWidget({
     id: "stat-views",
@@ -74,7 +74,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: StatCardWidget,
     props: { statKey: "view_total", label: "浏览量" },
-    defaultSize: { w: 3, h: 19 },
+    defaultSize: { w: 3, h: 16 },
   }),
   defineWidget({
     id: "stat-comments",
@@ -83,7 +83,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: StatCardWidget,
     props: { statKey: "comment_total", label: "评论" },
-    defaultSize: { w: 3, h: 19 },
+    defaultSize: { w: 3, h: 16 },
   }),
   defineWidget({
     id: "stat-attachments",
@@ -92,7 +92,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: StatCardWidget,
     props: { statKey: "attachment_total", label: "附件" },
-    defaultSize: { w: 3, h: 19 },
+    defaultSize: { w: 3, h: 16 },
   }),
   defineWidget({
     id: "stat-users",
@@ -101,7 +101,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: StatCardWidget,
     props: { statKey: "user_total", label: "用户" },
-    defaultSize: { w: 3, h: 19 },
+    defaultSize: { w: 3, h: 16 },
   }),
   defineWidget({
     id: "trend-chart",
@@ -110,7 +110,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: TrendChartWidget,
     props: {},
-    defaultSize: { w: 8, h: 52 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "hourly-chart",
@@ -119,7 +119,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: HourlyChartWidget,
     props: {},
-    defaultSize: { w: 4, h: 40 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "category-donut",
@@ -128,7 +128,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "content",
     component: CategoryDonutWidget,
     props: {},
-    defaultSize: { w: 4, h: 34 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "recent-posts",
@@ -137,7 +137,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "content",
     component: RecentPostsWidget,
     props: {},
-    defaultSize: { w: 6, h: 36 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "recent-comments",
@@ -146,7 +146,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "content",
     component: RecentCommentsWidget,
     props: {},
-    defaultSize: { w: 6, h: 36 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "quick-actions",
@@ -155,7 +155,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "tools",
     component: QuickActionsWidget,
     props: {},
-    defaultSize: { w: 4, h: 35 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "top-posts",
@@ -164,7 +164,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "statistics",
     component: TopPostsWidget,
     props: {},
-    defaultSize: { w: 6, h: 34 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "system-health",
@@ -173,7 +173,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "system",
     component: SystemHealthWidget,
     props: {},
-    defaultSize: { w: 6, h: 34 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "stellar-version",
@@ -182,7 +182,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "system",
     component: StellarVersionWidget,
     props: {},
-    defaultSize: { w: 4, h: 25 },
+    defaultSize: { w: 6, h: 28 },
   }),
   defineWidget({
     id: "system-version",
@@ -191,7 +191,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     group: "system",
     component: SystemVersionWidget,
     props: {},
-    defaultSize: { w: 4, h: 25 },
+    defaultSize: { w: 6, h: 28 },
   }),
 ];
 

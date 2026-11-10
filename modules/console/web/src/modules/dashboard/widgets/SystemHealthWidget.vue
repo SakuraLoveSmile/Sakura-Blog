@@ -111,7 +111,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
     </div>
 
     <div v-if="loading" class="dashboard-skeleton-list flex-1" aria-label="正在加载系统状态">
-      <span v-for="index in 4" :key="index" class="dashboard-skeleton-row"><i class="dashboard-skeleton-avatar" /><i class="dashboard-skeleton-copy is-wide" /></span>
+      <span v-for="index in (sizePreset === 'small' ? 2 : 4)" :key="index" class="dashboard-skeleton-row"><i class="dashboard-skeleton-avatar" /><i class="dashboard-skeleton-copy is-wide" /></span>
     </div>
     <div v-else-if="error && !healthReady" class="health-empty flex-1 text-state-error">{{ error }}</div>
     <template v-else>
@@ -124,7 +124,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
           <span class="health-metric-icon is-primary"><Icon icon="ri:database-2-line" /></span>
           <span><small>数据库</small><strong>{{ overview ? formatBytes(overview.db_size_bytes) : '--' }}</strong></span>
         </div>
-        <div class="health-metric">
+        <div v-if="sizePreset !== 'small'" class="health-metric">
           <span class="health-metric-icon is-purple"><Icon icon="ri:cpu-line" /></span>
           <span><small>堆内存</small><strong>{{ memoryLabel }}</strong></span>
         </div>
@@ -151,7 +151,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
           </div>
         </div>
       </div>
-      <div class="health-runtime-note">
+      <div v-if="sizePreset !== 'small'" class="health-runtime-note">
         <Icon icon="ri:shield-check-line" class="w-3.5 h-3.5 text-state-success flex-shrink-0" />
         <span class="truncate">{{ overview ? `${overview.platform} · ${overview.go_version}` : '运行时模块未启用' }}</span>
       </div>
@@ -166,9 +166,9 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 .health-subtitle { margin-top: 2px; color: var(--color-muted-foreground); font-size: 11px; }
 .health-detail-link { display: inline-flex; align-items: center; gap: 3px; border: 0; color: var(--color-muted-foreground); background: transparent; font: inherit; font-size: 11px; cursor: pointer; transition: color var(--duration-fast, 150ms) ease; }
 .health-detail-link:hover { color: var(--color-foreground); }
-.health-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.health-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
 .health-metric-grid.is-large { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.health-metric { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 0; border: 0; border-radius: 0; background: transparent; }
+.health-metric { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 0; border: 0; border-radius: 0; background: transparent; }
 .health-metric > span:last-child { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
 .health-metric small { color: var(--color-muted-foreground); font-size: 11px; line-height: 1.2; }
 .health-metric strong { overflow: hidden; color: var(--color-foreground); font-size: 13px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
@@ -177,7 +177,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 .health-metric-icon.is-primary { color: var(--color-text-secondary); background: transparent; }
 .health-metric-icon.is-purple { color: var(--color-chart-5); background: transparent; }
 .health-metric-icon.is-warning { color: var(--color-state-warning); background: transparent; }
-.health-storage { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--color-border); }
+.health-storage { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--color-border); }
 .health-section-label { color: var(--color-foreground); font-size: 11px; font-weight: 600; }
 .health-storage-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .health-storage-track { height: 5px; overflow: hidden; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); }
@@ -185,7 +185,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 .health-storage-track i.is-chart-5 { background: var(--color-chart-5); }
 .health-storage-track i.is-chart-1 { background: var(--color-chart-1); }
 .health-runtime-note { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 10px; padding-bottom: 2px; color: var(--color-muted-foreground); font-size: 11px; line-height: 1.3; }
-.health-empty { display: flex; align-items: center; justify-content: center; min-height: 110px; font-size: 12px; }
+.health-empty { display: flex; align-items: center; justify-content: center; min-height: 0; font-size: 12px; }
 
 .system-health-small.health-card { padding: 13px 15px; }
 .system-health-small .health-header { margin-bottom: 6px; }
@@ -203,6 +203,11 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 
 @media (max-width: 640px) {
   .health-metric-grid.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .health-storage-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 8px; }
+  .health-storage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+  .health-metric { padding: 4px 0; }
+  .health-metric-icon { width: 24px; height: 24px; }
+  /* 手机大档盒子只有 36 行：运行时版本行与存储区的留白让位给指标本体。 */
+  .health-runtime-note { display: none; }
+  .system-health-large .health-storage { margin-top: 6px; padding-top: 6px; }
 }
 </style>

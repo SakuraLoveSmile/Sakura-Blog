@@ -35,7 +35,9 @@ async function load() {
 }
 
 const maxPv = computed(() => Math.max(...items.value.map((item) => item.pv), 1));
-const displayedItems = computed(() => items.value.slice(0, sizePreset.value === "small" ? 3 : 5));
+const displayedItems = computed(() =>
+  items.value.slice(0, sizePreset.value === "small" ? 2 : sizePreset.value === "medium" ? 4 : 5),
+);
 
 function editPost(item: PopularPost) {
   const slug = item.path.replace(/^\/post\//, "");
@@ -72,7 +74,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
     </div>
 
     <div v-if="loading" class="dashboard-skeleton-list flex-1" aria-label="正在加载热门文章">
-      <span v-for="index in 5" :key="index" class="dashboard-skeleton-row"><i class="dashboard-skeleton-avatar" /><i class="dashboard-skeleton-copy is-wide" /></span>
+      <span v-for="index in (sizePreset === 'small' ? 2 : sizePreset === 'medium' ? 4 : 5)" :key="index" class="dashboard-skeleton-row"><i class="dashboard-skeleton-avatar" /><i class="dashboard-skeleton-copy is-wide" /></span>
     </div>
     <div v-else-if="error" class="top-posts-empty flex-1 text-state-error">{{ error }}</div>
     <div v-else-if="displayedItems.length === 0" class="top-posts-empty flex-1">暂无访问数据</div>
@@ -115,7 +117,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 .top-post-metrics small { color: var(--color-muted-foreground); font-size: 11px; }
 .top-post-arrow { flex: 0 0 auto; color: var(--color-muted-foreground); opacity: 0; transition: opacity var(--duration-fast) var(--ease-standard); }
 .top-post-row:hover .top-post-arrow { opacity: 1; }
-.top-posts-empty { display: flex; align-items: center; justify-content: center; min-height: 110px; color: var(--color-muted-foreground); font-size: 12px; }
+.top-posts-empty { display: flex; align-items: center; justify-content: center; min-height: 0; color: var(--color-muted-foreground); font-size: 12px; }
 .top-posts-footnote { display: flex; align-items: center; gap: 5px; margin-top: 9px; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); color: var(--color-muted-foreground); font-size: 11px; }
 .top-posts-small .top-posts-range { display: none; }
 .top-posts-small .top-post-row { padding-block: 6px; }

@@ -511,7 +511,9 @@ test("方向 A 守卫 · 状态只用圆点+文字，禁止彩色状态底", () 
   assert.deepEqual(violations, [], `状态不得使用彩色背景，只保留圆点+文字:\n${violations.join("\n")}`);
 });
 
-const ALLOWED_FONT_PX = new Set([11, 12, 13, 14, 20, 24]);
+// 56 是唯一新增的显示级字号：统一足迹后整行「大」档统计卡需要一个 hero 数字，
+// 取自 Apple 设计库的 56 号标题档；其余字号仍限定在 11/12/13/14/20/24。
+const ALLOWED_FONT_PX = new Set([11, 12, 13, 14, 20, 24, 56]);
 
 function fontPx(value: string, unit: string): number {
   const number = Number(value);
@@ -562,7 +564,7 @@ function findFontViolations(content: string): string[] {
   return violations;
 }
 
-test("方向 A 守卫 · 字号白名单（11/12/13/14/20/24）", () => {
+test("方向 A 守卫 · 字号白名单（11/12/13/14/20/24 + hero 56）", () => {
   const violations: string[] = [];
   for (const file of collectDirectionAFiles()) {
     const rel = relative(repoRoot, file);
@@ -570,7 +572,7 @@ test("方向 A 守卫 · 字号白名单（11/12/13/14/20/24）", () => {
       violations.push(`${rel}:${item}`);
     }
   }
-  assert.deepEqual(violations, [], `方向 A 只允许 11/12/13/14/20/24 字号:\n${violations.join("\n")}`);
+  assert.deepEqual(violations, [], `方向 A 只允许 11/12/13/14/20/24 与 hero 56 字号:\n${violations.join("\n")}`);
 });
 
 const ALLOWED_RADIUS_PX = new Set([0, 6, 8, 10]);
