@@ -19,7 +19,7 @@ export default definePlugin({
       group: "content",
       component: RecentMomentsWidget,
       props: {},
-      defaultSize: { w: 6, h: 34 },
+      defaultSize: { w: 6, h: 28 },
       defaultConfig: {},
     },
   ],

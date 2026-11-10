@@ -12,6 +12,7 @@ import {
   getGridPresetSize,
   getBreakpoint,
   getGridConstraints,
+  WIDGET_PRESET_FOOTPRINTS,
   getWidgetSizePreset,
   hasGridOverlaps,
   applyGridWidgetSize,
@@ -96,8 +97,8 @@ test("sanitizeDashboardLayouts: 修正边界、去重并保留实例", () => {
   });
   assert.ok(output);
   assert.equal(output.lg?.length, 3);
-  assert.equal(output.lg?.[0].w, 6);
-  assert.equal(output.lg?.[0].h, 12);
+  assert.equal(output.lg?.[0].w, 12);
+  assert.equal(output.lg?.[0].h, 40);
   assert.notEqual(output.lg?.[0].i, output.lg?.[1].i);
   assert.equal(output.lg?.[2].id, "future:widget");
   assert.equal(hasGridOverlaps(output.lg ?? []), false);
@@ -154,8 +155,10 @@ test("Halo 断点、组件最小尺寸和布局复制", () => {
   assert.equal(getBreakpoint(1024), "sm");
   assert.equal(getBreakpoint(800), "sm");
   assert.equal(getBreakpoint(390), "xxs");
-  assert.equal(getGridConstraints("stat-posts", "xs").minW, 2);
-  assert.equal(getGridConstraints("trend-chart", "lg").minW, 4);
+  for (const bp of BREAKPOINT_ORDER) {
+    assert.ok(getGridConstraints("trend-chart", bp).minW <= WIDGET_PRESET_FOOTPRINTS[bp].small.w);
+    assert.ok(getGridConstraints("stat-posts", bp).minH <= WIDGET_PRESET_FOOTPRINTS[bp].small.h);
+  }
 
   const copied = copyLayoutToBreakpoint({
     lg: [{ i: "trend-1", id: "trend-chart", x: 0, y: 0, w: 8, h: 30 }],
@@ -170,10 +173,11 @@ test("组件尺寸只有小、中、大三个预设", () => {
   const small = getGridPresetSize("trend-chart", "lg", "small");
   const medium = getGridPresetSize("trend-chart", "lg", "medium");
   const large = getGridPresetSize("trend-chart", "lg", "large");
-  assert.deepEqual(medium, { w: 8, h: 44 });
+  assert.deepEqual(medium, { w: 6, h: 28 });
+  assert.deepEqual(large, { w: 12, h: 40 });
   assert.ok(small.w < medium.w && small.h < medium.h);
-  assert.ok(large.w > medium.w && large.h >= medium.h);
-  assert.equal(getWidgetSizePreset({ w: 8, h: 44 }, "lg", "trend-chart"), "medium");
+  assert.ok(large.w > medium.w && large.h > medium.h);
+  assert.equal(getWidgetSizePreset({ w: 6, h: 28 }, "lg", "trend-chart"), "medium");
   assert.equal(getWidgetSizePreset({ w: 99, h: 99 }, "lg", "trend-chart"), "large");
 });
 
@@ -186,7 +190,7 @@ test("加载历史任意宽高时会迁移到预设且保持无重叠", () => {
   });
   assert.deepEqual(
     output.lg.slice(0, 2).map(({ w, h }) => ({ w, h })),
-    [{ w: 6, h: 36 }, { w: 6, h: 35 }],
+    [{ w: 6, h: 28 }, { w: 12, h: 40 }],
   );
   assert.equal(hasGridOverlaps(output.lg), false);
 });
@@ -197,7 +201,7 @@ test("切换尺寸遇到冲突时会自动移动组件", () => {
     { i: "quick-1", id: "quick-actions", x: 8, y: 0, w: 4, h: 35 },
   ];
   const resized = applyGridWidgetSize(widgets[0], "large", "lg", widgets);
-  assert.deepEqual({ w: resized.w, h: resized.h }, { w: 12, h: 44 });
+  assert.deepEqual({ w: resized.w, h: resized.h }, { w: 12, h: 40 });
   assert.equal(hasGridOverlaps([resized, widgets[1]]), false);
 });
 
@@ -212,7 +216,7 @@ test("ensureCompleteLayout({}) 原样保留声明的紧凑默认尺寸", () => {
   }
   assert.deepEqual(
     output.lg.slice(0, 2).map(({ w, h }) => ({ w, h })),
-    [{ w: 3, h: 12 }, { w: 3, h: 12 }],
+    [{ w: 3, h: 16 }, { w: 3, h: 16 }],
   );
   assert.deepEqual(
     output.lg.find((item) => item.id === "trend-chart"),

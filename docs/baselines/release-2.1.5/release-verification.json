@@ -1,0 +1,108 @@
+{
+  "release": {
+    "version": "v2.1.5",
+    "version_tag": "2.1.5",
+    "date_local": "2026-11-10",
+    "previous": "v2.1.4",
+    "tag_target_sha": "b172461192e7249f1ed127b345ab91cf5e7ad4c4",
+    "tag_signature": "GPG key 979B6BCF52AAC5D2BF6A431AEAD651EB3F3AD989，git tag -v Good signature"
+  },
+  "content": [
+    "收敛内容编辑器里的 Stellar 2 原文配置入口（BLG-RAWSURF01，9154595f）",
+    "优化仪表盘访问趋势小组件展示样式（d184fc41）"
+  ],
+  "promotion": {
+    "pr_dev_to_main": {
+      "number": 71,
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/71",
+      "merge_commit": "99ea31af92283b567373ecb9afc135bf2c56f705",
+      "checks": {
+        "console": "pass",
+        "go": "pass",
+        "lint": "pass",
+        "security": "pass",
+        "e2e": "pass 22m45s",
+        "build": "pass",
+        "image": "skipped (dev->main 阶段预期)",
+        "release-source": "skipped (dev->main 阶段预期)"
+      }
+    },
+    "pr_main_to_release": {
+      "number": 72,
+      "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/pull/72",
+      "merge_commit": "b172461192e7249f1ed127b345ab91cf5e7ad4c4",
+      "checks": {
+        "go": "pass 4m26s",
+        "lint": "pass 1m51s",
+        "security": "pass 3m12s",
+        "console": "pass 1m4s",
+        "e2e": "pass 16m41s",
+        "build": "pass 51s",
+        "image": "pass 1m50s",
+        "release-source": "pass 10s"
+      }
+    },
+    "history_sync": "dev 合并 origin/main 与 origin/release 历史（均为纯历史合并，内容零差异），使 dev 直接包含两者祖先关系"
+  },
+  "docker_release": {
+    "run_id": 42669581338,
+    "url": "https://github.com/SakuraLoveSmile/Sakura-Blog/actions/runs/42669581338",
+    "conclusion": "success",
+    "started_at": "2026-11-09T17:57:13Z",
+    "finished_at": "2026-11-09T18:02:34Z",
+    "duration": "约 5.4 分钟",
+    "image_digest": "sha256:df35a0217e7ef0a34cf85d889d448308f7fdbd4b927dca15843e6f498daa6bf4"
+  },
+  "github_release": {
+    "tag": "v2.1.5",
+    "prerelease": false,
+    "draft": false,
+    "assets": 0,
+    "changelog_length": 319
+  },
+  "image_tags_verified_anonymous": {
+    "2.1.5": 200,
+    "2.1": 200,
+    "2": 200,
+    "latest": 200
+  },
+  "binary_startup": {
+    "command": "docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.5 -h",
+    "exit_code": 0,
+    "note": "输出 usage，证明镜像内二进制可启动"
+  },
+  "production": {
+    "host": "blog-prod (124.220.55.80)",
+    "compose": "/opt/1panel/docker/compose/blog/docker-compose.yml",
+    "compose_backup": "docker-compose.yml.bak-2.1.4",
+    "image_before": "ghcr.io/sakuralovesmile/sakura-blog:2.1.4",
+    "image_after": "ghcr.io/sakuralovesmile/sakura-blog:2.1.5",
+    "container_started_at": "2026-11-09T18:04:11.180459519Z",
+    "restart_count": 0,
+    "status": "running",
+    "readyz_host_port": 8081,
+    "readyz_status": 200,
+    "frontend_home_status": 200,
+    "console_entry_asset": "assets/index-YmQ_3yXL.js",
+    "data_migration_required": false
+  },
+  "change_verification_on_production": {
+    "method": "通过宿主端口 HTTP 拉取线上 chunk，同时检查直接形式与 \\uXXXX 转义形式",
+    "StellarContentConfig-tIRA3H9m.js": {
+      "http": 200,
+      "new_wording_present": true,
+      "old_wording_present": false
+    },
+    "PostEditor-m1wCGwbU.js": {
+      "http": 200,
+      "new_wording_present": true,
+      "old_wording_present": false
+    },
+    "note": "线上产物与本地验收构建为同一 index-YmQ_3yXL.js"
+  },
+  "known_boundaries": [
+    "文库文档编辑页无真实截图（夹具站点无 Wiki 文档，无文档时不渲染表单）",
+    "stellar_version !== 2 的自动展开未用真实旧内容实测（夹具为全新 2.0 空站点）",
+    "page/collection schema 覆盖仍为 5/29 与 18/40，该入口在 UC 与专栏仍是主要配置途径"
+  ]
+}

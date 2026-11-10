@@ -152,6 +152,12 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadAction
 </template>
 
 <style scoped>
+/* 卡片改成纵向 flex，让入口网格吃掉剩余高度：同一档位下不留半张空白。 */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+}
+
 .quick-actions-heading {
   display: flex;
   align-items: baseline;
@@ -162,8 +168,12 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadAction
 
 .quick-action-list {
   display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, auto);
   column-gap: 24px;
+  align-content: start;
 }
 
 .quick-action-item {
@@ -188,6 +198,30 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadAction
   color: var(--color-foreground);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* 小档盒子 116px：四个入口排两行，行高收紧；大档整行后加高行距。 */
+.quick-card-small .quick-actions-heading {
+  margin-bottom: 4px;
+}
+.quick-card-small .quick-action-item {
+  min-height: 26px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+/* 中/大档把行高按剩余空间均分，避免固定行高留下大片空白。 */
+.quick-card-medium .quick-action-list,
+.quick-card-large .quick-action-list {
+  grid-auto-rows: minmax(0, 1fr);
+  align-content: stretch;
+}
+.quick-card-medium .quick-action-item,
+.quick-card-large .quick-action-item {
+  min-height: 0;
+  padding-block: 8px;
+}
+.quick-card-large .quick-action-list {
+  column-gap: 40px;
 }
 
 @media (max-width: 767px) {

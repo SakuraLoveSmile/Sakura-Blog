@@ -71,12 +71,6 @@ export interface GridConstraints {
 export type WidgetSizePreset = "small" | "medium" | "large";
 export const WIDGET_SIZE_PRESET_ORDER: WidgetSizePreset[] = ["small", "medium", "large"];
 
-interface WidgetSpec {
-  defaults: Record<Breakpoint, GridSize>;
-  minW: Record<Breakpoint, number>;
-  minH: Record<Breakpoint, number>;
-}
-
 const statTypes = [
   "stat-posts",
   "stat-published",
@@ -86,83 +80,72 @@ const statTypes = [
   "stat-users",
 ];
 
-const widgetSpecs: Record<string, WidgetSpec> = Object.fromEntries(
-  statTypes.map((type) => [type, {
-    defaults: {
-      lg: { w: 3, h: 12 }, md: { w: 6, h: 12 }, sm: { w: 3, h: 12 },
-      xs: { w: 2, h: 12 }, xxs: { w: 2, h: 12 },
-    },
-    minW: { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
-    minH: { lg: 10, md: 10, sm: 10, xs: 10, xxs: 10 },
-  }]),
-) as Record<string, WidgetSpec>;
+/** 已注册组件的类型全集；档位不再按组件定制，这里只用于默认档位与校验。 */
+export const WIDGET_TYPES: string[] = [
+  ...statTypes,
+  "trend-chart",
+  "hourly-chart",
+  "category-donut",
+  "recent-posts",
+  "recent-comments",
+  "quick-actions",
+  "top-posts",
+  "system-health",
+  "stellar-version",
+  "system-version",
+];
 
-function spec(type: string, defaults: Record<Breakpoint, GridSize>, minW: Record<Breakpoint, number>, minH: Record<Breakpoint, number>): void {
-  widgetSpecs[type] = { defaults, minW, minH };
-}
+/**
+ * 档位足迹：同一断点下的同一档位只有一个尺寸，所有组件共用。
+ *
+ * 高度阶梯按 cellHeight=8 取值，覆盖图表、列表、版本卡与统计卡的共同可用区间；
+ * 组件只决定内容密度，不再决定盒子大小。
+ */
+export const WIDGET_PRESET_FOOTPRINTS: Record<Breakpoint, Record<WidgetSizePreset, GridSize>> = {
+  lg: {
+    small: { w: 3, h: 16 },
+    medium: { w: 6, h: 28 },
+    large: { w: 12, h: 40 },
+  },
+  md: {
+    small: { w: 3, h: 16 },
+    medium: { w: 6, h: 28 },
+    large: { w: 12, h: 40 },
+  },
+  sm: {
+    small: { w: 3, h: 16 },
+    medium: { w: 6, h: 28 },
+    large: { w: 6, h: 40 },
+  },
+  xs: {
+    small: { w: 2, h: 16 },
+    medium: { w: 4, h: 26 },
+    large: { w: 4, h: 36 },
+  },
+  xxs: {
+    small: { w: 2, h: 16 },
+    medium: { w: 4, h: 26 },
+    large: { w: 4, h: 36 },
+  },
+};
 
-spec("trend-chart", {
-  lg: { w: 8, h: 52 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-  xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
-}, { lg: 4, md: 4, sm: 3, xs: 2, xxs: 2 }, { lg: 24, md: 24, sm: 24, xs: 22, xxs: 22 });
-spec("hourly-chart", {
-  lg: { w: 4, h: 40 }, md: { w: 6, h: 37 }, sm: { w: 3, h: 37 },
-  xs: { w: 4, h: 35 }, xxs: { w: 4, h: 35 },
-}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 20, md: 20, sm: 20, xs: 18, xxs: 18 });
-spec("category-donut", {
-  lg: { w: 4, h: 34 }, md: { w: 6, h: 32 }, sm: { w: 3, h: 32 },
-  xs: { w: 4, h: 29 }, xxs: { w: 4, h: 29 },
-}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
-spec("quick-actions", {
-  lg: { w: 4, h: 35 }, md: { w: 6, h: 31 }, sm: { w: 3, h: 31 },
-  xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
-}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 16, md: 16, sm: 16, xs: 14, xxs: 14 });
-for (const type of ["recent-posts", "recent-comments"]) {
-  spec(type, {
-    lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-    xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
-  }, { lg: 3, md: 3, sm: 3, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
-}
-spec("top-posts", {
-  lg: { w: 6, h: 34 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-  xs: { w: 4, h: 30 }, xxs: { w: 4, h: 30 },
-}, { lg: 3, md: 3, sm: 3, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
-spec("system-health", {
-  lg: { w: 6, h: 34 }, md: { w: 12, h: 34 }, sm: { w: 6, h: 34 },
-  xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
-}, { lg: 3, md: 3, sm: 3, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
-for (const type of ["stellar-version", "system-version"]) {
-  spec(type, {
-    lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
-    xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-  }, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 });
-}
-
-function fallbackSpec(): WidgetSpec {
-  const defaults = Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [
-    bp,
-    { w: GRID_COLUMNS[bp] === 4 ? 4 : GRID_COLUMNS[bp] === 6 ? 6 : 6, h: 12 },
-  ])) as Record<Breakpoint, GridSize>;
-  return {
-    defaults,
-    minW: Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [bp, 1])) as Record<Breakpoint, number>,
-    minH: Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [bp, 6])) as Record<Breakpoint, number>,
-  };
-}
-
-function getSpec(type: string): WidgetSpec {
-  return widgetSpecs[type] ?? fallbackSpec();
+/** 新组件默认落到的档位：统计卡是单行指标，其余按标准档插入。 */
+export function getDefaultPreset(type: string): WidgetSizePreset {
+  return statTypes.includes(type) ? "small" : "medium";
 }
 
 export function getDefaultGridSize(type: string, bp: Breakpoint): GridSize {
-  return { ...getSpec(type).defaults[bp] };
+  return { ...WIDGET_PRESET_FOOTPRINTS[bp][getDefaultPreset(type)] };
 }
 
-export function getGridConstraints(type: string, bp: Breakpoint): GridConstraints {
-  const widgetSpec = getSpec(type);
+/**
+ * 约束只用于兜住历史数据与极端尺寸，不能把任何档位钳制到别的值。
+ * 因此下界取 1，上界是断点列数与单卡最大行高。
+ */
+export function getGridConstraints(_type: string, bp: Breakpoint): GridConstraints {
   return {
-    minW: Math.min(GRID_COLUMNS[bp], widgetSpec.minW[bp]),
-    minH: Math.min(GRID_MAX_WIDGET_ROWS, widgetSpec.minH[bp]),
+    minW: 1,
+    minH: 1,
     maxW: GRID_COLUMNS[bp],
     maxH: GRID_MAX_WIDGET_ROWS,
   };
@@ -201,51 +184,51 @@ function defaultWidget(id: string, x: number, y: number, w: number, h: number): 
 }
 
 const defaultLayoutLg: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 3, 12),
-  defaultWidget("stat-published-1", 3, 0, 3, 12),
-  defaultWidget("stat-views-1", 6, 0, 3, 12),
-  defaultWidget("stat-comments-1", 9, 0, 3, 12),
-  defaultWidget("trend-chart-1", 0, 12, 12, 44),
-  defaultWidget("recent-posts-1", 0, 56, 6, 36),
-  defaultWidget("recent-comments-1", 6, 56, 6, 36),
-  defaultWidget("category-donut-1", 0, 92, 6, 32),
-  defaultWidget("stellar-version-1", 6, 92, 6, 25),
+  defaultWidget("stat-posts-1", 0, 0, 3, 16),
+  defaultWidget("stat-published-1", 3, 0, 3, 16),
+  defaultWidget("stat-views-1", 6, 0, 3, 16),
+  defaultWidget("stat-comments-1", 9, 0, 3, 16),
+  defaultWidget("trend-chart-1", 0, 16, 12, 40),
+  defaultWidget("recent-posts-1", 0, 56, 6, 28),
+  defaultWidget("recent-comments-1", 6, 56, 6, 28),
+  defaultWidget("category-donut-1", 0, 84, 6, 28),
+  defaultWidget("stellar-version-1", 6, 84, 6, 28),
 ];
 
 const defaultLayoutMd: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 6, 12),
-  defaultWidget("stat-published-1", 6, 0, 6, 12),
-  defaultWidget("stat-views-1", 0, 12, 6, 12),
-  defaultWidget("stat-comments-1", 6, 12, 6, 12),
-  defaultWidget("trend-chart-1", 0, 24, 12, 44),
-  defaultWidget("recent-posts-1", 0, 68, 12, 32),
-  defaultWidget("recent-comments-1", 0, 100, 12, 32),
-  defaultWidget("category-donut-1", 0, 132, 6, 32),
-  defaultWidget("stellar-version-1", 6, 132, 6, 23),
+  defaultWidget("stat-posts-1", 0, 0, 3, 16),
+  defaultWidget("stat-published-1", 3, 0, 3, 16),
+  defaultWidget("stat-views-1", 6, 0, 3, 16),
+  defaultWidget("stat-comments-1", 9, 0, 3, 16),
+  defaultWidget("trend-chart-1", 0, 16, 12, 40),
+  defaultWidget("recent-posts-1", 0, 56, 6, 28),
+  defaultWidget("recent-comments-1", 6, 56, 6, 28),
+  defaultWidget("category-donut-1", 0, 84, 6, 28),
+  defaultWidget("stellar-version-1", 6, 84, 6, 28),
 ];
 
 const defaultLayoutSm: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 3, 12),
-  defaultWidget("stat-published-1", 3, 0, 3, 12),
-  defaultWidget("stat-views-1", 0, 12, 3, 12),
-  defaultWidget("stat-comments-1", 3, 12, 3, 12),
-  defaultWidget("trend-chart-1", 0, 24, 6, 44),
-  defaultWidget("recent-posts-1", 0, 68, 6, 32),
-  defaultWidget("recent-comments-1", 0, 100, 6, 32),
-  defaultWidget("category-donut-1", 0, 132, 3, 32),
-  defaultWidget("stellar-version-1", 3, 132, 3, 23),
+  defaultWidget("stat-posts-1", 0, 0, 3, 16),
+  defaultWidget("stat-published-1", 3, 0, 3, 16),
+  defaultWidget("stat-views-1", 0, 16, 3, 16),
+  defaultWidget("stat-comments-1", 3, 16, 3, 16),
+  defaultWidget("trend-chart-1", 0, 32, 6, 40),
+  defaultWidget("recent-posts-1", 0, 72, 6, 28),
+  defaultWidget("recent-comments-1", 0, 100, 6, 28),
+  defaultWidget("category-donut-1", 0, 128, 6, 28),
+  defaultWidget("stellar-version-1", 0, 156, 6, 28),
 ];
 
 const defaultLayoutXs: DashboardWidget[] = [
-  defaultWidget("stat-posts-1", 0, 0, 2, 12),
-  defaultWidget("stat-published-1", 2, 0, 2, 12),
-  defaultWidget("stat-views-1", 0, 12, 2, 12),
-  defaultWidget("stat-comments-1", 2, 12, 2, 12),
-  defaultWidget("trend-chart-1", 0, 24, 4, 42),
-  defaultWidget("recent-posts-1", 0, 66, 4, 27),
-  defaultWidget("recent-comments-1", 0, 93, 4, 27),
-  defaultWidget("category-donut-1", 0, 120, 4, 29),
-  defaultWidget("stellar-version-1", 0, 149, 4, 22),
+  defaultWidget("stat-posts-1", 0, 0, 2, 16),
+  defaultWidget("stat-published-1", 2, 0, 2, 16),
+  defaultWidget("stat-views-1", 0, 16, 2, 16),
+  defaultWidget("stat-comments-1", 2, 16, 2, 16),
+  defaultWidget("trend-chart-1", 0, 32, 4, 36),
+  defaultWidget("recent-posts-1", 0, 68, 4, 26),
+  defaultWidget("recent-comments-1", 0, 94, 4, 26),
+  defaultWidget("category-donut-1", 0, 120, 4, 26),
+  defaultWidget("stellar-version-1", 0, 146, 4, 26),
 ];
 
 export const defaultMultiLayout: MultiBreakpointLayout = {
@@ -296,193 +279,13 @@ export function findFreeGridPosition(
   return { x: 0, y: bottom };
 }
 
-export type WidgetPresetMatrix = Record<WidgetSizePreset, Record<Breakpoint, GridSize>>;
-
-export const WIDGET_PRESET_SPECS: Record<string, WidgetPresetMatrix> = {
-  ...Object.fromEntries(
-    statTypes.map((type) => [
-      type,
-      {
-        small: {
-          lg: { w: 2, h: 12 }, md: { w: 3, h: 12 }, sm: { w: 2, h: 12 },
-          xs: { w: 2, h: 12 }, xxs: { w: 2, h: 12 },
-        },
-        medium: {
-          lg: { w: 3, h: 12 }, md: { w: 6, h: 12 }, sm: { w: 3, h: 12 },
-          xs: { w: 2, h: 12 }, xxs: { w: 4, h: 12 },
-        },
-        large: {
-          lg: { w: 6, h: 12 }, md: { w: 12, h: 12 }, sm: { w: 6, h: 12 },
-          xs: { w: 4, h: 12 }, xxs: { w: 4, h: 12 },
-        },
-      },
-    ]),
-  ),
-  "trend-chart": {
-    small: {
-      lg: { w: 6, h: 36 }, md: { w: 6, h: 36 }, sm: { w: 6, h: 36 },
-      xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
-    },
-    medium: {
-      lg: { w: 8, h: 44 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-      xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
-    },
-    large: {
-      lg: { w: 12, h: 44 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 52 },
-      xs: { w: 4, h: 50 }, xxs: { w: 4, h: 50 },
-    },
-  },
-  "hourly-chart": {
-    small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 28 }, sm: { w: 3, h: 28 },
-      xs: { w: 4, h: 26 }, xxs: { w: 4, h: 26 },
-    },
-    medium: {
-      lg: { w: 4, h: 40 }, md: { w: 6, h: 37 }, sm: { w: 3, h: 37 },
-      xs: { w: 4, h: 35 }, xxs: { w: 4, h: 35 },
-    },
-    large: {
-      lg: { w: 6, h: 40 }, md: { w: 12, h: 37 }, sm: { w: 6, h: 37 },
-      xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
-    },
-  },
-  "category-donut": {
-    small: {
-      lg: { w: 3, h: 28 }, md: { w: 4, h: 28 }, sm: { w: 3, h: 28 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-    },
-    medium: {
-      lg: { w: 4, h: 34 }, md: { w: 6, h: 32 }, sm: { w: 3, h: 32 },
-      xs: { w: 4, h: 29 }, xxs: { w: 4, h: 29 },
-    },
-    large: {
-      lg: { w: 6, h: 32 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
-    },
-  },
-  "recent-posts": {
-    small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 26 }, sm: { w: 6, h: 26 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-    },
-    medium: {
-      lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-      xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
-    },
-    large: {
-      lg: { w: 12, h: 36 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
-    },
-  },
-  "recent-comments": {
-    small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 26 }, sm: { w: 6, h: 26 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-    },
-    medium: {
-      lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-      xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
-    },
-    large: {
-      lg: { w: 12, h: 36 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
-    },
-  },
-  "quick-actions": {
-    small: {
-      lg: { w: 3, h: 28 }, md: { w: 4, h: 28 }, sm: { w: 3, h: 28 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-    },
-    medium: {
-      lg: { w: 4, h: 35 }, md: { w: 6, h: 31 }, sm: { w: 3, h: 31 },
-      xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
-    },
-    large: {
-      lg: { w: 6, h: 35 }, md: { w: 12, h: 31 }, sm: { w: 6, h: 31 },
-      xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
-    },
-  },
-  "top-posts": {
-    small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 26 }, sm: { w: 6, h: 26 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-    },
-    medium: {
-      lg: { w: 6, h: 34 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-      xs: { w: 4, h: 30 }, xxs: { w: 4, h: 30 },
-    },
-    large: {
-      lg: { w: 12, h: 38 }, md: { w: 12, h: 38 }, sm: { w: 6, h: 38 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
-    },
-  },
-  "system-health": {
-    small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 28 }, sm: { w: 6, h: 28 },
-      xs: { w: 4, h: 26 }, xxs: { w: 4, h: 26 },
-    },
-    medium: {
-      lg: { w: 6, h: 34 }, md: { w: 12, h: 34 }, sm: { w: 6, h: 34 },
-      xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
-    },
-    large: {
-      lg: { w: 12, h: 38 }, md: { w: 12, h: 38 }, sm: { w: 6, h: 38 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
-    },
-  },
-  "stellar-version": {
-    small: {
-      lg: { w: 3, h: 18 }, md: { w: 4, h: 18 }, sm: { w: 3, h: 18 },
-      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
-    },
-    medium: {
-      lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-    },
-    large: {
-      lg: { w: 6, h: 25 }, md: { w: 12, h: 23 }, sm: { w: 6, h: 23 },
-      xs: { w: 4, h: 28 }, xxs: { w: 4, h: 28 },
-    },
-  },
-  "system-version": {
-    small: {
-      lg: { w: 3, h: 18 }, md: { w: 4, h: 18 }, sm: { w: 3, h: 18 },
-      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
-    },
-    medium: {
-      lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-    },
-    large: {
-      lg: { w: 6, h: 25 }, md: { w: 12, h: 23 }, sm: { w: 6, h: 23 },
-      xs: { w: 4, h: 28 }, xxs: { w: 4, h: 28 },
-    },
-  },
-};
-
-/** 未知组件的显式兜底规格；已注册组件必须使用 WIDGET_PRESET_SPECS。 */
-const FALLBACK_PRESET_SPECS: WidgetPresetMatrix = {
-  small: {
-    lg: { w: 4, h: 14 }, md: { w: 4, h: 14 }, sm: { w: 2, h: 14 },
-    xs: { w: 2, h: 14 }, xxs: { w: 2, h: 14 },
-  },
-  medium: {
-    lg: { w: 6, h: 20 }, md: { w: 6, h: 20 }, sm: { w: 4, h: 20 },
-    xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
-  },
-  large: {
-    lg: { w: 12, h: 32 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-    xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
-  },
-};
-
-/** 根据组件预设规格矩阵生成精确离散大小，避免破环网格整除与对齐。 */
+/** 根据档位足迹生成精确离散大小；同一断点同一档位对所有组件一致。 */
 export function getGridPresetSize(type: string, bp: Breakpoint, preset: WidgetSizePreset): GridSize {
-  const desired = (WIDGET_PRESET_SPECS[type] ?? FALLBACK_PRESET_SPECS)[preset][bp];
+  const footprint = WIDGET_PRESET_FOOTPRINTS[bp][preset];
   const constraints = getGridConstraints(type, bp);
   return {
-    w: clampInt(desired.w, constraints.minW, constraints.maxW, desired.w),
-    h: clampInt(desired.h, constraints.minH, constraints.maxH, desired.h),
+    w: clampInt(footprint.w, constraints.minW, constraints.maxW, footprint.w),
+    h: clampInt(footprint.h, constraints.minH, constraints.maxH, footprint.h),
   };
 }
 

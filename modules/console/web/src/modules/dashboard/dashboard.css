@@ -333,6 +333,8 @@
    surface treatment quiet: the preset changes rhythm, not the dark theme. */
 .widget-cell.widget-size-small > .apple-card {
   border-radius: var(--radius-md);
+  /* 小档 116px 高：上下留白收紧，内容才放得下标题与主体。 */
+  padding-block: 12px 16px;
 }
 
 .widget-cell.widget-size-small > .apple-card .apple-section-title {
@@ -345,10 +347,12 @@
 
 .widget-cell.widget-size-medium > .apple-card {
   border-radius: var(--radius-md);
+  padding-block: 16px 20px;
 }
 
 .widget-cell.widget-size-large > .apple-card {
   border-radius: var(--radius-md);
+  padding-block: 16px 24px;
 }
 
 .widget-cell.widget-size-large > .apple-card .apple-section-title {
@@ -404,7 +408,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-height: 120px;
+  min-height: 0;
+  overflow: hidden;
   padding: 4px 0;
 }
 
@@ -561,7 +566,6 @@
   flex-direction: column;
   justify-content: flex-start;
   gap: 4px;
-  padding: 8px 0 16px;
   border-top: 1px solid var(--color-border);
 }
 
@@ -593,17 +597,55 @@
   display: none;
 }
 
+.dashboard-stat-caption {
+  display: none;
+  margin: 0;
+}
+
+/* 小：单行指标条 */
 .apple-card.stat-card-small {
   flex-direction: row;
   align-items: center;
+  gap: 12px;
 }
 
 .stat-card-small .dashboard-stat-value {
   margin-left: auto;
+  font-size: 24px;
+}
+
+/* 中：垂直居中，数字放大 */
+.apple-card.stat-card-medium {
+  justify-content: center;
+  gap: 6px;
+}
+
+.stat-card-medium .dashboard-stat-value {
+  font-size: 24px;
+}
+
+/* 大：整行 hero，数字居中，上下留白对称 */
+.apple-card.stat-card-large {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.stat-card-large .dashboard-stat-heading {
+  font-size: 13px;
+  letter-spacing: 0.02em;
 }
 
 .stat-card-large .dashboard-stat-value {
-  font-size: 24px;
+  /* 整行 hero：唯一允许使用显示级字号的场景（Apple 设计库 56 号档）。 */
+  font-size: 56px;
+  line-height: 1;
+}
+
+.stat-card-large .dashboard-stat-caption {
+  display: block;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
 }
 
 /* ===== Segment control：统一走 apple-base.css 的 .apple-segmented ===== */
@@ -739,7 +781,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 184px;
+  min-height: 0;
 }
 
 .version-card.is-attention {

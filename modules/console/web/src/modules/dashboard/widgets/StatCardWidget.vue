@@ -31,5 +31,6 @@ const value = computed(() => {
       <span>{{ label }}</span>
     </div>
     <div class="dashboard-stat-value">{{ value }}</div>
+    <p v-if="sizePreset === 'large'" class="dashboard-stat-caption">累计</p>
   </div>
 </template>
