@@ -53,9 +53,10 @@ onMounted(() => {
 onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadPosts));
 
 const displayedItems = computed(() => {
-  if (sizePreset.value === "small") return items.value.slice(0, 3);
-  if (sizePreset.value === "medium") return items.value.slice(0, 5);
-  return items.value.slice(0, 8);
+  // 同一档位盒子的可用高度固定：小档只放两条单行，中档四条，大档七条。
+  if (sizePreset.value === "small") return items.value.slice(0, 2);
+  if (sizePreset.value === "medium") return items.value.slice(0, 4);
+  return items.value.slice(0, 7);
 });
 
 function editPost(item: PostItem) {
@@ -69,7 +70,7 @@ function previewPost(item: PostItem) {
 
 <template>
   <div class="apple-card h-full flex flex-col justify-between" :class="`recent-posts-${sizePreset}`" :data-bp="breakpoint">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3 recent-header">
       <div class="flex items-baseline gap-2.5">
         <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">最近文章</h3>
         <!-- 状态点图例 -->
@@ -85,7 +86,7 @@ function previewPost(item: PostItem) {
     </div>
 
     <div v-if="loading" class="dashboard-skeleton-list flex-1" aria-label="正在加载文章">
-      <span v-for="index in (sizePreset === 'large' ? 5 : 3)" :key="index" class="dashboard-skeleton-row">
+      <span v-for="index in (sizePreset === 'small' ? 2 : sizePreset === 'medium' ? 4 : 5)" :key="index" class="dashboard-skeleton-row">
         <i class="dashboard-skeleton-avatar" />
         <i class="dashboard-skeleton-copy" />
       </span>
@@ -96,11 +97,11 @@ function previewPost(item: PostItem) {
     </div>
 
     <!-- Small 尺寸：单行精简列表 -->
-    <div v-else-if="sizePreset === 'small'" class="space-y-1.5 flex-1">
+    <div v-else-if="sizePreset === 'small'" class="recent-mini-list flex-1">
       <button
         v-for="item in displayedItems"
         :key="item.slug"
-        class="w-full flex items-center justify-between py-1.5 border-t border-border text-left transition-colors duration-150"
+        class="recent-mini-row w-full flex items-center justify-between py-1.5 border-t border-border text-left transition-colors duration-150"
         @click="editPost(item)"
       >
         <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
@@ -186,8 +187,21 @@ function previewPost(item: PostItem) {
 </template>
 
 <style scoped>
+/* 小档 107px 高：标题与两条单行记录必须正好放下，不留空间给 gap。 */
+.recent-posts-small .recent-header {
+  margin-bottom: 4px;
+}
+.recent-mini-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.recent-posts-small .recent-mini-row {
+  padding-block: 4px;
+}
 .recent-placeholder {
-  min-height: 120px;
+  min-height: 0;
 }
 .recent-legend {
   display: inline-flex;

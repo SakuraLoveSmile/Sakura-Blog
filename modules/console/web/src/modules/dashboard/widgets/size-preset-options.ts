@@ -12,10 +12,10 @@ export interface WidgetPresetOption {
 }
 
 /**
- * 返回当前断点下实际宽高不重复的快捷预设。
+ * 返回当前断点下可选的预设。
  *
- * 识别与去重必须共用同一套键：只按列宽去重会丢掉同宽不同高的档位，
- * 导致当前识别出的 preset 不在弹窗里。只有宽高都相同的档位才视为重复。
+ * 档位足迹统一后三档必然互不相同；保留去重是为了兜住历史上按组件定制尺寸
+ * 的旧矩阵，避免识别出的 preset 在弹窗里找不到对应项。
  */
 export function uniquePresetOptions(type: string, breakpoint: Breakpoint): WidgetSizePreset[] {
   const seen = new Set<string>();

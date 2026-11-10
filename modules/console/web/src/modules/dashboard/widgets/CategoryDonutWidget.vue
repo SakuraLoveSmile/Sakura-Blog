@@ -165,29 +165,29 @@ function openCategory(name: string) {
       暂无分类数据
     </div>
 
-    <!-- Small 尺寸：居中纯环形图（Hover 交互切换中心文案） -->
-    <div v-else-if="sizePreset === 'small'" class="flex-1 flex flex-col items-center justify-center">
-      <svg viewBox="0 0 180 180" class="w-32 h-32 overflow-visible">
-        <g @mouseleave="hoveredIdx = null">
-          <path
-            v-for="(a, i) in arcSegments"
-            :key="`${a.sourceIndex}-${i}`"
-            :d="a.path"
-            :fill="a.color"
-            :opacity="hoveredIdx === null || hoveredIdx === a.sourceIndex ? 1 : 0.35"
-            class="donut-segment"
-            @mouseenter="hoveredIdx = a.sourceIndex"
-          />
-        </g>
-        <template v-if="hoveredArc">
-          <text x="90" y="84" text-anchor="middle" fill="var(--color-foreground)" class="text-xs font-bold">{{ hoveredArc.name }}</text>
-          <text x="90" y="102" text-anchor="middle" :fill="hoveredArc.color" class="text-xs font-semibold tabular-nums">{{ hoveredArc.pct }}% ({{ hoveredArc.count }})</text>
-        </template>
-        <template v-else>
-          <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num tabular-nums">{{ total }}</text>
-          <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">篇文章</text>
-        </template>
-      </svg>
+    <!-- Small 尺寸（116px 高）：迷你占比条 + 前三名，环形图放不下 -->
+    <div v-else-if="sizePreset === 'small'" class="donut-mini">
+      <div class="donut-mini-bar" aria-hidden="true">
+        <span
+          v-for="(a, i) in arcs"
+          :key="`bar-${i}`"
+          :style="{ width: `${a.pct}%`, background: a.color }"
+        />
+      </div>
+      <div class="donut-mini-items">
+        <button
+          v-for="(a, i) in arcs.slice(0, 3)"
+          :key="`mini-${i}`"
+          type="button"
+          class="donut-mini-item"
+          :aria-label="`查看分类：${a.name}`"
+          @click="a.name !== '其他分类' && openCategory(a.name)"
+        >
+          <span class="donut-dot" :style="{ backgroundColor: a.color }" />
+          <span class="donut-name">{{ a.name }}</span>
+          <span class="donut-count tabular-nums">{{ a.count }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Medium 尺寸：经典左环右图例 -->
@@ -239,8 +239,8 @@ function openCategory(name: string) {
     </div>
 
     <!-- Large 尺寸：大环形图 + 带占比进度条的完整分类明细 -->
-    <div v-else class="donut-body gap-6">
-      <svg viewBox="0 0 180 180" class="w-36 h-36 flex-shrink-0 overflow-visible">
+    <div v-else class="donut-body donut-body-large gap-6">
+      <svg viewBox="0 0 180 180" class="donut-svg w-36 h-36 flex-shrink-0 overflow-visible">
         <g @mouseleave="hoveredIdx = null">
           <path
             v-for="(a, i) in arcSegments"
@@ -315,7 +315,7 @@ function openCategory(name: string) {
   justify-content: space-between;
   margin-bottom: 16px;
 }
-.donut-placeholder { height: 180px; }
+.donut-placeholder { flex: 1 1 auto; min-height: 0; }
 
 .donut-body {
   display: flex;
@@ -375,6 +375,60 @@ function openCategory(name: string) {
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-pct,
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-pct { width: 30px; font-size: 11px; }
 
+/* 档位适配：同一档位下盒子固定，环形图按可用高度缩放 */
+.donut-card-small .donut-header {
+  margin-bottom: 8px;
+}
+.donut-mini {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+.donut-mini-bar {
+  display: flex;
+  height: 6px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-border);
+}
+.donut-mini-bar span {
+  height: 100%;
+}
+.donut-mini-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+}
+.donut-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.donut-mini-item .donut-count {
+  font-size: 11px;
+}
+.apple-card.donut-card-medium .donut-svg {
+  width: 128px;
+  height: 128px;
+}
+.apple-card.donut-card-large .donut-svg {
+  width: 176px;
+  height: 176px;
+}
 /* S: stack vertically, center donut */
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-body {
   flex-direction: column;
@@ -386,8 +440,30 @@ function openCategory(name: string) {
   height: 130px;
   margin: 0 auto;
 }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-placeholder { height: 160px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-placeholder { min-height: 0; }
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-legend {
   max-height: none;
+}
+
+/* 手机档：中档保持左右排布，堆叠会超出 26 行的盒子 */
+.apple-card.donut-card-medium:is([data-bp="xs"], [data-bp="xxs"]) .donut-body {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.apple-card.donut-card-medium:is([data-bp="xs"], [data-bp="xxs"]) .donut-svg {
+  width: 104px;
+  height: 104px;
+  margin: 0;
+}
+.apple-card.donut-card-large:is([data-bp="xs"], [data-bp="xxs"]) .donut-body {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.apple-card.donut-card-large:is([data-bp="xs"], [data-bp="xxs"]) .donut-svg {
+  width: 120px;
+  height: 120px;
+  margin: 0;
 }
 </style>

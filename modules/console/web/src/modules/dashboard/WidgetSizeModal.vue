@@ -57,19 +57,19 @@ const presetMeta: Record<
   small: {
     label: "小",
     title: "紧凑",
-    description: "保留核心指标，适合并排查看。",
+    description: "断点内最小档，适合并排查看。",
     icon: "ri:layout-column-line",
   },
   medium: {
     label: "中",
     title: "标准",
-    description: "显示指标和摘要。",
+    description: "图表与列表的常用密度。",
     icon: "ri:layout-grid-line",
   },
   large: {
     label: "大",
     title: "展开",
-    description: "展开趋势、明细与更多操作入口。",
+    description: "整行档，展开完整明细。",
     icon: "ri:layout-right-line",
   },
 };
@@ -137,7 +137,7 @@ function close() {
 
     <div class="size-modal-note mt-5 p-3 rounded-md border border-border text-[12px] text-text-secondary flex items-start gap-2">
       <Icon icon="ri:information-line" class="w-4 h-4 flex-shrink-0 mt-0.5" />
-      <span>组件只能使用这三个预设大小；如果新尺寸放不下，组件会自动移动到当前布局的空位。</span>
+      <span>同一断点下，任何组件的同一档位都是同一尺寸；如果新尺寸放不下，组件会自动移动到当前布局的空位。</span>
     </div>
 
     <template #footer>

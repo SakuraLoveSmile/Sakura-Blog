@@ -1074,13 +1074,13 @@ test.describe("Console 设置导航与空列表选择入口", () => {
     await expect(trend).toBeVisible();
     const statBox = (await stat.boundingBox())!;
     const trendBox = (await trend.boundingBox())!;
-    // 12 行 × 8px + 外边距约 96px；44 行约 352px。
-    expect(statBox.height, "1280 统计卡应保持 h12 紧凑高度").toBeGreaterThanOrEqual(88);
-    expect(statBox.height, "1280 统计卡不得被扩成 h19").toBeLessThanOrEqual(112);
-    expect(trendBox.height, "1280 趋势卡应保持 h44 紧凑高度").toBeGreaterThanOrEqual(330);
-    expect(trendBox.height, "1280 趋势卡不得被扩成 h52").toBeLessThanOrEqual(380);
-    expect(await stat.getAttribute("gs-h")).toBe("12");
-    expect(await trend.getAttribute("gs-h")).toBe("44");
+    // 网格项高度 = 行数 × cellHeight(8)：小档 16 行 = 128px，大档 40 行 = 320px。
+    expect(statBox.height, "1280 统计卡应保持小档 h16 紧凑高度").toBeGreaterThanOrEqual(120);
+    expect(statBox.height, "1280 统计卡不得被扩成旧 h19").toBeLessThanOrEqual(136);
+    expect(trendBox.height, "1280 趋势卡应保持大档 h40 紧凑高度").toBeGreaterThanOrEqual(310);
+    expect(trendBox.height, "1280 趋势卡不得被扩成旧 h52").toBeLessThanOrEqual(330);
+    expect(await stat.getAttribute("gs-h")).toBe("16");
+    expect(await trend.getAttribute("gs-h")).toBe("40");
     const quick = await page.locator(".dashboard-quick-links a").allTextContents();
     expect(quick).toEqual(["写文章", "评论", "分类", "设置"]);
 
@@ -1097,8 +1097,8 @@ test.describe("Console 设置导航与空列表选择入口", () => {
     expect(new Set(stats.map((item) => item.x))).toEqual(new Set(["0", "2"]));
     for (const item of stats) {
       expect(item.w, "390 统计卡保持 2 列").toBe("2");
-      expect(item.h, "390 统计卡不得保留旧 h14/h18 的空白").toBeGreaterThanOrEqual(88);
-      expect(item.h).toBeLessThanOrEqual(112);
+      expect(item.h, "390 统计卡保持小档 16 行 = 128px").toBeGreaterThanOrEqual(120);
+      expect(item.h).toBeLessThanOrEqual(136);
     }
     await page.screenshot({ path: testInfo.outputPath("dashboard-compact-390.png") });
   });
@@ -1249,16 +1249,23 @@ test.describe("Console 设置导航与空列表选择入口", () => {
     expect(violations, `继承字号必须收敛到 11/12/13/14/20/24：${JSON.stringify(violations, null, 2)}`).toEqual([]);
   });
 
-  test("组件尺寸弹窗与识别共用宽×高：sm/xxs 中档组件三档可见且选中", async ({ page }, testInfo) => {
+  test("组件尺寸弹窗与识别共用宽×高：sm/xxs 当前档位三档可见且选中", async ({ page }, testInfo) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/console/dashboard/designer");
     await expect(page.getByRole("heading", { name: "设置仪表盘", exact: true })).toBeVisible();
 
-    const widgets = ["trend-chart-1", "recent-posts-1", "recent-comments-1", "category-donut-1", "stellar-version-1"];
+    // 平板/手机默认布局里趋势卡给的是大档（整宽 tall），其余列表与版本卡是中档。
+    const widgets: Array<[string, "medium" | "large"]> = [
+      ["trend-chart-1", "large"],
+      ["recent-posts-1", "medium"],
+      ["recent-comments-1", "medium"],
+      ["category-donut-1", "medium"],
+      ["stellar-version-1", "medium"],
+    ];
     for (const device of ["平板", "手机"]) {
       await page.getByRole("tab", { name: device }).click();
-      for (const widgetId of widgets) {
+      for (const [widgetId, currentPreset] of widgets) {
         const item = page.locator(`.grid-stack-item[gs-id="${widgetId}"]`);
         await expect(item, `${widgetId} 在${device}断点可见`).toBeVisible();
         await item.getByRole("button", { name: "选择组件大小" }).click();
@@ -1270,14 +1277,14 @@ test.describe("Console 设置导航与空列表选择入口", () => {
           await expect(dialog.locator(`[data-size-preset="${preset}"]`), `${widgetId}/${device} 缺少 ${preset}`).toBeVisible();
         }
         await expect(
-          dialog.locator('[data-size-preset="medium"]'),
-          `${widgetId}/${device} 当前尺寸应识别为中档并选中`,
+          dialog.locator(`[data-size-preset="${currentPreset}"]`),
+          `${widgetId}/${device} 当前尺寸应识别为 ${currentPreset} 并选中`,
         ).toHaveAttribute("aria-pressed", "true");
-        await expect(dialog.locator('[data-size-preset="medium"]')).toHaveClass(/is-selected/);
+        await expect(dialog.locator(`[data-size-preset="${currentPreset}"]`)).toHaveClass(/is-selected/);
         if (widgetId === "trend-chart-1") {
           const sizes = await options.locator(".size-preset-grid-size").allTextContents();
           expect(sizes, `趋势 ${device} 三档必须是可区分的宽×高`).toEqual(
-            device === "平板" ? ["6 列 × 36 行", "6 列 × 44 行", "6 列 × 52 行"] : ["4 列 × 32 行", "4 列 × 42 行", "4 列 × 50 行"],
+            device === "平板" ? ["3 列 × 16 行", "6 列 × 28 行", "6 列 × 40 行"] : ["2 列 × 16 行", "4 列 × 26 行", "4 列 × 36 行"],
           );
           await page.screenshot({ path: testInfo.outputPath(`size-modal-${device === "平板" ? "sm" : "xxs"}.png`) });
         }

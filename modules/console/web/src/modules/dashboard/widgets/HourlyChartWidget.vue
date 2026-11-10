@@ -38,12 +38,6 @@ const statsSummary = computed(() => {
 
 const isEmpty = computed(() => hourlyDist.value.every((value) => value <= 0));
 
-const canvasHeight = computed(() => {
-  if (sizePreset.value === "small") return 140;
-  if (sizePreset.value === "large") return 220;
-  return 180;
-});
-
 async function loadHourly() {
   loading.value = true;
   try {
@@ -222,7 +216,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="hourly-chart-stage flex-1 min-h-0 w-full" :style="{ height: `${canvasHeight}px` }">
+    <div class="hourly-chart-stage flex-1 min-h-0 w-full">
       <canvas v-if="!isEmpty || loading" ref="hourlyCanvas" :class="{ 'is-loading': loading }" aria-label="24 小时访问量分布图" />
       <div v-if="loading" class="hourly-chart-skeleton" aria-label="正在加载时段分布">
         <span v-for="height in [28, 42, 34, 62, 48, 72, 40, 55, 32, 66, 46, 78]" :key="height" :style="{ height: `${height}%` }" />
