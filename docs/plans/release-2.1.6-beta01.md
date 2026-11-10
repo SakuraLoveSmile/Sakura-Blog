@@ -66,6 +66,9 @@
   - `docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.6-beta01 -h` → 退出码 **0**，输出 Go flag usage
   - 镜像标签复核：`version=2.1.6-beta01`、`revision=2c295fb4…`
   - 本机 Docker Desktop 全程未启动（`docker info` 仍连不上本地 socket）
+  - 该密钥在 NAS 的 `~/.ssh/authorized_keys` 里限定为 `from="192.168.0.23",restrict`：
+    只允许当前 Mac 的内网 IP，并禁用 PTY / 端口转发 / agent 转发。实测普通命令可用、`ssh -tt` 被拒。
+    换 IP 或换机器时需要改这一行（放宽为网段会削弱保护）；原文件备份在同目录 `authorized_keys.bak-20261110`。
 - 未升级生产：compose 仍指向 `v2.1.5` 镜像。
 - 未推送 `dev` 之外的其它本地内容；`main`、`release` 已推送。
 - 仅 Chrome；Safari / Firefox 与真机触屏不在本次范围。
