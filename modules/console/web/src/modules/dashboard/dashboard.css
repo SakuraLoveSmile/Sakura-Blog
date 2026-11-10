@@ -110,6 +110,117 @@
   border-left: 1px solid var(--color-border);
 }
 
+/* ===== 头部工具组：视图切换、刷新、设置布局统一为 36px 幽灵控件（手机 44px） ===== */
+.dashboard-view-switch {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dashboard-tool {
+  position: relative;
+  display: inline-flex;
+}
+
+.dashboard-tool-btn {
+  --dashboard-tool-size: 36px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dashboard-tool-size);
+  height: var(--dashboard-tool-size);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+.dashboard-tool-btn:active {
+  background: var(--color-secondary-700);
+  color: var(--color-foreground);
+}
+.dashboard-tool-btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+/* 选中：前景色 + 图标下方 16×1 短线（与全站下划线选中语言一致），短线随按钮高度保持在图标下 3px */
+.dashboard-tool-btn.is-active {
+  color: var(--color-foreground);
+}
+.dashboard-tool-btn.is-active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc((var(--dashboard-tool-size) - 16px) / 2 - 5px);
+  width: 16px;
+  height: 1px;
+  margin-left: -8px;
+  background: var(--color-foreground);
+}
+
+/* 样式化提示：模式名 + 预览宽度。键盘聚焦一律显示；悬停只在有悬停能力的设备上显示，触屏点击后不残留 */
+.dashboard-tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-popover);
+  color: var(--color-popover-foreground);
+  box-shadow: var(--shadow-lg);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity var(--duration-fast) var(--ease-standard), visibility var(--duration-fast) var(--ease-standard);
+}
+.dashboard-tip small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+}
+.dashboard-tool-btn:focus-visible + .dashboard-tip {
+  visibility: visible;
+  opacity: 1;
+}
+@media (hover: hover) {
+  .dashboard-tool-btn:hover {
+    background: var(--color-accent);
+    color: var(--color-foreground);
+  }
+  .dashboard-tool-btn:hover + .dashboard-tip {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
+/* 手机触控目标 ≥44px：真实 ≤767px 视口与「预览手机布局」（data-bp）是两个独立来源，都要覆盖；
+   窄屏下第一枚按钮的提示改为左对齐，避免溢出视口左缘 */
+@media (max-width: 767px) {
+  .dashboard-tool-btn {
+    --dashboard-tool-size: 44px;
+  }
+  .dashboard-tool:first-child > .dashboard-tip {
+    left: 0;
+    transform: none;
+  }
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-tool-btn {
+  --dashboard-tool-size: 44px;
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-tool:first-child > .dashboard-tip {
+  left: 0;
+  transform: none;
+}
+
 .apple-edit-hint {
   display: flex;
   align-items: center;
@@ -260,11 +371,6 @@
   flex-wrap: wrap;
 }
 
-/* ===== View switch：统一走 apple-base.css 的 .apple-segmented（只显示图标，文字在 title 提示） ===== */
-.dashboard-apple .view-switch .seg-label {
-  display: none;
-}
-
 .apple-edit-btn {
   display: flex;
   align-items: center;
@@ -282,25 +388,6 @@
 
 .apple-edit-btn:hover {
   background: var(--color-accent);
-}
-
-.apple-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--color-card);
-  color: var(--color-muted-foreground);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
-}
-
-.apple-icon-btn:hover {
-  background: var(--color-accent);
-  color: var(--color-foreground);
 }
 
 /* ===== Unified 12-column grid ===== */
@@ -486,11 +573,6 @@
 .dashboard-apple .donut-legend::-webkit-scrollbar-thumb {
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--color-muted-foreground) 35%, transparent);
-}
-
-.dashboard-refresh-btn[aria-busy="true"] {
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .stat-change-label,
@@ -1270,9 +1352,23 @@
   padding: 7px 12px;
   font-size: 13px;
 }
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-icon-btn {
-  width: 44px;
-  height: 44px;
+/* 手机头部：写作按钮平分整行，工具一行排完，头部按钮统一 44px 高（VButton 自带的 44px 只认真实视口） */
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-writing-actions {
+  width: 100%;
+  flex-wrap: nowrap;
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-writing-actions > .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-display-actions {
+  gap: 4px;
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) :is(.dashboard-writing-actions, .dashboard-display-actions) > .btn {
+  min-height: 44px;
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-display-actions > .btn {
+  padding: 0 12px;
 }
 
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .mt-6 {
@@ -1345,13 +1441,6 @@
   font-size: 12px;
 }
 
-/* S 断点下视角切换器更紧凑 */
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .view-switch button {
-  min-width: 44px;
-  min-height: 44px;
-  padding: 6px 8px;
-}
-
 /* ========================================
    XS 超小屏（S 断点下屏幕 < 420px 叠加）
    极紧凑模式，适配小屏手机
@@ -1374,10 +1463,6 @@
   .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-edit-btn {
     padding: 6px 12px;
     font-size: 12px;
-  }
-  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-icon-btn {
-    width: 44px;
-    height: 44px;
   }
 
   .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-grid-stack {

@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
-import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { VButton } from "@/components/ui";
 import { useModulesStore } from "@/stores/modules";
 import DashboardGrid from "./DashboardGrid.vue";
 import { useDashboardLayout } from "./useDashboardLayout";
 import { buildDashboardQuickLinks } from "./dashboard-quick-links";
-import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
+import { provideBreakpoint, VIEW_MODE_WIDTH, type ViewMode } from "./useBreakpoint";
 import { DASHBOARD_REFRESH_EVENT } from "./widgets/useDashboardStats";
 import "./dashboard.css";
 
-const router = useRouter();
 const authStore = useAuthStore();
 const modulesStore = useModulesStore();
 const quickLinks = computed(() =>
@@ -30,11 +28,12 @@ function today(): string {
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${weekdays[date.getDay()]}`;
 }
 
-const viewModes: { key: ViewMode; label: string; icon: string }[] = [
-  { key: "auto", label: "自适应", icon: "ri:aspect-ratio-line" },
-  { key: "lg", label: "电脑", icon: "ri:computer-line" },
-  { key: "sm", label: "平板", icon: "ri:tablet-line" },
-  { key: "xxs", label: "手机", icon: "ri:smartphone-line" },
+// hint 是悬停/聚焦提示的第二行：预览宽度直接取 VIEW_MODE_WIDTH，不另写一份数字。
+const viewModes: { key: ViewMode; label: string; icon: string; hint: string }[] = [
+  { key: "auto", label: "自适应", icon: "ri:aspect-ratio-line", hint: "跟随窗口宽度" },
+  { key: "lg", label: "电脑", icon: "ri:computer-line", hint: `预览宽度 ${VIEW_MODE_WIDTH.lg}px` },
+  { key: "sm", label: "平板", icon: "ri:tablet-line", hint: `预览宽度 ${VIEW_MODE_WIDTH.sm}px` },
+  { key: "xxs", label: "手机", icon: "ri:smartphone-line", hint: `预览宽度 ${VIEW_MODE_WIDTH.xxs}px` },
 ];
 
 function refreshDashboard() {
@@ -64,46 +63,53 @@ onMounted(load);
           <div class="apple-header-actions">
             <div v-if="hasPosts" class="dashboard-writing-actions" role="group" aria-label="写作快捷入口">
               <VButton :route="{ path: '/posts', query: { status: 'draft' } }">
-                <template #icon><Icon icon="ri:draft-line" /></template>
+                <template #icon><Icon icon="ri:draft-line" class="w-3.5 h-3.5" /></template>
                 继续写草稿
               </VButton>
               <VButton v-if="canWritePost" type="primary" :route="{ path: '/posts/new' }">
-                <template #icon><Icon icon="ri:add-line" /></template>
+                <template #icon><Icon icon="ri:add-line" class="w-3.5 h-3.5" /></template>
                 撰写文章
               </VButton>
             </div>
             <div class="dashboard-display-actions" role="group" aria-label="仪表盘显示">
-              <div class="apple-segmented view-switch">
-                <button
-                  v-for="mode in viewModes"
-                  :key="mode.key"
-                  :class="['seg-btn', mode.key === viewMode && 'active']"
-                  :title="mode.label"
-                  :aria-label="mode.label"
-                  :aria-pressed="mode.key === viewMode"
-                  @click="setViewMode(mode.key)"
-                >
-                  <Icon :icon="mode.icon" class="w-4 h-4" />
-                </button>
+              <div class="dashboard-view-switch" role="group" aria-label="视图模式">
+                <span v-for="mode in viewModes" :key="mode.key" class="dashboard-tool">
+                  <button
+                    type="button"
+                    :class="['dashboard-tool-btn', mode.key === viewMode && 'is-active']"
+                    :aria-label="mode.label"
+                    :aria-pressed="mode.key === viewMode"
+                    :aria-describedby="`dashboard-tip-${mode.key}`"
+                    @click="setViewMode(mode.key)"
+                  >
+                    <Icon :icon="mode.icon" class="w-4 h-4" />
+                  </button>
+                  <span class="dashboard-tip" role="tooltip">
+                    {{ mode.label }}
+                    <small :id="`dashboard-tip-${mode.key}`">{{ mode.hint }}</small>
+                  </span>
+                </span>
               </div>
-              <button
-                class="apple-icon-btn dashboard-refresh-btn"
-                type="button"
-                title="刷新仪表盘数据"
-                aria-label="刷新仪表盘数据"
-                :aria-busy="refreshing"
-                @click="refreshDashboard"
-              >
-                <Icon
-                  :icon="refreshing ? 'ri:loader-4-line' : 'ri:refresh-line'"
-                  class="w-4 h-4"
-                  :class="{ 'animate-spin': refreshing }"
-                />
-              </button>
-              <button class="apple-edit-btn" @click="router.push('/dashboard/designer')">
-                <Icon icon="ri:settings-3-line" class="w-4 h-4" />
+              <span class="dashboard-tool">
+                <button
+                  type="button"
+                  class="dashboard-tool-btn dashboard-refresh-btn"
+                  aria-label="刷新仪表盘数据"
+                  :aria-busy="refreshing"
+                  @click="refreshDashboard"
+                >
+                  <Icon
+                    :icon="refreshing ? 'ri:loader-4-line' : 'ri:refresh-line'"
+                    class="w-4 h-4"
+                    :class="{ 'animate-spin': refreshing }"
+                  />
+                </button>
+                <span class="dashboard-tip" role="tooltip">刷新仪表盘数据</span>
+              </span>
+              <VButton type="ghost" :route="{ path: '/dashboard/designer' }">
+                <template #icon><Icon icon="ri:settings-3-line" class="w-3.5 h-3.5" /></template>
                 设置布局
-              </button>
+              </VButton>
             </div>
           </div>
         </div>

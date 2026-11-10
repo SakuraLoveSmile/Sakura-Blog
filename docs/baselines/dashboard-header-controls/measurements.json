@@ -1,0 +1,1293 @@
+{
+  "before": {
+    "lg-1440": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "dataBp": "lg",
+      "canvasWidth": 1216,
+      "heading": {
+        "height": 85.5
+      },
+      "actions": {
+        "x": 878,
+        "y": 24,
+        "width": 530,
+        "height": 39
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 878,
+          "y": 25.5,
+          "width": 118,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 1004,
+          "y": 25.5,
+          "width": 105,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 1132,
+          "y": 31.5,
+          "width": 16,
+          "height": 24,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(244, 244, 246)",
+          "title": "自适应"
+        },
+        {
+          "name": "电脑",
+          "x": 1164,
+          "y": 31.5,
+          "width": 16,
+          "height": 24,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "电脑"
+        },
+        {
+          "name": "平板",
+          "x": 1196,
+          "y": 31.5,
+          "width": 16,
+          "height": 24,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "平板"
+        },
+        {
+          "name": "手机",
+          "x": 1228,
+          "y": 31.5,
+          "width": 16,
+          "height": 24,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "手机"
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 1252,
+          "y": 25.5,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": "刷新仪表盘数据"
+        },
+        {
+          "name": "设置布局",
+          "x": 1296,
+          "y": 24,
+          "width": 112,
+          "height": 39,
+          "fontSize": "14px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        }
+      ]
+    },
+    "lg-1440-preview-xxs": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "dataBp": "xxs",
+      "canvasWidth": 390,
+      "heading": {
+        "height": 233.5
+      },
+      "actions": {
+        "x": 653,
+        "y": 123.5,
+        "width": 358,
+        "height": 142
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 653,
+          "y": 123.5,
+          "width": 118,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 779,
+          "y": 123.5,
+          "width": 105,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 653,
+          "y": 169.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "自适应"
+        },
+        {
+          "name": "电脑",
+          "x": 713,
+          "y": 169.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "电脑"
+        },
+        {
+          "name": "平板",
+          "x": 773,
+          "y": 169.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "平板"
+        },
+        {
+          "name": "手机",
+          "x": 833,
+          "y": 169.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(244, 244, 246)",
+          "title": "手机"
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 885,
+          "y": 169.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": "刷新仪表盘数据"
+        },
+        {
+          "name": "设置布局",
+          "x": 653,
+          "y": 221.5,
+          "width": 100,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        }
+      ]
+    },
+    "xxs-390": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dataBp": "xxs",
+      "canvasWidth": 390,
+      "heading": {
+        "height": 264
+      },
+      "actions": {
+        "x": 12,
+        "y": 126,
+        "width": 366,
+        "height": 150
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 12,
+          "y": 126,
+          "width": 118,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 138,
+          "y": 126,
+          "width": 105,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 12,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "12px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(244, 244, 246)",
+          "title": "自适应"
+        },
+        {
+          "name": "电脑",
+          "x": 72,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "12px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "电脑"
+        },
+        {
+          "name": "平板",
+          "x": 132,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "12px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "平板"
+        },
+        {
+          "name": "手机",
+          "x": 192,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "12px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "手机"
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 244,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": "刷新仪表盘数据"
+        },
+        {
+          "name": "设置布局",
+          "x": 12,
+          "y": 232,
+          "width": 96,
+          "height": 44,
+          "fontSize": "12px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        }
+      ]
+    },
+    "xxs-390-mode-lg": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dataBp": "lg",
+      "canvasWidth": 1440,
+      "heading": {
+        "height": 110
+      },
+      "actions": {
+        "x": 878,
+        "y": 40,
+        "width": 530,
+        "height": 44
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 878,
+          "y": 40,
+          "width": 118,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 1004,
+          "y": 40,
+          "width": 105,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 1132,
+          "y": 40,
+          "width": 16,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "自适应"
+        },
+        {
+          "name": "电脑",
+          "x": 1164,
+          "y": 40,
+          "width": 16,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(244, 244, 246)",
+          "title": "电脑"
+        },
+        {
+          "name": "平板",
+          "x": 1196,
+          "y": 40,
+          "width": 16,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "平板"
+        },
+        {
+          "name": "手机",
+          "x": 1228,
+          "y": 40,
+          "width": 16,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(126, 126, 133)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "0px solid rgb(126, 126, 133)",
+          "title": "手机"
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 1252,
+          "y": 44,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": "刷新仪表盘数据"
+        },
+        {
+          "name": "设置布局",
+          "x": 1296,
+          "y": 42.5,
+          "width": 112,
+          "height": 39,
+          "fontSize": "14px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgb(18, 18, 20)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        }
+      ]
+    }
+  },
+  "after": {
+    "lg-1440": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "dataBp": "lg",
+      "canvasWidth": 1216,
+      "heading": {
+        "height": 85.5
+      },
+      "actions": {
+        "x": 844,
+        "y": 24,
+        "width": 564,
+        "height": 36
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 844,
+          "y": 24,
+          "width": 119,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 971,
+          "y": 24,
+          "width": 106,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 1100,
+          "y": 24,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "电脑",
+          "x": 1138,
+          "y": 24,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "平板",
+          "x": 1176,
+          "y": 24,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "手机",
+          "x": 1214,
+          "y": 24,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 1258,
+          "y": 24,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "设置布局",
+          "x": 1302,
+          "y": 24,
+          "width": 106,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        }
+      ]
+    },
+    "lg-1440-preview-xxs": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "dataBp": "xxs",
+      "canvasWidth": 390,
+      "heading": {
+        "height": 189.5
+      },
+      "actions": {
+        "x": 653,
+        "y": 123.5,
+        "width": 358,
+        "height": 98
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 653,
+          "y": 123.5,
+          "width": 175,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 836,
+          "y": 123.5,
+          "width": 175,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 653,
+          "y": 177.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "电脑",
+          "x": 699,
+          "y": 177.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "平板",
+          "x": 745,
+          "y": 177.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "手机",
+          "x": 791,
+          "y": 177.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 839,
+          "y": 177.5,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "设置布局",
+          "x": 887,
+          "y": 177.5,
+          "width": 98,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        }
+      ]
+    },
+    "xxs-390": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dataBp": "xxs",
+      "canvasWidth": 390,
+      "heading": {
+        "height": 212
+      },
+      "actions": {
+        "x": 12,
+        "y": 126,
+        "width": 366,
+        "height": 98
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 12,
+          "y": 126,
+          "width": 179,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 199,
+          "y": 126,
+          "width": 179,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 12,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "电脑",
+          "x": 58,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "平板",
+          "x": 104,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "手机",
+          "x": 150,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 198,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "设置布局",
+          "x": 246,
+          "y": 180,
+          "width": 98,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        }
+      ]
+    },
+    "xxs-390-mode-lg": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dataBp": "lg",
+      "canvasWidth": 1440,
+      "heading": {
+        "height": 110
+      },
+      "actions": {
+        "x": 804,
+        "y": 40,
+        "width": 604,
+        "height": 44
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 804,
+          "y": 40,
+          "width": 119,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 931,
+          "y": 40,
+          "width": 106,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 1060,
+          "y": 40,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "电脑",
+          "x": 1106,
+          "y": 40,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "平板",
+          "x": 1152,
+          "y": 40,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "手机",
+          "x": 1198,
+          "y": 40,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 1250,
+          "y": 40,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "设置布局",
+          "x": 1302,
+          "y": 40,
+          "width": 106,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        }
+      ]
+    },
+    "lg-1440-preview-sm": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "dataBp": "sm",
+      "canvasWidth": 800,
+      "heading": {
+        "height": 79.5
+      },
+      "actions": {
+        "x": 644,
+        "y": 36,
+        "width": 564,
+        "height": 36
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 644,
+          "y": 36,
+          "width": 119,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 771,
+          "y": 36,
+          "width": 106,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 900,
+          "y": 36,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "电脑",
+          "x": 938,
+          "y": 36,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "平板",
+          "x": 976,
+          "y": 36,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "手机",
+          "x": 1014,
+          "y": 36,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 1058,
+          "y": 36,
+          "width": 36,
+          "height": 36,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "设置布局",
+          "x": 1102,
+          "y": 36,
+          "width": 106,
+          "height": 36,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgb(27, 27, 30)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        }
+      ]
+    },
+    "xxs-360": {
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "dataBp": "xxs",
+      "canvasWidth": 360,
+      "heading": {
+        "height": 212
+      },
+      "actions": {
+        "x": 12,
+        "y": 126,
+        "width": 336,
+        "height": 98
+      },
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 12,
+          "y": 126,
+          "width": 164,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 184,
+          "y": 126,
+          "width": 164,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 12,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "电脑",
+          "x": 58,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "平板",
+          "x": 104,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "手机",
+          "x": 150,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 198,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "设置布局",
+          "x": 246,
+          "y": 180,
+          "width": 98,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        }
+      ]
+    },
+    "xxs-320": {
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "dataBp": "xxs",
+      "canvasWidth": 320,
+      "heading": {
+        "height": 260
+      },
+      "actions": {
+        "x": 12,
+        "y": 126,
+        "width": 296,
+        "height": 146
+      },
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controls": [
+        {
+          "name": "继续写草稿",
+          "x": 12,
+          "y": 126,
+          "width": 144,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgb(36, 36, 40)",
+          "title": null
+        },
+        {
+          "name": "撰写文章",
+          "x": 164,
+          "y": 126,
+          "width": 144,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(232, 232, 236)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "自适应",
+          "x": 12,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(244, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "电脑",
+          "x": 58,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "平板",
+          "x": 104,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "手机",
+          "x": 150,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "刷新仪表盘数据",
+          "x": 198,
+          "y": 180,
+          "width": 44,
+          "height": 44,
+          "fontSize": "16px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        },
+        {
+          "name": "设置布局",
+          "x": 12,
+          "y": 228,
+          "width": 98,
+          "height": 44,
+          "fontSize": "13px",
+          "color": "rgb(139, 139, 145)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "1px solid rgba(0, 0, 0, 0)",
+          "title": null
+        }
+      ]
+    }
+  }
+}
