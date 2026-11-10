@@ -104,6 +104,7 @@ curl -fsS http://127.0.0.1:8081/readyz   # 宿主映射端口
 
 - [ ] `curl -I https://域名/` 返回 200，响应头含 HSTS；http 访问 301 跳 https
 - [ ] 首页 canonical/OG 为 https 绝对 URL（`site.url` 生效）
+- [ ] 升级前在任意有 Docker 的主机（本机或局域网 NAS）执行 `docker run --rm <镜像>:<版本> -h`，退出码为 0
 - [ ] 容器 `image` 为预期 `X.Y.Z`，`/readyz` 200，`RestartCount` 为 0
 - [ ] `/console/` 登录后 cookie 带 `Secure`；登录失败 5 次触发限流
 - [ ] 同 IP 60 秒内第二条评论被拒（`trusted_proxy` 生效）

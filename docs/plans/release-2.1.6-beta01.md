@@ -1,6 +1,6 @@
 # BLG-20261110-03：v2.1.6-beta01 预发布
 
-- 状态：待体验（已发布 v2.1.6-beta01，未部署生产，未推送其它分支）
+- 状态：待体验（已发布 v2.1.6-beta01，镜像启动已在局域网 NAS 补验，未部署生产）
 - 日期：2026-11-10（Asia/Taipei）
 - 版本依据：最新稳定版 `v2.1.5`（2026-11-10），本次取下一个 patch 的预发布 `v2.1.6-beta01`
 - 功能记录：`docs/plans/BLG-20261110-01-dashboard-unified-widget-size.md`（仪表盘尺寸档位统一足迹）
@@ -60,14 +60,19 @@
 
 ## 未验证 / 遗留
 
-- **镜像内二进制启动未验证**：本机 Docker daemon 未运行（`docker info` 无法连接），本次未获授权操作生产服务器；
-  未执行 `docker run --rm …:2.1.6-beta01 -h`。镜像标签、digest 与 OCI 配置已核对，但「容器可启动」缺证据。
+- ~~镜像内二进制启动未验证~~ → **已补验（2026-11-10 14:51，局域网 NAS）**：
+  - 目标机：`sakurasep-fnOS`（fnOS），`x86_64`，Docker 28.5.2；经 SSH 专用密钥 `~/.ssh/nas-verify` 连接
+  - `docker pull` 成功，digest `sha256:c2bb3dd3…39cee21`（与本机从 GHCR 读到的 index digest 一致）
+  - `docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.6-beta01 -h` → 退出码 **0**，输出 Go flag usage
+  - 镜像标签复核：`version=2.1.6-beta01`、`revision=2c295fb4…`
+  - 本机 Docker Desktop 全程未启动（`docker info` 仍连不上本地 socket）
 - 未升级生产：compose 仍指向 `v2.1.5` 镜像。
 - 未推送 `dev` 之外的其它本地内容；`main`、`release` 已推送。
 - 仅 Chrome；Safari / Firefox 与真机触屏不在本次范围。
 
 ## 下一步
 
-- 需要启动验证时：在有 Docker 的机器或服务器执行 `docker run --rm ghcr.io/sakuralovesmile/sakura-blog:2.1.6-beta01 -h`（退出码 0）。
 - 生产升级需单独授权：compose 固定 `:2.1.6-beta01` → `docker compose pull && docker compose up -d` → 探测 `/readyz`。
 - 体验确认后把状态改为「已验收」。
+- 局域网 NAS 的校验路径已可用（`ssh -i ~/.ssh/nas-verify sakurasep@192.168.0.69 'docker run --rm <image> -h'`），
+  以后本机没有 Docker 时照此核验；`deploy/README.md` 的上线验证清单已补该步骤。
