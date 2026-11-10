@@ -334,6 +334,13 @@ const showUvLine = computed(() => sizePreset.value === "large" || (sizePreset.va
         </div>
       </div>
 
+      <!-- 中档：一行紧凑总量，代替占两行的事实网格 -->
+      <div v-if="sizePreset === 'medium'" class="trend-inline-totals">
+        <span>PV <b class="tabular-nums">{{ formatNumber(totals.pv) }}</b></span>
+        <span>UV <b class="tabular-nums">{{ formatNumber(totals.uv) }}</b></span>
+        <span>日均 <b class="tabular-nums">{{ formatNumber(totals.avgPv) }}</b></span>
+      </div>
+
       <!-- 事实行：数字与细线，不内嵌小卡 -->
       <div class="trend-facts" :class="{ 'is-wide': sizePreset === 'large' }">
         <div class="trend-fact">
@@ -613,6 +620,33 @@ const showUvLine = computed(() => sizePreset.value === "large" || (sizePreset.va
   background: repeating-linear-gradient(90deg, var(--color-chart-1) 0 4px, transparent 4px 7px);
 }
 
+/* 中档 28 行盒子只有 168px 内容高度：事实网格让位给一行总量 + 图表。 */
+.trend-inline-totals {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-top: 6px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+.trend-inline-totals span {
+  white-space: nowrap;
+}
+.trend-inline-totals b {
+  color: var(--color-foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+.trend-card-medium .trend-facts {
+  display: none;
+}
+.trend-card-medium .trend-chart-svg {
+  min-height: 64px;
+}
+.trend-card-medium .trend-chart-wrap {
+  margin-top: 8px;
+}
+
 /* 事实行：小标签 + 数值，一行一组，靠留白而不是边框分组 */
 .trend-facts {
   display: grid;
@@ -876,6 +910,10 @@ const showUvLine = computed(() => sizePreset.value === "large" || (sizePreset.va
 .apple-card:is([data-bp="sm"], [data-bp="xs"], [data-bp="xxs"]) .trend-fact-value {
   font-size: 14px;
   letter-spacing: 0;
+}
+/* 平板/手机：标题与图例换行后，图表最小高度必须让位，否则会撑破盒子。 */
+.apple-card:is([data-bp="sm"], [data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg {
+  min-height: 40px;
 }
 /* 最窄档省掉与标题重复的副标题，图表多出一行高度。 */
 .apple-card[data-bp="xxs"] .trend-subtitle {

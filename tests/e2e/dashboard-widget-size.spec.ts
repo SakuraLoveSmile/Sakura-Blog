@@ -36,6 +36,7 @@ const PRESETS = ["small", "medium", "large"] as const;
 const EVIDENCE_DIR = join(process.cwd(), "docs/baselines/dashboard-unified-size");
 
 async function seedContent(page: Page) {
+  const slugs: string[] = [];
   for (let index = 1; index <= 6; index += 1) {
     const response = await page.request.post("/api/v1/posts", {
       data: {
@@ -50,7 +51,16 @@ async function seedContent(page: Page) {
       },
     });
     expect(response.ok(), `创建夹具文章失败：${response.status()} ${await response.text()}`).toBe(true);
+    slugs.push(`dashboard-size-${index}`);
   }
+  // 访问公开文章页产生真实 PV/UV，让趋势、时段与热门组件按有数据的状态量测；
+  // PV 走 3 秒批量落库，这里等缓冲 flush 后再进仪表盘。
+  for (const slug of slugs) {
+    for (let hit = 0; hit < 3; hit += 1) {
+      await page.request.get(`/post/${slug}`);
+    }
+  }
+  await page.waitForTimeout(4000);
 }
 
 async function login(page: Page) {
