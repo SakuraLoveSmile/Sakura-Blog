@@ -43,6 +43,13 @@
   content: none;
 }
 
+/* 锚点铺满标题后会继承 tech 标题的 :hover 底色与 Heti 的链接悬停下划线：
+   悬停时整段标题被强调色盖住，底部还露出 1px 链接色细线。这里连悬停态一起清掉。 */
+.md-text.content .friends-page h2 > .headerlink:hover {
+  background: none;
+  border: 0;
+}
+
 .friends-page .friends-site-info .highlight {
   max-width: 100%;
 }
