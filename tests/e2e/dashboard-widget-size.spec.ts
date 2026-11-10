@@ -253,5 +253,11 @@ test("仪表盘三档足迹在三断点下一致、不裁切、不空荡", async
   const realFailures = [...new Set(failedResponses)].filter((entry) => !ignored.test(entry.split(" ").slice(1).join(" ")));
   expect(realErrors, `控制台错误：\n${realErrors.join("\n")}`).toEqual([]);
   expect(realFailures, `失败请求：\n${realFailures.join("\n")}`).toEqual([]);
+
+  // 还原成默认布局：本用例为了量测把 16 个组件都摆上过（含请求 perf 的系统状态），
+  // 不清掉会让后续经过仪表盘的用例在控制台收到 perf 403。
+  await saveLayout(page, {});
+  await page.goto("/console/dashboard");
+  await expect(page.locator(".grid-stack-item")).toHaveCount(9, { timeout: 20_000 });
   expect(shots.length).toBe(CASES.length);
 });
