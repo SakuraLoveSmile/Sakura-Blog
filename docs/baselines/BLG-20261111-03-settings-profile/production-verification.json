@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-11-11T18:56+08:00",
+  "url": "https://blog.xn--fhqths51enha.cn/settings/",
+  "image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.7",
+  "container": {"status": "Up", "restart_count": 0},
+  "readyz": {"status": 200, "body": {"ok": true}},
+  "version_line": "Blog v2.1.7",
+  "data_provider": "native",
+  "sections": ["settings-profile", "settings-cache", "settings-about"],
+  "about_rows": ["博客框架", "主题版本"],
+  "profile_box": {"x": 328, "y": 179, "w": 624, "h": 364},
+  "input_values_anonymous": {"name": "", "email": "", "url": ""},
+  "anonymous_save": {"text": "请先登录后再保存个人资料", "state": "failure"},
+  "public_auth_me_anonymous": {"id": 0, "verified": false, "website": ""},
+  "page_errors": [],
+  "endpoints": {"/": 200, "/settings/": 200, "/friends/": 301, "/readyz": 200},
+  "screenshots": ["production-lg.png", "production-sm.png", "production-anon-save.png"]
+}

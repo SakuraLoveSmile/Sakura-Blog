@@ -77,3 +77,34 @@ func TestSettingsProfileSectionFollowsCommentIdentity(t *testing.T) {
 		}
 	}
 }
+
+// 左栏「设置」挂件紧跟同一套身份模型：原生评论（账号或本地资料）也要能显示读者昵称，
+// 没有身份能力的第三方后端仍只显示「设置」。
+func TestSettingsWidgetIdentityFollowsCommentProvider(t *testing.T) {
+	engine, err := NewEngineFromEmbed(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name     string
+		provider any
+		want     bool
+	}{
+		{"no provider", nil, true},
+		{"native", "native", true},
+		{"artalk", "artalk", true},
+		{"beaudar", "beaudar", false},
+	} {
+		data := prepareFixture(t, "settings")
+		data.Site.StellarV2.Theme["comments"] = map[string]any{"provider": tc.provider}
+		data.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "settings", Input: stellarmodels.Input{Page: map[string]any{"layout": "settings", "path": "settings/"}}}
+		output, err := engine.Render("layout/base", data)
+		if err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		enabled := strings.Contains(output, `data-profile-identity-enabled="true"`)
+		if enabled != tc.want {
+			t.Fatalf("%s: widget identity enabled = %v, want %v", tc.name, enabled, tc.want)
+		}
+	}
+}
