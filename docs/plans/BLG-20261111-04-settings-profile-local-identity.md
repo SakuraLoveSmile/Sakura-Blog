@@ -1,6 +1,6 @@
 # BLG-20261111-04：设置页「个人资料」对齐上游，访客也能保存
 
-- 状态：实现中（本地门禁进行中，浏览器验收待跑）
+- 状态：待体验（已合入 dev @ `2ddd5638`，本地门禁与隔离服务浏览器验收通过，未推送、未发布）
 - 分支：`codex/feat/20261111-BLG-20261111-04-settings-profile-local-identity`
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261111-feat-BLG-20261111-04-settings-profile-local-identity`
 - 基点：`dev` @ `143d2e93`
