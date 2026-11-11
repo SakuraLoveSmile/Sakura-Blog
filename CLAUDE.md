@@ -111,6 +111,8 @@ Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `
 
 `/settings` 的「个人资料」沿用上游 `layout/settings.ejs` 结构（头像 + 昵称/Email/URL + 保存/退出登录）：`comments.provider` 是 artalk/waline/twikoo 时继续用评论端本地身份；未配置第三方评论后端时视为原生评论（`data-provider="native"`），身份按「账号优先 + 本地兜底」处理——已登录读者读写站点账号 `GET /api/auth/me`、`POST /api/auth/profile`（网址存在 `users.website`），未登录时与上游一致存浏览器本地资料（与评论区匿名身份共用 `cmt_nick`/`cmt_email`/`cmt_link` 纯文本键），因此访客也能保存；`POST /api/auth/logout` 在未登录时等价于清空本地资料。左栏「设置」挂件跟随同一模型：原生评论也显示读者昵称与头像，没有身份能力的后端（beaudar/utterances/giscus）既不渲染该块也不显示身份。原生身份的读取是异步的，`settings.js` 与 `profile.js` 的挂件渲染都按 Promise 处理并做修订号防竞态，第三方后端仍是同步本地存储。
 
+`/settings` 与评论区的登录**只是评论身份**，与 Console 会话是两套东西，这是设计而非缺陷：前台中间件只读 `blog_user`，从不读 Console 的 `blog_admin`；公共登录端点显式拒绝管理员（「管理员账号请从后台登录」，见 `TestPublicLoginRejectsNonReader`），前台退出也只清 `blog_user`。因此管理员在 Console 登录后访问前台仍是访客：资料块走本地身份，不要为「让站主在前台也能存账号资料」去打通这两套会话；反过来 Console 退出顺带结束 `blog_user` 是单向的既定行为。
+
 ## 编辑器与 shortcode
 
 shortcode 的解析、表单 schema 和重建路径必须共享一份 catalog：以后端 `internal/post/shortcode_catalog.go` 和各 renderer 实际接受的 named/positional 参数为准，而不是复制第二份前端字段表。
