@@ -1,11 +1,13 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,6 +15,12 @@ import (
 	"blog/internal/linkwatch"
 	"blog/internal/store"
 )
+
+// linkLabelJSON 友链角标（文案 + 6 位 hex 颜色，不带 #）。
+type linkLabelJSON struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
 
 // linkJSON 友链 API 响应/请求模型。
 type linkJSON struct {
@@ -29,6 +37,8 @@ type linkJSON struct {
 	Snapshot      string `json:"snapshot"`
 	LastStatus    int    `json:"last_status"`
 	LastCheckedAt int64  `json:"last_checked_at"`
+	// Labels 完整有序角标列表（首枚即 label/color）。响应总是给出；请求可省略。
+	Labels []linkLabelJSON `json:"labels"`
 }
 
 func toLinkJSON(l *store.Link) linkJSON {
@@ -37,7 +47,57 @@ func toLinkJSON(l *store.Link) linkJSON {
 		Avatar: l.Avatar, Description: l.Description, RSS: l.RSS,
 		Label: l.Label, Color: l.Color, Sort: l.Sort, Snapshot: l.Snapshot,
 		LastStatus: l.LastStatus, LastCheckedAt: l.LastCheckedAt,
+		Labels: linkLabelsJSON(l),
 	}
+}
+
+// linkLabelsJSON 拼出完整有序角标列表：主角标在首位，附加角标紧随其后。
+func linkLabelsJSON(l *store.Link) []linkLabelJSON {
+	labels := make([]linkLabelJSON, 0, store.MaxLinkLabels)
+	if name := strings.TrimSpace(l.Label); name != "" {
+		labels = append(labels, linkLabelJSON{Name: name, Color: l.Color})
+	}
+	for _, extra := range l.ExtraLabels() {
+		labels = append(labels, linkLabelJSON{Name: extra.Name, Color: extra.Color})
+	}
+	return labels
+}
+
+// requestedLabels 归一化请求里的角标：labels 提供时以它为准；省略时用 label/color
+// 作首枚，并保留 existingExtras（兼容不识别多角标的旧客户端，避免编辑时清空附加角标）。
+func (r *linkJSON) requestedLabels(existingExtras []store.LinkLabel) ([]store.LinkLabel, error) {
+	var list []store.LinkLabel
+	if r.Labels != nil {
+		for _, l := range r.Labels {
+			list = append(list, store.LinkLabel{Name: l.Name, Color: l.Color})
+		}
+	} else {
+		list = append(list, store.LinkLabel{Name: r.Label, Color: r.Color})
+		list = append(list, existingExtras...)
+	}
+	list = store.NormalizeLinkLabels(list)
+	if len(list) > store.MaxLinkLabels {
+		return nil, fmt.Errorf("角标最多 %d 枚", store.MaxLinkLabels)
+	}
+	for _, l := range list {
+		if utf8.RuneCountInString(l.Name) > store.MaxLinkLabelNameRunes {
+			return nil, fmt.Errorf("单个角标文案最多 %d 字", store.MaxLinkLabelNameRunes)
+		}
+	}
+	return list, nil
+}
+
+// applyLabels 把归一化后的角标写回存储字段：首枚进 label/color，其余进 labels JSON。
+func applyLabels(l *store.Link, labels []store.LinkLabel) {
+	l.Label, l.Color, l.LabelsJSON = "", "", ""
+	if len(labels) > 0 {
+		l.Label, l.Color = labels[0].Name, labels[0].Color
+	}
+	rest := []store.LinkLabel(nil)
+	if len(labels) > 1 {
+		rest = labels[1:]
+	}
+	l.LabelsJSON = store.EncodeLinkLabels(rest)
 }
 
 func (r *linkJSON) toStore() *store.Link {
@@ -82,7 +142,13 @@ func (h *Handler) createLink(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "名称与链接不能为空")
 		return
 	}
+	labels, err := req.requestedLabels(nil)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	l := req.toStore()
+	applyLabels(l, labels)
 	if _, err := h.store.CreateLink(l); err != nil {
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
@@ -116,7 +182,13 @@ func (h *Handler) updateLink(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "名称与链接不能为空")
 		return
 	}
+	labels, err := req.requestedLabels(existing.ExtraLabels())
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	l := req.toStore()
+	applyLabels(l, labels)
 	// 巡检状态由探测器维护，不接受友链编辑请求覆盖；兼容旧版客户端省略这些字段。
 	l.LastStatus = existing.LastStatus
 	l.LastCheckedAt = existing.LastCheckedAt

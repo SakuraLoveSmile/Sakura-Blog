@@ -166,34 +166,49 @@ export function mount(root, context) {
     });
   }
 
+  // 原生评论身份是站点账号，读写都走网络请求；第三方评论后端仍是同步的本地存储。
+  function settle(value) {
+    return Promise.resolve(value).then(result => result || { ok: false }, () => ({ ok: false }));
+  }
+
+  let renderRevision = 0;
+
   function render() {
-    const identity = api?.readIdentity?.(provider) || { name: '', email: '', url: '', avatar: '' };
-    if (nameInput) nameInput.value = identity.name || '';
-    if (emailInput) emailInput.value = identity.email || '';
-    if (urlInput) urlInput.value = identity.url || '';
+    const revision = ++renderRevision;
     if (form) form.hidden = !supported;
     if (logoutButton) logoutButton.hidden = !supported;
-    if (supported) renderAvatar(identity);
-    else if (avatar) avatar.hidden = true;
+    if (!supported) {
+      if (avatar) avatar.hidden = true;
+      return;
+    }
+    settle(api?.readIdentity?.(provider)).then(identity => {
+      if (revision !== renderRevision) return;
+      if (nameInput) nameInput.value = identity.name || '';
+      if (emailInput) emailInput.value = identity.email || '';
+      if (urlInput) urlInput.value = identity.url || '';
+      renderAvatar(identity);
+    });
   }
 
   function onSubmit(event) {
     event.preventDefault();
     if (!form?.reportValidity?.()) return;
-    const result = api?.writeIdentity?.(provider, {
+    settle(api?.writeIdentity?.(provider, {
       name: nameInput?.value || '',
       email: emailInput?.value || '',
       url: urlInput?.value || ''
-    }) || { ok: false };
-    const validationMessage = result.validation ? page.dataset[`validation${result.validation[0].toUpperCase()}${result.validation.slice(1)}`] : '';
-    setStatus(status, validationMessage || resultMessage(page, result), result.ok ? 'success' : result.partial ? 'partial' : 'failure');
-    if (result.ok || result.partial) render();
+    })).then(result => {
+      const validationMessage = result.validation ? page.dataset[`validation${result.validation[0].toUpperCase()}${result.validation.slice(1)}`] : '';
+      setStatus(status, result.message || validationMessage || resultMessage(page, result), result.ok ? 'success' : result.partial ? 'partial' : 'failure');
+      if (result.ok || result.partial) render();
+    });
   }
 
   function onLogout() {
-    const result = api?.logout?.(provider) || { ok: false };
-    setStatus(status, resultMessage(page, result), result.ok ? 'success' : result.partial ? 'partial' : 'failure');
-    if (result.ok || result.partial) render();
+    settle(api?.logout?.(provider)).then(result => {
+      setStatus(status, result.message || resultMessage(page, result), result.ok ? 'success' : result.partial ? 'partial' : 'failure');
+      if (result.ok || result.partial) render();
+    });
   }
 
   function clearSearch() {

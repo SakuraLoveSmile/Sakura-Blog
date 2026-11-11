@@ -122,6 +122,8 @@ export interface LinkPayload {
   rss?: string;
   label?: string;
   color?: string;
+  /** 完整有序角标列表（最多 3 枚，首枚即 label/color）；省略时沿用 label/color 与既有附加角标 */
+  labels?: { name: string; color: string }[];
   sort?: number;
   snapshot?: string;
   last_status?: number;

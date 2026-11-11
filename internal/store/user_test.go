@@ -134,6 +134,86 @@ func TestUserUpdate(t *testing.T) {
 	}
 }
 
+// TestUserUpdateProfile 读者自助资料只改昵称/邮箱/网址，不动头像与认证列。
+func TestUserUpdateProfile(t *testing.T) {
+	s := newUserStore(t)
+	u := newTestUser("reader", "secret123")
+	u.Avatar = "/uploads/reader.png"
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	oldHash, oldSecret := u.PasswordHash, u.AuthSecret
+
+	if err := s.UpdateUserProfile(u.ID, "九月", "september@example.com", "https://example.com"); err != nil {
+		t.Fatalf("update profile: %v", err)
+	}
+	got, err := s.GetUserByID(u.ID)
+	if err != nil || got == nil {
+		t.Fatalf("get after profile update: %v", err)
+	}
+	if got.DisplayName != "九月" || got.Email != "september@example.com" || got.Website != "https://example.com" {
+		t.Fatalf("profile not applied: %+v", got)
+	}
+	if got.Avatar != "/uploads/reader.png" || got.PasswordHash != oldHash || got.AuthSecret != oldSecret || got.Role != RoleAuthor {
+		t.Fatalf("profile update must not touch avatar/password/secret/role: %+v", got)
+	}
+	if err := s.UpdateUserProfile(999, "x", "", ""); err == nil {
+		t.Fatal("expected error updating non-existent user profile")
+	}
+}
+
+// TestUsersTableAddsWebsiteColumn 老库没有 website 列时补列，既有用户与资料保持不变。
+func TestUsersTableAddsWebsiteColumn(t *testing.T) {
+	s, err := New(filepath.Join(t.TempDir(), "legacy.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer s.Close()
+	if _, err := s.db.Exec(`CREATE TABLE users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		display_name TEXT NOT NULL DEFAULT '',
+		email TEXT NOT NULL DEFAULT '',
+		avatar TEXT NOT NULL DEFAULT '/uploads/legacy.png',
+		totp_secret TEXT NOT NULL DEFAULT '',
+		totp_recovery_codes TEXT NOT NULL DEFAULT '[]',
+		auth_secret TEXT NOT NULL DEFAULT '',
+		api_token_hash TEXT NOT NULL DEFAULT '',
+		role TEXT NOT NULL DEFAULT 'author',
+		status TEXT NOT NULL DEFAULT 'active',
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`); err != nil {
+		t.Fatalf("create legacy users table: %v", err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO users (username, password_hash, display_name, auth_secret) VALUES ('legacy', 'x', '老用户', 's')`); err != nil {
+		t.Fatalf("seed legacy user: %v", err)
+	}
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("migrate users table: %v", err)
+	}
+	has, err := s.tableHasColumn("users", "website")
+	if err != nil || !has {
+		t.Fatalf("website column should exist after migrate (has=%v err=%v)", has, err)
+	}
+	u, err := s.GetUserByUsername("legacy")
+	if err != nil || u == nil {
+		t.Fatalf("legacy user should survive migrate: %v / %v", u, err)
+	}
+	if u.DisplayName != "老用户" || u.Avatar != "/uploads/legacy.png" || u.Website != "" {
+		t.Fatalf("legacy user fields = %+v", u)
+	}
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("migrate users table again: %v", err)
+	}
+	if err := s.UpdateUserProfile(u.ID, "老用户", "", "https://legacy.example"); err != nil {
+		t.Fatalf("update legacy profile: %v", err)
+	}
+	if got, err := s.GetUserByID(u.ID); err != nil || got.Website != "https://legacy.example" {
+		t.Fatalf("legacy website after update = %+v (%v)", got, err)
+	}
+}
+
 // TestUserUpdatePassword UpdatePassword 替换哈希并轮换 auth_secret。
 func TestUserUpdatePassword(t *testing.T) {
 	s := newUserStore(t)

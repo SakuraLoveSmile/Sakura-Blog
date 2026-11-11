@@ -36,3 +36,44 @@ func TestSettingsUsesActualHostAndPreservesCustomAbout(t *testing.T) {
 		t.Fatal("custom About item was overwritten")
 	}
 }
+
+// 设置页「个人资料」只在能用站点身份读写时出现：原生账号与 artalk/waline/twikoo 一致，
+// 没有身份能力的第三方评论后端（如 beaudar）保持不渲染。
+func TestSettingsProfileSectionFollowsCommentIdentity(t *testing.T) {
+	engine, err := NewEngineFromEmbed(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name     string
+		provider any
+		want     bool
+		native   bool
+	}{
+		{"no provider", nil, true, true},
+		{"native", "native", true, true},
+		{"artalk", "artalk", true, false},
+		{"beaudar", "beaudar", false, false},
+	} {
+		data := prepareFixture(t, "settings")
+		data.Site.StellarV2.Theme["comments"] = map[string]any{"provider": tc.provider}
+		data.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "settings", Input: stellarmodels.Input{Page: map[string]any{"layout": "settings", "path": "settings/"}}}
+		output, err := engine.Render("layout/base", data)
+		if err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		rendered := strings.Contains(output, `aria-labelledby="settings-profile"`)
+		if rendered != tc.want {
+			t.Fatalf("%s: profile section rendered = %v, want %v", tc.name, rendered, tc.want)
+		}
+		if !tc.want {
+			continue
+		}
+		if !strings.Contains(output, `data-profile-form`) || !strings.Contains(output, `data-profile-logout`) {
+			t.Fatalf("%s: profile form/logout missing", tc.name)
+		}
+		if tc.native && !strings.Contains(output, `data-provider="native"`) {
+			t.Fatalf("%s: native provider attribute missing", tc.name)
+		}
+	}
+}
