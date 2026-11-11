@@ -9,6 +9,11 @@ import { Icon } from "@iconify/vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, VModal, VFloatingDock, Dialog, Toast } from "@/components/ui";
 
+interface LinkLabel {
+  name: string;
+  color: string;
+}
+
 interface LinkRow {
   id: number;
   group_title: string;
@@ -19,6 +24,7 @@ interface LinkRow {
   rss: string;
   label: string;
   color: string;
+  labels?: LinkLabel[];
   sort: number;
   snapshot: string;
   last_status: number;
@@ -85,6 +91,7 @@ const editing = reactive<Partial<LinkRow>>({
   rss: "",
   label: "",
   color: "",
+  labels: [] as LinkLabel[],
   sort: 0,
 });
 const snapshotting = ref(false);
@@ -182,6 +189,37 @@ function normalizeColor(hex?: string): string {
   return `#${clean}`;
 }
 
+// 浅色角标配深色字，避免白字贴在浅底上读不清（对角标色做亮度判断）。
+function pillTextColor(hex?: string): string {
+  const clean = (hex || "").replace(/^#/, "");
+  if (!/^[0-9a-f]{6}$/i.test(clean)) return "#fff";
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.62 ? "rgba(0,0,0,0.85)" : "#fff";
+}
+
+// 角标：首枚仍在 label/color，附加角标在 labels 数组；展示时合并成有序列表。
+function labelsOf(l: LinkRow): LinkLabel[] {
+  if (l.labels?.length) return l.labels;
+  return l.label ? [{ name: l.label, color: l.color }] : [];
+}
+
+function addLabel() {
+  if (!editing.labels) editing.labels = [];
+  if (editing.labels.length >= 3) return;
+  editing.labels.push({ name: "", color: APPLE_PRESET_COLORS[3].value });
+}
+
+function removeLabel(index: number) {
+  editing.labels?.splice(index, 1);
+}
+
+function clearLabels() {
+  editing.labels = [];
+}
+
 // ---------- 操作方法 ----------
 async function runCheckAll() {
   checking.value = true;
@@ -217,6 +255,7 @@ function openCreate(defaultGroup = "我的朋友") {
     rss: "",
     label: "",
     color: "",
+    labels: [],
     sort: 0,
     snapshot: "",
   });
@@ -225,7 +264,7 @@ function openCreate(defaultGroup = "我的朋友") {
 }
 
 function openEdit(l: LinkRow) {
-  Object.assign(editing, { ...l });
+  Object.assign(editing, { ...l, labels: labelsOf(l).map((x) => ({ name: x.name, color: (x.color || "").replace(/^#/, "") })) });
   error.value = "";
   showModal.value = true;
 }
@@ -243,9 +282,14 @@ async function handleSave() {
   saving.value = true;
   error.value = "";
   try {
+    const labels = (editing.labels || [])
+      .map((l) => ({ name: l.name.trim(), color: (l.color || "").replace(/^#/, "") }))
+      .filter((l) => l.name);
     const payload = {
       ...editing,
-      color: (editing.color || "").replace(/^#/, ""),
+      labels,
+      label: labels[0]?.name || "",
+      color: labels[0]?.color || "",
     };
     if (editing.id) {
       await linkApi.update(editing.id, payload);
@@ -623,14 +667,15 @@ async function batchMoveGroup() {
                       </div>
 
                       <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex flex-wrap items-center gap-1.5">
                           <span class="truncate text-sm font-semibold text-foreground">{{ l.name }}</span>
                           <span
-                            v-if="l.label"
-                            class="shrink-0 rounded-sm px-2 py-0.5 text-[11px] font-semibold text-white"
-                            :style="{ backgroundColor: normalizeColor(l.color) }"
+                            v-for="(item, index) in labelsOf(l)"
+                            :key="index"
+                            class="shrink-0 rounded-sm px-2 py-0.5 text-[11px] font-semibold"
+                            :style="{ backgroundColor: normalizeColor(item.color), color: pillTextColor(item.color) }"
                           >
-                            {{ l.label }}
+                            {{ item.name }}
                           </span>
                         </div>
                         <a
@@ -785,13 +830,16 @@ async function batchMoveGroup() {
                     </span>
                   </td>
                   <td class="px-4 py-3 text-xs">
-                    <span
-                      v-if="l.label"
-                      class="rounded-sm px-2 py-0.5 text-[11px] font-semibold text-white"
-                      :style="{ backgroundColor: normalizeColor(l.color) }"
-                    >
-                      {{ l.label }}
-                    </span>
+                    <div v-if="labelsOf(l).length" class="flex flex-wrap items-center gap-1">
+                      <span
+                        v-for="(item, index) in labelsOf(l)"
+                        :key="index"
+                        class="rounded-sm px-2 py-0.5 text-[11px] font-semibold"
+                        :style="{ backgroundColor: normalizeColor(item.color), color: pillTextColor(item.color) }"
+                      >
+                        {{ item.name }}
+                      </span>
+                    </div>
                     <span v-else class="text-text-quaternary">-</span>
                   </td>
                   <td class="px-4 py-3 text-xs">
@@ -876,51 +924,72 @@ async function batchMoveGroup() {
           <AttachmentField v-model="editing.avatar" placeholder="图片 URL，留空展示文字占位" show-thumb />
         </div>
 
-        <!-- 配色与标签 -->
+        <!-- 角标（最多 3 枚） -->
         <div class="rounded-xl border border-border bg-secondary/30 p-3.5">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-text-tertiary">角标文案（可选）</label>
-              <input v-model="editing.label" class="apple-input" placeholder="如：推荐 / 技术" />
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-medium text-text-tertiary">角标（最多 3 枚）</label>
+            <div class="flex items-center gap-3">
+              <button
+                v-if="editing.labels?.length"
+                type="button"
+                class="text-xs text-text-quaternary hover:text-foreground"
+                @click="clearLabels"
+              >
+                清空
+              </button>
+              <button
+                type="button"
+                class="text-xs font-medium text-primary transition-opacity disabled:opacity-40"
+                :disabled="(editing.labels?.length || 0) >= 3"
+                @click="addLabel"
+              >
+                + 添加角标
+              </button>
             </div>
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-text-tertiary">排序权重（大在前）</label>
-              <input v-model.number="editing.sort" type="number" class="apple-input font-mono" />
+          </div>
+
+          <p v-if="!editing.labels?.length" class="mt-2 rounded-lg border border-dashed border-border px-3 py-2 text-xs text-text-quaternary">
+            不填则不显示角标；例如「社区先锋」「老友」，可各配一种颜色。
+          </p>
+
+          <div v-else class="mt-2 space-y-2">
+            <div v-for="(item, index) in editing.labels" :key="index" class="rounded-lg border border-border bg-card p-2.5">
+              <div class="flex items-center gap-2">
+                <span class="w-4 shrink-0 text-center font-mono text-[11px] text-text-quaternary">{{ index + 1 }}</span>
+                <input
+                  v-model="item.name"
+                  class="apple-input h-8 flex-1 text-xs"
+                  maxlength="12"
+                  placeholder="文案，如：社区先锋"
+                />
+                <button type="button" class="action-icon-btn" title="移除这枚角标" @click="removeLabel(index)">
+                  <Icon icon="ri:close-line" />
+                </button>
+              </div>
+              <div class="mt-2 flex flex-wrap items-center gap-1.5 pl-6">
+                <button
+                  v-for="preset in APPLE_PRESET_COLORS"
+                  :key="preset.value"
+                  type="button"
+                  class="color-preset-dot color-preset-dot-sm"
+                  :class="{ active: (item.color || '').replace(/^#/, '').toLowerCase() === preset.value.toLowerCase() }"
+                  :style="{ background: `#${preset.value}` }"
+                  :title="preset.label"
+                  @click="item.color = preset.value"
+                ></button>
+                <input
+                  v-model="item.color"
+                  class="apple-input ml-1 h-7 !w-[5.75rem] shrink-0 font-mono text-xs"
+                  placeholder="Hex"
+                  maxlength="7"
+                />
+              </div>
             </div>
           </div>
 
           <div class="mt-3">
-            <div class="mb-2 flex items-center justify-between">
-              <label class="text-xs font-medium text-text-tertiary">角标配色</label>
-              <button
-                v-if="editing.color"
-                type="button"
-                class="text-xs text-text-quaternary hover:text-foreground"
-                @click="editing.color = ''"
-              >
-                清除颜色
-              </button>
-            </div>
-
-            <!-- Apple 预设色板 -->
-            <div class="flex flex-wrap items-center gap-2">
-              <button
-                v-for="preset in APPLE_PRESET_COLORS"
-                :key="preset.value"
-                type="button"
-                class="color-preset-dot"
-                :class="{ active: (editing.color || '').replace(/^#/, '').toLowerCase() === preset.value.toLowerCase(), }"
-                :style="{ background: `#${preset.value}` }"
-                :title="preset.label"
-                @click="editing.color = preset.value"
-              ></button>
-              <input
-                v-model="editing.color"
-                class="apple-input ml-2 h-7 w-24 font-mono text-xs"
-                placeholder="Hex 色值"
-                maxlength="7"
-              />
-            </div>
+            <label class="mb-1.5 block text-xs font-medium text-text-tertiary">排序权重（大在前）</label>
+            <input v-model.number="editing.sort" type="number" class="apple-input font-mono" />
           </div>
         </div>
 
@@ -1081,6 +1150,13 @@ async function batchMoveGroup() {
 .color-preset-dot.active {
   border-color: #fff;
   transform: scale(1.15);
+}
+
+/* 多角标编辑器里的色板缩小一档，给 3 行角标留出高度 */
+.color-preset-dot-sm {
+  width: 18px;
+  height: 18px;
+  border-width: 1px;
 }
 
 </style>

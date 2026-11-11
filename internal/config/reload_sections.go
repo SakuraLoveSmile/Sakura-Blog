@@ -21,11 +21,15 @@ func LinksToGroups(links []*store.Link) []tmpl.LinkGroup {
 			idx[l.GroupTitle] = i
 			groups = append(groups, tmpl.LinkGroup{Title: l.GroupTitle})
 		}
-		groups[i].Items = append(groups[i].Items, tmpl.LinkItem{
+		item := tmpl.LinkItem{
 			Name: l.Name, URL: l.URL, Avatar: l.Avatar, Snapshot: l.Snapshot,
 			Desc: l.Description, RSS: l.RSS, Label: l.Label, Color: l.Color,
 			Unavailable: linkUnavailable(l),
-		})
+		}
+		for _, extra := range l.ExtraLabels() {
+			item.Labels = append(item.Labels, tmpl.LinkLabel{Name: extra.Name, Color: extra.Color})
+		}
+		groups[i].Items = append(groups[i].Items, item)
 	}
 	return groups
 }

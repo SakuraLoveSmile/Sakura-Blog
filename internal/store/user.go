@@ -46,6 +46,7 @@ type User struct {
 	DisplayName       string    `json:"display_name"`
 	Email             string    `json:"email"`
 	Avatar            string    `json:"avatar"`
+	Website           string    `json:"website"` // 读者自助填写的个人网址（设置页「个人资料」）
 	TOTPSecret        string    `json:"-"`
 	TOTPRecoveryCodes string    `json:"-"` // JSON array of strings
 	AuthSecret        string    `json:"-"` // 随机 32 字节 hex，cookie 签名密钥
@@ -62,12 +63,12 @@ func (u *User) TableName() string { return "users" }
 
 // Columns Entity 接口：全列，首列为 id（含敏感列，登录/校验路径用）。
 func (u *User) Columns() []string {
-	return []string{"id", "username", "password_hash", "display_name", "email", "avatar", "totp_secret", "totp_recovery_codes", "auth_secret", "api_token_hash", "role", "status", "created_at"}
+	return []string{"id", "username", "password_hash", "display_name", "email", "avatar", "website", "totp_secret", "totp_recovery_codes", "auth_secret", "api_token_hash", "role", "status", "created_at"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (u *User) Values() []any {
-	return []any{u.Username, u.PasswordHash, u.DisplayName, u.Email, u.Avatar, u.TOTPSecret, u.TOTPRecoveryCodes, u.AuthSecret, u.APITokenHash, u.Role, u.Status, u.CreatedAt}
+	return []any{u.Username, u.PasswordHash, u.DisplayName, u.Email, u.Avatar, u.Website, u.TOTPSecret, u.TOTPRecoveryCodes, u.AuthSecret, u.APITokenHash, u.Role, u.Status, u.CreatedAt}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -75,7 +76,7 @@ func (u *User) SetID(id int64) { u.ID = id }
 
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (u *User) ScanRow(row rowScanner) error {
-	return row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.APITokenHash, &u.Role, &u.Status, &u.CreatedAt)
+	return row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.Website, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.APITokenHash, &u.Role, &u.Status, &u.CreatedAt)
 }
 
 // EnsureUsersTable 独立建 users 表（统一走 schema.go 注册表）。
@@ -88,6 +89,7 @@ func (s *Store) EnsureUsersTable() error {
 		{"api_token_hash", `ALTER TABLE users ADD COLUMN api_token_hash TEXT NOT NULL DEFAULT ''`},
 		{"role", `ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'author'`},
 		{"status", `ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'`},
+		{"website", `ALTER TABLE users ADD COLUMN website TEXT NOT NULL DEFAULT ''`},
 	} {
 		has, err := s.tableHasColumn("users", col.name)
 		if err != nil {
@@ -186,6 +188,19 @@ func (s *Store) UpdateUser(user *User) error {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("update user %d: no rows affected", user.ID)
+	}
+	return nil
+}
+
+// UpdateUserProfile 更新读者可自助修改的资料字段（昵称/邮箱/网址），不动认证、角色与头像列。
+func (s *Store) UpdateUserProfile(userID int64, displayName, email, website string) error {
+	res, err := s.db.Exec(`UPDATE users SET display_name = ?, email = ?, website = ? WHERE id = ?`,
+		displayName, email, website, userID)
+	if err != nil {
+		return fmt.Errorf("update user profile %d: %w", userID, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("update user profile %d: no rows affected", userID)
 	}
 	return nil
 }
@@ -601,7 +616,7 @@ type CurrentUser struct {
 	Username string // 匿名空串
 	Nickname string // display_name 或 username
 	Email    string // 匿名空串
-	Link     string // 预留
+	Website  string // 个人网址（设置页「个人资料」），匿名空串
 	Avatar   string // 匿名空串
 	Role     string // 空=匿名，否则 Role*
 	Verified bool   // true=已登录注册用户（评论带认证徽章）

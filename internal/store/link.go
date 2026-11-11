@@ -5,15 +5,17 @@ import "fmt"
 // Link 友链条目（DB 持久化）。GroupTitle 承载 site.yml 的分组标题（扁平化）。
 // 字段命名与前端 friends_and_posts 渲染对齐；desc 列名用 description（避开 SQL 关键字 DESC）。
 type Link struct {
-	ID            int64
-	GroupTitle    string
-	Name          string
-	URL           string
-	Avatar        string
-	Description   string
-	RSS           string
-	Label         string
-	Color         string
+	ID          int64
+	GroupTitle  string
+	Name        string
+	URL         string
+	Avatar      string
+	Description string
+	RSS         string
+	Label       string
+	Color       string
+	// LabelsJSON 存第 2、3 枚角标的 JSON 数组；主角标仍在上面的 Label/Color。
+	LabelsJSON    string
 	Sort          int
 	Snapshot      string
 	LastStatus    int
@@ -25,12 +27,12 @@ func (l *Link) TableName() string { return "links" }
 
 // Columns Entity 接口：全列，首列为 id。
 func (l *Link) Columns() []string {
-	return []string{"id", "group_title", "name", "url", "avatar", "description", "rss", "label", "color", "sort", "snapshot", "last_status", "last_checked_at"}
+	return []string{"id", "group_title", "name", "url", "avatar", "description", "rss", "label", "color", "labels", "sort", "snapshot", "last_status", "last_checked_at"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (l *Link) Values() []any {
-	return []any{l.GroupTitle, l.Name, l.URL, l.Avatar, l.Description, l.RSS, l.Label, l.Color, l.Sort, l.Snapshot, l.LastStatus, l.LastCheckedAt}
+	return []any{l.GroupTitle, l.Name, l.URL, l.Avatar, l.Description, l.RSS, l.Label, l.Color, l.LabelsJSON, l.Sort, l.Snapshot, l.LastStatus, l.LastCheckedAt}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -39,7 +41,7 @@ func (l *Link) SetID(id int64) { l.ID = id }
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (l *Link) ScanRow(row rowScanner) error {
 	return row.Scan(&l.ID, &l.GroupTitle, &l.Name, &l.URL, &l.Avatar,
-		&l.Description, &l.RSS, &l.Label, &l.Color, &l.Sort, &l.Snapshot,
+		&l.Description, &l.RSS, &l.Label, &l.Color, &l.LabelsJSON, &l.Sort, &l.Snapshot,
 		&l.LastStatus, &l.LastCheckedAt)
 }
 
@@ -52,6 +54,7 @@ func (s *Store) EnsureLinksTable() error {
 		{"snapshot", `ALTER TABLE links ADD COLUMN snapshot TEXT NOT NULL DEFAULT ''`},
 		{"last_status", `ALTER TABLE links ADD COLUMN last_status INTEGER NOT NULL DEFAULT 0`},
 		{"last_checked_at", `ALTER TABLE links ADD COLUMN last_checked_at INTEGER NOT NULL DEFAULT 0`},
+		{"labels", `ALTER TABLE links ADD COLUMN labels TEXT NOT NULL DEFAULT ''`},
 	} {
 		has, err := s.tableHasColumn("links", col.name)
 		if err != nil {
