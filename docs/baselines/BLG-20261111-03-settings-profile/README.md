@@ -29,3 +29,13 @@
 - 非法网址（`javascript:alert(1)`）返回字段级提示「请输入 HTTP(S) 网址，或留空」，状态行 `data-state=failure`，值保留供修正。
 - 退出登录：整页重载后 `/api/auth/me` 为 `id=0, verified=false`，三个输入清空。
 - 页面无 `pageerror`；控制台 404 只有隔离站点缺失的 `/about/`、`/friends` 导航与 gravatar 无网络时的头像回退，与本次改动无关。
+
+## 生产验证（v2.1.7，2026-11-11）
+
+线上 `/settings/` 已带「个人资料」：`data-provider="native"`，分区为 个人资料 → 缓存 → 关于，资料区几何 624×364 @x328 y179 与本地验收一致；「关于」的版本行显示 `Blog v2.1.7`。
+
+- `production-lg.png`、`production-sm.png`：生产 1280 / 390 截图。
+- `production-anon-save.png`：未登录点保存后的服务端提示「请先登录后再保存个人资料」（`data-state=failure`），没有写入任何数据。
+- `production-verification.json`：容器状态、`/readyz`、公开接口状态码、`/api/auth/me` 形状与页面错误清单。
+
+未在生产登录读者账号，因此登录态保存往返只有本地隔离站点证据；线上只验证了公开页面与未登录分支。
