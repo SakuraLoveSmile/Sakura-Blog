@@ -222,7 +222,17 @@ test("D1–D11 桌面 1440：工具组是 36px 幽灵控件，选中为短线，
     const refreshButton = modeButton(page, REFRESH);
     await expect(refreshButton).toHaveAttribute("aria-busy", "true");
     await expect(refreshButton.locator("svg.animate-spin")).toHaveCount(1);
-    expect(await refreshButton.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(TRANSPARENT);
+    // 悬停底色是带过渡的：指针移开后要等动画结束才回到透明。CI 上这段过渡
+    // 常在读样式时还没走完（读到 rgba(27,27,30,0.04) 这类中间值），因此测量前
+    // 临时关掉 transition 取最终态；断言仍是「刷新中没有填充底色」。
+    const refreshBackground = await refreshButton.evaluate((el) => {
+      const previous = el.style.transition;
+      el.style.transition = "none";
+      const color = getComputedStyle(el).backgroundColor;
+      el.style.transition = previous;
+      return color;
+    });
+    expect(refreshBackground).toBe(TRANSPARENT);
     await expect(refreshButton).toHaveAttribute("aria-busy", "false", { timeout: 4000 });
 
     // D11 功能不变：预览宽度、选中状态与设置布局入口
