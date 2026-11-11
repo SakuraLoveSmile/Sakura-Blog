@@ -166,7 +166,8 @@ export function mount(root, context) {
     });
   }
 
-  // 原生评论身份是站点账号，读写都走网络请求；第三方评论后端仍是同步的本地存储。
+  // 原生评论身份优先用站点账号，未登录时回落到浏览器本地资料（与上游一致，访客也能保存）；
+  // 结果因此可能是 Promise 也可能是同步值，统一用 settle 归一。
   function settle(value) {
     return Promise.resolve(value).then(result => result || { ok: false }, () => ({ ok: false }));
   }
@@ -206,7 +207,12 @@ export function mount(root, context) {
 
   function onLogout() {
     settle(api?.logout?.(provider)).then(result => {
-      setStatus(status, result.message || resultMessage(page, result), result.ok ? 'success' : result.partial ? 'partial' : 'failure');
+      // 未登录时退出登录只是清空本地匿名资料，不显示成功提示（避免误以为有会话被结束）。
+      if (result.local) {
+        setStatus(status, '', '');
+      } else {
+        setStatus(status, result.message || resultMessage(page, result), result.ok ? 'success' : result.partial ? 'partial' : 'failure');
+      }
       if (result.ok || result.partial) render();
     });
   }

@@ -332,8 +332,15 @@ func (r stellarTemplateRenderer) menu(d *StellarRenderData, region string, state
 	return r.navigation(d, region, columns, entries)
 }
 func (r stellarTemplateRenderer) settings(d *StellarRenderData, placement string) template.HTML {
-	provider := stellarText(stellarGet(d.Stellar.Theme, "comments.provider"))
-	identity := provider == "artalk" || provider == "waline" || provider == "twikoo"
+	provider := strings.ToLower(strings.TrimSpace(stellarText(stellarGet(d.Stellar.Theme, "comments.provider"))))
+	// 未配置第三方评论后端就是原生评论，资料块与挂件都必须用 native 这个身份标识，
+	// 否则前端会拿到空 provider 而认不出身份。
+	if provider == "" {
+		provider = "native"
+	}
+	// 原生评论时身份来自站点账号（已登录）或浏览器本地资料（访客），与上游一样
+	// 在挂件上显示读者昵称与头像；没有身份能力的第三方后端仍只显示「设置」。
+	identity := provider == "artalk" || provider == "waline" || provider == "twikoo" || provider == "native"
 	label := stellarTranslate(d, "settings.label")
 	path := stellarText(stellarFirst(d.Stellar.SettingsPath, stellarGet(d.Stellar.Theme, "profiles.settings.path"), "/settings/"))
 	fallback := stellarGet(d.Stellar.Theme, "fallbacks.avatar")

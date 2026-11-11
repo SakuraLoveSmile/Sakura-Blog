@@ -1,10 +1,16 @@
 (function () {
   var SUPPORTED_PROVIDERS = ['artalk', 'waline', 'twikoo', 'native'];
-  // 原生评论（站点未接入第三方评论后端）的读者身份来自站点账号，资料读写走 /api/auth。
+  // 原生评论（站点未接入第三方评论后端）：已登录读者用站点账号（/api/auth），
+  // 未登录时与上游一致，落到浏览器本地的匿名资料，保证不登录也能保存。
   var NATIVE_PROVIDER = 'native';
   var SESSION_ENDPOINT = '/api/auth/me';
   var PROFILE_ENDPOINT = '/api/auth/profile';
   var LOGOUT_ENDPOINT = '/api/auth/logout';
+  // 与 comments.js 的匿名身份共用同一份键，评论区与设置页读写同一份资料。
+  var LOCAL_NAME_KEY = 'cmt_nick';
+  var LOCAL_EMAIL_KEY = 'cmt_email';
+  var LOCAL_URL_KEY = 'cmt_link';
+  var LOCAL_AVATAR_KEY = 'cmt_avatar';
   var SETTINGS_ICON = 'default:settings';
   var PROFILE_ICON = 'default:profile';
   var GRAVATAR_BASE_URL = window.stellarClientData.ctx.services.gravatar.baseUrl.replace(/\/+$/, '') + '/';
@@ -44,6 +50,22 @@
     } catch (error) { return false; }
   }
 
+  // 匿名资料的 cmt_* 键与评论区共用，必须是纯文本（评论区按字符串直读直写）。
+  function readText(store, key) {
+    try {
+      var value = store?.getItem?.(key);
+      return typeof value === 'string' ? value : '';
+    } catch (error) { return ''; }
+  }
+
+  function writeText(store, key, value) {
+    try {
+      if (!store?.setItem) return false;
+      store.setItem(key, value || '');
+      return true;
+    } catch (error) { return false; }
+  }
+
   function cleanText(value, maxLength) {
     return typeof value === 'string' ? value.trim().slice(0, maxLength || 80) : '';
   }
@@ -62,6 +84,22 @@
       var parsed = new URL(candidate);
       return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null;
     } catch (error) { return null; }
+  }
+
+  // 保存时与后端一致：缺协议的输入按 https 补全（read 侧仍只认完整地址）。
+  function normalizeHttpUrl(value) {
+    if (typeof value !== 'string' || value.trim().length === 0) return '';
+    var candidate = value.trim();
+    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(candidate) && !candidate.startsWith('//')) candidate = 'https://' + candidate;
+    return cleanHttpUrl(candidate);
+  }
+
+  // 保存时与后端一致：缺协议的输入按 https 补全（读取侧仍只认完整地址）。
+  function normalizeHttpUrl(value) {
+    if (typeof value !== 'string' || value.trim().length === 0) return '';
+    var candidate = value.trim();
+    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(candidate) && !candidate.startsWith('//')) candidate = 'https://' + candidate;
+    return cleanHttpUrl(candidate);
   }
 
   function normalizeGravatarEmail(value) {
@@ -152,17 +190,56 @@
     }, function () { return null; });
   }
 
+  // 未登录读者的资料与上游一致存在浏览器本地，键名与评论区匿名身份共用。
+  function readLocalIdentity() {
+    var identity = emptyIdentity(NATIVE_PROVIDER);
+    identity.supported = true;
+    identity.local = true;
+    identity.name = cleanText(readText(localStore, LOCAL_NAME_KEY), 80);
+    identity.email = cleanText(readText(localStore, LOCAL_EMAIL_KEY), 254);
+    identity.url = cleanHttpUrl(readText(localStore, LOCAL_URL_KEY)) || '';
+    identity.avatar = cleanHttpUrl(readText(localStore, LOCAL_AVATAR_KEY)) || '';
+    return identity;
+  }
+
+  function hasLocalIdentity(identity) {
+    return !!(identity && (identity.name || identity.email || identity.url));
+  }
+
+  function writeLocalIdentity(fields) {
+    var rawName = typeof fields?.name === 'string' ? fields.name.trim() : '';
+    var name = cleanText(rawName);
+    var email = cleanEmail(fields?.email);
+    var url = normalizeHttpUrl(fields?.url);
+    if (!name || rawName.length > 80) return { ok: false, validation: 'name', partial: false };
+    if (email === null) return { ok: false, validation: 'email', partial: false };
+    if (url === null) return { ok: false, validation: 'url', partial: false };
+    var results = [
+      writeText(localStore, LOCAL_NAME_KEY, name),
+      writeText(localStore, LOCAL_EMAIL_KEY, email),
+      writeText(localStore, LOCAL_URL_KEY, url)
+    ];
+    var succeeded = results.filter(Boolean).length;
+    var outcome = { ok: succeeded === results.length && succeeded > 0, partial: succeeded > 0 && succeeded < results.length, local: true };
+    if (succeeded > 0) dispatchChange(NATIVE_PROVIDER);
+    return outcome;
+  }
+
   function readNativeIdentity() {
     return requestJSON(SESSION_ENDPOINT, { method: 'GET' }).then(function (result) {
-      var identity = emptyIdentity(NATIVE_PROVIDER);
-      identity.supported = true;
       var body = result && result.body;
-      if (!result || !result.ok || !body || !body.verified) return identity;
-      identity.name = cleanText(body.nickname, 80);
-      identity.email = cleanText(body.email, 254);
-      identity.url = cleanHttpUrl(body.website) || '';
-      identity.avatar = cleanHttpUrl(body.avatar) || '';
-      return identity;
+      if (result && result.ok && body && body.verified) {
+        var identity = emptyIdentity(NATIVE_PROVIDER);
+        identity.supported = true;
+        identity.account = true;
+        identity.name = cleanText(body.nickname, 80);
+        identity.email = cleanText(body.email, 254);
+        identity.url = cleanHttpUrl(body.website) || '';
+        identity.avatar = cleanHttpUrl(body.avatar) || '';
+        return identity;
+      }
+      // 未登录：照上游用本地资料，设置页因此对访客也可用。
+      return readLocalIdentity();
     });
   }
 
@@ -172,37 +249,61 @@
       email: typeof fields?.email === 'string' ? fields.email.trim() : '',
       url: typeof fields?.url === 'string' ? fields.url.trim() : ''
     };
-    return requestJSON(PROFILE_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(function (result) {
-      if (!result) return { ok: false, partial: false };
-      var body = result.body || {};
-      if (result.ok) return { ok: true, partial: false };
-      var outcome = { ok: false, partial: false };
-      if (typeof body.error === 'string' && body.error) outcome.message = body.error;
-      if (typeof body.field === 'string' && body.field) outcome.field = body.field;
-      if (result.status === 401) outcome.unauthenticated = true;
-      return outcome;
+    return requestJSON(SESSION_ENDPOINT, { method: 'GET' }).then(function (session) {
+      var body = session && session.body;
+      if (!session || !session.ok || !body || !body.verified) return writeLocalIdentity(fields);
+      return requestJSON(PROFILE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (result) {
+        if (!result) return { ok: false, partial: false };
+        var responseBody = result.body || {};
+        if (result.ok) {
+          dispatchChange(NATIVE_PROVIDER);
+          return { ok: true, partial: false, account: true };
+        }
+        var outcome = { ok: false, partial: false, account: true };
+        if (typeof responseBody.error === 'string' && responseBody.error) outcome.message = responseBody.error;
+        if (typeof responseBody.field === 'string' && responseBody.field) outcome.field = responseBody.field;
+        if (result.status === 401) outcome.unauthenticated = true;
+        return outcome;
+      });
     });
   }
 
   function logoutNative() {
-    return requestJSON(LOGOUT_ENDPOINT, { method: 'POST' }).then(function (result) {
-      if (!result || !result.ok) return { ok: false, partial: false };
-      // 退出后整页重载：评论区的登录态与身份栏同源，需按新状态重新渲染。
-      try { window.location?.reload?.(); } catch (error) {}
-      return { ok: true, partial: false };
+    return requestJSON(SESSION_ENDPOINT, { method: 'GET' }).then(function (session) {
+      var body = session && session.body;
+      if (session && session.ok && body && body.verified) {
+        return requestJSON(LOGOUT_ENDPOINT, { method: 'POST' }).then(function (result) {
+          if (!result || !result.ok) return { ok: false, partial: false };
+          // 退出后整页重载：评论区的登录态与身份栏同源，需按新状态重新渲染。
+          try { window.location?.reload?.(); } catch (error) {}
+          return { ok: true, partial: false };
+        });
+      }
+      // 未登录时「退出登录」等价于清掉本地匿名资料，和上游一致。
+      var results = [
+        removeStorage(localStore, LOCAL_NAME_KEY),
+        removeStorage(localStore, LOCAL_EMAIL_KEY),
+        removeStorage(localStore, LOCAL_URL_KEY),
+        removeStorage(localStore, LOCAL_AVATAR_KEY)
+      ];
+      var succeeded = results.filter(Boolean).length;
+      var outcome = { ok: succeeded === results.length, partial: succeeded > 0 && succeeded < results.length, local: true };
+      if (succeeded > 0) dispatchChange(NATIVE_PROVIDER);
+      return outcome;
     });
   }
 
   function dispatchChange(provider) {
+    // 只用于通知本页刷新；环境没有 CustomEvent（如 node 测试）时静默跳过。
+    var CustomEventCtor = window.CustomEvent || (typeof CustomEvent === 'function' ? CustomEvent : null);
+    if (!CustomEventCtor) return;
     try {
-      window.dispatchEvent?.(new CustomEvent('stellar:profile-change', { detail: { provider: provider } }));
-    } catch (error) {
-      window.dispatchEvent?.({ type: 'stellar:profile-change', detail: { provider: provider } });
-    }
+      window.dispatchEvent?.(new CustomEventCtor('stellar:profile-change', { detail: { provider: provider } }));
+    } catch (error) {}
   }
 
   function updateExistingCopies(key, updater) {
@@ -310,15 +411,9 @@
     });
   }
 
-  function renderWidget(widget) {
-    var revision = (widgetRenderRevisions.get(widget) || 0) + 1;
-    widgetRenderRevisions.set(widget, revision);
-    var settingsName = widget.dataset.settingsLabel || widget.getAttribute('aria-label') || 'Settings';
-    var identityEnabled = widget.dataset.profileIdentityEnabled === 'true';
-    var identity = identityEnabled
-      ? readIdentity(widget.dataset.profileProvider)
-      : emptyIdentity(widget.dataset.profileProvider);
-    var hasIdentity = identityEnabled && identity.supported && !!identity.name;
+  function applyWidgetIdentity(widget, identity, settingsName, revision) {
+    if (!isCurrentWidgetRender(widget, revision)) return;
+    var hasIdentity = identity.supported && !!identity.name;
     var name = hasIdentity ? identity.name : settingsName;
     var nameElement = widget.querySelector('.settings-widget__name');
     var avatar = widget.querySelector('.settings-widget__avatar');
@@ -338,6 +433,24 @@
       return;
     }
     renderWidgetGravatar(widget, avatar, identity, fallbackAvatar, revision);
+  }
+
+  function renderWidget(widget) {
+    var revision = (widgetRenderRevisions.get(widget) || 0) + 1;
+    widgetRenderRevisions.set(widget, revision);
+    var settingsName = widget.dataset.settingsLabel || widget.getAttribute('aria-label') || 'Settings';
+    var identityEnabled = widget.dataset.profileIdentityEnabled === 'true';
+    if (!identityEnabled) {
+      applyWidgetIdentity(widget, emptyIdentity(widget.dataset.profileProvider), settingsName, revision);
+      return;
+    }
+    var provider = widget.dataset.profileProvider;
+    // 原生账号要先问一次 /api/auth/me（异步），第三方后端仍是同步本地存储。
+    Promise.resolve(readIdentity(provider)).then(function (identity) {
+      applyWidgetIdentity(widget, identity || emptyIdentity(provider), settingsName, revision);
+    }, function () {
+      applyWidgetIdentity(widget, emptyIdentity(provider), settingsName, revision);
+    });
   }
 
   var mountedRoots = new WeakMap();
