@@ -1,6 +1,6 @@
 # BLG-20261111-04：设置页「个人资料」对齐上游，访客也能保存
 
-- 状态：待体验（已合入 dev @ `2ddd5638`，本地门禁与隔离服务浏览器验收通过，未推送、未发布）
+- 状态：待体验（已发布 v2.1.8，待生产体验确认）
 - 分支：`codex/feat/20261111-BLG-20261111-04-settings-profile-local-identity`
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261111-feat-BLG-20261111-04-settings-profile-local-identity`
 - 基点：`dev` @ `143d2e93`
@@ -47,9 +47,21 @@ BLG-20261111-03 把「个人资料」接到站点账号：读 `GET /api/auth/me`
 - 新增/更新测试：`modules/stellar/tests/profile-icon-contract.test.mjs`（未登录读本地资料、保存不请求账号接口、字段级校验、退出清空；已登录写账号接口）、`modules/stellar/web/stellar_settings_host_test.go`（挂件身份按 provider 开关）。
 - 隔离服务实测（`127.0.0.1:8141`，Chrome，840×432@2x）：未登录保存 → 「操作成功。」+ 写 `cmt_*` + 头像变 gravatar + 挂件显示「上杉九月」；刷新回填；`javascript:alert(1)` → 「请输入 HTTP(S) URL，或留空。」；`example.com` → `https://example.com/`；未登录退出 → 本地键清空、挂件回「设置」；登录读者保存 → `/api/auth/me` 同步且本地键未被污染；登录读者退出 → `id=0`；无 `pageerror`。
 - 证据见 `docs/baselines/BLG-20261111-04-settings-profile-local-identity/`。
+- **发布阶段补测（本地全量 e2e）**：`pnpm exec playwright test` 跑出 7 个 `writing-assistant.spec.ts` 失败，全部是 `/api/auth/me` 在 Console 标签预览的不透明源 iframe 里被 CORS 拒绝。根因是挂件身份开启后每次重渲染都打会话接口。修复（`41fe9732`）：会话读取整页只请求一次；不透明源直接跳过网络。修复后 27 项用例全通过，并补了「只请求一次」「不透明源不发请求」两条回归用例。
+
+## 合入与发布
+
+- `make merge-check` 通过，合入 `dev`（`2ddd5638`）。
+- PR #79 `dev` → `main` 合并（`afccb749`），CI 全绿（build/console/e2e/go/lint/security）。
+- PR #80 `main` → `release` 合并（`9e573071`），含 `image` 预构建与 `release-source` 来源校验。
+- 打 `v2.1.8` tag，`docker-release.yml` 成功；GHCR 已有 `2.1.8`/`2.1`/`2`/`latest`（manifest `sha256:26d0398…`），GitHub Release 已创建。
+- 未做：服务器 `docker compose pull && docker compose up -d`（需在宿主执行）。
 
 ## 待办
 
 - [x] `make test` 通过
 - [x] 隔离服务浏览器验收（未登录保存往返、登录态、退出、非法输入）
-- [ ] `make merge-check` 合入 dev
+- [x] `make merge-check` 合入 dev
+- [x] 发布 v2.1.8（镜像已产出并校验）
+- [ ] 服务器升级到 v2.1.8
+- [ ] 生产环境用读者身份实测保存
