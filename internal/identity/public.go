@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -26,6 +27,8 @@ const (
 	minPasswordLen = 6
 	maxPasswordLen = 64
 	maxNicknameLen = 32
+	maxProfileName = 80
+	maxWebsiteLen  = 300
 	maxEmailLen    = 254
 	loginWindow    = 5 * time.Minute
 	loginMaxFails  = 5
@@ -68,6 +71,7 @@ func (h *PublicHandler) Middleware() gin.HandlerFunc {
 			if id, secret, expiry, ok := h.validCookie(value); ok {
 				if u, lookupErr := h.store.GetUserByID(id); lookupErr == nil && u != nil && u.Status != store.UserStatusBanned {
 					user.ID, user.Username, user.Email, user.Avatar, user.Role = u.ID, u.Username, u.Email, u.Avatar, u.Role
+					user.Website = u.Website
 					user.Nickname = u.DisplayName
 					if user.Nickname == "" {
 						user.Nickname = u.Username
@@ -105,6 +109,7 @@ type PublicRoutes struct {
 	Me       gin.HandlerFunc
 	Logout   gin.HandlerFunc
 	Upgrade  gin.HandlerFunc
+	Profile  gin.HandlerFunc
 }
 
 // PublicRoutes returns the reader authentication callbacks used by Stellar.
@@ -115,6 +120,7 @@ func (h *PublicHandler) PublicRoutes() PublicRoutes {
 		Me:       h.me,
 		Logout:   h.logout,
 		Upgrade:  h.upgrade,
+		Profile:  h.profile,
 	}
 }
 
@@ -124,6 +130,7 @@ type publicUserResponse struct {
 	Nickname string `json:"nickname"`
 	Email    string `json:"email"`
 	Avatar   string `json:"avatar"`
+	Website  string `json:"website"`
 	Role     string `json:"role"`
 	Verified bool   `json:"verified"`
 	IsAdmin  bool   `json:"is_admin"`
@@ -257,13 +264,81 @@ func (h *PublicHandler) login(c *gin.Context) {
 
 func (h *PublicHandler) me(c *gin.Context) {
 	u := CurrentUser(c)
-	c.JSON(http.StatusOK, gin.H{"id": u.ID, "username": u.Username, "nickname": u.Nickname, "email": u.Email, "avatar": u.Avatar, "role": u.Role, "verified": u.Verified, "is_admin": u.Role == store.RoleAdmin})
+	c.JSON(http.StatusOK, gin.H{"id": u.ID, "username": u.Username, "nickname": u.Nickname, "email": u.Email, "avatar": u.Avatar, "website": u.Website, "role": u.Role, "verified": u.Verified, "is_admin": u.Role == store.RoleAdmin})
 }
 
 func (h *PublicHandler) logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(UserCookieName, "", -1, "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// profile POST /api/auth/profile：读者自助保存昵称/邮箱/个人网址，未登录返回 401。
+func (h *PublicHandler) profile(c *gin.Context) {
+	current := CurrentUser(c)
+	if !current.Verified || current.ID <= 0 {
+		jsonError(c, http.StatusUnauthorized, "请先登录后再保存个人资料")
+		return
+	}
+	var req struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		URL   string `json:"url"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonError(c, http.StatusBadRequest, "请求格式错误")
+		return
+	}
+	name := strings.TrimSpace(req.Name)
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	website := strings.TrimSpace(req.URL)
+	if name == "" || utf8.RuneCountInString(name) > maxProfileName {
+		jsonFieldError(c, http.StatusBadRequest, "name", "请输入不超过 80 个字符的昵称")
+		return
+	}
+	if email != "" && !textutil.ValidEmail(email, maxEmailLen) {
+		jsonFieldError(c, http.StatusBadRequest, "email", "请输入有效的 Email，或留空")
+		return
+	}
+	if website != "" {
+		normalized, ok := normalizeWebsite(website)
+		if !ok {
+			jsonFieldError(c, http.StatusBadRequest, "url", "请输入 HTTP(S) 网址，或留空")
+			return
+		}
+		website = normalized
+	}
+	if err := h.store.UpdateUserProfile(current.ID, name, email, website); err != nil {
+		jsonError(c, http.StatusInternalServerError, "保存失败，请稍后再试")
+		return
+	}
+	u, err := h.store.GetUserByID(current.ID)
+	if err != nil || u == nil {
+		jsonError(c, http.StatusInternalServerError, "保存失败，请稍后再试")
+		return
+	}
+	c.JSON(http.StatusOK, publicAuthResponse{OK: true, User: publicUser(u)})
+}
+
+// normalizeWebsite 校验并规范化个人网址：只接受 http(s)，缺协议时按 https 补全。
+func normalizeWebsite(value string) (string, bool) {
+	candidate := strings.TrimSpace(value)
+	if candidate == "" || len(candidate) > maxWebsiteLen || strings.ContainsAny(candidate, "\r\n\t ") {
+		return "", false
+	}
+	if !strings.Contains(candidate, "://") {
+		candidate = "https://" + candidate
+	}
+	parsed, err := url.Parse(candidate)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return "", false
+	}
+	return parsed.String(), true
+}
+
+// jsonFieldError 返回带字段名的错误，前端据此定位到对应输入。
+func jsonFieldError(c *gin.Context, status int, field, message string) {
+	c.JSON(status, gin.H{"ok": false, "error": message, "field": field})
 }
 
 func (h *PublicHandler) upgrade(c *gin.Context) {
@@ -380,6 +455,6 @@ func publicUser(u *store.User) publicUserResponse {
 	if nickname == "" {
 		nickname = u.Username
 	}
-	return publicUserResponse{ID: u.ID, Username: u.Username, Nickname: nickname, Email: u.Email, Avatar: u.Avatar, Role: u.Role, Verified: true, IsAdmin: u.Role == store.RoleAdmin}
+	return publicUserResponse{ID: u.ID, Username: u.Username, Nickname: nickname, Email: u.Email, Avatar: u.Avatar, Website: u.Website, Role: u.Role, Verified: true, IsAdmin: u.Role == store.RoleAdmin}
 }
 func jsonError(c *gin.Context, status int, message string) { c.JSON(status, gin.H{"error": message}) }

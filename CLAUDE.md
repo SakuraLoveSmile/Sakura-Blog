@@ -109,6 +109,8 @@ Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `
 
 友链角标最多 3 枚：首枚仍存 `links.label`/`color`（`linkwatch` 的自动「失效」标签与旧客户端依赖这两列），第 2、3 枚存 `links.labels` JSON；`/api/friends(-aggregated)` 的 `labels` 数组按「首枚 → 附加」顺序输出，前台 `friends_and_posts.js` 按颜色亮度选文字颜色。Console 只传 `label`/`color` 时保留既有附加角标。
 
+`/settings` 的「个人资料」沿用上游 `layout/settings.ejs` 结构（头像 + 昵称/Email/URL + 保存/退出登录）：`comments.provider` 是 artalk/waline/twikoo 时继续用评论端本地身份；未配置第三方评论后端时视为原生评论（`data-provider="native"`），资料读写走站点账号 `GET /api/auth/me`、`POST /api/auth/profile`、`POST /api/auth/logout`，网址存在 `users.website`。没有身份能力的后端（beaudar/utterances/giscus）不渲染该块；原生账号的读写是异步的，`settings.js` 统一按 Promise 处理，第三方后端仍是同步本地存储。
+
 ## 编辑器与 shortcode
 
 shortcode 的解析、表单 schema 和重建路径必须共享一份 catalog：以后端 `internal/post/shortcode_catalog.go` 和各 renderer 实际接受的 named/positional 参数为准，而不是复制第二份前端字段表。

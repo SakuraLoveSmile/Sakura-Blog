@@ -1,0 +1,629 @@
+{
+ "anon": {
+  "label": "anon",
+  "provider": "native",
+  "sections": [
+   {
+    "id": "settings-profile",
+    "title": "个人资料",
+    "rows": []
+   },
+   {
+    "id": "settings-cache",
+    "title": "缓存",
+    "rows": [
+     "搜索缓存",
+     "数据缓存",
+     "全部缓存"
+    ]
+   },
+   {
+    "id": "settings-about",
+    "title": "关于",
+    "rows": [
+     "博客框架",
+     "主题版本"
+    ]
+   }
+  ],
+  "formHidden": false,
+  "values": [
+   {
+    "name": "name",
+    "value": ""
+   },
+   {
+    "name": "email",
+    "value": ""
+   },
+   {
+    "name": "url",
+    "value": ""
+   }
+  ],
+  "avatar": {
+   "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+   "hidden": false,
+   "box": {
+    "x": 328,
+    "y": 179,
+    "w": 96,
+    "h": 96
+   }
+  },
+  "profileBox": {
+   "x": 328,
+   "y": 179,
+   "w": 624,
+   "h": 364
+  },
+  "inputBox": {
+   "x": 488,
+   "y": 299,
+   "w": 464,
+   "h": 37
+  },
+  "buttons": [
+   {
+    "text": "保存",
+    "hidden": false,
+    "box": {
+     "x": 488,
+     "y": 452,
+     "w": 55,
+     "h": 35
+    }
+   },
+   {
+    "text": "退出登录",
+    "hidden": false,
+    "box": {
+     "x": 553,
+     "y": 452,
+     "w": 81,
+     "h": 35
+    }
+   }
+  ],
+  "status": "",
+  "logoutHidden": false
+ },
+ "loginStatus": 200,
+ "logged": {
+  "label": "logged",
+  "provider": "native",
+  "sections": [
+   {
+    "id": "settings-profile",
+    "title": "个人资料",
+    "rows": []
+   },
+   {
+    "id": "settings-cache",
+    "title": "缓存",
+    "rows": [
+     "搜索缓存",
+     "数据缓存",
+     "全部缓存"
+    ]
+   },
+   {
+    "id": "settings-about",
+    "title": "关于",
+    "rows": [
+     "博客框架",
+     "主题版本"
+    ]
+   }
+  ],
+  "formHidden": false,
+  "values": [
+   {
+    "name": "name",
+    "value": "九月"
+   },
+   {
+    "name": "email",
+    "value": "september@example.com"
+   },
+   {
+    "name": "url",
+    "value": "https://example.com/"
+   }
+  ],
+  "avatar": {
+   "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+   "hidden": false,
+   "box": {
+    "x": 328,
+    "y": 179,
+    "w": 96,
+    "h": 96
+   }
+  },
+  "profileBox": {
+   "x": 328,
+   "y": 179,
+   "w": 624,
+   "h": 364
+  },
+  "inputBox": {
+   "x": 488,
+   "y": 299,
+   "w": 464,
+   "h": 37
+  },
+  "buttons": [
+   {
+    "text": "保存",
+    "hidden": false,
+    "box": {
+     "x": 488,
+     "y": 452,
+     "w": 55,
+     "h": 35
+    }
+   },
+   {
+    "text": "退出登录",
+    "hidden": false,
+    "box": {
+     "x": 553,
+     "y": 452,
+     "w": 81,
+     "h": 35
+    }
+   }
+  ],
+  "status": "",
+  "logoutHidden": false
+ },
+ "afterSave": {
+  "label": "afterSave",
+  "provider": "native",
+  "sections": [
+   {
+    "id": "settings-profile",
+    "title": "个人资料",
+    "rows": []
+   },
+   {
+    "id": "settings-cache",
+    "title": "缓存",
+    "rows": [
+     "搜索缓存",
+     "数据缓存",
+     "全部缓存"
+    ]
+   },
+   {
+    "id": "settings-about",
+    "title": "关于",
+    "rows": [
+     "博客框架",
+     "主题版本"
+    ]
+   }
+  ],
+  "formHidden": false,
+  "values": [
+   {
+    "name": "name",
+    "value": "九月二号"
+   },
+   {
+    "name": "email",
+    "value": "september+new@example.com"
+   },
+   {
+    "name": "url",
+    "value": "https://example.org/me"
+   }
+  ],
+  "avatar": {
+   "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+   "hidden": false,
+   "box": {
+    "x": 328,
+    "y": 179,
+    "w": 96,
+    "h": 96
+   }
+  },
+  "profileBox": {
+   "x": 328,
+   "y": 179,
+   "w": 624,
+   "h": 366
+  },
+  "inputBox": {
+   "x": 488,
+   "y": 299,
+   "w": 464,
+   "h": 37
+  },
+  "buttons": [
+   {
+    "text": "保存",
+    "hidden": false,
+    "box": {
+     "x": 488,
+     "y": 452,
+     "w": 55,
+     "h": 35
+    }
+   },
+   {
+    "text": "退出登录",
+    "hidden": false,
+    "box": {
+     "x": 553,
+     "y": 452,
+     "w": 81,
+     "h": 35
+    }
+   }
+  ],
+  "status": "操作成功。",
+  "logoutHidden": false
+ },
+ "saveStatus": {
+  "text": "操作成功。",
+  "state": "success"
+ },
+ "me": {
+  "avatar": "",
+  "email": "september+new@example.com",
+  "id": 3,
+  "is_admin": false,
+  "nickname": "九月二号",
+  "role": "reader",
+  "username": "reader",
+  "verified": true,
+  "website": "https://example.org/me"
+ },
+ "reloaded": {
+  "label": "reloaded",
+  "provider": "native",
+  "sections": [
+   {
+    "id": "settings-profile",
+    "title": "个人资料",
+    "rows": []
+   },
+   {
+    "id": "settings-cache",
+    "title": "缓存",
+    "rows": [
+     "搜索缓存",
+     "数据缓存",
+     "全部缓存"
+    ]
+   },
+   {
+    "id": "settings-about",
+    "title": "关于",
+    "rows": [
+     "博客框架",
+     "主题版本"
+    ]
+   }
+  ],
+  "formHidden": false,
+  "values": [
+   {
+    "name": "name",
+    "value": "九月二号"
+   },
+   {
+    "name": "email",
+    "value": "september+new@example.com"
+   },
+   {
+    "name": "url",
+    "value": "https://example.org/me"
+   }
+  ],
+  "avatar": {
+   "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+   "hidden": false,
+   "box": {
+    "x": 328,
+    "y": 179,
+    "w": 96,
+    "h": 96
+   }
+  },
+  "profileBox": {
+   "x": 328,
+   "y": 179,
+   "w": 624,
+   "h": 364
+  },
+  "inputBox": {
+   "x": 488,
+   "y": 299,
+   "w": 464,
+   "h": 37
+  },
+  "buttons": [
+   {
+    "text": "保存",
+    "hidden": false,
+    "box": {
+     "x": 488,
+     "y": 452,
+     "w": 55,
+     "h": 35
+    }
+   },
+   {
+    "text": "退出登录",
+    "hidden": false,
+    "box": {
+     "x": 553,
+     "y": 452,
+     "w": 81,
+     "h": 35
+    }
+   }
+  ],
+  "status": "",
+  "logoutHidden": false
+ },
+ "badUrl": {
+  "text": "请输入 HTTP(S) 网址，或留空",
+  "state": "failure",
+  "url": "javascript:alert(1)"
+ },
+ "mobile": {
+  "label": "mobile",
+  "provider": "native",
+  "sections": [
+   {
+    "id": "settings-profile",
+    "title": "个人资料",
+    "rows": []
+   },
+   {
+    "id": "settings-cache",
+    "title": "缓存",
+    "rows": [
+     "搜索缓存",
+     "数据缓存",
+     "全部缓存"
+    ]
+   },
+   {
+    "id": "settings-about",
+    "title": "关于",
+    "rows": [
+     "博客框架",
+     "主题版本"
+    ]
+   }
+  ],
+  "formHidden": false,
+  "values": [
+   {
+    "name": "name",
+    "value": "九月二号"
+   },
+   {
+    "name": "email",
+    "value": "september+new@example.com"
+   },
+   {
+    "name": "url",
+    "value": "https://example.org/me"
+   }
+  ],
+  "avatar": {
+   "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+   "hidden": false,
+   "box": {
+    "x": 17,
+    "y": 169,
+    "w": 96,
+    "h": 96
+   }
+  },
+  "profileBox": {
+   "x": 17,
+   "y": 169,
+   "w": 356,
+   "h": 376
+  },
+  "inputBox": {
+   "x": 115,
+   "y": 290,
+   "w": 258,
+   "h": 38
+  },
+  "buttons": [
+   {
+    "text": "保存",
+    "hidden": false,
+    "box": {
+     "x": 115,
+     "y": 450,
+     "w": 56,
+     "h": 36
+    }
+   },
+   {
+    "text": "退出登录",
+    "hidden": false,
+    "box": {
+     "x": 182,
+     "y": 450,
+     "w": 83,
+     "h": 36
+    }
+   }
+  ],
+  "status": "",
+  "logoutHidden": false
+ },
+ "afterLogout": {
+  "label": "afterLogout",
+  "provider": "native",
+  "sections": [
+   {
+    "id": "settings-profile",
+    "title": "个人资料",
+    "rows": []
+   },
+   {
+    "id": "settings-cache",
+    "title": "缓存",
+    "rows": [
+     "搜索缓存",
+     "数据缓存",
+     "全部缓存"
+    ]
+   },
+   {
+    "id": "settings-about",
+    "title": "关于",
+    "rows": [
+     "博客框架",
+     "主题版本"
+    ]
+   }
+  ],
+  "formHidden": false,
+  "values": [
+   {
+    "name": "name",
+    "value": ""
+   },
+   {
+    "name": "email",
+    "value": ""
+   },
+   {
+    "name": "url",
+    "value": ""
+   }
+  ],
+  "avatar": {
+   "src": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+   "hidden": false,
+   "box": {
+    "x": 328,
+    "y": 179,
+    "w": 96,
+    "h": 96
+   }
+  },
+  "profileBox": {
+   "x": 328,
+   "y": 179,
+   "w": 624,
+   "h": 364
+  },
+  "inputBox": {
+   "x": 488,
+   "y": 299,
+   "w": 464,
+   "h": 37
+  },
+  "buttons": [
+   {
+    "text": "保存",
+    "hidden": false,
+    "box": {
+     "x": 488,
+     "y": 452,
+     "w": 55,
+     "h": 35
+    }
+   },
+   {
+    "text": "退出登录",
+    "hidden": false,
+    "box": {
+     "x": 553,
+     "y": 452,
+     "w": 81,
+     "h": 35
+    }
+   }
+  ],
+  "status": "",
+  "logoutHidden": false
+ },
+ "logoutMe": {
+  "avatar": "",
+  "email": "",
+  "id": 0,
+  "is_admin": false,
+  "nickname": "",
+  "role": "",
+  "username": "",
+  "verified": false,
+  "website": ""
+ },
+ "reference": {
+  "sections": [
+   "settings-profile",
+   "settings-cache",
+   "settings-about"
+  ],
+  "profileBox": {
+   "x": 328,
+   "y": 179,
+   "w": 624,
+   "h": 364
+  },
+  "avatarBox": {
+   "x": 328,
+   "y": 179,
+   "w": 96,
+   "h": 96
+  },
+  "inputBox": {
+   "x": 488,
+   "y": 299,
+   "w": 464,
+   "h": 37
+  },
+  "buttons": [
+   {
+    "text": "保存",
+    "box": {
+     "x": 488,
+     "y": 452,
+     "w": 55,
+     "h": 35
+    }
+   },
+   {
+    "text": "退出登录",
+    "box": {
+     "x": 553,
+     "y": 452,
+     "w": 81,
+     "h": 35
+    }
+   }
+  ]
+ },
+ "errors": [
+  "404 http://127.0.0.1:8131/about/",
+  "404 http://127.0.0.1:8131/friends",
+  "404 https://gravatar.com/avatar/f2fcfd9d0225bb6994d26b5047b79736eca74ed30b308639b5fc75019ad92fd8?s=160&r=g&d=404",
+  "404 http://127.0.0.1:8131/about/",
+  "404 http://127.0.0.1:8131/friends",
+  "404 https://gravatar.com/avatar/b0616f77fababfaf8f7c68156e241bf785bdc46817f3706d089fda3ab50fd224?s=160&r=g&d=404",
+  "404 https://gravatar.com/avatar/b0616f77fababfaf8f7c68156e241bf785bdc46817f3706d089fda3ab50fd224?s=160&r=g&d=404",
+  "400 http://127.0.0.1:8131/api/auth/profile",
+  "404 http://127.0.0.1:8131/about/",
+  "404 http://127.0.0.1:8131/friends",
+  "404 https://gravatar.com/avatar/b0616f77fababfaf8f7c68156e241bf785bdc46817f3706d089fda3ab50fd224?s=160&r=g&d=404",
+  "404 https://gravatar.com/avatar/b0616f77fababfaf8f7c68156e241bf785bdc46817f3706d089fda3ab50fd224?s=160&r=g&d=404",
+  "404 http://127.0.0.1:8131/about/",
+  "404 http://127.0.0.1:8131/friends"
+ ]
+}

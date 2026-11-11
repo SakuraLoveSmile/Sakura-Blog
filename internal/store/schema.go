@@ -298,6 +298,7 @@ var tableDDL = map[string]string{
 		display_name TEXT NOT NULL DEFAULT '',
 		email TEXT NOT NULL DEFAULT '',
 		avatar TEXT NOT NULL DEFAULT '',
+		website TEXT NOT NULL DEFAULT '',
 		totp_secret TEXT NOT NULL DEFAULT '',
 		totp_recovery_codes TEXT NOT NULL DEFAULT '[]',
 		auth_secret TEXT NOT NULL DEFAULT '',

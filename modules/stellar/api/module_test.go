@@ -38,6 +38,7 @@ func TestStellarPublicRouteOwnershipSnapshot(t *testing.T) {
 		"POST /api/auth/register",
 		"POST /api/auth/login",
 		"GET /api/auth/me",
+		"POST /api/auth/profile",
 		"POST /api/auth/logout",
 		"POST /api/auth/upgrade",
 		"GET /api/comments",

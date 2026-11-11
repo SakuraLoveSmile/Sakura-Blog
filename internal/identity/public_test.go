@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -309,6 +310,7 @@ func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	auth.GET("/me", routes.Me)
 	auth.POST("/logout", routes.Logout)
 	auth.POST("/upgrade", routes.Upgrade)
+	auth.POST("/profile", routes.Profile)
 	t.Cleanup(func() { st.Close() })
 	return r, st
 }
@@ -554,5 +556,102 @@ func TestBannedReaderAuthIsolation(t *testing.T) {
 	}, nil)
 	if relogin.Code != http.StatusOK {
 		t.Fatalf("re-login status = %d, body=%s", relogin.Code, relogin.Body.String())
+	}
+}
+
+// publicTestReader 建一个读者账号并登录，返回可复用的会话 cookie。
+func publicTestReader(t *testing.T, r *gin.Engine, st *store.Store) (*store.User, *http.Cookie) {
+	t.Helper()
+	hash, err := store.HashPassword("reader-pass")
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := &store.User{Username: "profile-reader", PasswordHash: hash, AuthSecret: store.GenerateAuthSecret(), Role: store.RoleReader}
+	if err := st.CreateUser(u); err != nil {
+		t.Fatal(err)
+	}
+	response := publicRequest(r, http.MethodPost, "/api/auth/login", map[string]string{"username": u.Username, "password": "reader-pass"}, nil)
+	if response.Code != http.StatusOK {
+		t.Fatalf("login: status=%d body=%s", response.Code, response.Body.String())
+	}
+	cookies := response.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("login cookies = %d, want 1", len(cookies))
+	}
+	return u, cookies[0]
+}
+
+// 个人资料接口：未登录拒绝、登录后读写 昵称/邮箱/网址，并按字段返回校验错误。
+func TestPublicProfileSavesReaderFields(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	anonymous := publicRequest(r, http.MethodPost, "/api/auth/profile", map[string]string{"name": "路人"}, nil)
+	if anonymous.Code != http.StatusUnauthorized || !bytes.Contains(anonymous.Body.Bytes(), []byte("请先登录")) {
+		t.Fatalf("anonymous profile: status=%d body=%s", anonymous.Code, anonymous.Body.String())
+	}
+
+	u, cookie := publicTestReader(t, r, st)
+	saved := publicRequest(r, http.MethodPost, "/api/auth/profile", map[string]string{
+		"name":  "  九月  ",
+		"email": "  September@Example.com ",
+		"url":   "example.com/me",
+	}, cookie)
+	if saved.Code != http.StatusOK {
+		t.Fatalf("save profile: status=%d body=%s", saved.Code, saved.Body.String())
+	}
+	var savedBody publicAuthResponse
+	if err := json.Unmarshal(saved.Body.Bytes(), &savedBody); err != nil || !savedBody.OK {
+		t.Fatalf("save response: %+v / %v", savedBody, err)
+	}
+	if savedBody.User.Nickname != "九月" || savedBody.User.Email != "september@example.com" || savedBody.User.Website != "https://example.com/me" {
+		t.Fatalf("save response fields: %+v", savedBody.User)
+	}
+	stored, err := st.GetUserByUsername(u.Username)
+	if err != nil || stored == nil {
+		t.Fatalf("reload user: %v", err)
+	}
+	if stored.DisplayName != "九月" || stored.Email != "september@example.com" || stored.Website != "https://example.com/me" {
+		t.Fatalf("stored fields = %q / %q / %q", stored.DisplayName, stored.Email, stored.Website)
+	}
+	me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, cookie)
+	var meBody struct {
+		Verified bool   `json:"verified"`
+		Website  string `json:"website"`
+		Nickname string `json:"nickname"`
+	}
+	if err := json.Unmarshal(me.Body.Bytes(), &meBody); err != nil || !meBody.Verified || meBody.Website != "https://example.com/me" || meBody.Nickname != "九月" {
+		t.Fatalf("me after save: %+v / %v", meBody, err)
+	}
+
+	// 空邮箱与空网址允许保存（清空），昵称仍是必填。
+	cleared := publicRequest(r, http.MethodPost, "/api/auth/profile", map[string]string{"name": "九月", "email": "", "url": ""}, cookie)
+	if cleared.Code != http.StatusOK {
+		t.Fatalf("clear optional fields: status=%d body=%s", cleared.Code, cleared.Body.String())
+	}
+	if stored, err = st.GetUserByUsername(u.Username); err != nil || stored.Email != "" || stored.Website != "" {
+		t.Fatalf("cleared fields = %q / %q (%v)", stored.Email, stored.Website, err)
+	}
+
+	for _, tc := range []struct{ name, body, field string }{
+		{"empty name", `{"name":"","email":"","url":""}`, "name"},
+		{"long name", `{"name":"` + strings.Repeat("字", 81) + `","email":"","url":""}`, "name"},
+		{"bad email", `{"name":"九月","email":"not-an-email","url":""}`, "email"},
+		{"bad url", `{"name":"九月","email":"","url":"javascript:alert(1)"}`, "url"},
+	} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/profile", bytes.NewReader([]byte(tc.body)))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(cookie)
+		r.ServeHTTP(w, req)
+		var body struct {
+			OK    bool   `json:"ok"`
+			Error string `json:"error"`
+			Field string `json:"field"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+			t.Fatalf("%s: decode %s: %v", tc.name, w.Body.String(), err)
+		}
+		if w.Code != http.StatusBadRequest || body.Field != tc.field || body.Error == "" {
+			t.Fatalf("%s: status=%d body=%+v, want 400 field=%s", tc.name, w.Code, body, tc.field)
+		}
 	}
 }
