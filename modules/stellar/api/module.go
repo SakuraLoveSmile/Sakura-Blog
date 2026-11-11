@@ -49,6 +49,7 @@ func Mount(r *gin.Engine, d Dependencies) error {
 	auth.POST("/register", identityRoutes.Register)
 	auth.POST("/login", identityRoutes.Login)
 	auth.GET("/me", identityRoutes.Me)
+	auth.POST("/profile", identityRoutes.Profile)
 	auth.POST("/logout", identityRoutes.Logout)
 	auth.POST("/upgrade", identityRoutes.Upgrade)
 

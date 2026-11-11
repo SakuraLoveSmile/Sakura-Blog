@@ -1,6 +1,6 @@
 # BLG-20261110-06：友链分区标题悬停色块与链接下划线
 
-- 状态：待体验
+- 状态：待体验（随 v2.1.6 发布并上线生产，见 `docs/plans/release-2.1.6.md`）
 - 分支：`codex/fix/20261110-BLG-20261110-06-friends-heading-hover`
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/Blog/20261110-fix-BLG-20261110-06-friends-heading-hover`
 - 基点：`dev` @ `11301e8e`

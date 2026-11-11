@@ -17,19 +17,27 @@ type FriendsConfig struct {
 
 const DefaultSnapshotProvider = "https://image.thum.io/get/width/1280/crop/720/{url}"
 
+// LinkLabel 友链角标（文案 + 6 位 hex 颜色，不带 #）。
+type LinkLabel struct {
+	Name  string `yaml:"name" json:"name"`
+	Color string `yaml:"color" json:"color"`
+}
+
 // LinkItem 友链条目（名称 / 跳转 / 头像 / 描述）。
-// RSS/Label/Color 为友链动态聚合（/friends 页 ds-friends_and_posts）扩展字段：
+// RSS/Label/Color/Labels 为友链动态聚合（/friends 页 ds-friends_and_posts）扩展字段：
 //   - RSS：友链的 RSS/Atom 订阅地址，非空时后端 friends 聚合器抓取最新文章。
-//   - Label/Color：友链分类标签与配色（16 进制不带 #，对齐 friends_and_posts.js label 渲染）。
+//   - Label/Color：首枚角标与配色（16 进制不带 #，对齐 friends_and_posts.js label 渲染）。
+//   - Labels：第 2、3 枚附加角标，按顺序排在首枚之后。
 type LinkItem struct {
-	Name     string `yaml:"name" json:"name"`
-	URL      string `yaml:"url" json:"url"`
-	Avatar   string `yaml:"avatar" json:"avatar"`
-	Snapshot string `yaml:"snapshot" json:"snapshot"`
-	Desc     string `yaml:"desc" json:"desc"`
-	RSS      string `yaml:"rss" json:"rss"`
-	Label    string `yaml:"label" json:"label"`
-	Color    string `yaml:"color" json:"color"`
+	Name     string      `yaml:"name" json:"name"`
+	URL      string      `yaml:"url" json:"url"`
+	Avatar   string      `yaml:"avatar" json:"avatar"`
+	Snapshot string      `yaml:"snapshot" json:"snapshot"`
+	Desc     string      `yaml:"desc" json:"desc"`
+	RSS      string      `yaml:"rss" json:"rss"`
+	Label    string      `yaml:"label" json:"label"`
+	Color    string      `yaml:"color" json:"color"`
+	Labels   []LinkLabel `yaml:"labels" json:"labels"`
 	// Unavailable is derived from the persisted health check and status label;
 	// it is never read from or written to site configuration.
 	Unavailable bool `yaml:"-" json:"-"`

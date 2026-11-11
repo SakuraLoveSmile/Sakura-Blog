@@ -1,5 +1,10 @@
 (function () {
-  var SUPPORTED_PROVIDERS = ['artalk', 'waline', 'twikoo'];
+  var SUPPORTED_PROVIDERS = ['artalk', 'waline', 'twikoo', 'native'];
+  // 原生评论（站点未接入第三方评论后端）的读者身份来自站点账号，资料读写走 /api/auth。
+  var NATIVE_PROVIDER = 'native';
+  var SESSION_ENDPOINT = '/api/auth/me';
+  var PROFILE_ENDPOINT = '/api/auth/profile';
+  var LOGOUT_ENDPOINT = '/api/auth/logout';
   var SETTINGS_ICON = 'default:settings';
   var PROFILE_ICON = 'default:profile';
   var GRAVATAR_BASE_URL = window.stellarClientData.ctx.services.gravatar.baseUrl.replace(/\/+$/, '') + '/';
@@ -103,6 +108,7 @@
 
   function readIdentity(provider) {
     var id = String(provider || '').toLowerCase();
+    if (id === NATIVE_PROVIDER) return readNativeIdentity();
     var identity = emptyIdentity(id);
     var value = null;
     if (id === 'artalk') {
@@ -133,6 +139,64 @@
     return identity;
   }
 
+  function requestJSON(path, options) {
+    var fetchApi = window.fetch;
+    if (typeof fetchApi !== 'function') return Promise.resolve(null);
+    var init = Object.assign({ credentials: 'same-origin' }, options || {});
+    return Promise.resolve(fetchApi(path, init)).then(function (response) {
+      return Promise.resolve(response.json()).then(function (body) {
+        return { status: response.status, ok: !!response.ok, body: body };
+      }, function () {
+        return { status: response.status, ok: !!response.ok, body: null };
+      });
+    }, function () { return null; });
+  }
+
+  function readNativeIdentity() {
+    return requestJSON(SESSION_ENDPOINT, { method: 'GET' }).then(function (result) {
+      var identity = emptyIdentity(NATIVE_PROVIDER);
+      identity.supported = true;
+      var body = result && result.body;
+      if (!result || !result.ok || !body || !body.verified) return identity;
+      identity.name = cleanText(body.nickname, 80);
+      identity.email = cleanText(body.email, 254);
+      identity.url = cleanHttpUrl(body.website) || '';
+      identity.avatar = cleanHttpUrl(body.avatar) || '';
+      return identity;
+    });
+  }
+
+  function writeNativeIdentity(fields) {
+    var payload = {
+      name: typeof fields?.name === 'string' ? fields.name.trim() : '',
+      email: typeof fields?.email === 'string' ? fields.email.trim() : '',
+      url: typeof fields?.url === 'string' ? fields.url.trim() : ''
+    };
+    return requestJSON(PROFILE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (result) {
+      if (!result) return { ok: false, partial: false };
+      var body = result.body || {};
+      if (result.ok) return { ok: true, partial: false };
+      var outcome = { ok: false, partial: false };
+      if (typeof body.error === 'string' && body.error) outcome.message = body.error;
+      if (typeof body.field === 'string' && body.field) outcome.field = body.field;
+      if (result.status === 401) outcome.unauthenticated = true;
+      return outcome;
+    });
+  }
+
+  function logoutNative() {
+    return requestJSON(LOGOUT_ENDPOINT, { method: 'POST' }).then(function (result) {
+      if (!result || !result.ok) return { ok: false, partial: false };
+      // 退出后整页重载：评论区的登录态与身份栏同源，需按新状态重新渲染。
+      try { window.location?.reload?.(); } catch (error) {}
+      return { ok: true, partial: false };
+    });
+  }
+
   function dispatchChange(provider) {
     try {
       window.dispatchEvent?.(new CustomEvent('stellar:profile-change', { detail: { provider: provider } }));
@@ -149,6 +213,7 @@
 
   function writeIdentity(provider, fields) {
     var id = String(provider || '').toLowerCase();
+    if (id === NATIVE_PROVIDER) return writeNativeIdentity(fields);
     if (!SUPPORTED_PROVIDERS.includes(id)) return { ok: false, unsupported: true, partial: false };
     var rawName = typeof fields?.name === 'string' ? fields.name.trim() : '';
     var name = cleanText(rawName);
@@ -180,6 +245,7 @@
 
   function logout(provider) {
     var id = String(provider || '').toLowerCase();
+    if (id === NATIVE_PROVIDER) return logoutNative();
     if (!SUPPORTED_PROVIDERS.includes(id)) return { ok: false, unsupported: true, partial: false };
     var targets = id === 'artalk'
       ? [[localStore, 'ArtalkUser']]
@@ -249,7 +315,9 @@
     widgetRenderRevisions.set(widget, revision);
     var settingsName = widget.dataset.settingsLabel || widget.getAttribute('aria-label') || 'Settings';
     var identityEnabled = widget.dataset.profileIdentityEnabled === 'true';
-    var identity = readIdentity(widget.dataset.profileProvider);
+    var identity = identityEnabled
+      ? readIdentity(widget.dataset.profileProvider)
+      : emptyIdentity(widget.dataset.profileProvider);
     var hasIdentity = identityEnabled && identity.supported && !!identity.name;
     var name = hasIdentity ? identity.name : settingsName;
     var nameElement = widget.querySelector('.settings-widget__name');

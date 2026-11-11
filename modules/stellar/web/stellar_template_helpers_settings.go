@@ -7,8 +7,14 @@ import (
 )
 
 func (r stellarTemplateRenderer) settingsPage(d *StellarRenderData) template.HTML {
-	provider := stellarText(stellarGet(d.Stellar.Theme, "comments.provider"))
-	supported := provider == "artalk" || provider == "waline" || provider == "twikoo"
+	// 未配置第三方评论后端时，评论身份来自站点自己的读者账号（/api/auth），
+	// 与 artalk/waline/twikoo 一样具备「个人资料」自助维护能力。
+	provider := strings.ToLower(stellarText(stellarGet(d.Stellar.Theme, "comments.provider")))
+	native := provider == "" || provider == "native"
+	if native {
+		provider = "native"
+	}
+	supported := native || provider == "artalk" || provider == "waline" || provider == "twikoo"
 	fallback := stellarURL(d.Stellar.Root, stellarGet(d.Stellar.Theme, "fallbacks.avatar"))
 	var b strings.Builder
 	fmt.Fprintf(&b, `<article class="md-text content settings-page" data-provider="%s" data-fallback-avatar="%s"`, stellarEscape(provider), stellarEscape(fallback))

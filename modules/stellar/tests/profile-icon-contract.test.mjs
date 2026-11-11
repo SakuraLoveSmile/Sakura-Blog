@@ -75,3 +75,53 @@ test('身份头像失败回退到profile图标，退出后恢复设置图标', (
   assert.equal(f.name.textContent, '设置');
   assert.equal(f.icon(), settingsIcon);
 });
+
+test('原生评论身份走站点账号接口：读资料、保存资料、未登录返回服务端提示', async () => {
+  const f = fixture(true);
+  const calls = [];
+  const jsonResponse = (status, body) => Promise.resolve({
+    ok: status >= 200 && status < 300,
+    status,
+    json: () => Promise.resolve(body)
+  });
+  f.window.fetch = (path, init) => {
+    calls.push({ path, init });
+    if (path === '/api/auth/me') {
+      return jsonResponse(200, { id: 7, verified: true, nickname: '九月', email: 'september@example.com', avatar: '', website: 'https://example.com' });
+    }
+    if (path === '/api/auth/profile') {
+      return jsonResponse(200, { ok: true });
+    }
+    return jsonResponse(404, {});
+  };
+
+  const identity = await f.window.stellarProfile.readIdentity('native');
+  assert.equal(identity.supported, true);
+  assert.equal(identity.name, '九月');
+  assert.equal(identity.email, 'september@example.com');
+  assert.equal(identity.url, 'https://example.com/');
+  assert.equal(calls[0].path, '/api/auth/me');
+  assert.equal(calls[0].init.credentials, 'same-origin');
+
+  const saved = await f.window.stellarProfile.writeIdentity('native', { name: ' 九月 ', email: ' september@example.com ', url: ' example.com ' });
+  assert.equal(saved.ok, true);
+  const profileCall = calls.find(call => call.path === '/api/auth/profile');
+  assert.equal(profileCall.init.method, 'POST');
+  assert.deepEqual(JSON.parse(profileCall.init.body), { name: '九月', email: 'september@example.com', url: 'example.com' });
+
+  f.window.fetch = path => {
+    calls.push({ path });
+    if (path === '/api/auth/profile') return jsonResponse(401, { error: '请先登录后再保存个人资料' });
+    return jsonResponse(200, { verified: false });
+  };
+  const anonymous = await f.window.stellarProfile.readIdentity('native');
+  assert.equal(anonymous.name, '');
+  assert.equal(anonymous.supported, true);
+  const rejected = await f.window.stellarProfile.writeIdentity('native', { name: '路人', email: '', url: '' });
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.unauthenticated, true);
+  assert.match(rejected.message, /请先登录/);
+
+  const loggedOut = await f.window.stellarProfile.logout('native');
+  assert.equal(loggedOut.ok, true);
+});

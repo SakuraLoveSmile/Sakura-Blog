@@ -477,7 +477,7 @@ const STATUS_BG_ALLOWLIST: Record<string, { pattern: RegExp; reason: string }[]>
  * 状态/角色胶囊的 inline backgroundColor 不允许在这里豁免。
  */
 const INLINE_BG_ALLOWLIST: Record<string, RegExp[]> = {
-  "modules/console/web/src/modules/friends/FriendList.vue": [/normalizeColor\(l\.color\)/],
+  "modules/console/web/src/modules/friends/FriendList.vue": [/normalizeColor\((?:l|item)\.color\)/],
   "modules/console/web/src/modules/dashboard/widgets/CategoryDonutWidget.vue": [/a\.color/],
   "modules/console/web/src/modules/dashboard/widgets/HourlyChartWidget.vue": [/bgColors/, /rgba\(28, 28, 30, 0\.92\)/],
   "modules/console/web/src/modules/settings/SettingColorEditor.vue": [/backgroundColor: preview/, /backgroundColor: color\.value/],
