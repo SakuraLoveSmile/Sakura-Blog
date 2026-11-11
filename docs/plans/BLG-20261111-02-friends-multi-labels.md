@@ -6,7 +6,7 @@
 - 权威记录：本文件；实现细节以代码为准
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-blog/20261111-feat-BLG-20261111-02-friends-multi-labels`
 - 基线 / 分支 / 合入目标：`dev` / `codex/feat/20261111-BLG-20261111-02-friends-multi-labels` / `dev`
-- 当前 HEAD：`15e8fd4e`（worktree 创建时）
+- 当前 HEAD：`b90d7e93`（合入 dev 后）
 - 运行资源：本地 `-dev` 服务（`:8097`、隔离 root 与 DB），验收后已停止并删除临时目录
 
 ## 目标与范围
@@ -55,17 +55,18 @@
 | 2026-11-11 | 同上 | 同上 | 访问 `/friends`（1280 / 390） | `after-friends-page-1280/390.webp`；日志：`public labels: ["社区先锋 老友 伙伴", "老友 推荐", "朋友"]` |
 | 2026-11-11 | 同候选 | worktree | `make test`（二次、三次，最后一次含 Console 改动） | 全绿 |
 | 2026-11-11 | 同上 | 同上 | `make console` | Console/UC 产物构建成功（浏览器验收用的就是这份产物） |
+| 2026-11-11 | `b90d7e93` | feature worktree → 根 `dev` | `make merge-check` | 分支测试、合入 `dev`（fast-forward）、合并后组合态 `make test` 全部通过 |
 
 ## 提交与集成
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| 待提交 | 友链多角标（数据层 + API + Console + 前台渲染 + 文档） | `make test` + 浏览器实拍 | 未合并 |
+| `b90d7e93` | 友链多角标（数据层 + API + Console + 前台渲染 + 文档） | `make test` + 浏览器实拍 | 已合入 `dev`（`make merge-check` 组合态复验通过），未推送 |
 
 ## 交付与恢复
 
 - 体验入口和操作步骤：Console → 友链 → 编辑 → 「角标（最多 3 枚）」；前台 `/friends`。
-- 尚未完成 / 尚未验证：未在真实站点做深浅色外观各跑一遍（前台文字对比度沿用主题既有规则）；未验证导入友链是否应把 issue 多标签映射成多角标（本次明确不做）。
+- 尚未完成 / 尚未验证：未在真实站点做深浅色外观各跑一遍（前台文字对比度沿用主题既有规则）；未验证导入友链是否应把 issue 多标签映射成多角标（本次明确不做）；`{% friends %}`（不带 `posts:true`）仍由上游 `friends.js` 只渲染首枚角标，本次 `/friends` 页面走 `friends_and_posts.js` 不受影响。
 - 用户确认：未确认（待体验）。
 - 下一步和恢复任务时首先核对的内容：worktree 路径、HEAD、未提交改动、`make test` 结果、`docs/baselines/BLG-20261111-02-friends-multi-labels/` 证据是否仍对应当前产物。
 - 回退 / 数据保留：`labels` 为新增可空列，回退代码后 `label`/`color` 仍有效；`labels` 数据保留但不再渲染。
