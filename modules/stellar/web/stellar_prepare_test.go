@@ -234,3 +234,40 @@ func TestPreparePublicNativeOverridesAndWidgetDeletion(t *testing.T) {
 		t.Fatal("partial descriptor lost default layout")
 	}
 }
+
+// 设置页沿用上游固定 tech：全站 story 时也不继承标题居中与首行缩进。
+func TestPrepareStellarSettingsProfileKeepsTechTypography(t *testing.T) {
+	storyFixture := func(t *testing.T, layout, profile string) *settings.ViewData {
+		t.Helper()
+		v2, err := config.ValidateStellarV2(map[string]any{"article": map[string]any{"style": "story"}}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data := &settings.ViewData{
+			Site: &settings.Site{Title: "Strict site", URL: "https://blog.example.test/blog/", StellarV2: v2},
+			Page: &settings.Page{Title: "Fixture", Layout: layout, Lang: "en", CanonicalURL: "https://blog.example.test/blog/fixture"},
+			Stellar: &settings.StellarRenderContext{Version: 2, Profile: profile, Input: stellarmodels.Input{
+				Page:        map[string]any{"layout": layout, "content": "<p>body</p>"},
+				FrontMatter: map[string]any{},
+			}},
+		}
+		return data
+	}
+
+	settingsData := storyFixture(t, "settings", "settings")
+	got, err := PrepareStellar(settingsData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Stellar.ArticleStyle != "tech" || got.Stellar.Indent {
+		t.Fatalf("settings article style = %q indent = %v, want tech/false", got.Stellar.ArticleStyle, got.Stellar.Indent)
+	}
+
+	plain, err := PrepareStellar(storyFixture(t, "page", "page"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plain.Stellar.ArticleStyle != "story" || !plain.Stellar.Indent {
+		t.Fatalf("content page article style = %q indent = %v, want story/true", plain.Stellar.ArticleStyle, plain.Stellar.Indent)
+	}
+}

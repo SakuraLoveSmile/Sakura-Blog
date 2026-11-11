@@ -155,6 +155,10 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 	if p.PageType == "index" {
 		p.ArticleStyle = ""
 	}
+	// 设置页是工具页：沿用上游固定 tech，不继承全站叙事排版（标题居中、首行缩进）。
+	if p.Profile == "settings" {
+		p.ArticleStyle = "tech"
+	}
 	indent := prepString(prepGet(input.FrontMatter, "article.paragraphIndent"))
 	if indent == "" {
 		indent = prepString(prepGet(theme, "article.paragraphIndent"))
