@@ -190,6 +190,30 @@
     }, function () { return null; });
   }
 
+  // 沙箱 iframe（Console 预览）是不透明源，向站点接口发同源请求必然被 CORS 拦下并报错，
+  // 这里直接跳过网络，只用本地资料。
+  function isOpaqueOrigin() {
+    try {
+      var origin = window.location && window.location.origin;
+      return !origin || origin === 'null';
+    } catch (error) { return true; }
+  }
+
+  // 会话读取在整页生命周期内只发一次：挂件会在 input/click/导航等事件后重渲染，
+  // 每次都请求 /api/auth/me 既浪费也可能触发限流。
+  var sessionPromise = null;
+  function readSession(force) {
+    if (!force && sessionPromise) return sessionPromise;
+    sessionPromise = isOpaqueOrigin()
+      ? Promise.resolve(null)
+      : requestJSON(SESSION_ENDPOINT, { method: 'GET' });
+    return sessionPromise;
+  }
+
+  function invalidateSession() {
+    sessionPromise = null;
+  }
+
   // 未登录读者的资料与上游一致存在浏览器本地，键名与评论区匿名身份共用。
   function readLocalIdentity() {
     var identity = emptyIdentity(NATIVE_PROVIDER);
@@ -226,7 +250,7 @@
   }
 
   function readNativeIdentity() {
-    return requestJSON(SESSION_ENDPOINT, { method: 'GET' }).then(function (result) {
+    return readSession().then(function (result) {
       var body = result && result.body;
       if (result && result.ok && body && body.verified) {
         var identity = emptyIdentity(NATIVE_PROVIDER);
@@ -249,7 +273,7 @@
       email: typeof fields?.email === 'string' ? fields.email.trim() : '',
       url: typeof fields?.url === 'string' ? fields.url.trim() : ''
     };
-    return requestJSON(SESSION_ENDPOINT, { method: 'GET' }).then(function (session) {
+    return readSession().then(function (session) {
       var body = session && session.body;
       if (!session || !session.ok || !body || !body.verified) return writeLocalIdentity(fields);
       return requestJSON(PROFILE_ENDPOINT, {
@@ -273,10 +297,11 @@
   }
 
   function logoutNative() {
-    return requestJSON(SESSION_ENDPOINT, { method: 'GET' }).then(function (session) {
+    return readSession().then(function (session) {
       var body = session && session.body;
       if (session && session.ok && body && body.verified) {
         return requestJSON(LOGOUT_ENDPOINT, { method: 'POST' }).then(function (result) {
+          invalidateSession();
           if (!result || !result.ok) return { ok: false, partial: false };
           // 退出后整页重载：评论区的登录态与身份栏同源，需按新状态重新渲染。
           try { window.location?.reload?.(); } catch (error) {}

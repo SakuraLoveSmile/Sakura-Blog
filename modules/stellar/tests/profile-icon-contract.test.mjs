@@ -21,7 +21,7 @@ class Element extends EventTarget {
   replaceChildren(...children) { this.children = children; }
 }
 
-function fixture(identityEnabled = false) {
+function fixture(identityEnabled = false, origin = 'https://blog.example.test') {
   const avatar = new Element(), name = new Element(), widget = new Element();
   widget.dataset = { settingsLabel: '设置', profileProvider: 'artalk', profileIdentityEnabled: String(identityEnabled) };
   widget.querySelector = selector => ({ '.settings-widget__avatar': avatar, '.settings-widget__name': name })[selector];
@@ -30,6 +30,9 @@ function fixture(identityEnabled = false) {
   document.querySelectorAll = selector => selector === '.settings-widget' ? [widget] : [];
   document.createElement = () => new Element();
   const window = new Element(), values = new Map();
+  // 真实页面有同源 origin；沙箱 iframe 才是 "null"。缺省给一个正常站点源，
+  // 需要测不透明源的用例自行覆盖。
+  window.location = { origin };
   const storage = {
     getItem: key => values.get(key) || null,
     setItem: (key, value) => values.set(key, value),
@@ -164,4 +167,35 @@ test('原生评论身份：未登录照上游存本地资料，退出登录清�
   assert.equal(cleared.local, true);
   assert.equal(f.values.has('cmt_nick'), false);
   assert.equal((await f.window.stellarProfile.readIdentity('native')).name, '');
+});
+
+test('会话读取整页只请求一次，挂件重渲染不重复打接口', async () => {
+  const f = fixture(true);
+  const calls = [];
+  f.window.fetch = path => {
+    calls.push(path);
+    return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ id: 7, verified: true, nickname: '九月' }) });
+  };
+  await f.window.stellarProfile.readIdentity('native');
+  await f.window.stellarProfile.readIdentity('native');
+  await f.window.stellarProfile.readIdentity('native');
+  assert.deepEqual(calls.filter(path => path === '/api/auth/me').length, 1, '会话只应请求一次');
+});
+
+test('沙箱 iframe（不透明源）不发站点接口请求，只用本地资料', async () => {
+  const f = fixture(true, 'null');
+  const calls = [];
+  f.window.fetch = path => {
+    calls.push(path);
+    return Promise.reject(new TypeError('Failed to fetch'));
+  };
+  f.values.set('cmt_nick', '上杉九月');
+  const identity = await f.window.stellarProfile.readIdentity('native');
+  assert.deepEqual(calls, [], '不透明源不应发起任何请求');
+  assert.equal(identity.local, true);
+  assert.equal(identity.name, '上杉九月');
+  const saved = await f.window.stellarProfile.writeIdentity('native', { name: '九月', email: '', url: '' });
+  assert.equal(saved.ok, true);
+  assert.equal(saved.local, true);
+  assert.deepEqual(calls, [], '保存也应留在本地，不请求站点接口');
 });
