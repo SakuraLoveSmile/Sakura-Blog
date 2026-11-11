@@ -20,6 +20,7 @@ import (
 	"blog/internal/maintenance"
 	"blog/internal/safefetch"
 	tmpl "blog/internal/settings"
+	"blog/internal/store"
 )
 
 const (
@@ -128,17 +129,28 @@ func (a *Aggregator) buildBase() []Friend {
 				Feed:        []Post{},
 				rss:         strings.TrimSpace(it.RSS),
 			}
-			if it.Label != "" {
-				h, s, l := hexToHSL(it.Color)
-				f.Labels = append(f.Labels, Label{
-					Name: it.Label, Color: strings.TrimPrefix(it.Color, "#"),
-					Hue: h, Saturation: s, Lightness: l,
-				})
+			// 首枚角标来自 label/color，附加角标按配置顺序追加，总数不超过上限。
+			appendLabel(&f, it.Label, it.Color)
+			for _, extra := range it.Labels {
+				appendLabel(&f, extra.Name, extra.Color)
 			}
 			out = append(out, f)
 		}
 	}
 	return out
+}
+
+// appendLabel 追加一枚角标；空文案或超过上限时忽略。
+func appendLabel(f *Friend, name, color string) {
+	name = strings.TrimSpace(name)
+	if name == "" || len(f.Labels) >= store.MaxLinkLabels {
+		return
+	}
+	h, s, l := hexToHSL(color)
+	f.Labels = append(f.Labels, Label{
+		Name: name, Color: store.NormalizeLinkColor(color),
+		Hue: h, Saturation: s, Lightness: l,
+	})
 }
 
 // Start 启动后台聚合：立即异步抓取一次，之后按 currentInterval 周期刷新（配置热更后下周期生效）。

@@ -105,6 +105,8 @@ Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `
 - 用户已批准完整移植中的浅色、深色与自动配色以及四种外观预设。当前是否接通以代码与浏览器证据为准，不能再用旧的仅深色约定缩减本任务。
 - `/friends` 的宿主正文通过 `stellarFriendsContentHTML` 加上页面专属外壳，并在交换说明分区展示当前站点资料 YAML；包含站名、网址、绝对头像、简介与本站 Atom 订阅地址，使用既有 YAML 编码器和 Stellar 代码复制组件，存储的正文保持原样。Console 预览共用该处理，但资料取公开站点快照，资源仍用预览地址。居中标题辅助样式保存在 `friends-page.css`，只在友链页加载。
 
+友链角标最多 3 枚：首枚仍存 `links.label`/`color`（`linkwatch` 的自动「失效」标签与旧客户端依赖这两列），第 2、3 枚存 `links.labels` JSON；`/api/friends(-aggregated)` 的 `labels` 数组按「首枚 → 附加」顺序输出，前台 `friends_and_posts.js` 按颜色亮度选文字颜色。Console 只传 `label`/`color` 时保留既有附加角标。
+
 ## 编辑器与 shortcode
 
 shortcode 的解析、表单 schema 和重建路径必须共享一份 catalog：以后端 `internal/post/shortcode_catalog.go` 和各 renderer 实际接受的 named/positional 参数为准，而不是复制第二份前端字段表。

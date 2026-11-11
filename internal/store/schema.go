@@ -63,6 +63,7 @@ var tableDDL = map[string]string{
 		rss         TEXT NOT NULL DEFAULT '',
 		label       TEXT NOT NULL DEFAULT '',
 		color       TEXT NOT NULL DEFAULT '',
+		labels      TEXT NOT NULL DEFAULT '',
 		sort        INTEGER NOT NULL DEFAULT 0,
 		snapshot    TEXT NOT NULL DEFAULT '',
 		last_status INTEGER NOT NULL DEFAULT 0,
