@@ -29,6 +29,14 @@
   transform: skewX(-20deg);
 }
 
+/* story 文章在 main-*.css 里给正文 h2 统一 `margin: 2em 0 1.5em`，特异性高于上面的
+   分区标题规则，只用 `h2:not([class])` 把无 class 的标题补回居中。“失联友链”这类
+   组件自带 class 的标题因此左右外边距为 0、贴在左边。这里按同一特异性补回水平居中，
+   垂直间距仍沿用文章样式，其他标题不受影响。 */
+body[data-article-style] .md-text.content .friends-page h2 {
+  margin-inline: auto;
+}
+
 /* 保留标题锚点和目录目标，去掉技术文章标题原有的色块前缀。 */
 .md-text.content .friends-page h2 > .headerlink {
   position: absolute;
