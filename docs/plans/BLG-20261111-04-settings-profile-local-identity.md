@@ -55,7 +55,9 @@ BLG-20261111-03 把「个人资料」接到站点账号：读 `GET /api/auth/me`
 - PR #79 `dev` → `main` 合并（`afccb749`），CI 全绿（build/console/e2e/go/lint/security）。
 - PR #80 `main` → `release` 合并（`9e573071`），含 `image` 预构建与 `release-source` 来源校验。
 - 打 `v2.1.8` tag，`docker-release.yml` 成功；GHCR 已有 `2.1.8`/`2.1`/`2`/`latest`（manifest `sha256:26d0398…`），GitHub Release 已创建。
-- 未做：服务器 `docker compose pull && docker compose up -d`（需在宿主执行）。
+- 服务器升级（2026-11-12）：`/opt/1panel/docker/compose/blog` 的 `image` 改为 `:2.1.8`，`docker compose pull && up -d` 完成，容器 `Up`，`/readyz` HTTP 200。
+- 升级前备份：compose 备份为 `docker-compose.yml.before-2.1.8`；数据库用 SQLite 在线 backup API 做一致性快照到 `/opt/backup-manual/blog-20261112-130221.db`（`integrity_check = ok`，28 篇文章 / 1 用户）；容器启动时另生成 `blog-backup-20261112-050246.zip`。
+- 生产实测（真实浏览器，未登录）：保存显示「操作成功。」，`cmt_nick`/`cmt_email`/`cmt_link` 写入本地，头像取 gravatar，左栏挂件变「上杉九月 + 头像」；刷新后三项回填、挂件保持；全程无 `pageerror`，未调用 `POST /api/auth/profile`。
 
 ## 待办
 
@@ -63,5 +65,5 @@ BLG-20261111-03 把「个人资料」接到站点账号：读 `GET /api/auth/me`
 - [x] 隔离服务浏览器验收（未登录保存往返、登录态、退出、非法输入）
 - [x] `make merge-check` 合入 dev
 - [x] 发布 v2.1.8（镜像已产出并校验）
-- [ ] 服务器升级到 v2.1.8
-- [ ] 生产环境用读者身份实测保存
+- [x] 服务器升级到 v2.1.8
+- [x] 生产环境实测：未登录保存往返、刷新回填、挂件同步
