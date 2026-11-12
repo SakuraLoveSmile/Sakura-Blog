@@ -20,7 +20,7 @@
 ```yaml
 services:
   blog:
-    image: ghcr.io/sakuralovesmile/sakura-blog:2.0.4  # 固定具体版本，不以 latest 作为版本证据
+    image: ghcr.io/sakuralovesmile/sakura-blog:2.1.8  # 固定具体版本，不以 latest 作为版本证据
     container_name: blog
     restart: unless-stopped
     ports:
