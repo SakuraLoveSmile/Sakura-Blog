@@ -1,0 +1,94 @@
+{
+  "task": "BLG-20261117-01",
+  "date": "2026-11-17",
+  "status": "待体验",
+  "tag": "v2.1.10-beta01",
+  "releaseCommit": "16842e228251b01d08f7f6b3ad4cc3486057d994",
+  "image": "ghcr.io/sakuralovesmile/sakura-blog:2.1.10-beta01",
+  "imageDigest": "sha256:ea87971ed46bf3b6e38bee887ee2452dec2bbfafb84d4fb65ebca2573dde46e2",
+  "container": {
+    "state": "running",
+    "restartCount": 0,
+    "version": "2.1.10-beta01",
+    "revision": "16842e228251b01d08f7f6b3ad4cc3486057d994"
+  },
+  "imageHelpExitCode": 0,
+  "hostReadyz": {
+    "ok": true
+  },
+  "publicReadyz": {
+    "ok": true
+  },
+  "backup": {
+    "path": "/home/ubuntu/blog-release-v2.1.10-beta01-20261117-retry/site-before.tar.gz",
+    "sha256": "65b29e9bee646c83e2e9869c8c8c7ce62cb777789b2f2913da1d213b43aa55d2"
+  },
+  "pullTransport": "native Docker pull through temporary SSH reverse tunnel to existing Mac proxy; tunnel closed, remote port 7890 no listener",
+  "publicAssets": {
+    "base": "https://blog.xn--fhqths51enha.cn/console/",
+    "htmlSha256": "bf868e1bea92302dcbea75ab0065fcbaeb2529587bf4362974a09cbe3db765b2",
+    "assets": [
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/index-BalQhp0V.js",
+        "sha256": "1fd4afefe846be98f8ebb304c4142698f5d5ed72255a67dd995e4b02699c4de5",
+        "bytes": 155215
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/modules-DU6TM3pq.js",
+        "sha256": "d26ed7d9bbb80a99887b11e756f3975b782b2aa28d32d17fc5d4dc19748c6a8d",
+        "bytes": 19266
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/DashboardView-BydkiTop.js",
+        "sha256": "0e17f084e19da05e605e89d5c049c76bdcf6f84ab5610db40c5e114dcd9e4c37",
+        "bytes": 4711
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/registry-_uSTQ_dw.js",
+        "sha256": "0a66964dd1e46c2551e1eefdd7389315b4e567d13b9401989970771f5bf49c61",
+        "bytes": 81747
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/registry-Bq51x7pH.css",
+        "sha256": "c0bc1a4a61e4b25f37fc525f47b20584f0f173c31d22edacdeca7a9288967c78",
+        "bytes": 30543
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/useDashboardLayout-DeRtB1rx.js",
+        "sha256": "57d30d81556c9bd1bf1f6e3a96550db8581029f97605c16d3b9b0888fcc410fc",
+        "bytes": 92291
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/useDashboardLayout-BTXbkOyp.css",
+        "sha256": "870af0da346b0e9ec42f83127c66ddc508ffbe77b16c7a39c15d3864f48b3333",
+        "bytes": 36453
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/DashboardDesignerView-CIdgXaby.js",
+        "sha256": "8719ed85770b0cf3d829d5ff8a6944fd519ede4d524750dc28c2b4105e0c865c",
+        "bytes": 18323
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/DashboardDesignerView-1MTXLtus.css",
+        "sha256": "5aa670ece96996a715b4b3faa8c3beacfb2a1d2a38beefcc702525f745ef24c7",
+        "bytes": 5817
+      },
+      {
+        "url": "https://blog.xn--fhqths51enha.cn/console/assets/WidgetLibraryView-BUu6denf.js",
+        "sha256": "5ededd5584c7956cbfde90e02a988fe7d5a7f74314722ee34269acac8b5c8db7",
+        "bytes": 5245
+      }
+    ],
+    "checks": {
+      "叠放容器": true,
+      "按卡片大小": true,
+      "组件设置": true,
+      "回复内容": true
+    },
+    "allPassed": true
+  },
+  "limitations": [
+    "Production authenticated Console interaction was not tested; current CI and isolated local real UI were verified.",
+    "User visual acceptance pending."
+  ]
+}
