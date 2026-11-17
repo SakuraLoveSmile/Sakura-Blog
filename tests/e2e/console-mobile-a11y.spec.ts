@@ -872,6 +872,8 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     await page.screenshot({ path: testInfo.outputPath("comments-readable-390.png") });
 
     await page.goto("/console/dashboard");
+    // goto 只保证文档导航；等待 SPA 快捷入口渲染完成后再测量实际命中区。
+    await expect(page.locator(".dashboard-quick-links a").first()).toBeVisible();
     const links = await page.locator(".dashboard-quick-links a").evaluateAll((nodes) =>
       nodes.map((node) => {
         const rect = node.getBoundingClientRect();
