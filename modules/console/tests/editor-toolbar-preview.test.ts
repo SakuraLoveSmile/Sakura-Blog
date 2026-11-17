@@ -51,6 +51,7 @@ function mountToolbar() {
     vue: Vue,
     "@iconify/vue": { Icon: { render: () => null } },
     "@/components/ui": { VModal: { render: () => null }, VButton: { render: () => null } },
+    "@/components/editor/RawHtmlInsertModal.vue": { render: () => null },
     "@/modules/plugins/plugin-types": {
       PLUGIN_CATEGORIES: ["提示标注", "布局容器", "文艺装饰", "媒体播放", "数据图表", "GitHub"],
       previewInfoFor: () => ({ capability: "static", height: 180 }),
