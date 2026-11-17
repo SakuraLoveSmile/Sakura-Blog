@@ -35,12 +35,14 @@ body[data-article-style] .md-text.content .friends-page h2 { margin-inline: auto
 - [x] 同页其他分区标题（友链列表 / 如何交换友链？ / 本站信息）位置、尺寸不变。
 - [x] `article.style` = story / tech / 未设置三种情况均居中（静态复刻矩阵）。
 - [x] 失联卡片内容（头像、名称、角标、描述）不受影响。
-- [ ] 线上发布后的实际效果（待发布后复核）。
+- [x] 线上发布后的实际效果：v2.1.9 上线后 390 / 732 / 1280 三档「失联友链」中心偏移均为 0，页面无 pageerror。
 
 ## 证据
 
 - `before-732.png` / `after-732.png`：线上页面（732 CSS px、2x）失联分区注入修复规则前后。
-- `measurements.json`：各宽度标题中心偏移与静态复刻矩阵。
+- `production-732-section.png`：v2.1.9 上线后的生产页面失联分区。
+- `measurements.json`：各宽度标题中心偏移、静态复刻矩阵与生产复核结果。
 
 验证方式：Playwright 打开线上 `/friends`，测量 `.unavailable-title` 中心相对 `article.md-text.content` 中心的偏移，
-再注入本轮规则复测；线上 `friends-page.css` 与仓库 HEAD 逐字一致，因此注入等价于上线本改动。
+再注入本轮规则复测；修复发布前线上 `friends-page.css` 与仓库 HEAD 逐字一致，因此注入等价于上线本改动。
+v2.1.9 上线后按同一方法复测生产页面（`?v=6b957e02`）确认。

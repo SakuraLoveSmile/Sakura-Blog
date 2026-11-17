@@ -1,19 +1,61 @@
 {
   "target": "https://blog.xn--fhqths51enha.cn/friends",
-  "deployedFriendsPageCSS": "与仓库 HEAD 的 modules/stellar/web/assets/css/friends-page.css 逐字一致",
+  "deployedFriendsPageCSS": "修复发布前线上 friends-page.css 与仓库 HEAD 逐字一致（用于确认“注入等价于上线”）",
   "articleStyle": "story",
   "theme": "dark",
   "method": "Playwright 打开线上页面，等失联分区渲染后测量 h2 中心相对 article 中心的偏移；再注入本轮修复规则复测",
   "liveCenterDeltaPx": [
-    { "width": 390, "before": -96.9, "after": 0 },
-    { "width": 732, "before": -240.3, "after": 0 },
-    { "width": 1024, "before": -240.3, "after": 0 },
-    { "width": 1280, "before": -216.3, "after": 0 }
+    {
+      "width": 390,
+      "before": -96.9,
+      "after": 0
+    },
+    {
+      "width": 732,
+      "before": -240.3,
+      "after": 0
+    },
+    {
+      "width": 1024,
+      "before": -240.3,
+      "after": 0
+    },
+    {
+      "width": 1280,
+      "before": -216.3,
+      "after": 0
+    }
   ],
   "otherHeadings": "友链列表 / 如何交换友链？ / 本站信息 在 4 个宽度下前后 centreDelta 均为 0，高度不变",
   "staticReplicaArticleStyles": {
-    "story": { "before": -243.7, "after": 0 },
-    "tech": { "before": 0, "after": 0 },
-    "none": { "before": 0, "after": 0 }
+    "story": {
+      "before": -243.7,
+      "after": 0
+    },
+    "tech": {
+      "before": 0,
+      "after": 0
+    },
+    "none": {
+      "before": 0,
+      "after": 0
+    }
+  },
+  "production": {
+    "version": "v2.1.9",
+    "verifiedAt": "2026-11-12T14:43:00+08:00",
+    "cssHref": "/assets/css/friends-page.css?v=6b957e02",
+    "unavailableTitleCenterDeltaPx": {
+      "390": 0,
+      "732": 0,
+      "1280": 0
+    },
+    "otherHeadingsCenterDeltaPx": {
+      "390": 0,
+      "732": 0,
+      "1280": 0
+    },
+    "pageErrors": [],
+    "screenshot": "production-732-section.png"
   }
 }

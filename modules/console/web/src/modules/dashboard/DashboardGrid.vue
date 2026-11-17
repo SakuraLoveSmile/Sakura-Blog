@@ -11,7 +11,7 @@ import {
   type Breakpoint,
   type DashboardWidget,
 } from "./widgets/layout";
-import { getWidgetDefinition } from "./widgets/registry";
+import { getWidgetDefinition, resolveWidgetConfig } from "./widgets/registry";
 import UnknownWidget from "./widgets/UnknownWidget.vue";
 import WidgetSizeProvider from "./WidgetSizeProvider.vue";
 import "./dashboard.css";
@@ -28,6 +28,7 @@ const emit = defineEmits<{
   change: [widgets: DashboardWidget[]];
   remove: [instanceId: string];
   configure: [instanceId: string];
+  settings: [instanceId: string];
 }>();
 
 const gridEl = ref<HTMLElement | null>(null);
@@ -45,6 +46,25 @@ function readGridWidgets(): DashboardWidget[] {
     h: Number(element.getAttribute("gs-h")),
   }));
   return mergeGridWidgetMetadata(nodesToGridWidgets(nodes, props.breakpoint), source);
+}
+
+/** 只有声明了 configFields 的组件才在编辑浮层显示「组件设置」。 */
+function hasConfigFields(widgetId: string): boolean {
+  return (getWidgetDefinition(widgetId)?.configFields?.length ?? 0) > 0;
+}
+
+/**
+ * 组件渲染属性 = 注册表声明的 props，外加（仅当组件声明了 configFields 时的）config。
+ *
+ * 未声明 config prop 的组件会把该值当作普通属性透传到根元素
+ * （对象会被序列化成 "[object Object]"），因此按需绑定；两个 v-bind
+ * 在同一个标签上会被 Vue 编译器判为重复属性，所以合并成一个。
+ */
+function componentProps(widget: DashboardWidget): Record<string, unknown> {
+  const definition = getWidgetDefinition(widget.id);
+  if (!definition) return {};
+  if (!definition.configFields?.length) return { ...definition.props };
+  return { ...definition.props, config: resolveWidgetConfig(definition, widget.config) };
 }
 
 function commitGrid() {
@@ -159,7 +179,7 @@ onBeforeUnmount(destroyGrid);
         >
           <component
             :is="getWidgetDefinition(item.id)!.component"
-            v-bind="getWidgetDefinition(item.id)!.props"
+            v-bind="componentProps(item)"
             :size-preset="getWidgetSizePreset(item, breakpoint, item.id)"
           />
         </WidgetSizeProvider>
@@ -200,6 +220,16 @@ onBeforeUnmount(destroyGrid);
             title="选择组件大小"
             aria-label="选择组件大小"
             @click.stop="emit('configure', item.i)"
+          >
+            <Icon icon="ri:layout-grid-line" class="w-4 h-4" />
+          </button>
+          <button
+            v-if="hasConfigFields(item.id)"
+            class="apple-edit-size-btn"
+            type="button"
+            title="组件设置"
+            aria-label="组件设置"
+            @click.stop="emit('settings', item.i)"
           >
             <Icon icon="ri:settings-3-line" class="w-4 h-4" />
           </button>

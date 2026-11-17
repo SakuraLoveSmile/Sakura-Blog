@@ -20,7 +20,7 @@
 ```yaml
 services:
   blog:
-    image: ghcr.io/sakuralovesmile/sakura-blog:2.1.8  # 固定具体版本，不以 latest 作为版本证据
+    image: ghcr.io/sakuralovesmile/sakura-blog:2.1.9  # 固定具体版本，不以 latest 作为版本证据
     container_name: blog
     restart: unless-stopped
     ports:
@@ -33,7 +33,7 @@ services:
       GIN_MODE: release
 ```
 
-`deploy/docker-compose.image.yml` 是同一形态的示例，其中固定的是本仓库当前发布版本（`2.1.8`）。生产环境必须固定具体 `X.Y.Z` 标签，升级与回退都只改这一行。
+`deploy/docker-compose.image.yml` 是同一形态的示例，其中固定的是本仓库当前发布版本（`2.1.9`）。生产环境必须固定具体 `X.Y.Z` 标签，升级与回退都只改这一行。
 
 镜像标签：`X.Y.Z`、`X.Y`、`X`、`latest` 与 `sha-<短哈希>`；`latest` 只由正式版 tag 推送更新。
 

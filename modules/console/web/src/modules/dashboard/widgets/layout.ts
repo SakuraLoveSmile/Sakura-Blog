@@ -93,6 +93,8 @@ export const WIDGET_TYPES: string[] = [
   "system-health",
   "stellar-version",
   "system-version",
+  // 叠放容器：一块网格位轮播多个子组件（借鉴 Halo core:stack 的机制）。
+  "stack",
 ];
 
 /**
