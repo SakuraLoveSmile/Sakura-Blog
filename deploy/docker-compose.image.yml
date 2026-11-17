@@ -3,7 +3,7 @@
 # Console「检查更新」读取 GHCR 镜像标签，只检测、不执行升级（详见 deploy/README.md）。
 services:
   blog:
-    image: ghcr.io/sakuralovesmile/sakura-blog:2.1.8   # 固定具体版本，升级与回退都只改这一行
+    image: ghcr.io/sakuralovesmile/sakura-blog:2.1.9   # 固定具体版本，升级与回退都只改这一行
     container_name: blog
     restart: unless-stopped
     ports:

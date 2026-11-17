@@ -730,7 +730,7 @@
   font-size: 12px;
 }
 
-/* ===== Segment control：统一走 apple-base.css 的 .apple-segmented ===== */
+/* ===== 范围切换见 .card-range（本文件「卡片内控件」一节）；全站 .apple-segmented 在 apple-base.css，仪表盘卡片不再使用 ===== */
 
 /* ===== List items (posts / comments)：分隔线行，不嵌套小卡 ===== */
 .apple-list-item {
@@ -1081,6 +1081,157 @@
   color: var(--color-foreground);
 }
 
+/* ===== 卡片内控件：与头部同一套幽灵语言（BLG-20261111-01） =====
+   - 视觉盒子不变：手机上的 44px 点击区由 .card-hit 的 ::before 向外补，不进盒模型，也不改变卡片头行高；
+   - 悬停底只在 (hover: hover) 里，:active 再亮一阶，焦点环 2px offset 2px；
+   - 44px 有两个独立来源：真实 ≤767px 视口，以及「预览手机布局」的 data-bp（桌面视口没有 ≤767px 媒体查询），都要覆盖。 */
+.dashboard-apple {
+  --card-hit: 28px; /* 小控件点击区的目标边长 */
+  --card-rail-gap: 2px; /* 评论行操作的间距 */
+  --card-rail-gap-post: 6px; /* 文章行操作的间距 */
+  --card-post-inset: 0px; /* 文章行操作整组左移，给最右一枚向外补点击区留出空白 */
+  --card-comment-inset: 0px; /* 同上，评论行 */
+}
+@media (max-width: 767px) {
+  .dashboard-apple {
+    --card-hit: 44px;
+    --card-rail-gap: 16px;
+    --card-rail-gap-post: 16px;
+    --card-post-inset: 8px;
+    --card-comment-inset: 8px;
+  }
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) {
+  --card-hit: 44px;
+  --card-rail-gap: 16px;
+  --card-rail-gap-post: 16px;
+  --card-post-inset: 8px;
+  /* 手机布局里评论行自带 8–10px 内边距，右侧已有空白，不再额外左移 */
+  --card-comment-inset: 0px;
+}
+
+/* 点击区补足：以控件中心为基准，取「自身盒子」与 --card-hit 中的较大者；
+   --hit-dy 把整块点击区上下挪动，用于贴着下方可点击行的卡片头（挪向上方的卡片留白，不盖到下一行）。 */
+.card-hit {
+  position: relative;
+}
+.card-hit::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, var(--card-hit, 0px));
+  height: max(100%, var(--card-hit, 0px));
+  transform: translate(-50%, calc(-50% + var(--hit-dy, 0px)));
+}
+
+/* 范围切换（访问趋势、访问时段、热门文章）：12px 文字，选中 = 前景色 + 紧贴文字的 1px 下划线。
+   盒子高度跟 --card-hit（桌面 28px、手机 44px）走，卡片头行高与改前一致。 */
+.card-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+}
+.card-range-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--card-hit, 28px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+.card-range-btn.is-active,
+.card-range-btn:active {
+  color: var(--color-foreground);
+}
+.card-range-btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+.card-range-label {
+  position: relative;
+  padding-bottom: 3px;
+}
+.card-range-btn.is-active .card-range-label::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: var(--color-foreground);
+}
+@media (hover: hover) {
+  .card-range-btn:hover {
+    color: var(--color-foreground);
+  }
+}
+
+/* 范围切换的点击区只向左补：访问趋势、热门文章的范围组贴着卡片最右缘，而卡片是 overflow:hidden，
+   向右补出去的部分既点不到，还会让卡片多出 7px 可滚动的横向溢出。
+   所以每枚点击区的右缘对齐自己（第一枚多出 2px，正好接上下一枚点击区的左缘），手机上两枚各约 44px 宽、互不重叠；
+   桌面 28px 点击区同一规则，无副作用。 */
+.card-range-btn.card-hit::before {
+  right: -2px;
+  left: auto;
+  transform: translateY(calc(-50% + var(--hit-dy, 0px)));
+}
+.card-range-btn.card-hit:last-child::before {
+  right: 0;
+}
+
+/* 卡片头的「全部 ›」：在 .apple-link 之上补成 28px 高的幽灵小按钮。
+   负外边距抵掉多出的高度，头行高度不变；左内边距让悬停底多出一点呼吸，右侧贴着箭头图标自带的空白。
+   上负外边距比下少 0.5px：头行 21px、卡片上内边距 11px 时，按钮盒顶距卡片顶刚好 8px，手机 44px 点击区正好落在 [0, 44]：
+   上沿贴着卡片、下沿贴着第一行，不被卡片的 overflow 截掉半个像素，也不压到第一行。 */
+.card-link {
+  --hit-dy: 0px;
+  min-height: 28px;
+  margin-block: -4.5px -5.5px;
+  padding-inline: 8px 0;
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+/* 小档头部与第一行只隔 4px：手机 44px 点击区整体上挪，盖在头上方的卡片留白里，不压到第一行；
+   按钮盒本身也不能下移，否则会盖住第一行最上沿的半个像素，所以这里仍用对称的 -5px。 */
+.recent-posts-small .card-link,
+.recent-comments-small .card-link {
+  --hit-dy: -9px;
+  margin-block: -5px;
+}
+.card-link:active {
+  color: var(--color-foreground);
+  background: var(--color-secondary-700);
+}
+.card-link:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .card-link:hover {
+    color: var(--color-foreground);
+    background: var(--color-accent);
+  }
+}
+/* .apple-link:hover 不在悬停媒体查询里，触屏点按后文字会一直亮着；卡片头的链接还原 */
+@media (hover: none) {
+  .card-link:hover {
+    color: var(--color-text-secondary);
+  }
+  .card-link:active {
+    color: var(--color-foreground);
+  }
+}
+
 /* ===== Category donut ===== */
 .donut-wrap {
   display: flex;
@@ -1298,11 +1449,6 @@
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-section-title {
   font-size: 14px;
 }
-.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-segmented button,
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented button {
-  padding: 4px 0;
-  font-size: 13px;
-}
 
 .dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .donut-wrap,
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .donut-wrap {
@@ -1389,12 +1535,9 @@
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card-badge {
   font-size: 12px;
 }
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented {
-  border-radius: 0;
-}
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented button {
-  padding: 4px 0;
-  font-size: 13px;
+/* 评论弹窗里的 VButton 自带的 44px 只认真实 ≤767px 视口，「预览手机布局」按 data-bp 补齐 */
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) :is(.comment-reply-popover, .comment-delete-popover) .btn {
+  min-height: 44px;
 }
 
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item {
@@ -1520,12 +1663,6 @@
   .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-secondary-btn svg {
     width: 18px;
     height: 18px;
-  }
-
-  /* 分段筛选更紧凑 */
-  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented button {
-    padding: 4px 0;
-    font-size: 12px;
   }
 
   /* 甜甜圈图更小 */

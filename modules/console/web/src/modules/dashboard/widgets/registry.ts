@@ -10,11 +10,25 @@ import StellarVersionWidget from "./StellarVersionWidget.vue";
 import SystemVersionWidget from "./SystemVersionWidget.vue";
 import TopPostsWidget from "./TopPostsWidget.vue";
 import SystemHealthWidget from "./SystemHealthWidget.vue";
+import StackWidget from "./StackWidget.vue";
+import type { WidgetConfigOption } from "./widget-config";
+
+// 配置工具放在不依赖 .vue 的独立模块，node:test 可直接 import。
+export { configFieldOptions, resolveWidgetConfig, configInt } from "./widget-config";
+export type { WidgetConfigOption } from "./widget-config";
+
 export interface WidgetConfigField {
   key: string;
   label: string;
+  /** 配置控件类型；select 的候选项由 options 提供。 */
   type: "text" | "number" | "select" | "boolean";
-  options?: string[];
+  options?: (string | WidgetConfigOption)[];
+  description?: string;
+  /** number 类型的取值范围，仅用于渲染钳制。 */
+  min?: number;
+  max?: number;
+  /** 布尔项在开关打开时的含义说明。 */
+  placeholder?: string;
 }
 
 export interface WidgetDefinition {
@@ -111,6 +125,25 @@ export const widgetRegistry: WidgetDefinition[] = [
     component: TrendChartWidget,
     props: {},
     defaultSize: { w: 6, h: 28 },
+    defaultConfig: { defaultRange: "7", showUv: false },
+    configFields: [
+      {
+        key: "defaultRange",
+        label: "默认区间",
+        type: "select",
+        options: [
+          { value: "7", label: "7 天" },
+          { value: "30", label: "30 天" },
+        ],
+        description: "打开仪表盘时默认展示的趋势区间；仍可在卡片上临时切换。",
+      },
+      {
+        key: "showUv",
+        label: "默认显示独立访客",
+        type: "boolean",
+        description: "打开时同时展示 UV 虚线。",
+      },
+    ],
   }),
   defineWidget({
     id: "hourly-chart",
@@ -138,6 +171,21 @@ export const widgetRegistry: WidgetDefinition[] = [
     component: RecentPostsWidget,
     props: {},
     defaultSize: { w: 6, h: 28 },
+    defaultConfig: { itemLimit: "0" },
+    configFields: [
+      {
+        key: "itemLimit",
+        label: "显示条数",
+        type: "select",
+        options: [
+          { value: "0", label: "按卡片大小" },
+          { value: "3", label: "3 条" },
+          { value: "5", label: "5 条" },
+          { value: "8", label: "8 条" },
+        ],
+        description: "受档位高度限制，超出卡片的条数会被裁掉。",
+      },
+    ],
   }),
   defineWidget({
     id: "recent-comments",
@@ -147,6 +195,21 @@ export const widgetRegistry: WidgetDefinition[] = [
     component: RecentCommentsWidget,
     props: {},
     defaultSize: { w: 6, h: 28 },
+    defaultConfig: { itemLimit: "0" },
+    configFields: [
+      {
+        key: "itemLimit",
+        label: "显示条数",
+        type: "select",
+        options: [
+          { value: "0", label: "按卡片大小" },
+          { value: "3", label: "3 条" },
+          { value: "5", label: "5 条" },
+          { value: "8", label: "8 条" },
+        ],
+        description: "受档位高度限制，超出卡片的条数会被裁掉。",
+      },
+    ],
   }),
   defineWidget({
     id: "quick-actions",
@@ -156,6 +219,22 @@ export const widgetRegistry: WidgetDefinition[] = [
     component: QuickActionsWidget,
     props: {},
     defaultSize: { w: 6, h: 28 },
+    defaultConfig: { entryCount: "0" },
+    configFields: [
+      {
+        key: "entryCount",
+        label: "显示入口数",
+        type: "select",
+        options: [
+          { value: "0", label: "按卡片大小" },
+          { value: "2", label: "2 个" },
+          { value: "4", label: "4 个" },
+          { value: "6", label: "6 个" },
+          { value: "8", label: "8 个" },
+        ],
+        description: "小档最多 2 个、中档最多 4 个；大档按此处的数量展示。",
+      },
+    ],
   }),
   defineWidget({
     id: "top-posts",
@@ -165,6 +244,21 @@ export const widgetRegistry: WidgetDefinition[] = [
     component: TopPostsWidget,
     props: {},
     defaultSize: { w: 6, h: 28 },
+    defaultConfig: { itemLimit: "0" },
+    configFields: [
+      {
+        key: "itemLimit",
+        label: "显示条数",
+        type: "select",
+        options: [
+          { value: "0", label: "按卡片大小" },
+          { value: "3", label: "3 条" },
+          { value: "5", label: "5 条" },
+          { value: "8", label: "8 条" },
+        ],
+        description: "受档位高度限制，超出卡片的条数会被裁掉。",
+      },
+    ],
   }),
   defineWidget({
     id: "system-health",
@@ -192,6 +286,41 @@ export const widgetRegistry: WidgetDefinition[] = [
     component: SystemVersionWidget,
     props: {},
     defaultSize: { w: 6, h: 28 },
+  }),
+  defineWidget({
+    id: "stack",
+    label: "叠放容器",
+    icon: "ri:stack-line",
+    group: "tools",
+    component: StackWidget,
+    props: {},
+    defaultSize: { w: 6, h: 28 },
+    defaultConfig: { stackWidgets: ["recent-posts", "recent-comments", "top-posts"], interval: "0" },
+    configFields: [
+      {
+        key: "stackWidgets",
+        label: "容器内组件",
+        type: "select",
+        options: [
+          { value: "recent-posts", label: "最近文章" },
+          { value: "recent-comments", label: "最近评论" },
+          { value: "top-posts", label: "热门文章" },
+          { value: "recent-moments", label: "最近说说" },
+          { value: "system-health", label: "系统状态" },
+        ],
+      },
+      {
+        key: "interval",
+        label: "自动轮播间隔",
+        type: "select",
+        options: [
+          { value: "0", label: "不轮播（手动切换）" },
+          { value: "8", label: "8 秒" },
+          { value: "15", label: "15 秒" },
+        ],
+        description: "自动切换只在仪表盘可见时运行。",
+      },
+    ],
   }),
 ];
 

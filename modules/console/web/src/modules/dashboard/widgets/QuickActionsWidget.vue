@@ -9,10 +9,12 @@ import { dashboardApi } from "@/api";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
+  config?: Record<string, unknown>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   sizePreset: "medium",
+  config: () => ({}),
 });
 const sizePreset = useWidgetSize(props.sizePreset).preset;
 
@@ -108,10 +110,17 @@ async function loadActions() {
   }
 }
 
+/** 配置里要求的入口数；未配置时沿用档位默认（小/中 4 个，大档全量）。 */
+const configuredEntryCount = computed(() => {
+  const raw = Number(props.config.entryCount);
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  return Math.min(Math.max(Math.round(raw), 1), extendedActions.length);
+});
+
 const displayedActions = computed(() => {
   const source = remoteActions.value ?? (sizePreset.value === "large" ? extendedActions : baseActions);
-  if (sizePreset.value === "large") return source;
-  return source.slice(0, 4);
+  const limit = configuredEntryCount.value || (sizePreset.value === "large" ? source.length : 4);
+  return source.slice(0, limit);
 });
 
 function go(act: QuickAction) {

@@ -7,6 +7,7 @@ import { dashboardApi } from "@/api";
 import DashboardGrid from "./DashboardGrid.vue";
 import WidgetCenter from "./WidgetCenter.vue";
 import WidgetSizeModal from "./WidgetSizeModal.vue";
+import WidgetConfigModal from "./WidgetConfigModal.vue";
 import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
 import { useDashboardLayout } from "./useDashboardLayout";
 import {
@@ -25,7 +26,7 @@ import {
   type MultiBreakpointLayout,
   type WidgetSizePreset,
 } from "./widgets/layout";
-import { getWidgetDefinition } from "./widgets/registry";
+import { getWidgetDefinition, resolveWidgetConfig } from "./widgets/registry";
 import "./dashboard.css";
 
 const router = useRouter();
@@ -151,6 +152,41 @@ async function save() {
   } finally {
     saving.value = false;
   }
+}
+
+// 组件实例配置：与尺寸弹窗分开，进入前先确认该组件声明了 configFields。
+const configuringWidgetId = ref<string | null>(null);
+const configuringWidget = computed(() => currentWidgets.value.find((item) => item.i === configuringWidgetId.value) ?? null);
+const configuringDefinition = computed(() => {
+  const widget = configuringWidget.value;
+  return widget ? getWidgetDefinition(widget.id) : undefined;
+});
+const configuringConfig = computed(() =>
+  resolveWidgetConfig(configuringDefinition.value, configuringWidget.value?.config),
+);
+const configModalVisible = computed({
+  get: () => Boolean(configuringWidget.value && configuringDefinition.value?.configFields?.length),
+  set: (visible: boolean) => {
+    if (!visible) configuringWidgetId.value = null;
+  },
+});
+
+function openWidgetSettings(instanceId: string) {
+  const widget = currentWidgets.value.find((item) => item.i === instanceId);
+  if (!widget) return;
+  if (!getWidgetDefinition(widget.id)?.configFields?.length) return;
+  configuringWidgetId.value = instanceId;
+}
+
+function saveWidgetConfig(config: Record<string, unknown>) {
+  if (!configuringWidget.value) return;
+  const target = configuringWidget.value.i;
+  updateCurrentWidgets(currentWidgets.value.map((item) => (
+    item.i === target ? { ...item, config: { ...config } } : item
+  )));
+  refreshKey.value += 1;
+  configuringWidgetId.value = null;
+  Toast.success("组件设置已更新，保存布局后生效");
 }
 
 function configureWidget(instanceId: string) {
@@ -292,7 +328,7 @@ onBeforeRouteLeave(() => {
         <template v-else>
           <div class="apple-edit-hint" role="status">
             <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
-            拖动组件标题区域调整位置，点击设置选择大、中、小尺寸；修改只在点击“保存布局”后写入服务端
+            拖动组件标题区域调整位置，用两个按钮分别选择尺寸和组件设置；修改只在点击“保存布局”后写入服务端
           </div>
           <DashboardGrid
             :widgets="currentWidgets"
@@ -302,6 +338,7 @@ onBeforeRouteLeave(() => {
             @change="updateCurrentWidgets"
             @remove="removeWidget"
             @configure="configureWidget"
+            @settings="openWidgetSettings"
           />
           <WidgetSizeModal
             v-if="sizingWidget && sizingDefinition"
@@ -312,6 +349,13 @@ onBeforeRouteLeave(() => {
             :breakpoint="activeBreakpoint"
             :current-preset="sizingPreset"
             @save="saveWidgetSize"
+          />
+          <WidgetConfigModal
+            v-if="configuringWidget && configuringDefinition"
+            v-model:visible="configModalVisible"
+            :definition="configuringDefinition"
+            :config="configuringConfig"
+            @save="saveWidgetConfig"
           />
         </template>
 
