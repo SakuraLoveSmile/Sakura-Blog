@@ -1,0 +1,21 @@
+{
+  "base": "http://127.0.0.1:8096",
+  "steps": {
+    "configFields": 2,
+    "selectedChildren": 3,
+    "firstActive": "最近文章",
+    "tabs": [
+      "最近文章",
+      "最近评论",
+      "热门文章"
+    ],
+    "secondActive": "最近评论",
+    "stack_lg": {
+      "overflowX": 0,
+      "overflowY": 0
+    },
+    "stack_sm": "absent（布局按断点独立存储，该断点未添加）",
+    "stack_xxs": "absent（布局按断点独立存储，该断点未添加）"
+  },
+  "errors": []
+}

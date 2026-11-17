@@ -8,10 +8,13 @@ import { useWidgetSize } from "../useWidgetSize";
 import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
 import type { WidgetSizePreset } from "./layout";
 
-interface Props { sizePreset?: WidgetSizePreset }
+interface Props {
+  sizePreset?: WidgetSizePreset;
+  config?: Record<string, unknown>;
+}
 interface PopularPost { path: string; title: string; pv: number; uv: number }
 
-const props = withDefaults(defineProps<Props>(), { sizePreset: "medium" });
+const props = withDefaults(defineProps<Props>(), { sizePreset: "medium", config: () => ({}) });
 const sizePreset = useWidgetSize(props.sizePreset).preset;
 const { breakpoint } = useBreakpoint();
 const router = useRouter();
@@ -25,7 +28,7 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    const response = await statsApi.popular(days.value, 5);
+    const response = await statsApi.popular(days.value, Math.max(5, configuredLimit.value));
     items.value = Array.isArray(response.data?.items) ? response.data.items : [];
   } catch (err) {
     error.value = err instanceof Error ? err.message : "热门文章加载失败";
@@ -35,9 +38,16 @@ async function load() {
 }
 
 const maxPv = computed(() => Math.max(...items.value.map((item) => item.pv), 1));
-const displayedItems = computed(() =>
-  items.value.slice(0, sizePreset.value === "small" ? 2 : sizePreset.value === "medium" ? 4 : 5),
-);
+/** 配置条数优先，未配置时按档位默认；同时不超过后端返回的条数。 */
+const configuredLimit = computed(() => {
+  const raw = Number(props.config.itemLimit);
+  return Number.isFinite(raw) && raw > 0 ? Math.min(8, Math.round(raw)) : 0;
+});
+const displayedItems = computed(() => {
+  const presetLimit = sizePreset.value === "small" ? 2 : sizePreset.value === "medium" ? 4 : 5;
+  const limit = configuredLimit.value || presetLimit;
+  return items.value.slice(0, Math.min(limit, items.value.length));
+});
 
 function editPost(item: PopularPost) {
   const slug = item.path.replace(/^\/post\//, "");
@@ -49,7 +59,7 @@ function rankTone(index: number): string {
 }
 
 const handleRefresh = () => { void load(); };
-watch(days, load);
+watch([days, configuredLimit], load);
 onMounted(() => {
   load();
   window.addEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh);
@@ -65,9 +75,13 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
         <p v-if="sizePreset !== 'small'" class="top-posts-subtitle">近 {{ days }} 天阅读排行</p>
       </div>
       <div class="flex items-center gap-2">
-        <div class="apple-segmented top-posts-range" aria-label="热门文章统计范围">
-          <button type="button" :class="['seg-btn', days === 7 && 'active']" :aria-pressed="days === 7" @click="days = 7">7 天</button>
-          <button type="button" :class="['seg-btn', days === 30 && 'active']" :aria-pressed="days === 30" @click="days = 30">30 天</button>
+        <div class="card-range" role="group" aria-label="热门文章统计范围">
+          <button type="button" class="card-range-btn card-hit" :class="{ 'is-active': days === 7 }" :aria-pressed="days === 7" @click="days = 7">
+            <span class="card-range-label">7 天</span>
+          </button>
+          <button type="button" class="card-range-btn card-hit" :class="{ 'is-active': days === 30 }" :aria-pressed="days === 30" @click="days = 30">
+            <span class="card-range-label">30 天</span>
+          </button>
         </div>
         <Icon v-if="sizePreset === 'large'" icon="ri:fire-line" class="w-4 h-4 text-state-warning" />
       </div>
@@ -101,10 +115,15 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 
 <style scoped>
 .top-posts-subtitle { margin-top: 3px; color: var(--color-muted-foreground); font-size: 11px; }
-.top-posts-range .seg-btn { padding-inline: 7px; font-size: 11px; }
 .top-posts-list { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; }
-.top-post-row { display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; padding: 8px 5px; border: 1px solid transparent; border-radius: var(--radius-md); color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
-.top-post-row:hover { border-color: color-mix(in srgb, var(--color-primary) 16%, transparent); background: color-mix(in srgb, var(--color-primary) 6%, transparent); transform: translateX(2px); }
+/* 行悬停与头部、其它列表同一语言：只出中性浅底，不描边、不位移；悬停只在有悬停能力的设备上生效，触屏点按后不残留 */
+.top-post-row { display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; padding: 8px 5px; border: 1px solid transparent; border-radius: var(--radius-md); color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; transition: background-color var(--duration-fast) var(--ease-standard); }
+.top-post-row:active { background: var(--color-secondary-700); }
+.top-post-row:focus-visible { outline: 2px solid var(--color-ring); outline-offset: -2px; }
+@media (hover: hover) {
+  .top-post-row:hover { background: var(--color-accent); }
+  .top-post-row:hover .top-post-arrow { opacity: 1; }
+}
 .top-post-rank { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; flex: 0 0 auto; border-radius: var(--radius-sm); color: var(--color-muted-foreground); background: color-mix(in srgb, var(--color-muted-foreground) 10%, transparent); font: 700 11px var(--font-mono); }
 .top-post-rank.rank-1 { color: var(--color-state-warning); background: color-mix(in srgb, var(--color-state-warning) 13%, transparent); }
 .top-post-rank.rank-2 { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
@@ -116,10 +135,10 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 .top-post-metrics { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--color-foreground); font-size: 12px; }
 .top-post-metrics small { color: var(--color-muted-foreground); font-size: 11px; }
 .top-post-arrow { flex: 0 0 auto; color: var(--color-muted-foreground); opacity: 0; transition: opacity var(--duration-fast) var(--ease-standard); }
-.top-post-row:hover .top-post-arrow { opacity: 1; }
+.top-post-row:focus-visible .top-post-arrow { opacity: 1; }
 .top-posts-empty { display: flex; align-items: center; justify-content: center; min-height: 0; color: var(--color-muted-foreground); font-size: 12px; }
 .top-posts-footnote { display: flex; align-items: center; gap: 5px; margin-top: 9px; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); color: var(--color-muted-foreground); font-size: 11px; }
-.top-posts-small .top-posts-range { display: none; }
+.top-posts-small .card-range { display: none; }
 .top-posts-small .top-post-row { padding-block: 6px; }
 .top-posts-small .top-post-copy { gap: 4px; }
 .top-posts-small .top-post-title { font-size: 11px; }

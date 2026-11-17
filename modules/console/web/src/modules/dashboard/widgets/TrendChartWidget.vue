@@ -9,10 +9,12 @@ import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
+  config?: Record<string, unknown>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   sizePreset: "medium",
+  config: () => ({}),
 });
 const sizePreset = useWidgetSize(props.sizePreset).preset;
 
@@ -25,11 +27,15 @@ interface DailyStat {
 const { breakpoint } = useBreakpoint();
 const chartUid = `trend-${Math.random().toString(36).slice(2, 10)}`;
 
-const days = ref<7 | 30>(7);
+/** 初始区间取自实例配置，之后允许在卡片上临时切换，不回写配置。 */
+function initialRange(): 7 | 30 {
+  return String(props.config.defaultRange) === "30" ? 30 : 7;
+}
+const days = ref<7 | 30>(initialRange());
 const data = ref<DailyStat[]>([]);
 const loading = ref(true);
 const error = ref("");
-const showUv = ref(false);
+const showUv = ref(props.config.showUv === true);
 
 /** 图表内容区 SVG 坐标高度；实际显示高度由 flex 撑满卡片，preserveAspectRatio="none" 负责纵向伸缩。 */
 const PLOT_HEIGHT = 120;
@@ -305,20 +311,13 @@ const showUvLine = computed(() => sizePreset.value === "large" || (sizePreset.va
           <p class="trend-subtitle">浏览量与独立访客</p>
         </div>
         <div class="trend-actions">
+          <!-- PV 折线始终显示，只是图例；UV 是唯一的开关（仅中档），大档两条线都显示，所以都是静态图例 -->
           <div class="trend-legend">
-            <button
-              type="button"
-              class="trend-legend-toggle"
-              :class="{ active: !showUvLine }"
-              :aria-pressed="!showUvLine"
-              @click="showUv = false"
-            >
-              <span class="trend-legend-line pv" />PV
-            </button>
+            <span class="trend-legend-static"><span class="trend-legend-line pv" />PV</span>
             <button
               v-if="sizePreset === 'medium'"
               type="button"
-              class="trend-legend-toggle"
+              class="trend-legend-toggle card-hit"
               :class="{ active: showUv }"
               :aria-pressed="showUv"
               @click="showUv = !showUv"
@@ -327,9 +326,13 @@ const showUvLine = computed(() => sizePreset.value === "large" || (sizePreset.va
             </button>
             <span v-else class="trend-legend-static"><span class="trend-legend-line uv" />UV</span>
           </div>
-          <div class="apple-segmented">
-            <button :class="['seg-btn', days === 7 && 'active']" @click="days = 7">7 天</button>
-            <button :class="['seg-btn', days === 30 && 'active']" @click="days = 30">30 天</button>
+          <div class="card-range" role="group" aria-label="访问趋势统计范围">
+            <button type="button" class="card-range-btn card-hit" :class="{ 'is-active': days === 7 }" :aria-pressed="days === 7" @click="days = 7">
+              <span class="card-range-label">7 天</span>
+            </button>
+            <button type="button" class="card-range-btn card-hit" :class="{ 'is-active': days === 30 }" :aria-pressed="days === 30" @click="days = 30">
+              <span class="card-range-label">30 天</span>
+            </button>
           </div>
         </div>
       </div>
@@ -593,18 +596,30 @@ const showUvLine = computed(() => sizePreset.value === "large" || (sizePreset.va
   font: inherit;
   font-size: 11px;
   letter-spacing: 0;
-  cursor: pointer;
   box-shadow: inset 0 -1px 0 transparent;
+}
+.trend-legend-toggle {
+  /* 大屏布局里 UV 与范围切换同排、只隔 16px；手机 44px 模式下紧邻的「7 天」点击区向左补得更远，
+     UV 自己的盒子要压在它上面，不能被抢走。 */
+  z-index: 1;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 .trend-legend-static {
   cursor: default;
 }
-.trend-legend-toggle:hover,
-.trend-legend-toggle.active {
+/* 选中 = 折线在图上显示：前景色 + 文字下 1px 线（点击区由 .card-hit 的 ::before 补，不进盒模型，所以线仍贴着文字） */
+.trend-legend-toggle.active,
+.trend-legend-toggle:active {
   color: var(--color-foreground);
 }
 .trend-legend-toggle.active {
   box-shadow: inset 0 -1px 0 var(--color-foreground);
+}
+@media (hover: hover) {
+  .trend-legend-toggle:hover {
+    color: var(--color-foreground);
+  }
 }
 .trend-legend-toggle:focus-visible {
   outline: 2px solid var(--color-ring);

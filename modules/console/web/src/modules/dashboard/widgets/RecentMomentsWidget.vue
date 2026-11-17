@@ -48,7 +48,9 @@ onMounted(load);
         <div class="text-sm font-semibold text-foreground">最近说说</div>
         <div class="mt-0.5 text-[11px] text-text-tertiary">记录最近的瞬间</div>
       </div>
-      <button type="button" class="apple-link text-xs" @click="$router.push('/moments')">查看全部</button>
+      <button type="button" class="apple-link card-link card-hit text-xs" @click="$router.push('/moments')">
+        查看全部
+      </button>
     </div>
     <div v-if="loading" class="flex flex-1 items-center justify-center text-xs text-text-tertiary">加载中…</div>
     <div v-else-if="!items.length" class="flex flex-1 items-center justify-center text-xs text-text-tertiary">

@@ -11,10 +11,12 @@ import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
+  config?: Record<string, unknown>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   sizePreset: "medium",
+  config: () => ({}),
 });
 const sizePreset = useWidgetSize(props.sizePreset).preset;
 
@@ -53,10 +55,12 @@ onMounted(() => {
 onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadPosts));
 
 const displayedItems = computed(() => {
-  // 同一档位盒子的可用高度固定：小档只放两条单行，中档四条，大档七条。
-  if (sizePreset.value === "small") return items.value.slice(0, 2);
-  if (sizePreset.value === "medium") return items.value.slice(0, 4);
-  return items.value.slice(0, 7);
+  // 同一档位盒子的可用高度固定：小档只放两条单行，中档四条，大档七条；
+  // 实例配置的显示条数优先，但仍受盒子高度上限约束，避免溢出。
+  const presetMax = sizePreset.value === "small" ? 2 : sizePreset.value === "medium" ? 4 : 7;
+  const raw = Number(props.config.itemLimit);
+  const limit = Number.isFinite(raw) && raw > 0 ? Math.min(Math.round(raw), presetMax) : presetMax;
+  return items.value.slice(0, limit);
 });
 
 function editPost(item: PostItem) {
@@ -79,7 +83,7 @@ function previewPost(item: PostItem) {
           <span class="recent-legend-item"><span class="apple-status-dot draft" />草稿</span>
         </span>
       </div>
-      <button @click="router.push('/posts')" class="apple-link text-xs">
+      <button type="button" class="apple-link card-link card-hit text-xs" @click="router.push('/posts')">
         全部
         <Icon icon="ri:arrow-right-s-line" class="w-4 h-4" />
       </button>
@@ -141,11 +145,11 @@ function previewPost(item: PostItem) {
             </div>
           </div>
         </button>
-        <div class="recent-post-actions" aria-label="文章快捷操作">
-          <button type="button" title="编辑" @click="editPost(item)">
+        <div class="recent-post-actions" role="group" aria-label="文章快捷操作">
+          <button type="button" class="post-action card-hit" title="编辑" :aria-label="`编辑 ${item.title}`" @click="editPost(item)">
             <Icon icon="ri:edit-line" />
           </button>
-          <button type="button" title="前台预览" @click="previewPost(item)">
+          <button type="button" class="post-action card-hit" title="前台预览" :aria-label="`前台预览 ${item.title}`" @click="previewPost(item)">
             <Icon icon="ri:external-link-line" />
           </button>
         </div>
@@ -230,40 +234,62 @@ function previewPost(item: PostItem) {
   cursor: pointer;
 }
 
+/* 行操作：与评论行同一条显隐规则——只有「能悬停且视口 ≥1024px」才藏到悬停 / 聚焦时，
+   其余（触屏、平板、手机）常显，避免触屏上看不见却点得到的隐形热区。
+   手机上两枚间隔 16px、整组左移 8px（--card-rail-*，见 dashboard.css），给各自 44px 的点击区留出不抢邻居的空白。 */
 .recent-post-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 150ms var(--ease-standard);
+  gap: var(--card-rail-gap-post, 6px);
+  flex-shrink: 0;
+  margin-right: var(--card-post-inset, 0px);
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
-.apple-list-item:hover .recent-post-actions,
-.apple-list-item:focus-within .recent-post-actions {
-  opacity: 1;
+@media (hover: hover) and (min-width: 1024px) {
+  .recent-post-actions {
+    opacity: 0;
+  }
+  .apple-list-item:hover .recent-post-actions,
+  .apple-list-item:focus-within .recent-post-actions {
+    opacity: 1;
+  }
 }
 
-.recent-post-actions button {
-  width: 28px;
-  height: 28px;
+.post-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--color-muted-foreground);
   background: transparent;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
 
-.recent-post-actions button:hover {
+/* 按钮总是落在悬停中的行上（行悬停底就是 accent），悬停 / 按下各再亮一阶，才看得出落在了哪枚上 */
+.post-action:active {
   color: var(--color-foreground);
-  border-color: var(--color-border);
-  background: var(--color-accent);
+  background: var(--color-border-strong);
 }
 
-.recent-post-actions svg {
+.post-action:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .post-action:hover {
+    color: var(--color-foreground);
+    background: var(--color-secondary-700);
+  }
+}
+
+.post-action svg {
   width: 14px;
   height: 14px;
 }

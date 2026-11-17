@@ -180,9 +180,13 @@ onUnmounted(() => {
         <span v-if="sizePreset !== 'small'" class="apple-card-badge">24h Hours</span>
       </div>
       <div class="flex items-center gap-2">
-        <div v-if="sizePreset !== 'small'" class="apple-segmented hourly-range-switch" aria-label="时段统计范围">
-          <button type="button" :class="['seg-btn', trendDays === 7 && 'active']" :aria-pressed="trendDays === 7" @click="trendDays = 7">7 天</button>
-          <button type="button" :class="['seg-btn', trendDays === 30 && 'active']" :aria-pressed="trendDays === 30" @click="trendDays = 30">30 天</button>
+        <div v-if="sizePreset !== 'small'" class="card-range" role="group" aria-label="时段统计范围">
+          <button type="button" class="card-range-btn card-hit" :class="{ 'is-active': trendDays === 7 }" :aria-pressed="trendDays === 7" @click="trendDays = 7">
+            <span class="card-range-label">7 天</span>
+          </button>
+          <button type="button" class="card-range-btn card-hit" :class="{ 'is-active': trendDays === 30 }" :aria-pressed="trendDays === 30" @click="trendDays = 30">
+            <span class="card-range-label">30 天</span>
+          </button>
         </div>
         <span class="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-secondary">
           <Icon icon="ri:fire-line" class="w-3.5 h-3.5" />
