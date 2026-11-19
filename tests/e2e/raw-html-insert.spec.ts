@@ -289,3 +289,45 @@ test("发布后外部 HTML 同源直出，内嵌脚本真实执行", async ({ pa
   await expect(page.locator(".ext-embed")).toHaveAttribute("style", /border/);
   expect(await page.evaluate(() => (window as any).__rawHtmlExecuted)).toBe(true);
 });
+
+test("整页 HTML 文档走隔离 iframe，站点样式不被改写", async ({ page }) => {
+  await login(page);
+  await openEditor(page);
+  const title = `整页 HTML 隔离验收 ${Date.now()}`;
+  await page.getByPlaceholder("文章标题").fill(title);
+
+  const nl = String.fromCharCode(10);
+  const doc =
+    "<!doctype html>" + nl +
+    "<html><head><style>body{background:rgb(1, 2, 3)}</style></head>" +
+    "<body><h1>整页文档标题</h1><p>隔离正文</p></body></html>";
+  await page.locator('button[title="插入外部 HTML"]').click();
+  await page.locator("#raw-html-source").fill(doc);
+  await page.getByRole("button", { name: "插入", exact: true }).click();
+  await expect(page.locator(".raw-html-node").first()).toBeVisible();
+
+  await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  await expect(page).toHaveURL(/\/console\/posts\/edit\/[^/]+$/, { timeout: 15_000 });
+  const slug = page.url().split("/").pop()!;
+  await page.getByRole("button", { name: "发布", exact: true }).click();
+  await expect(page).toHaveURL(/\/console\/posts$/, { timeout: 15_000 });
+
+  const saved = await (await page.request.get(`/api/v1/posts/${slug}`)).json();
+  expect(saved.content_md).toContain("<h1>整页文档标题</h1>");
+
+  await page.goto(`/post/${slug}`);
+  const frame = page.locator("article iframe[data-raw-html-frame]").first();
+  await expect(frame).toBeVisible({ timeout: 15_000 });
+  await expect(
+    page.frameLocator("article iframe[data-raw-html-frame]").first().locator("h1"),
+  ).toHaveText("整页文档标题");
+  // doctype 不能变成可见文本
+  await expect(page.locator("article")).not.toContainText("<!doctype");
+  // 文档自己的 body 背景不能作用到宿主页面
+  const hostBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(hostBg).not.toBe("rgb(1, 2, 3)");
+  // 高度按内容回传，不停在初始的 520px
+  await expect
+    .poll(() => frame.evaluate((el) => Math.round(el.getBoundingClientRect().height)), { timeout: 15_000 })
+    .toBeLessThan(500);
+});
