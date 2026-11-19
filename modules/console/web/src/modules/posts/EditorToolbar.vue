@@ -7,6 +7,7 @@ import { PLUGIN_CATEGORIES } from "@/modules/plugins/plugin-types";
 import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCatalog";
 import { usePluginPreview } from "@/modules/plugins/preview/usePluginPreview";
 import { sharedPreviewQueue } from "@/modules/plugins/preview/render-gate";
+import RawHtmlInsertModal from "@/components/editor/RawHtmlInsertModal.vue";
 
 // 编辑器顶部工具栏（对照 Halo 编辑器）：
 // 左侧「+」插入下拉（Stellar 标签，悬停出预览气泡）+ 格式化按钮组 + 图片；
@@ -76,6 +77,12 @@ const dropdownRef = ref<HTMLElement | null>(null);
 const importInput = ref<HTMLInputElement | null>(null);
 const importFormatOpen = ref(false);
 const legacyImport = ref(false);
+const htmlInsertOpen = ref(false);
+
+// 外部 HTML 走与标签插入相同的 insert 通道，宿主已按编辑器种类路由，无需新增事件。
+function insertRawHtml(raw: string) {
+  emit("insert", `\n${raw}\n`);
+}
 
 function chooseImportFile(legacy: boolean) {
   legacyImport.value = legacy;
@@ -331,6 +338,9 @@ const btnActive = "btn-active";
         >
           <Icon :icon="tool.icon" class="text-lg" />
         </button>
+        <button type="button" title="插入外部 HTML" :class="[btnBase, btnChrome]" @click="htmlInsertOpen = true">
+          <Icon icon="ri:html5-line" class="text-lg" />
+        </button>
         <button type="button" title="上传图片" :class="[btnBase, btnChrome]" @click="emit('upload')">
           <Icon icon="ri:image-add-line" class="text-lg" />
         </button>
@@ -435,6 +445,7 @@ const btnActive = "btn-active";
       </div>
     </div>
   </VModal>
+  <RawHtmlInsertModal v-model:visible="htmlInsertOpen" @submit="insertRawHtml" />
 </template>
 
 <style scoped>

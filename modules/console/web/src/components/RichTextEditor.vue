@@ -4,6 +4,8 @@ import PackageRichTextEditor from "@blog/editor/RichTextEditor.vue";
 import type { AssistantBridge } from "@blog/editor/assistant-bridge";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { StellarTag } from "@/components/editor/stellar-tag";
+import { RawHtml } from "@/components/editor/raw-html";
+import { MarkHighlight, RawHtmlInline, Subscript, Superscript } from "@/components/editor/raw-html-inline";
 import StellarEditingCanvas from "@/components/editor/StellarEditingCanvas.vue";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 
@@ -74,7 +76,7 @@ defineExpose({
     :model-value="props.modelValue"
     :storage-key="props.storageKey"
     :follow-storage-key="props.followStorageKey"
-    :extensions="[StellarTag]"
+    :extensions="[StellarTag, RawHtml, RawHtmlInline, MarkHighlight, Subscript, Superscript]"
     :attachment-picker="AttachmentPickerModal"
     :canvas="props.pageAppearance ? StellarEditingCanvas : undefined"
     :canvas-props="canvasProps"
