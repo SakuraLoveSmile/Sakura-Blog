@@ -145,6 +145,8 @@ func (s *Service) RenderStellarV2WithContext(body string, renderContext StellarR
 			body = text
 		}
 	}
+	// 整页 HTML 文档走隔离 iframe；片段与代码块保持原有内联渲染。
+	body = isolateRawHTMLDocuments(body)
 	theme := v2Merge(stellarv2.DefaultTheme(), renderContext.Theme)
 	language := renderContext.Language
 	if language == "" {
