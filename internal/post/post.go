@@ -208,6 +208,8 @@ func (s *Service) Render(body string) (string, error) {
 			body = transformed
 		}
 	}
+	// 整页 HTML 文档走隔离 iframe；片段与代码块保持原有内联渲染。
+	body = isolateRawHTMLDocuments(body)
 	// renderMD 闭包：用同一 goldmark 实例渲染子片段（folding body 等）
 	renderMD := func(md string) string {
 		md = protectMathDelimiters(md)
