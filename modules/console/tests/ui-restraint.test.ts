@@ -79,6 +79,12 @@ const WHITELIST: Record<string, { pattern: RegExp; reason: string }[]> = {
   // 图标选择器 SVG 渐变
   "modules/console/web/src/components/IconPicker.vue": [
     { pattern: /linear-gradient|<linearGradient/, reason: "FUNCTIONAL_ICON_SWATCH: 图标库预览色样" }
+  ],
+
+  // 插入外部 HTML 弹窗的起始片段：作者要插入的外部内容示例，自带样式，不是 Console 界面样式。
+  // 仅豁免 html: '… 样例行；该文件的界面 chrome 仍受全部守卫约束。
+  "modules/console/web/src/components/editor/RawHtmlInsertModal.vue": [
+    { pattern: /html: '</, reason: "FUNCTIONAL_EXTERNAL_HTML_STARTER: 起始片段为外部 HTML 内容示例（自带渐变/配色），非 Console 样式" }
   ]
 };
 
